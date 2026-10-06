@@ -1,70 +1,75 @@
-// Title: Barcode Generation with Raw Pixel Matrix Output
-// Description: Generates a Code128 barcode, saves it as PNG, and prints the image dimensions followed by a binary pixel matrix where bright pixels are shown as 1 and dark pixels as 0.
-// Category-Description: This example belongs to the Aspose.BarCode generation and image processing category. It demonstrates using BarcodeGenerator (Aspose.BarCode.Generation) to create a barcode, saving it with BarCodeImageFormat, and loading the result with Aspose.Drawing.Bitmap for pixel-level analysis. Developers often need such diagnostics to verify barcode rendering, troubleshoot detection algorithms, or visualize raw image data during debugging.
+// Title: Barcode Generation, Pixel Matrix Dump, and Recognition Demo
+// Description: Generates a Code128 barcode, prints its raw pixel matrix to the console, and then reads the barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes, BarCodeReader to decode them, and demonstrates a diagnostic mode that outputs the raw pixel matrix for debugging. Developers often need to visualize barcode pixel data when troubleshooting detection issues, making this pattern useful for debugging and learning purposes.
 // Prompt: Develop a diagnostic mode that outputs the raw pixel matrix used for barcode detection when debugging.
-// Tags: barcode, symbology, generation, debug, pixel matrix, aspose.barcode, aspose.drawing, png, console
+// Tags: barcode symbology, generation, recognition, pixel matrix, debugging, aspose.barcode, code128, console output
 
 using System;
 using System.IO;
-using System.Text;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode and outputting its raw pixel matrix for diagnostic purposes.
+/// Demonstrates barcode generation, raw pixel matrix output for debugging, and barcode recognition using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, writes its size, and prints a binary representation of its pixel brightness.
+    /// Entry point that creates a Code128 barcode, displays its pixel matrix, and decodes it.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the barcode text and symbology to use.
-        string codeText = "HelloWorld";
+        // Define the text to encode in the barcode.
+        string codeText = "1234567890";
 
-        // Create a BarcodeGenerator for Code128 with the specified text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Initialize the barcode generator with Code128 symbology.
+        var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText);
+
+        // Use a memory stream to hold the generated PNG image.
+        using (var ms = new MemoryStream())
         {
-            // Save the generated barcode image into a memory stream in PNG format.
-            using (var ms = new MemoryStream())
+            // Save the barcode image to the stream.
+            generator.Save(ms, BarCodeImageFormat.Png);
+            ms.Position = 0; // Reset stream position for subsequent reads.
+
+            // Load the image into a bitmap for pixel inspection.
+            using (var bitmap = new Bitmap(ms))
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading.
+                int width = bitmap.Width;
+                int height = bitmap.Height;
+                Console.WriteLine($"Bitmap size: {width}x{height}");
+                Console.WriteLine("Raw pixel matrix (█ = dark, space = light):");
 
-                // Load the PNG image as an Aspose.Drawing.Bitmap for pixel access.
-                using (var bitmap = new Bitmap(ms))
+                // Iterate over each pixel to build a visual representation.
+                for (int y = 0; y < height; y++)
                 {
-                    int width = bitmap.Width;
-                    int height = bitmap.Height;
-
-                    // Output image dimensions.
-                    Console.WriteLine($"Barcode image size: {width}x{height}");
-                    Console.WriteLine("Raw pixel matrix (1 = bright, 0 = dark):");
-
-                    // Iterate over each pixel row.
-                    for (int y = 0; y < height; y++)
+                    for (int x = 0; x < width; x++)
                     {
-                        var line = new StringBuilder();
-
-                        // Iterate over each pixel column.
-                        for (int x = 0; x < width; x++)
-                        {
-                            // Retrieve the pixel color.
-                            Color color = bitmap.GetPixel(x, y);
-
-                            // Compute average brightness (simple luminance approximation).
-                            int brightness = (color.R + color.G + color.B) / 3;
-
-                            // Append '1' for bright pixels, '0' for dark pixels.
-                            line.Append(brightness > 128 ? '1' : '0');
-                        }
-
-                        // Write the binary line representing the current row.
-                        Console.WriteLine(line.ToString());
+                        Color pixel = bitmap.GetPixel(x, y);
+                        int brightness = (pixel.R + pixel.G + pixel.B) / 3;
+                        char symbol = brightness < 128 ? '█' : ' ';
+                        Console.Write(symbol);
                     }
+                    Console.WriteLine();
+                }
+            }
+
+            // Reset stream position again before reading with the recognizer.
+            ms.Position = 0;
+
+            // Set up the barcode reader to detect all supported types.
+            BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
+            using (var reader = new BarCodeReader(ms, decodeType))
+            {
+                // Perform barcode detection.
+                BarCodeResult[] results = reader.ReadBarCodes();
+                Console.WriteLine($"Barcodes detected: {results.Length}");
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
             }
         }

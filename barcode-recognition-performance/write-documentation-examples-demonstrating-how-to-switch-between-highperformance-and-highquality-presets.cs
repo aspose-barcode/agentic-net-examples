@@ -1,55 +1,76 @@
-// Title: Switching between HighPerformance and HighQuality barcode generation presets
-// Description: Demonstrates how to generate QR codes using Aspose.BarCode with settings that correspond to HighPerformance and HighQuality presets.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how developers can choose between performance‑oriented and quality‑oriented preset configurations. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and image saving via BarCodeImageFormat. Typical use cases include optimizing barcode rendering for speed in bulk processing or maximizing visual fidelity for print media.
+// Title: Switching Between HighPerformance and HighQuality Presets in Aspose.BarCode
+// Description: Demonstrates how to read a barcode using the HighPerformance and HighQuality quality presets, illustrating their effect on recognition results.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode image and BarCodeReader with different QualitySettings presets (HighPerformance, HighQuality) to decode the image. Developers working with barcode scanning often need to balance speed versus accuracy; these presets provide quick ways to toggle between performance‑focused and quality‑focused recognition.
 // Prompt: Write documentation examples demonstrating how to switch between HighPerformance and HighQuality presets.
-// Tags: qr code, highperformance, highquality, barcode generation, aspose.barcode, image output, png
+// Tags: barcode symbology, quality preset, recognition, generation, aspose.barcode, highperformance, highquality
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates switching between HighPerformance and HighQuality barcode generation presets using Aspose.BarCode.
+/// Demonstrates switching between HighPerformance and HighQuality quality presets
+/// when reading a barcode with Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates QR codes with performance and quality presets and saves them as PNG files.
+    /// Entry point of the example. Generates a Code128 barcode, then reads it
+    /// using both HighPerformance and HighQuality presets, outputting the results.
     /// </summary>
     static void Main()
     {
-        // Determine the output directory relative to the current working directory.
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        // Ensure the directory exists.
-        Directory.CreateDirectory(outputDir);
+        // Create a temporary directory to store the generated barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "PresetDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "code128.png");
 
-        // Generate a QR code using settings that approximate the HighPerformance preset.
-        GenerateQrCode("HighPerformance preset example", Path.Combine(outputDir, "qr_high_performance.png"));
-        // Generate a QR code using settings that approximate the HighQuality preset.
-        GenerateQrCode("HighQuality preset example", Path.Combine(outputDir, "qr_high_quality.png"));
-
-        // Inform the user where the generated barcode images are stored.
-        Console.WriteLine("Barcodes have been generated in: " + outputDir);
-    }
-
-    /// <summary>
-    /// Creates a QR code image with default settings (used here to illustrate preset concepts) and saves it to the specified path.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the QR code.</param>
-    /// <param name="outputPath">The full file path where the PNG image will be saved.</param>
-    static void GenerateQrCode(string codeText, string outputPath)
-    {
-        // Initialize the barcode generator for QR encoding with the provided text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Generate a sample Code128 barcode image
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Example of setting parameters that roughly correspond to performance/quality presets:
-            // HighPerformance: lower resolution, anti-aliasing off
-            // HighQuality: higher resolution, anti-aliasing on
-            // For simplicity, default settings are used in this demonstration.
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
 
-            // Save the generated barcode as a PNG image.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+        // Define the quality presets to demonstrate
+        var presets = new (string Name, QualitySettings Settings)[]
+        {
+            ("HighPerformance", QualitySettings.HighPerformance),
+            ("HighQuality", QualitySettings.HighQuality)
+        };
+
+        // Iterate over each preset, read the barcode, and display results
+        foreach (var preset in presets)
+        {
+            Console.WriteLine($"Reading with preset: {preset.Name}");
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+            {
+                // Apply the selected quality preset
+                reader.QualitySettings = preset.Settings;
+
+                // Perform barcode recognition
+                BarCodeResult[] results = reader.ReadBarCodes();
+                Console.WriteLine($"Barcodes read: {results.Length}");
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                }
+            }
+            Console.WriteLine();
+        }
+
+        // Cleanup temporary files and directory
+        try
+        {
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

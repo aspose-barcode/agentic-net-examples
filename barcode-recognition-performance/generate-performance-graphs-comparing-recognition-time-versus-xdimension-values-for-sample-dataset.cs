@@ -1,170 +1,105 @@
-// Title: Barcode Recognition Performance Graph by XDimension
-// Description: Generates Code128 barcodes with different XDimension values, measures their recognition time, and creates a PNG performance graph.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator, BarCodeReader, and drawing APIs to evaluate barcode scanning performance. Developers often need to benchmark barcode parameters such as XDimension to optimize read speed for various scanners and applications.
+// Title: Performance Graph of Barcode Recognition Time vs XDimension Modes
+// Description: Demonstrates measuring recognition time for Code128 barcodes while varying XDimension settings, useful for performance tuning.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases how to create barcodes with BarcodeGenerator, read them with BarCodeReader, and adjust QualitySettings such as XDimensionMode. Developers often need to benchmark recognition speed for different scanner configurations, making this pattern valuable for performance analysis and optimization.
 // Prompt: Generate performance graphs comparing recognition time versus XDimension values for a sample dataset.
-// Tags: barcode, code128, performance, graph, xdimension, generation, recognition, png, aspose.barcode
+// Tags: barcode symbology, performance, recognition, xdimension, code128, aspose.barcode, image generation
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating barcodes with varying XDimension values, measuring recognition time,
-/// and creating a performance graph saved as a PNG image.
+/// Example program that generates Code128 barcodes, measures recognition time across different XDimension modes,
+/// and outputs timing results. Useful for performance analysis of Aspose.BarCode recognition settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that runs the performance measurement and graph generation.
+    /// Entry point. Generates sample barcodes, runs recognition with various XDimension modes, prints timing results,
+    /// and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary folder for barcode images
+        // Create a unique temporary folder for generated barcode images
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodePerf_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Sample XDimension values (in points)
-        float[] xDimensions = new float[] { 0.5f, 1f, 1.5f, 2f, 2.5f };
-        // Store recognition times (in milliseconds)
-        List<double> recognitionTimes = new List<double>();
+        // Sample data to encode in barcodes
+        string[] codes = { "Sample1", "Sample2", "Sample3", "Sample4", "Sample5" };
+        string[] imagePaths = new string[codes.Length];
 
-        // Generate barcodes, save them, and measure recognition time
-        foreach (float xDim in xDimensions)
+        // Generate barcode images and store their file paths
+        for (int i = 0; i < codes.Length; i++)
         {
-            string codeText = "Sample12345";
-            string imagePath = Path.Combine(tempFolder, $"barcode_{xDim}.png");
-
-            // Generate barcode with specific XDimension
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            string filePath = Path.Combine(tempFolder, $"code_{i + 1}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codes[i]))
             {
-                generator.Parameters.Barcode.XDimension.Point = xDim;
-                // Save directly to file
-                generator.Save(imagePath, BarCodeImageFormat.Png);
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
-
-            // Measure recognition time
-            double elapsedMs;
-            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-            {
-                Stopwatch sw = Stopwatch.StartNew();
-                BarCodeResult[] results = reader.ReadBarCodes();
-                sw.Stop();
-                elapsedMs = sw.Elapsed.TotalMilliseconds;
-
-                // Ensure at least one result was read (evaluation version adds watermark)
-                if (results.Length == 0)
-                {
-                    Console.WriteLine($"No barcode detected for XDimension {xDim}");
-                }
-            }
-
-            recognitionTimes.Add(elapsedMs);
-            Console.WriteLine($"XDimension {xDim} pt -> Recognition time: {elapsedMs:F2} ms");
+            imagePaths[i] = filePath;
         }
 
-        // Create a performance graph
-        int width = 800;
-        int height = 600;
-        using (var bitmap = new Bitmap(width, height))
+        // Define the XDimension modes that will be tested
+        XDimensionMode[] modes = new XDimensionMode[]
         {
-            using (var graphics = Graphics.FromImage(bitmap))
+            XDimensionMode.Normal,
+            XDimensionMode.Small,
+            XDimensionMode.UseMinimalXDimension
+        };
+
+        // Header for console output
+        Console.WriteLine("Recognition Time (ms) vs XDimension Mode");
+        Console.WriteLine("Mode\tTimeMs\tBarcodesRead");
+
+        // Iterate over each XDimension mode and measure recognition performance
+        foreach (var mode in modes)
+        {
+            int totalRead = 0;
+            Stopwatch sw = Stopwatch.StartNew();
+
+            // Recognize each generated barcode image using the current mode
+            foreach (var path in imagePaths)
             {
-                // Fill background
-                graphics.Clear(Color.White);
-
-                // Define margins
-                int marginLeft = 80;
-                int marginBottom = 80;
-                int marginTop = 60;
-                int marginRight = 40;
-
-                // Draw axes
-                Pen axisPen = new Pen(Color.Black, 2);
-                graphics.DrawLine(axisPen, marginLeft, height - marginBottom, width - marginRight, height - marginBottom); // X axis
-                graphics.DrawLine(axisPen, marginLeft, height - marginBottom, marginLeft, marginTop); // Y axis
-
-                // Determine scaling factors
-                float maxX = xDimensions[xDimensions.Length - 1];
-                float maxY = (float)Math.Ceiling(recognitionTimes[recognitionTimes.Count - 1] / 10) * 10; // round up to nearest 10
-
-                // Plot points and connecting lines
-                Pen linePen = new Pen(Color.Blue, 2);
-                Brush pointBrush = new SolidBrush(Color.Red);
-                Font labelFont = new Font("Arial", 12);
-                for (int i = 0; i < xDimensions.Length; i++)
+                if (!File.Exists(path))
                 {
-                    float xVal = xDimensions[i];
-                    double yVal = recognitionTimes[i];
+                    Console.WriteLine($"File not found: {path}");
+                    continue;
+                }
 
-                    // Convert data values to pixel coordinates
-                    float xPixel = marginLeft + (xVal / maxX) * (width - marginLeft - marginRight);
-                    float yPixel = height - marginBottom - (float)(yVal / maxY) * (height - marginTop - marginBottom);
+                using (var reader = new BarCodeReader(path, DecodeType.Code128))
+                {
+                    // Apply the XDimension mode to the reader's quality settings
+                    reader.QualitySettings.XDimension = mode;
 
-                    // Draw data point
-                    float pointSize = 6f;
-                    graphics.FillEllipse(pointBrush, xPixel - pointSize / 2, yPixel - pointSize / 2, pointSize, pointSize);
-
-                    // Draw line to the next point, if any
-                    if (i < xDimensions.Length - 1)
+                    // If using minimal XDimension, set a specific value
+                    if (mode == XDimensionMode.UseMinimalXDimension)
                     {
-                        float nextXVal = xDimensions[i + 1];
-                        double nextYVal = recognitionTimes[i + 1];
-                        float nextXPixel = marginLeft + (nextXVal / maxX) * (width - marginLeft - marginRight);
-                        float nextYPixel = height - marginBottom - (float)(nextYVal / maxY) * (height - marginTop - marginBottom);
-                        graphics.DrawLine(linePen, xPixel, yPixel, nextXPixel, nextYPixel);
+                        reader.QualitySettings.MinimalXDimension = 1;
                     }
 
-                    // X‑axis label for the current point
-                    string xLabel = xVal.ToString("0.##");
-                    SizeF xLabelSize = graphics.MeasureString(xLabel, labelFont);
-                    graphics.DrawString(xLabel, labelFont, Brushes.Black, xPixel - xLabelSize.Width / 2, height - marginBottom + 5);
+                    // Perform barcode reading and count results
+                    var results = reader.ReadBarCodes();
+                    totalRead += results.Length;
                 }
-
-                // Y‑axis labels (5 evenly spaced ticks)
-                int yTicks = 5;
-                for (int i = 0; i <= yTicks; i++)
-                {
-                    float yValue = i * maxY / yTicks;
-                    float yPixel = height - marginBottom - (yValue / maxY) * (height - marginTop - marginBottom);
-
-                    // Tick mark
-                    graphics.DrawLine(Pens.Black, marginLeft - 5, yPixel, marginLeft, yPixel);
-
-                    // Tick label
-                    string yLabel = yValue.ToString("0");
-                    SizeF yLabelSize = graphics.MeasureString(yLabel, labelFont);
-                    graphics.DrawString(yLabel, labelFont, Brushes.Black, marginLeft - yLabelSize.Width - 8, yPixel - yLabelSize.Height / 2);
-                }
-
-                // Axis titles
-                graphics.DrawString("XDimension (points)", labelFont, Brushes.Black,
-                    marginLeft + (width - marginLeft - marginRight) / 2 - 60,
-                    height - marginBottom + 40);
-
-                graphics.TranslateTransform(20, marginTop + (height - marginTop - marginBottom) / 2 + 60);
-                graphics.RotateTransform(-90);
-                graphics.DrawString("Recognition Time (ms)", labelFont, Brushes.Black, 0, 0);
-                graphics.ResetTransform();
-
-                // Graph title
-                graphics.DrawString("Barcode Recognition Time vs XDimension",
-                    new Font("Arial", 16, FontStyle.Bold), Brushes.Black,
-                    marginLeft + (width - marginLeft - marginRight) / 2 - 150, marginTop - 40);
             }
 
-            // Save the graph image
-            string graphPath = Path.Combine(tempFolder, "RecognitionPerformance.png");
-            bitmap.Save(graphPath, Aspose.Drawing.Imaging.ImageFormat.Png);
-            Console.WriteLine($"Performance graph saved to: {graphPath}");
+            sw.Stop();
+            // Output the elapsed time and total barcodes read for the current mode
+            Console.WriteLine($"{mode}\t{sw.ElapsedMilliseconds}\t{totalRead}");
         }
 
-        // Cleanup: optionally delete temporary files (commented out to keep results)
-        // Directory.Delete(tempFolder, true);
+        // Optional cleanup of temporary files and folder
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Suppress any errors during cleanup
+        }
     }
 }

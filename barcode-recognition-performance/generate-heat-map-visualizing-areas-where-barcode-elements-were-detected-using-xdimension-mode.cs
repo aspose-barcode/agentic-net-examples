@@ -1,166 +1,139 @@
-// Title: Generate heat map of detected barcode regions using XDimension mode
-// Description: This example creates a canvas with multiple Code128 barcodes, detects them with XDimension mode, and visualizes detection areas as a semi‑transparent red heat map overlay.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition workflow, covering BarcodeGenerator, BarCodeReader, and image composition with Aspose.Drawing. Typical use cases include visual analysis of barcode detection performance, debugging scanning setups, or creating diagnostic overlays. Developers often need to generate barcodes, read them with specific quality settings, and render results for reporting.
+// Title: Generate Heat Map of Detected Barcode Regions Using XDimension Mode
+// Description: This example creates a composite image with multiple Code128 barcodes, reads them using XDimension mode, and visualizes the detected barcode areas as a semi‑transparent red heat map.
+// Category-Description: Demonstrates Aspose.BarCode image generation and recognition workflow, covering BarcodeGenerator, BarCodeReader, and image manipulation with Aspose.Drawing. Typical use cases include visual analysis of barcode placement, quality inspection, and creating heat‑map overlays for debugging detection algorithms. Developers working with barcode imaging often need to generate test images, extract barcode regions, and render visual feedback.
 // Prompt: Generate a heat map visualizing areas where barcode elements were detected using XDimension mode.
-// Tags: code128, barcode, heatmap, detection, xdimension, aspose.barcode, aspose.drawing, image-processing
+// Tags: barcode, code128, heatmap, xdimension, image generation, barcode recognition, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
+using Aspose.Drawing.Drawing2D;
 
 /// <summary>
-/// Demonstrates how to generate a set of barcodes, detect them using XDimension mode,
-/// and create a heat‑map overlay that highlights the detected regions.
+/// Demonstrates generating a composite image with several barcodes,
+/// detecting them using XDimension mode, and creating a heat‑map overlay
+/// that highlights the detected barcode regions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates source and heat‑map images and saves them to a temporary folder.
+    /// Entry point of the example. Generates barcodes, reads them,
+    /// builds a heat map, and saves the resulting images to a temporary folder.
     /// </summary>
     static void Main()
     {
-        // Create a temporary working directory for the generated images
-        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeHeatMap_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workDir);
+        // --------------------------------------------------------------------
+        // Prepare a temporary folder for output files
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeHeatMap_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define file paths for the source canvas and the final heat‑map image
-        string sourceImagePath = Path.Combine(workDir, "source.png");
-        string heatMapImagePath = Path.Combine(workDir, "heatmap.png");
+        // Canvas dimensions and output file paths
+        int canvasWidth = 800;
+        int canvasHeight = 600;
+        string combinedPath = Path.Combine(tempFolder, "combined.png");
+        string heatmapPath = Path.Combine(tempFolder, "heatmap.png");
 
-        // Canvas dimensions
-        const int canvasWidth = 800;
-        const int canvasHeight = 600;
-
-        // Number of barcodes to place on the canvas
-        const int barcodeCount = 10;
-
-        // Random generator for positioning barcodes
-        Random rnd = new Random();
-
-        // -----------------------------------------------------------------
-        // STEP 1: Create a blank canvas and draw random Code128 barcodes
-        // -----------------------------------------------------------------
-        using (Bitmap canvas = new Bitmap(canvasWidth, canvasHeight))
+        // --------------------------------------------------------------------
+        // Create a blank canvas and draw several barcodes onto it
+        // --------------------------------------------------------------------
+        using (Bitmap canvas = new Bitmap(canvasWidth, canvasHeight, PixelFormat.Format32bppArgb))
         {
             using (Graphics gCanvas = Graphics.FromImage(canvas))
             {
-                // Fill the background with white
+                // Fill background with white
                 gCanvas.Clear(Color.White);
 
-                // Generate and draw each barcode at a random location
-                for (int i = 0; i < barcodeCount; i++)
+                // Generate and place 5 Code128 barcodes
+                for (int i = 0; i < 5; i++)
                 {
-                    // Initialise a Code128 barcode generator with a unique value
-                    using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "CODE" + i))
+                    string codeText = $"Sample{i + 1}";
+                    using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
                     {
-                        // Set the XDimension (module size) to 2 points
+                        // Adjust XDimension if needed (example uses 2 points)
                         generator.Parameters.Barcode.XDimension.Point = 2f;
 
-                        // Render the barcode to a bitmap
                         using (Bitmap barcodeBmp = generator.GenerateBarCodeImage())
                         {
-                            // Compute a random position that keeps the barcode fully inside the canvas
-                            int maxX = Math.Max(0, canvasWidth - barcodeBmp.Width);
-                            int maxY = Math.Max(0, canvasHeight - barcodeBmp.Height);
-                            int posX = rnd.Next(0, maxX + 1);
-                            int posY = rnd.Next(0, maxY + 1);
-
-                            // Draw the barcode onto the canvas
-                            gCanvas.DrawImage(barcodeBmp, posX, posY, barcodeBmp.Width, barcodeBmp.Height);
+                            int x = 50 + i * 140; // horizontal offset for each barcode
+                            int y = 100;          // vertical position
+                            gCanvas.DrawImage(barcodeBmp, x, y, barcodeBmp.Width, barcodeBmp.Height);
                         }
                     }
                 }
             }
 
-            // Save the generated source image
-            canvas.Save(sourceImagePath, ImageFormat.Png);
+            // Save the combined barcode image to disk
+            using (MemoryStream ms = new MemoryStream())
+            {
+                canvas.Save(ms, Aspose.Drawing.Imaging.ImageFormat.Png);
+                File.WriteAllBytes(combinedPath, ms.ToArray());
+            }
         }
 
-        // Verify that the source image was created successfully
-        if (!File.Exists(sourceImagePath))
+        // --------------------------------------------------------------------
+        // Read barcodes from the combined image using XDimension mode
+        // --------------------------------------------------------------------
+        List<RectangleF> detectedRegions = new List<RectangleF>();
+        if (File.Exists(combinedPath))
         {
-            Console.WriteLine("Failed to create source image.");
+            using (BarCodeReader reader = new BarCodeReader(combinedPath, DecodeType.Code128))
+            {
+                // Enable small XDimension detection
+                reader.QualitySettings.XDimension = XDimensionMode.Small;
+
+                BarCodeResult[] results = reader.ReadBarCodes();
+                foreach (BarCodeResult result in results)
+                {
+                    // Store the bounding rectangle of each detected barcode
+                    RectangleF rect = result.Region.Rectangle;
+                    detectedRegions.Add(rect);
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine("Combined image not found.");
             return;
         }
 
-        // -----------------------------------------------------------------
-        // STEP 2: Prepare a transparent bitmap that will hold the heat‑map
-        // -----------------------------------------------------------------
-        using (Bitmap heatMap = new Bitmap(canvasWidth, canvasHeight))
+        // --------------------------------------------------------------------
+        // Build a heat map image based on the detected barcode regions
+        // --------------------------------------------------------------------
+        using (Bitmap heatmap = new Bitmap(canvasWidth, canvasHeight, PixelFormat.Format32bppArgb))
         {
-            using (Graphics gHeat = Graphics.FromImage(heatMap))
+            using (Graphics gHeat = Graphics.FromImage(heatmap))
             {
                 // Start with a fully transparent background
                 gHeat.Clear(Color.Transparent);
-            }
 
-            // -----------------------------------------------------------------
-            // STEP 3: Detect barcodes in the source image using XDimension mode
-            // -----------------------------------------------------------------
-            using (BarCodeReader reader = new BarCodeReader(sourceImagePath, DecodeType.AllSupportedTypes))
-            {
-                // Configure high‑performance quality settings and enable minimal XDimension usage
-                reader.QualitySettings = QualitySettings.HighPerformance;
-                reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-
-                // Perform detection
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                // -----------------------------------------------------------------
-                // STEP 4: Draw a semi‑transparent red circle over each detected region
-                // -----------------------------------------------------------------
-                using (Graphics gHeatDraw = Graphics.FromImage(heatMap))
+                // Draw a semi‑transparent red rectangle for each detected region
+                foreach (RectangleF region in detectedRegions)
                 {
-                    foreach (BarCodeResult result in results)
+                    using (SolidBrush brush = new SolidBrush(Color.FromArgb(80, 255, 0, 0)))
                     {
-                        // Retrieve the bounding rectangle of the detected barcode
-                        var rect = result.Region.Rectangle;
-
-                        // Compute a circle that comfortably covers the rectangle
-                        float radius = Math.Max(rect.Width, rect.Height) * 0.6f;
-                        float centerX = rect.X + rect.Width / 2f;
-                        float centerY = rect.Y + rect.Height / 2f;
-                        float ellipseX = centerX - radius;
-                        float ellipseY = centerY - radius;
-                        float diameter = radius * 2f;
-
-                        // Use a semi‑transparent red brush for the heat‑map overlay
-                        using (SolidBrush brush = new SolidBrush(Color.FromArgb(120, 255, 0, 0)))
-                        {
-                            gHeatDraw.FillEllipse(brush, ellipseX, ellipseY, diameter, diameter);
-                        }
+                        gHeat.FillRectangle(brush, region);
                     }
                 }
             }
 
-            // -----------------------------------------------------------------
-            // STEP 5: Combine the original canvas with the heat‑map overlay
-            // -----------------------------------------------------------------
-            using (Bitmap finalImage = new Bitmap(canvasWidth, canvasHeight))
+            // Save the heat map image to disk
+            using (MemoryStream msHeat = new MemoryStream())
             {
-                using (Graphics gFinal = Graphics.FromImage(finalImage))
-                {
-                    // Draw the original source image
-                    using (Bitmap src = (Bitmap)Image.FromFile(sourceImagePath))
-                    {
-                        gFinal.DrawImage(src, 0, 0, src.Width, src.Height);
-                    }
-
-                    // Overlay the heat‑map on top of the source image
-                    gFinal.DrawImage(heatMap, 0, 0, heatMap.Width, heatMap.Height);
-                }
-
-                // Save the combined image to disk
-                finalImage.Save(heatMapImagePath, ImageFormat.Png);
+                heatmap.Save(msHeat, Aspose.Drawing.Imaging.ImageFormat.Png);
+                File.WriteAllBytes(heatmapPath, msHeat.ToArray());
             }
         }
 
+        // --------------------------------------------------------------------
         // Output the locations of the generated files
-        Console.WriteLine("Source image saved to: " + sourceImagePath);
-        Console.WriteLine("Heat map image saved to: " + heatMapImagePath);
+        // --------------------------------------------------------------------
+        Console.WriteLine($"Combined image saved to: {combinedPath}");
+        Console.WriteLine($"Heat map image saved to: {heatmapPath}");
     }
 }

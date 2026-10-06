@@ -1,106 +1,108 @@
-// Title: Measure barcode detection latency at different DPI settings
-// Description: Demonstrates generating a QR code barcode at 72 DPI and 300 DPI, then measuring the average detection latency over multiple runs.
-// Category-Description: This example belongs to the Aspose.BarCode image processing category, illustrating how to use BarcodeGenerator for barcode creation and BarCodeReader for barcode recognition. It shows typical use cases such as adjusting image resolution, saving to a stream, and benchmarking detection performance—common tasks for developers optimizing scanning speed in high‑throughput applications.
+// Title: Impact of Image Resolution on Barcode Detection Latency
+// Description: Demonstrates how changing the image DPI from 72 to 300 affects the time required to read a Code128 barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to evaluate performance trade‑offs such as image resolution versus detection speed when integrating barcode scanning into applications.
 // Prompt: Measure the impact of increasing image resolution from 72 DPI to 300 DPI on detection latency.
-// Tags: qr, barcode, generation, recognition, resolution, latency, aspose.barcode, csharp
+// Tags: code128, barcode, resolution, latency, generation, recognition, aspose.barcode
 
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates QR code barcodes at different resolutions and measures detection latency using Aspose.BarCode.
+/// Demonstrates measuring barcode read latency at different image resolutions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates low‑ and high‑resolution barcodes, measures average detection latency, and outputs results.
+    /// Entry point. Generates barcodes at 72 DPI and 300 DPI, measures read latency, and outputs results.
     /// </summary>
     static void Main()
     {
-        // Define barcode content and symbology
-        string codeText = "1234567890";
-        BaseEncodeType encodeType = EncodeTypes.QR;
+        // Create a unique temporary directory for test files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeResolutionTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Generate barcode images at 72 DPI and 300 DPI
-        MemoryStream lowResStream = GenerateBarcode(encodeType, codeText, 72f);
-        MemoryStream highResStream = GenerateBarcode(encodeType, codeText, 300f);
+        // Define file paths for the two resolution variants
+        string path72 = Path.Combine(tempDir, "barcode_72.png");
+        string path300 = Path.Combine(tempDir, "barcode_300.png");
 
-        // Number of iterations for latency measurement
-        int iterations = 10;
-
-        // Measure average detection latency for each resolution
-        double lowResLatency = MeasureDetectionLatency(lowResStream, iterations);
-        double highResLatency = MeasureDetectionLatency(highResStream, iterations);
-
-        // Output the results
-        Console.WriteLine($"Average detection latency at 72 DPI: {lowResLatency:F3} ms");
-        Console.WriteLine($"Average detection latency at 300 DPI: {highResLatency:F3} ms");
-
-        // Release resources
-        lowResStream.Dispose();
-        highResStream.Dispose();
-    }
-
-    /// <summary>
-    /// Generates a barcode image with the specified resolution and returns it as a <see cref="MemoryStream"/>.
-    /// </summary>
-    /// <param name="encodeType">The barcode symbology to use.</param>
-    /// <param name="codeText">The data to encode.</param>
-    /// <param name="resolution">Image resolution in DPI.</param>
-    /// <returns>A memory stream containing the generated PNG image.</returns>
-    private static MemoryStream GenerateBarcode(BaseEncodeType encodeType, string codeText, float resolution)
-    {
-        // Initialize the generator with the desired symbology and data
-        var generator = new BarcodeGenerator(encodeType, codeText);
-        generator.Parameters.Resolution = resolution; // Set DPI
-
-        var stream = new MemoryStream();
-
-        // Save the barcode as PNG into the memory stream
-        generator.Save(stream, BarCodeImageFormat.Png);
-        stream.Position = 0; // Reset stream position for subsequent reading
-
-        generator.Dispose();
-        return stream;
-    }
-
-    /// <summary>
-    /// Measures the average detection latency (in milliseconds) for a barcode image stream over a number of iterations.
-    /// </summary>
-    /// <param name="barcodeStream">The stream containing the barcode image.</param>
-    /// <param name="iterations">How many times to repeat the detection.</param>
-    /// <returns>The average latency per detection in milliseconds.</returns>
-    private static double MeasureDetectionLatency(MemoryStream barcodeStream, int iterations)
-    {
-        // Preserve the original stream position to allow resetting before each read
-        long originalPosition = barcodeStream.Position;
-        Stopwatch sw = new Stopwatch();
-        long totalTicks = 0;
-
-        for (int i = 0; i < iterations; i++)
+        try
         {
-            // Reset stream to the beginning for each iteration
-            barcodeStream.Position = originalPosition;
+            // Generate barcodes at 72 DPI and 300 DPI
+            GenerateBarcode(path72, 72f);
+            GenerateBarcode(path300, 300f);
 
-            // Use BarCodeReader to decode the QR code
-            using (var reader = new BarCodeReader(barcodeStream, DecodeType.QR))
-            {
-                sw.Restart();
-                // Perform the read operation; results are not needed for latency measurement
-                var results = reader.ReadBarCodes();
-                sw.Stop();
+            // Measure and capture read latency for each image
+            long latency72 = MeasureReadLatency(path72);
+            long latency300 = MeasureReadLatency(path300);
 
-                totalTicks += sw.ElapsedTicks;
-            }
+            // Output the latency results
+            Console.WriteLine($"Read latency at 72 DPI: {latency72} ms");
+            Console.WriteLine($"Read latency at 300 DPI: {latency300} ms");
+        }
+        finally
+        {
+            // Clean up generated files and temporary directory
+            if (File.Exists(path72)) File.Delete(path72);
+            if (File.Exists(path300)) File.Delete(path300);
+            if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+        }
+    }
+
+    /// <summary>
+    /// Generates a Code128 barcode image at the specified resolution.
+    /// </summary>
+    /// <param name="filePath">Full path where the barcode image will be saved.</param>
+    /// <param name="resolutionDpi">Image resolution in dots per inch.</param>
+    static void GenerateBarcode(string filePath, float resolutionDpi)
+    {
+        // Initialize the barcode generator with Code128 symbology and sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            // Set the desired image resolution (DPI)
+            generator.Parameters.Resolution = resolutionDpi;
+
+            // Save the generated barcode as a PNG file
+            generator.Save(filePath, BarCodeImageFormat.Png);
+        }
+    }
+
+    /// <summary>
+    /// Measures the time required to read the first barcode from the specified image.
+    /// </summary>
+    /// <param name="filePath">Path to the barcode image file.</param>
+    /// <returns>Elapsed time in milliseconds, or -1 if the file does not exist.</returns>
+    static long MeasureReadLatency(string filePath)
+    {
+        // Verify that the image file exists before attempting to read
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"File not found: {filePath}");
+            return -1;
         }
 
-        // Convert total ticks to average milliseconds
-        double avgMilliseconds = (totalTicks * 1000.0) / Stopwatch.Frequency / iterations;
-        return avgMilliseconds;
+        // Specify the expected barcode type for faster decoding
+        BaseDecodeType decodeType = DecodeType.Code128;
+        Stopwatch sw = new Stopwatch();
+
+        // Open the barcode reader and measure the time to read the first result
+        using (var reader = new BarCodeReader(filePath, decodeType))
+        {
+            sw.Start();
+            foreach (BarCodeResult result in reader.ReadBarCodes())
+            {
+                // Access the result to ensure the decoding process occurs
+                string codeText = result.CodeText;
+                break; // Only need the first barcode result
+            }
+            sw.Stop();
+        }
+
+        // Return the elapsed time in milliseconds
+        return sw.ElapsedMilliseconds;
     }
 }

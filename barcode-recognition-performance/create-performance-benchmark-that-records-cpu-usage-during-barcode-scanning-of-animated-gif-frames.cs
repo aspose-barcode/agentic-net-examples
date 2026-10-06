@@ -1,108 +1,84 @@
-// Title: Barcode scanning benchmark for animated GIF frames
-// Description: Demonstrates how to measure CPU usage while scanning each frame of an animated GIF for barcodes using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category. It shows how to load GIF images with Aspose.Drawing, iterate through frames, and use BarCodeReader to detect barcodes. Developers often need to evaluate processing time for barcode recognition in multi‑frame images such as animated GIFs, and this snippet provides a template for measuring CPU consumption per frame.
+// Title: Barcode Scanning CPU Benchmark for Animated GIF Frames
+// Description: Demonstrates how to generate QR code images, treat them as GIF frames, and measure CPU time spent scanning each frame using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode performance testing category, showcasing the use of BarcodeGenerator for image creation and BarCodeReader for recognition. It illustrates typical scenarios where developers need to benchmark scanning speed and CPU consumption, such as processing animated GIFs or video streams containing barcodes. The code highlights key API classes like BarcodeGenerator, BarCodeReader, EncodeTypes, and DecodeType, providing a reusable pattern for performance measurement in barcode‑related applications.
 // Prompt: Create a performance benchmark that records CPU usage during barcode scanning of animated GIF frames.
-// Tags: barcode, performance, benchmark, cpu, gif, animation, barcodereader, aspose.barcode, aspose.drawing
+// Tags: barcode, qr, performance, cpu, gif, generation, recognition, aspose.barcode
 
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
+using System.Collections.Generic;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates a performance benchmark that records CPU usage while scanning barcodes
-/// in each frame of an animated GIF using Aspose.BarCode and Aspose.Drawing.
+/// Provides a sample program that benchmarks CPU usage while scanning barcode images
+/// (simulating frames of an animated GIF) using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a sample GIF, iterates through its frames,
-    /// reads barcodes, and measures CPU time for each frame.
+    /// Generates sample QR code images, scans each image while measuring elapsed and CPU time,
+    /// and outputs the results to the console.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the sample GIF
+        // Create a temporary folder for sample barcode images
         string tempFolder = Path.Combine(Path.GetTempPath(), "GifBenchmark_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string gifPath = Path.Combine(tempFolder, "sample.gif");
 
-        // Write a simple (static) GIF file if it does not exist.
-        // This satisfies the requirement of having a GIF to process.
-        if (!File.Exists(gifPath))
+        // Generate sample barcode images (QR codes) with different texts
+        List<string> imagePaths = new List<string>();
+        for (int i = 1; i <= 5; i++)
         {
-            // 1x1 pixel transparent GIF (base64)
-            const string base64Gif = "R0lGODlhAQABAPAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==";
-            byte[] gifBytes = Convert.FromBase64String(base64Gif);
-            File.WriteAllBytes(gifPath, gifBytes);
-        }
-
-        if (!File.Exists(gifPath))
-        {
-            Console.WriteLine("Failed to create sample GIF.");
-            return;
-        }
-
-        // Load the GIF using Aspose.Drawing
-        using (Image gifImage = Image.FromFile(gifPath))
-        {
-            // Determine the number of frames (for a static GIF this will be 1)
-            int frameCount = gifImage.GetFrameCount(FrameDimension.Time);
-            Console.WriteLine($"Total frames in GIF: {frameCount}");
-
-            // Variables to accumulate CPU usage
-            TimeSpan totalCpuTime = TimeSpan.Zero;
-
-            // Process each frame
-            for (int i = 0; i < frameCount; i++)
+            string codeText = $"Sample{i}";
+            string imagePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
             {
-                // Select the current frame
-                gifImage.SelectActiveFrame(FrameDimension.Time, i);
+                generator.Save(imagePath, BarCodeImageFormat.Png);
+            }
+            imagePaths.Add(imagePath);
+        }
 
-                // Save the current frame to a memory stream (PNG format)
-                using (var frameStream = new MemoryStream())
-                {
-                    gifImage.Save(frameStream, ImageFormat.Png);
-                    frameStream.Position = 0;
+        // Benchmark CPU usage for scanning each image (simulating GIF frames)
+        Console.WriteLine("Barcode scanning benchmark (CPU usage per frame):");
+        Process currentProcess = Process.GetCurrentProcess();
 
-                    // Measure CPU time before barcode reading
-                    Process currentProcess = Process.GetCurrentProcess();
-                    TimeSpan cpuBefore = currentProcess.TotalProcessorTime;
-
-                    // Read barcodes from the frame
-                    using (var reader = new BarCodeReader(frameStream, DecodeType.AllSupportedTypes))
-                    {
-                        // Iterate through all detected barcodes (if any)
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            Console.WriteLine($"Frame {i + 1}: Detected barcode - Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                        }
-                    }
-
-                    // Measure CPU time after barcode reading
-                    TimeSpan cpuAfter = currentProcess.TotalProcessorTime;
-                    TimeSpan cpuDelta = cpuAfter - cpuBefore;
-                    totalCpuTime += cpuDelta;
-
-                    Console.WriteLine($"Frame {i + 1}: CPU time used = {cpuDelta.TotalMilliseconds} ms");
-                }
+        foreach (string path in imagePaths)
+        {
+            if (!File.Exists(path))
+            {
+                Console.WriteLine($"File not found: {path}");
+                continue;
             }
 
-            // Compute average CPU usage per frame
-            double averageCpuMs = totalCpuTime.TotalMilliseconds / Math.Max(frameCount, 1);
-            Console.WriteLine($"Average CPU time per frame: {averageCpuMs:F2} ms");
+            // Record CPU time before scanning
+            TimeSpan cpuStart = currentProcess.TotalProcessorTime;
+            Stopwatch sw = Stopwatch.StartNew();
+
+            // Perform barcode recognition
+            using (var reader = new BarCodeReader(path, DecodeType.AllSupportedTypes))
+            {
+                reader.ReadBarCodes();
+            }
+
+            // Stop timing
+            sw.Stop();
+            TimeSpan cpuEnd = currentProcess.TotalProcessorTime;
+            TimeSpan cpuUsed = cpuEnd - cpuStart;
+
+            // Output elapsed wall‑clock time and CPU time for this frame
+            Console.WriteLine($"{Path.GetFileName(path)} - Elapsed: {sw.ElapsedMilliseconds} ms, CPU time: {cpuUsed.TotalMilliseconds:F2} ms");
         }
 
         // Clean up temporary files
         try
         {
-            File.Delete(gifPath);
-            Directory.Delete(tempFolder);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored – cleanup failure should not affect benchmark result
+            // Ignore cleanup errors
         }
     }
 }

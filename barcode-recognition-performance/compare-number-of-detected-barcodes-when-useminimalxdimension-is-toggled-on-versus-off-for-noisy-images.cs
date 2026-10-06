@@ -1,143 +1,145 @@
-// Title: Effect of UseMinimalXDimension on Barcode Detection in Noisy Images
-// Description: Demonstrates how toggling the UseMinimalXDimension setting influences the number of barcodes detected in a noisy image.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode, Bitmap manipulation to add noise, and BarCodeReader with QualitySettings (XDimensionMode) to improve detection in challenging images. Developers often need to compare detection settings for noisy scans, making this a useful reference for image preprocessing and barcode quality tuning.
+// Title: Compare barcode detection with and without UseMinimalXDimension on noisy images
+// Description: This example generates a composite image containing multiple Code128 barcodes with added random noise, then reads the barcodes twice—once using the default XDimension mode and once with UseMinimalXDimension enabled—to compare detection counts.
+// Category-Description: Demonstrates Aspose.BarCode barcode recognition settings for noisy images. It showcases the BarCodeReader class, QualitySettings, and XDimensionMode enumeration to adjust X‑dimension handling. Typical use cases include improving detection reliability in low‑quality or noisy scans, where developers often experiment with minimal X‑dimension settings to increase tolerance.
 // Prompt: Compare the number of detected barcodes when UseMinimalXDimension is toggled on versus off for noisy images.
-// Tags: barcode, detection, noise, useminimalxdimension, aspose.barcode, code128, image-processing
+// Tags: code128, barcode recognition, useminimalxdimension, noisy image, qualitysettings, aspnet, aspose.barcode
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates the impact of the UseMinimalXDimension setting on barcode detection
-/// in noisy images using Aspose.BarCode.
+/// Demonstrates the effect of toggling UseMinimalXDimension on barcode detection in noisy images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, adds noise, and compares detection counts
-    /// with and without the UseMinimalXDimension quality setting.
+    /// Entry point. Generates a noisy composite image with several Code128 barcodes,
+    /// reads the barcodes with normal and minimal X‑dimension settings, and prints detection counts.
     /// </summary>
     static void Main()
     {
-        // Create a temporary working folder for generated files
-        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeNoiseDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workFolder);
-
-        // Define file paths for the original and noisy barcode images
-        string originalPath = Path.Combine(workFolder, "original.png");
-        string noisyPath = Path.Combine(workFolder, "noisy.png");
-
-        // Generate a simple Code128 barcode image
-        GenerateBarcodeImage("1234567890", originalPath);
-
-        // Introduce random noise into the barcode image
-        AddNoise(originalPath, noisyPath, noisePixelCount: 5000);
-
-        // Detect barcodes without enabling UseMinimalXDimension
-        int countDefault = CountBarcodes(noisyPath, useMinimalXDimension: false);
-
-        // Detect barcodes with UseMinimalXDimension enabled
-        int countMinimal = CountBarcodes(noisyPath, useMinimalXDimension: true);
-
-        // Output the comparison results to the console
-        Console.WriteLine($"Detected barcodes without UseMinimalXDimension: {countDefault}");
-        Console.WriteLine($"Detected barcodes with UseMinimalXDimension:    {countMinimal}");
-
-        // Clean up temporary files (optional)
-        try { File.Delete(originalPath); } catch { }
-        try { File.Delete(noisyPath); } catch { }
-        try { Directory.Delete(workFolder, true); } catch { }
-    }
-
-    /// <summary>
-    /// Generates a Code128 barcode and saves it as a PNG image.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="outputPath">The file path where the image will be saved.</param>
-    static void GenerateBarcodeImage(string codeText, string outputPath)
-    {
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Generate a composite image that contains multiple barcodes and random noise
+        using (var compositeStream = GenerateNoisyBarcodeImage())
         {
-            // Default generation settings are sufficient for this demo
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Read barcodes using the default (Normal) XDimension mode
+            int countNormal = ReadBarcodes(compositeStream, useMinimal: false);
+
+            // Reset the stream position to the beginning for the second read
+            compositeStream.Position = 0;
+
+            // Read barcodes using the UseMinimalXDimension mode
+            int countMinimal = ReadBarcodes(compositeStream, useMinimal: true);
+
+            // Output the detection results for comparison
+            Console.WriteLine($"Barcodes detected with Normal XDimension: {countNormal}");
+            Console.WriteLine($"Barcodes detected with UseMinimalXDimension: {countMinimal}");
         }
     }
 
     /// <summary>
-    /// Adds random colored pixels to an image to simulate visual noise.
+    /// Creates an in‑memory PNG image that contains several Code128 barcodes placed at random positions,
+    /// then adds random black pixel noise to simulate a low‑quality scan.
     /// </summary>
-    /// <param name="inputPath">Path to the source image.</param>
-    /// <param name="outputPath">Path where the noisy image will be saved.</param>
-    /// <param name="noisePixelCount">Number of random pixels to modify.</param>
-    static void AddNoise(string inputPath, string outputPath, int noisePixelCount)
+    /// <returns>A MemoryStream containing the generated PNG image.</returns>
+    static MemoryStream GenerateNoisyBarcodeImage()
     {
-        if (!File.Exists(inputPath))
-        {
-            Console.WriteLine($"Input file not found: {inputPath}");
-            return;
-        }
+        const int imageWidth = 800;
+        const int imageHeight = 600;
+        const int barcodeCount = 5;
+        var random = new Random();
 
-        using (var bitmap = new Bitmap(inputPath))
+        // Create a blank bitmap canvas
+        var bitmap = new Bitmap(imageWidth, imageHeight);
+        using (var graphics = Graphics.FromImage(bitmap))
         {
-            Random rnd = new Random();
-            int width = bitmap.Width;
-            int height = bitmap.Height;
+            // Fill background with white
+            graphics.Clear(Color.White);
 
-            // Apply random light-gray pixels to simulate noise
-            for (int i = 0; i < noisePixelCount; i++)
+            // Generate and draw each barcode onto the canvas
+            for (int i = 0; i < barcodeCount; i++)
             {
-                int x = rnd.Next(width);
-                int y = rnd.Next(height);
-                int gray = rnd.Next(200, 256);
-                Color noiseColor = Color.FromArgb(gray, gray, gray);
-                bitmap.SetPixel(x, y, noiseColor);
+                string codeText = $"CODE{i + 1}";
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+                {
+                    using (var barcodeStream = new MemoryStream())
+                    {
+                        // Save barcode as PNG into a temporary stream
+                        generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                        barcodeStream.Position = 0;
+
+                        // Load the barcode image from the stream
+                        using (var barcodeBitmap = new Bitmap(barcodeStream))
+                        {
+                            // Choose a random position that keeps the barcode fully inside the canvas
+                            int x = random.Next(0, imageWidth - barcodeBitmap.Width);
+                            int y = random.Next(0, imageHeight - barcodeBitmap.Height);
+                            graphics.DrawImage(barcodeBitmap, x, y);
+                        }
+                    }
+                }
             }
 
-            // Save the noisy image
-            bitmap.Save(outputPath, ImageFormat.Png);
+            // Add random black pixel noise to the image
+            for (int n = 0; n < 2000; n++)
+            {
+                int x = random.Next(0, imageWidth);
+                int y = random.Next(0, imageHeight);
+                graphics.FillRectangle(Brushes.Black, x, y, 1, 1);
+            }
         }
+
+        // Save the composite bitmap to a memory stream as PNG
+        var resultStream = new MemoryStream();
+        bitmap.Save(resultStream, ImageFormat.Png);
+        resultStream.Position = 0;
+
+        // Release bitmap resources
+        bitmap.Dispose();
+
+        return resultStream;
     }
 
     /// <summary>
-    /// Reads barcodes from an image and returns the number of detected codes.
+    /// Reads barcodes from the provided image stream using either the normal or minimal XDimension mode.
     /// </summary>
-    /// <param name="imagePath">Path to the image containing barcodes.</param>
-    /// <param name="useMinimalXDimension">Whether to enable the minimal X-dimension mode.</param>
-    /// <returns>Count of detected barcodes.</returns>
-    static int CountBarcodes(string imagePath, bool useMinimalXDimension)
+    /// <param name="imageStream">Stream containing the image to be processed.</param>
+    /// <param name="useMinimal">If true, configures the reader to use minimal XDimension; otherwise uses normal mode.</param>
+    /// <returns>The number of barcodes detected in the image.</returns>
+    static int ReadBarcodes(Stream imageStream, bool useMinimal)
     {
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"Image file not found: {imagePath}");
-            return 0;
-        }
+        // Restrict decoding to Code128 symbology for this example
+        BaseDecodeType decodeType = DecodeType.Code128;
 
-        int count = 0;
-        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
-
-        using (var reader = new BarCodeReader(imagePath, decodeType))
+        using (var reader = new BarCodeReader(imageStream, decodeType))
         {
-            if (useMinimalXDimension)
+            // Configure XDimension handling based on the useMinimal flag
+            if (useMinimal)
             {
-                // Enable minimal X-dimension mode to improve detection in noisy images
                 reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-                // Optionally set a minimal X-dimension value (e.g., 1 point)
-                reader.QualitySettings.MinimalXDimension = 1f;
+                reader.QualitySettings.MinimalXDimension = 1f; // Set minimal XDimension value
+            }
+            else
+            {
+                reader.QualitySettings.XDimension = XDimensionMode.Normal;
             }
 
-            // Perform barcode reading
+            // Perform barcode detection
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            if (results != null)
+            // Output each detected barcode's type and text
+            foreach (var result in results)
             {
-                count = results.Length;
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
-        }
 
-        return count;
+            // Return the total count of detected barcodes
+            return results.Length;
+        }
     }
 }

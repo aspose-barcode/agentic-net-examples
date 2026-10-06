@@ -1,8 +1,8 @@
 // Title: Validate UseMinimalXDimension with AllowIncorrectBarcodes
 // Description: Demonstrates generating a Code128 barcode, then reading it with both UseMinimalXDimension and AllowIncorrectBarcodes enabled to ensure no conflicts arise.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings for fine‑tuning the decoding process. Developers often need to adjust X‑dimension handling and tolerate imperfect barcodes; this snippet illustrates how to configure those options without causing runtime conflicts.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, focusing on X-dimension quality settings. Developers often need to fine‑tune X‑dimension handling and tolerate imperfect barcodes; this snippet illustrates how to configure XDimensionMode.UseMinimalXDimension together with AllowIncorrectBarcodes.
 // Prompt: Validate that setting both UseMinimalXDimension and AllowIncorrectBarcodes together does not cause conflicts.
-// Tags: barcode, symbology, generation, recognition, useminimalxdimension, allowincorrectbarcodes, csharp, aspose.barcode
+// Tags: barcode symbology, generation, recognition, code128, minimalxdimension, allowincorrectbarcodes, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,71 +10,82 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that validates the combined use of <c>UseMinimalXDimension</c> and
-/// <c>AllowIncorrectBarcodes</c> settings in <see cref="BarCodeReader.QualitySettings"/>.
+/// Example program that validates the combined use of UseMinimalXDimension and AllowIncorrectBarcodes
+/// when reading a Code128 barcode generated with Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, reads it with specific
-    /// quality settings, and outputs the decoding results.
+    /// Entry point of the application. Generates a barcode, reads it with specific quality settings,
+    /// and confirms that no conflicts occur between UseMinimalXDimension and AllowIncorrectBarcodes.
     /// </summary>
     static void Main()
     {
-        // Prepare a sample barcode text and select the Code128 symbology.
-        const string codeText = "1234567890";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
+        // Create a unique temporary folder for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "code128.png");
 
-        // Create a barcode generator with the specified type and text.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        try
         {
-            // Use a memory stream to hold the generated PNG image.
-            using (var barcodeStream = new MemoryStream())
+            // -------------------------------------------------
+            // Generate a simple Code128 barcode and save as PNG
+            // -------------------------------------------------
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "AsposeTest"))
             {
-                // Save the barcode image to the stream.
-                generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                // Reset the stream position so it can be read from the beginning.
-                barcodeStream.Position = 0;
+                // Set X-dimension to 2 pixels for clearer rendering
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Save(barcodePath, BarCodeImageFormat.Png);
+            }
 
-                // Initialize a reader for the generated barcode image.
-                using (var reader = new BarCodeReader(barcodeStream, DecodeType.Code128))
+            // -------------------------------------------------
+            // Read the barcode with both quality settings enabled
+            // -------------------------------------------------
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+            {
+                // Instruct the reader to use the minimal possible X-dimension
+                reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+                reader.QualitySettings.MinimalXDimension = 1f;
+
+                // Allow the reader to accept barcodes that may not fully conform to specifications
+                reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+                // Perform the read operation
+                BarCodeResult[] results = reader.ReadBarCodes();
+                Console.WriteLine($"Barcodes read: {results.Length}");
+
+                // Output each decoded result
+                foreach (var result in results)
                 {
-                    // Enable minimal X‑dimension mode to let the reader choose the smallest possible module size.
-                    reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-                    // Allow the reader to accept barcodes that may not strictly conform to specifications.
-                    reader.QualitySettings.AllowIncorrectBarcodes = true;
-
-                    try
-                    {
-                        bool anyFound = false;
-
-                        // Iterate through all detected barcodes (there should be only one in this case).
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
-                        {
-                            anyFound = true;
-                            Console.WriteLine($"CodeText: {result.CodeText}");
-                            Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                            Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-                        }
-
-                        // Provide feedback based on detection outcome.
-                        if (!anyFound)
-                        {
-                            Console.WriteLine("No barcode was detected.");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Barcode read successfully with both settings enabled.");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Any conflict between the settings would surface as an exception here.
-                        Console.WriteLine($"Exception occurred while reading barcode: {ex.Message}");
-                    }
+                    Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
                 }
+            }
+
+            Console.WriteLine("Validation completed without conflicts.");
+        }
+        catch (Exception ex)
+        {
+            // Report any unexpected errors during generation or reading
+            Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+        finally
+        {
+            // -------------------------------------------------
+            // Clean up temporary files and directories
+            // -------------------------------------------------
+            try
+            {
+                if (File.Exists(barcodePath))
+                    File.Delete(barcodePath);
+                if (Directory.Exists(tempFolder))
+                    Directory.Delete(tempFolder, true);
+            }
+            catch
+            {
+                // Suppress any cleanup exceptions to avoid masking earlier errors
             }
         }
     }

@@ -1,172 +1,96 @@
-// Title: Gaussian Blur Preprocessing Impact on Barcode Detection
-// Description: Demonstrates how applying a Gaussian blur to a barcode image affects detection performance using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode image preprocessing category, showcasing the use of BarcodeGenerator for creating barcodes and BarCodeReader for detection. It illustrates typical scenarios where developers need to preprocess images (e.g., blur removal, noise reduction) before recognition to evaluate or improve accuracy and speed.
+// Title: Barcode detection performance comparison with Gaussian blur removal
+// Description: Demonstrates generating a QR barcode image and measuring detection time with and without applying deconvolution (Gaussian blur removal) to assess its impact on recognition speed.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and QualitySettings.Deconvolution to improve image quality before detection. Typical scenarios include preprocessing scanned images to enhance barcode readability and evaluating performance trade‑offs in automated scanning systems.
 // Prompt: Preprocess input images with Gaussian blur removal before barcode detection to assess performance impact.
-// Tags: barcode generation, barcode recognition, gaussian blur, image preprocessing, code128, performance measurement, aspose.barcode, aspose.drawing
+// Tags: barcode, qr, detection, deconvolution, gaussian blur, performance, aspose.barcode, generation, recognition
 
 using System;
 using System.Diagnostics;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates Gaussian blur preprocessing on a barcode image and measures detection performance.
+/// Generates a QR barcode, then reads it twice: once without preprocessing and once with Gaussian blur removal (deconvolution),
+/// printing detection results and timing information for each approach.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, applies Gaussian blur, and compares detection times with and without preprocessing.
+    /// Entry point of the example. Executes barcode generation, detection, timing, and cleanup.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary folder for generated files
+        // Create a unique temporary folder for generated files
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "barcode.png");
 
-        // Paths for original and processed images
-        string originalPath = Path.Combine(tempFolder, "original.png");
-        string processedPath = Path.Combine(tempFolder, "processed.png");
-
-        // Generate a sample barcode image (Code128)
-        string codeText = "1234567890";
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Generate a sample QR barcode image and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Use default sizing (auto adapts to code length)
-            generator.Save(originalPath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify the original image exists
-        if (!File.Exists(originalPath))
+        // Verify that the barcode image was created successfully
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to create the original barcode image.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Detect barcode without preprocessing and measure time
-        Stopwatch swNoPre = Stopwatch.StartNew();
-        DetectBarcodes(originalPath);
-        swNoPre.Stop();
+        // ------------------------------------------------------------
+        // Detection without any preprocessing
+        // ------------------------------------------------------------
+        Stopwatch swNoPre = new Stopwatch();
+        swNoPre.Start();
 
-        // Apply Gaussian blur (as a preprocessing step)
-        using (var originalBitmap = new Bitmap(originalPath))
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            using (var blurredBitmap = ApplyGaussianBlur(originalBitmap))
+            // Read all barcodes found in the image
+            foreach (var result in reader.ReadBarCodes())
             {
-                blurredBitmap.Save(processedPath, Aspose.Drawing.Imaging.ImageFormat.Png);
+                Console.WriteLine($"[NoPre] Detected: {result.CodeText} Type: {result.CodeTypeName}");
             }
         }
 
-        // Verify the processed image exists
-        if (!File.Exists(processedPath))
-        {
-            Console.WriteLine("Failed to create the processed barcode image.");
-            return;
-        }
-
-        // Detect barcode with preprocessing and measure time
-        Stopwatch swPre = Stopwatch.StartNew();
-        DetectBarcodes(processedPath);
-        swPre.Stop();
-
-        // Output performance comparison
-        Console.WriteLine();
+        swNoPre.Stop();
         Console.WriteLine($"Detection time without preprocessing: {swNoPre.ElapsedMilliseconds} ms");
-        Console.WriteLine($"Detection time with Gaussian blur preprocessing: {swPre.ElapsedMilliseconds} ms");
-    }
 
-    // Reads barcodes from the specified image file and prints results
-    static void DetectBarcodes(string imagePath)
-    {
-        if (!File.Exists(imagePath))
+        // ------------------------------------------------------------
+        // Detection with Gaussian blur removal (Deconvolution)
+        // ------------------------------------------------------------
+        Stopwatch swDeconv = new Stopwatch();
+        swDeconv.Start();
+
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            Console.WriteLine($"Image not found: {imagePath}");
-            return;
+            // Enable deconvolution (blur removal) before reading
+            reader.QualitySettings.Deconvolution = DeconvolutionMode.Normal;
+
+            // Read all barcodes after applying deconvolution
+            foreach (var result in reader.ReadBarCodes())
+            {
+                Console.WriteLine($"[Deconv] Detected: {result.CodeText} Type: {result.CodeTypeName}");
+            }
         }
 
+        swDeconv.Stop();
+        Console.WriteLine($"Detection time with deconvolution: {swDeconv.ElapsedMilliseconds} ms");
+
+        // ------------------------------------------------------------
+        // Cleanup temporary files and directories
+        // ------------------------------------------------------------
         try
         {
-            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-            {
-                bool anyFound = false;
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    anyFound = true;
-                    Console.WriteLine($"Detected: {result.CodeText} (Type: {result.CodeTypeName})");
-                }
-
-                if (!anyFound)
-                {
-                    Console.WriteLine("No barcode detected.");
-                }
-            }
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder, true);
         }
-        catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+        catch
         {
-            Console.WriteLine($"Failed to load image for reading: {ex.Message}");
+            // Ignored – cleanup failures should not affect program outcome
         }
-    }
-
-    // Applies a simple 3x3 Gaussian blur to the input bitmap and returns a new bitmap
-    static Bitmap ApplyGaussianBlur(Bitmap source)
-    {
-        // Define a 3x3 Gaussian kernel
-        double[,] kernel = {
-            { 1, 2, 1 },
-            { 2, 4, 2 },
-            { 1, 2, 1 }
-        };
-        double kernelSum = 16.0; // Sum of kernel elements
-
-        int width = source.Width;
-        int height = source.Height;
-
-        // Create a new bitmap for the result
-        Bitmap result = new Bitmap(width, height);
-
-        // Process each pixel (skip borders for simplicity)
-        for (int y = 1; y < height - 1; y++)
-        {
-            for (int x = 1; x < width - 1; x++)
-            {
-                double r = 0, g = 0, b = 0;
-
-                // Convolution with the kernel
-                for (int ky = -1; ky <= 1; ky++)
-                {
-                    for (int kx = -1; kx <= 1; kx++)
-                    {
-                        Color pixel = source.GetPixel(x + kx, y + ky);
-                        double weight = kernel[ky + 1, kx + 1];
-                        r += pixel.R * weight;
-                        g += pixel.G * weight;
-                        b += pixel.B * weight;
-                    }
-                }
-
-                // Normalize and clamp
-                int nr = Math.Min(255, Math.Max(0, (int)(r / kernelSum)));
-                int ng = Math.Min(255, Math.Max(0, (int)(g / kernelSum)));
-                int nb = Math.Min(255, Math.Max(0, (int)(b / kernelSum)));
-
-                result.SetPixel(x, y, Color.FromArgb(nr, ng, nb));
-            }
-        }
-
-        // Copy border pixels unchanged
-        for (int x = 0; x < width; x++)
-        {
-            result.SetPixel(x, 0, source.GetPixel(x, 0));
-            result.SetPixel(x, height - 1, source.GetPixel(x, height - 1));
-        }
-        for (int y = 0; y < height; y++)
-        {
-            result.SetPixel(0, y, source.GetPixel(0, y));
-            result.SetPixel(width - 1, y, source.GetPixel(width - 1, y));
-        }
-
-        return result;
     }
 }

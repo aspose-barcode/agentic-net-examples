@@ -1,114 +1,86 @@
-// Title: Code128 Barcode Generation and Recognition with Variable DPI and XDimension
-// Description: Demonstrates generating Code128 barcodes with a 2‑pixel XDimension at multiple DPI settings, then recognizing them to verify detection quality.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, setting module width via XDimension, adjusting image resolution, and employing BarCodeReader to decode Code128 symbols. Developers often need to test how resolution and module size affect readability across different scanning scenarios, making this pattern useful for quality assurance and automated testing.
+// Title: Code128 Barcode Generation with XDimension=2 Pixels and Multi-Resolution Recognition
+// Description: Demonstrates generating Code128 barcodes with an XDimension of 2 pixels at various image resolutions and recognizing them using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, configuring XDimension and image resolution, and BarCodeReader for decoding. Typical use cases include testing barcode readability across different DPI settings and ensuring consistent XDimension handling. Developers often need to adjust XDimension, resolution, and decoding settings when integrating barcode workflows into imaging pipelines.
 // Prompt: Test recognition of Code128 barcodes with XDimension set to 2 pixels across multiple image resolutions.
-// Tags: code128, barcode generation, barcode recognition, xdimension, dpi, aspose.barcode, png, c#
+// Tags: code128, xdimension, barcode generation, barcode recognition, resolution, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates Code128 barcodes at various DPI settings with a fixed XDimension,
-/// then reads them back to verify successful recognition.
+/// Generates Code128 barcodes with a specific XDimension and tests their recognition at multiple resolutions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates temporary barcode images, reads them,
-    /// outputs detection results, and cleans up all generated files.
+    /// Entry point of the example. Creates barcodes, reads them back, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Sample Code128 text to encode
-        const string codeText = "1234567890";
-
-        // DPI values to test (low, medium, high resolution)
-        float[] resolutions = { 72f, 150f, 300f };
-
-        // Create a unique temporary folder for the generated images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Code128Test_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Code128XDimTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Keep track of generated file paths for later cleanup
-        var generatedFiles = new System.Collections.Generic.List<string>();
+        // Define resolutions to test (in DPI)
+        float[] resolutions = new float[] { 72f, 150f, 300f };
+        string codeText = "AsposeTest";
 
-        // -----------------------------------------------------------------
-        // Barcode generation loop – one image per DPI setting
-        // -----------------------------------------------------------------
-        foreach (float dpi in resolutions)
+        // Store generated file paths for later recognition
+        List<string> barcodeFiles = new List<string>();
+
+        // Generate Code128 barcodes with XDimension = 2 pixels at each resolution
+        foreach (float res in resolutions)
         {
-            string filePath = Path.Combine(tempFolder, $"code128_{dpi}dpi.png");
-
-            // Generate a Code128 barcode with XDimension = 2 pixels and the current DPI
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            string filePath = Path.Combine(tempFolder, $"code128_{res}.png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                generator.Parameters.Barcode.XDimension.Pixels = 2f; // module width in pixels
-                generator.Parameters.Resolution = dpi;               // image resolution (DPI)
-                generator.Save(filePath, BarCodeImageFormat.Png);   // save as PNG
+                // Set XDimension to 2 pixels
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                // Set image resolution (DPI)
+                generator.Parameters.Resolution = res;
+                // Save the barcode image as PNG
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
-
-            generatedFiles.Add(filePath);
+            barcodeFiles.Add(filePath);
         }
 
-        // -----------------------------------------------------------------
-        // Barcode recognition loop – read each generated image
-        // -----------------------------------------------------------------
-        foreach (float dpi in resolutions)
+        // Recognize each generated barcode using default XDimension mode (Normal)
+        foreach (string file in barcodeFiles)
         {
-            string filePath = Path.Combine(tempFolder, $"code128_{dpi}dpi.png");
-
-            if (!File.Exists(filePath))
+            if (!File.Exists(file))
             {
-                Console.WriteLine($"File not found for resolution {dpi} DPI: {filePath}");
+                Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            // Initialize reader for Code128 symbology
-            using (var reader = new BarCodeReader(filePath, DecodeType.Code128))
+            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.Code128))
             {
-                // Read all barcodes in the image (default quality settings)
+                // Optionally, set recognition XDimension mode if needed
+                // reader.QualitySettings.XDimension = XDimensionMode.Normal;
+
                 BarCodeResult[] results = reader.ReadBarCodes();
-
-                if (results.Length > 0)
+                Console.WriteLine($"Reading '{Path.GetFileName(file)}' (Resolution: {reader.QualitySettings.XDimension}) - Barcodes found: {results.Length}");
+                foreach (BarCodeResult result in results)
                 {
-                    foreach (var result in results)
-                    {
-                        Console.WriteLine($"Resolution {dpi} DPI: Detected CodeText = '{result.CodeText}', Symbology = {result.CodeTypeName}, Quality = {result.ReadingQuality}");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Resolution {dpi} DPI: No barcode detected.");
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
             }
         }
 
-        // -----------------------------------------------------------------
-        // Cleanup: delete generated files and temporary folder
-        // -----------------------------------------------------------------
-        foreach (string file in generatedFiles)
-        {
-            try
-            {
-                File.Delete(file);
-            }
-            catch
-            {
-                // Suppress any errors during file deletion
-            }
-        }
-
+        // Clean up temporary files and folder
         try
         {
-            Directory.Delete(tempFolder);
+            Directory.Delete(tempFolder, true);
         }
-        catch
+        catch (Exception ex)
         {
-            // Suppress any errors during folder deletion
+            Console.WriteLine($"Cleanup failed: {ex.Message}");
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Read JPEG Barcode Image with HighQuality Preset
-// Description: Demonstrates how to use Aspose.BarCode's BarCodeReader to decode barcodes from a JPEG file while applying the HighQuality preset for balanced speed and accuracy.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader, QualitySettings, and DecodeType to read barcodes from image files. Typical use cases include scanning product labels, documents, or any JPEG images containing barcodes. Developers often need to configure decoding options and quality presets to optimize performance and reliability.
+// Title: Read JPEG barcode with HighQuality preset using Aspose.BarCode
+// Description: Demonstrates generating a Code128 barcode, saving it as a JPEG, and reading it back with the HighQuality quality preset for balanced speed and accuracy.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes, BarCodeReader to decode them, and QualitySettings to control decoding performance. Typical scenarios include scanning barcodes from image files in desktop or web applications where developers need a reliable trade‑off between speed and precision.
 // Prompt: Create a BarCodeReader instance that reads JPEG images and applies HighQuality preset for balanced speed.
-// Tags: barcode, barcode recognition, jpeg, highquality, qualitysettings, decode type, aspose.barcode, c#
+// Tags: barcode, code128, jpeg, highquality, qualitysettings, barcodereader, barcodegenerator, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,73 +11,60 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates reading a JPEG barcode image using BarCodeReader with HighQuality preset.
+/// Sample program that generates a Code128 barcode, saves it as a JPEG,
+/// and reads it back using the HighQuality preset for balanced speed.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates a sample barcode image, reads it, and outputs detected barcode information.
+    /// Entry point of the application.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a temporary JPEG barcode image to ensure the file exists.
-        string tempImagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.jpg");
-        CreateSampleBarcodeImage(tempImagePath);
+        // Create a unique temporary folder to store the generated image
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "sample.jpg");
 
-        // Verify the image file exists before attempting to read.
-        if (!File.Exists(tempImagePath))
+        // Generate a Code128 barcode and save it as a JPEG file
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            Console.WriteLine($"Image file not found: {tempImagePath}");
+            generator.Save(imagePath, BarCodeImageFormat.Jpeg);
+        }
+
+        // Verify that the image file was successfully created
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Prepare the decode type (all supported symbologies).
-        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
-
-        // Create the BarCodeReader with the JPEG image and set HighQuality preset.
-        using (var reader = new BarCodeReader(tempImagePath, decodeType))
+        // Read the barcode from the JPEG image using the HighQuality preset
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Apply the HighQuality preset for balanced speed and quality.
+            // Apply the HighQuality setting for a balanced speed/accuracy trade‑off
             reader.QualitySettings = QualitySettings.HighQuality;
 
-            // Read all barcodes from the image.
+            // Decode all barcodes found in the image
             BarCodeResult[] results = reader.ReadBarCodes();
+            Console.WriteLine($"Barcodes read: {results.Length}");
 
-            if (results.Length == 0)
+            // Output each decoded barcode's type and text
+            foreach (var result in results)
             {
-                Console.WriteLine("No barcodes detected.");
-            }
-            else
-            {
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Code Text: {result.CodeText}");
-                    Console.WriteLine($"Code Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
-                    Console.WriteLine();
-                }
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Clean up the temporary image file.
+        // Clean up temporary files and directory
         try
         {
-            File.Delete(tempImagePath);
+            File.Delete(imagePath);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignored – file may be in use or deletion may fail on some platforms.
-        }
-    }
-
-    // Helper method to generate a simple Code128 barcode and save it as JPEG.
-    private static void CreateSampleBarcodeImage(string filePath)
-    {
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-        {
-            // Save the barcode as a JPEG image.
-            generator.Save(filePath, BarCodeImageFormat.Jpeg);
+            // Ignored – cleanup failures are non‑critical for this demo
         }
     }
 }

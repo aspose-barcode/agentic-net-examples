@@ -1,107 +1,121 @@
-// Title: Barcode Recognition Timing and CPU Usage Logger
-// Description: Demonstrates how to generate sample QR barcodes, recognize them, and log both the recognition duration and CPU time consumed for each image.
-// Category-Description: This example belongs to the Aspose.BarCode performance monitoring category, showcasing the use of BarcodeGenerator, BarCodeReader, and system diagnostics to measure processing time and CPU usage. Developers often need to benchmark barcode recognition in batch scenarios, optimize resource consumption, or log metrics for reporting. The snippet illustrates typical patterns for generating barcodes, reading them, and capturing performance data.
+// Title: Barcode recognition timing and CPU usage wrapper example
+// Description: Demonstrates how to generate sample barcodes, recognize them, and log both elapsed recognition time and CPU processing time for each image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows usage of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, while measuring performance metrics such as wall‑clock time and processor time. Developers working on high‑throughput scanning solutions often need to benchmark recognition speed and CPU load, making this pattern useful for performance tuning and monitoring.
 // Prompt: Write a wrapper that logs both recognition time and CPU usage for each processed image.
-// Tags: barcode, recognition, performance, cpu, timing, aspose.barcode, qr, generation, reading
+// Tags: barcode, recognition, performance, timing, cpu usage, generation, aspose.barcode, qr, csharp
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
+using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating QR barcodes, recognizing them, and logging performance metrics such as recognition time and CPU usage.
+/// Demonstrates barcode generation, recognition, and performance logging (recognition time and CPU usage).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates temporary barcode images, processes each image to log performance data, and cleans up resources.
+    /// Entry point. Generates sample barcodes, reads them while measuring time and CPU usage, and outputs results.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for sample barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate a few sample barcode images
-        List<string> barcodeFiles = new List<string>();
-        for (int i = 0; i < 3; i++)
+        // Generate a set of sample barcode images
+        List<string> barcodeFiles = GenerateSampleBarcodes(tempFolder, 3);
+
+        // Process each image: measure recognition time and CPU usage
+        foreach (string filePath in barcodeFiles)
         {
-            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, $"Sample{i}"))
+            // Verify the file exists before attempting to read
+            if (!File.Exists(filePath))
             {
-                // Save the generated QR code as a PNG file
-                generator.Save(filePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"File not found: {filePath}");
+                continue;
             }
-            barcodeFiles.Add(filePath);
+
+            // Initialize the barcode reader for all supported symbologies
+            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            {
+                // Start wall‑clock timer
+                Stopwatch watch = Stopwatch.StartNew();
+
+                // Capture CPU time before recognition
+                TimeSpan cpuStart = Process.GetCurrentProcess().TotalProcessorTime;
+
+                try
+                {
+                    // Perform barcode recognition
+                    reader.ReadBarCodes();
+                }
+                catch (Exception ex)
+                {
+                    // Log any errors encountered during reading
+                    Console.WriteLine($"Error reading {Path.GetFileName(filePath)}: {ex.Message}");
+                    continue;
+                }
+
+                // Capture CPU time after recognition
+                TimeSpan cpuEnd = Process.GetCurrentProcess().TotalProcessorTime;
+                watch.Stop();
+
+                // Calculate CPU time spent in milliseconds
+                double cpuMs = (cpuEnd - cpuStart).TotalMilliseconds;
+
+                // Output performance metrics for the current file
+                Console.WriteLine($"File: {Path.GetFileName(filePath)} - Recognition time: {watch.ElapsedMilliseconds} ms, CPU time: {cpuMs:F2} ms");
+
+                // List all detected barcodes and their contents
+                foreach (BarCodeResult result in reader.FoundBarCodes)
+                {
+                    Console.WriteLine($"  {result.CodeTypeName}: {result.CodeText}");
+                }
+            }
         }
 
-        // Process each image and log recognition time and CPU usage
-        foreach (string file in barcodeFiles)
-        {
-            ProcessImage(file);
-        }
-
-        // Clean up temporary files
+        // Cleanup temporary files and folder
         try
         {
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignore cleanup errors (e.g., files in use)
         }
     }
 
     /// <summary>
-    /// Recognizes barcodes in the specified image and logs the elapsed time and CPU usage.
+    /// Generates a specified number of QR code barcode images in the given folder.
     /// </summary>
-    /// <param name="imagePath">Full path to the barcode image file.</param>
-    static void ProcessImage(string imagePath)
+    /// <param name="folder">The directory where barcode images will be saved.</param>
+    /// <param name="count">The number of barcode images to generate.</param>
+    /// <returns>A list of file paths to the generated barcode images.</returns>
+    static List<string> GenerateSampleBarcodes(string folder, int count)
     {
-        if (!File.Exists(imagePath))
+        var files = new List<string>();
+        for (int i = 0; i < count; i++)
         {
-            Console.WriteLine($"File not found: {imagePath}");
-            return;
-        }
+            // Define barcode text and output file path
+            string text = $"Sample{i + 1}";
+            string filePath = Path.Combine(folder, $"barcode_{i + 1}.png");
 
-        // Capture CPU time before recognition
-        Process currentProcess = Process.GetCurrentProcess();
-        TimeSpan cpuStart = currentProcess.TotalProcessorTime;
-
-        // Start a stopwatch to measure wall-clock recognition time
-        Stopwatch timer = Stopwatch.StartNew();
-
-        // Create a barcode reader for all supported types and assign the image source
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-        {
-            // Explicitly set the image source as required by the rules
-            reader.SetBarCodeImage(imagePath);
-
-            // Perform recognition
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Stop timing after recognition completes
-            timer.Stop();
-
-            // Capture CPU time after recognition
-            TimeSpan cpuEnd = currentProcess.TotalProcessorTime;
-            double cpuUsedMs = (cpuEnd - cpuStart).TotalMilliseconds;
-
-            // Output performance metrics
-            Console.WriteLine($"Processed: {Path.GetFileName(imagePath)}");
-            Console.WriteLine($"Recognition time: {timer.ElapsedMilliseconds} ms");
-            Console.WriteLine($"CPU usage: {cpuUsedMs:F2} ms");
-
-            // Output recognized barcode details
-            foreach (BarCodeResult result in results)
+            // Create QR code barcode with optional appearance settings
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, text))
             {
-                Console.WriteLine($"  CodeText: {result.CodeText}");
-                Console.WriteLine($"  CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
+                generator.Parameters.Barcode.XDimension.Point = 2.0f; // Set module size
+                generator.Parameters.Barcode.FilledBars = true;       // Use filled bars
+
+                // Save the generated barcode as PNG
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+
+            files.Add(filePath);
         }
+        return files;
     }
 }

@@ -1,104 +1,95 @@
-// Title: Benchmarking barcode reading performance with AllowIncorrectBarcodes disabled
-// Description: Demonstrates how disabling AllowIncorrectBarcodes impacts the time required to read a set of Code128 barcodes in a high‑throughput scenario.
-// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, showcasing the use of BarcodeGenerator for image creation and BarCodeReader with QualitySettings to control validation. Developers often need to measure the effect of strict barcode validation on processing speed when handling large volumes of scans.
+// Title: Benchmark effect of AllowIncorrectBarcodes on barcode reading performance
+// Description: Demonstrates how disabling the AllowIncorrectBarcodes setting speeds up barcode scanning in a high‑throughput scenario.
+// Category-Description: This example belongs to the Aspose.BarCode scanning performance category, illustrating the use of BarCodeReader, QualitySettings, and DecodeType to measure processing time. Developers often need to optimize bulk barcode recognition, and toggling AllowIncorrectBarcodes is a common technique to improve throughput while maintaining accuracy.
 // Prompt: Benchmark the time saved by disabling AllowIncorrectBarcodes in a high‑throughput scanning scenario.
-// Tags: barcode symbology, generation, recognition, performance, benchmark, allowincorrectbarcodes, png, aspose.barcode
+// Tags: barcode, scanning, performance, allowincorrectbarcodes, benchmark, aspose.barcode, csharp
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
+using System.Diagnostics;
+using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Provides a benchmark that compares barcode reading times with and without allowing incorrect barcodes.
+/// Demonstrates benchmarking the impact of the AllowIncorrectBarcodes setting on barcode reading speed.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the benchmark application.
-    /// Generates sample Code128 barcodes, measures read performance, and outputs the results.
+    /// Entry point. Generates sample barcodes, runs two benchmarks (with and without AllowIncorrectBarcodes), and reports the time saved.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for generated barcode images
+        // Create a temporary folder for barcode images
         string tempFolder = Path.Combine(Path.GetTempPath(), "Benchmark_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define sample code texts to encode
-        var codeTexts = new List<string> { "1234567890", "ABCDEFGHIJ", "9876543210", "ZXCVBNMASD", "QWERTYUIOP" };
-        var barcodeFiles = new List<string>();
-
-        // Generate PNG barcode images for each sample text
-        foreach (var text in codeTexts)
+        // Generate sample barcode images
+        int sampleCount = 5;
+        List<string> barcodeFiles = new List<string>();
+        for (int i = 0; i < sampleCount; i++)
         {
-            string filePath = Path.Combine(tempFolder, $"{text}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
+            string codeText = "CODE" + i;
+            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Save the barcode directly as a PNG file
+                // Save each barcode as a PNG file
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
             barcodeFiles.Add(filePath);
         }
 
-        // Benchmark reading without allowing incorrect barcodes
-        long timeWithoutAllow = BenchmarkReading(barcodeFiles, allowIncorrect: false);
-        // Benchmark reading while allowing incorrect barcodes
-        long timeWithAllow = BenchmarkReading(barcodeFiles, allowIncorrect: true);
+        // Benchmark with AllowIncorrectBarcodes = false (disabled)
+        TimeSpan timeWithoutIncorrect = BenchmarkReading(barcodeFiles, false);
+        Console.WriteLine($"Reading without AllowIncorrectBarcodes: {timeWithoutIncorrect.TotalMilliseconds} ms");
 
-        // Output the measured times
-        Console.WriteLine($"Reading time without AllowIncorrectBarcodes: {timeWithoutAllow} ms");
-        Console.WriteLine($"Reading time with AllowIncorrectBarcodes:    {timeWithAllow} ms");
+        // Benchmark with AllowIncorrectBarcodes = true (enabled)
+        TimeSpan timeWithIncorrect = BenchmarkReading(barcodeFiles, true);
+        Console.WriteLine($"Reading with AllowIncorrectBarcodes: {timeWithIncorrect.TotalMilliseconds} ms");
+
+        // Show time saved by disabling the setting
+        double saved = timeWithoutIncorrect.TotalMilliseconds - timeWithIncorrect.TotalMilliseconds;
+        Console.WriteLine($"Time saved by disabling AllowIncorrectBarcodes: {saved} ms");
 
         // Clean up temporary files and folder
-        try
+        foreach (var file in barcodeFiles)
         {
-            Directory.Delete(tempFolder, true);
+            try { File.Delete(file); } catch { }
         }
-        catch
-        {
-            // Suppress any cleanup errors
-        }
+        try { Directory.Delete(tempFolder, true); } catch { }
     }
 
-    // Performs repeated reading of the provided barcode files and returns elapsed milliseconds
-    static long BenchmarkReading(List<string> files, bool allowIncorrect)
+    /// <summary>
+    /// Measures the time required to read a collection of barcode images with a specific AllowIncorrectBarcodes setting.
+    /// </summary>
+    /// <param name="files">List of image file paths containing barcodes.</param>
+    /// <param name="allowIncorrect">Whether to allow incorrect barcodes during reading.</param>
+    /// <returns>Elapsed time for the reading operation.</returns>
+    static TimeSpan BenchmarkReading(List<string> files, bool allowIncorrect)
     {
-        const int readsPerFile = 200; // Number of reads per file to simulate high‑throughput
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
+        Stopwatch sw = Stopwatch.StartNew();
 
-        foreach (var file in files)
+        foreach (string file in files)
         {
-            if (!File.Exists(file))
-                continue; // Skip missing files gracefully
-
-            for (int i = 0; i < readsPerFile; i++)
+            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
             {
-                try
-                {
-                    using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
-                    {
-                        // Configure whether to allow incorrect barcodes during decoding
-                        reader.QualitySettings.AllowIncorrectBarcodes = allowIncorrect;
+                // Apply the quality setting for this benchmark run
+                reader.QualitySettings.AllowIncorrectBarcodes = allowIncorrect;
 
-                        // Force decoding; results are not processed further
-                        foreach (var result in reader.ReadBarCodes())
-                        {
-                            // No operation needed; iteration ensures decoding occurs
-                        }
-                    }
-                }
-                catch (ArgumentException)
-                {
-                    // Image loading failed; skip this iteration
-                }
+                // Read all barcodes in the image
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                // Optionally process results (here we just count them)
+                int count = results?.Length ?? 0;
+
+                // Prevent compiler optimization removal
+                if (count < 0) Console.WriteLine("Impossible");
             }
         }
 
-        stopwatch.Stop();
-        return stopwatch.ElapsedMilliseconds;
+        sw.Stop();
+        return sw.Elapsed;
     }
 }

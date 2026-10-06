@@ -1,8 +1,8 @@
-// Title: Adjust XDimension for 1D Barcode Reading
-// Description: Demonstrates how to set the XDimension quality setting to 3 pixels when reading a Code128 barcode, ensuring accurate detection of typical 1D barcode element widths.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader and QualitySettings to fine‑tune XDimension for 1D symbologies such as Code128. Developers often need to adjust XDimension to match the physical size of barcode modules, improving reading reliability in varied imaging conditions. The sample shows generating a barcode, configuring minimal XDimension, and extracting decoded information.
+// Title: Adjust XDimension for Barcode Generation and Recognition
+// Description: Demonstrates how to set XDimension for a Code128 barcode and configure the reader's quality settings to use a minimal element width of 3 pixels.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating 1D barcodes, BarCodeReader for decoding them, and QualitySettings for fine‑tuning reading parameters such as XDimension. Developers commonly need to control element sizes to meet printing standards or improve scan reliability, making these APIs essential for barcode‑centric applications.
 // Prompt: Adjust QualitySettings.XDimension to 3 pixels to match typical 1D barcode element widths.
-// Tags: code128, xdimension, qualitysettings, barcode recognition, aspose.barcode, image processing
+// Tags: barcode, code128, xdimension, generation, recognition, qualitysettings, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,73 +12,63 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode, configures minimal XDimension for reading, and outputs the decoded result.
+/// Demonstrates adjusting XDimension for barcode generation and recognition using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Creates a temporary barcode image, reads it with custom XDimension settings, and cleans up resources.
+    /// Entry point that creates a Code128 barcode, saves it, reads it with custom XDimension settings, and outputs results.
     /// </summary>
     static void Main()
     {
-        // Create a temporary directory for sample files
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // Define a temporary file path for the generated barcode image
+        string tempPath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
 
-        // Define the full path for the barcode image
-        string barcodePath = Path.Combine(tempDir, "barcode.png");
-
-        // Generate a simple Code128 barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // -------------------- Barcode Generation --------------------
+        // Create a Code128 barcode with the text "ASPOSE"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ASPOSE"))
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            // Optionally set the XDimension (module width) for generation; here 2 pixels is used as a baseline
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Save the barcode image as PNG to the temporary location
+            generator.Save(tempPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created
-        if (!File.Exists(barcodePath))
+        // -------------------- Barcode Recognition --------------------
+        // Initialize the reader to decode all supported barcode types from the saved image
+        using (var reader = new BarCodeReader(tempPath, DecodeType.AllSupportedTypes))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Specify the decode type matching the generated barcode
-        BaseDecodeType decodeType = DecodeType.Code128;
-
-        // Read the barcode using a BarCodeReader with custom QualitySettings
-        using (var reader = new BarCodeReader(barcodePath, decodeType))
-        {
-            // Configure XDimension to use a minimal value of 3 pixels
+            // Configure quality settings to use a minimal XDimension mode
             reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = 3f; // pixels
 
-            // Perform the barcode reading operation
+            // Set the minimal element width to 3 pixels, matching typical 1D barcode specifications
+            reader.QualitySettings.MinimalXDimension = 3f;
+
+            // Perform the reading operation
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Output the decoding results to the console
-            if (results != null && results.Length > 0)
-            {
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"CodeText: {result.CodeText}");
-                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                    Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-                }
-            }
-            else
+            // Output the results to the console
+            if (results.Length == 0)
             {
                 Console.WriteLine("No barcode detected.");
             }
+            else
+            {
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Code Text: {result.CodeText}");
+                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
+                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                }
+            }
         }
 
-        // Clean up temporary files and directory
-        try
+        // -------------------- Cleanup --------------------
+        // Delete the temporary barcode image file if it still exists
+        if (File.Exists(tempPath))
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempDir);
-        }
-        catch
-        {
-            // Ignore any errors during cleanup
+            File.Delete(tempPath);
         }
     }
 }

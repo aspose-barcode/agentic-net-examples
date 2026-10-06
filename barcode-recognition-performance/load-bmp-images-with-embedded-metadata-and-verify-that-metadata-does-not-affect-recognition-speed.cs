@@ -1,136 +1,103 @@
-// Title: Load BMP image with metadata and compare barcode recognition speed
-// Description: Demonstrates generating a Code128 barcode, embedding dummy metadata into a BMP file, and measuring whether the metadata impacts barcode recognition performance.
-// Category-Description: This example belongs to the Aspose.BarCode image processing category, illustrating how to work with bitmap images, embed EXIF metadata using Aspose.Drawing, and evaluate recognition speed with BarCodeReader. Developers often need to handle image metadata while ensuring fast barcode scanning in applications such as inventory systems, document processing, and mobile capture.
+// Title: Load BMP barcode images with metadata and compare recognition speed
+// Description: Demonstrates generating Aztec barcodes saved as BMP files with and without embedded metadata, then measures the time required to recognize each image.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator class for creating barcodes and the BarCodeReader class for decoding them. Typical use cases include testing how image metadata influences decoding performance, a common concern for developers optimizing barcode scanning workflows.
 // Prompt: Load BMP images with embedded metadata and verify that metadata does not affect recognition speed.
-// Tags: code128, barcode, metadata, bmp, recognition, speed, aspose.barcode, aspose.drawing, imageprocessing
+// Tags: aztec, bmp, metadata, performance, barcode-generation, barcode-recognition, aspose.barcode
 
 using System;
 using System.IO;
 using System.Diagnostics;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates loading BMP images with embedded metadata and measuring barcode recognition speed.
+/// Example program that creates Aztec barcode images with and without embedded metadata,
+/// then measures and compares the recognition time for each image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, adds dummy metadata, measures recognition times, and outputs the comparison.
+    /// Entry point of the example. Generates barcode images, measures decoding speed, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a temporary working directory for test images
-        string workDir = Path.Combine(Path.GetTempPath(), "BmpMetaTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workDir);
+        // Create a unique temporary folder for the generated images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeMetaTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define file paths for the image with metadata and the stripped version
-        string originalPath = Path.Combine(workDir, "barcode_with_meta.bmp");
-        string strippedPath = Path.Combine(workDir, "barcode_without_meta.bmp");
+        // Define file paths for the images with and without metadata
+        string metaPath = Path.Combine(tempFolder, "aztec_meta.bmp");
+        string noMetaPath = Path.Combine(tempFolder, "aztec_nometa.bmp");
 
-        // Generate a simple Code128 barcode and save it as BMP
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // ------------------------------------------------------------
+        // Generate Aztec barcode with embedded metadata
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Aztec, "SampleMeta"))
         {
-            // Optional visual tuning
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Save(originalPath, BarCodeImageFormat.Bmp);
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.Aztec.SymbolMode = AztecSymbolMode.FullRange;
+            generator.Parameters.Barcode.Aztec.IsReaderInitialization = true;
+            generator.Parameters.Barcode.Aztec.StructuredAppendBarcodeId = 2;
+            generator.Parameters.Barcode.Aztec.StructuredAppendBarcodesCount = 4;
+            generator.Parameters.Barcode.Aztec.StructuredAppendFileId = "File01";
+            generator.Save(metaPath, BarCodeImageFormat.Bmp);
         }
 
-        // Attempt to embed dummy metadata into the BMP using Aspose.Drawing
-        // (adds a comment EXIF property if supported)
-        try
+        // ------------------------------------------------------------
+        // Generate Aztec barcode without any additional metadata
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Aztec, "SampleMeta"))
         {
-            using (var bmp = (Bitmap)Image.FromFile(originalPath))
-            {
-                const int PropertyTagComment = 0x9286; // EXIF comment tag
-                byte[] commentBytes = System.Text.Encoding.UTF8.GetBytes("Dummy metadata");
-
-                // Ensure even length as required by the format
-                if (commentBytes.Length % 2 != 0)
-                {
-                    Array.Resize(ref commentBytes, commentBytes.Length + 1);
-                }
-
-                // Create a PropertyItem via reflection (constructor is internal)
-                var propItem = (PropertyItem)Activator.CreateInstance(typeof(PropertyItem), true);
-                propItem.Id = PropertyTagComment;
-                propItem.Type = 2; // ASCII
-                propItem.Len = commentBytes.Length;
-                propItem.Value = commentBytes;
-
-                bmp.SetPropertyItem(propItem);
-                bmp.Save(strippedPath, ImageFormat.Bmp);
-            }
-        }
-        catch (Exception ex)
-        {
-            // Fallback: copy the original image if metadata embedding fails
-            Console.WriteLine("Metadata embedding failed: " + ex.Message);
-            File.Copy(originalPath, strippedPath, true);
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Save(noMetaPath, BarCodeImageFormat.Bmp);
         }
 
-        // Verify that both test images were created successfully
-        if (!File.Exists(originalPath) || !File.Exists(strippedPath))
+        // Verify that both image files were created successfully
+        if (!File.Exists(metaPath) || !File.Exists(noMetaPath))
         {
-            Console.WriteLine("Failed to create test images.");
+            Console.WriteLine("Failed to create barcode images.");
             return;
         }
 
-        // Measure recognition speed for the image containing metadata
-        long timeWithMeta = MeasureRecognitionTime(originalPath);
+        var stopwatch = new Stopwatch();
 
-        // Measure recognition speed for the image without metadata
-        long timeWithoutMeta = MeasureRecognitionTime(strippedPath);
+        // ------------------------------------------------------------
+        // Measure recognition time for the image that contains metadata
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(metaPath, DecodeType.Aztec))
+        {
+            stopwatch.Start();
+            BarCodeResult[] results = reader.ReadBarCodes();
+            stopwatch.Stop();
+            Console.WriteLine($"Metadata image read time: {stopwatch.ElapsedMilliseconds} ms, detected: {results.Length}");
+        }
 
-        // Output the timing results
-        Console.WriteLine($"Recognition time (with metadata): {timeWithMeta} ms");
-        Console.WriteLine($"Recognition time (without metadata): {timeWithoutMeta} ms");
-        Console.WriteLine("Metadata does not significantly affect recognition speed if the times are comparable.");
+        // Reset the stopwatch before the next measurement
+        stopwatch.Reset();
 
-        // Clean up temporary files and directory
+        // ------------------------------------------------------------
+        // Measure recognition time for the image without metadata
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(noMetaPath, DecodeType.Aztec))
+        {
+            stopwatch.Start();
+            BarCodeResult[] results = reader.ReadBarCodes();
+            stopwatch.Stop();
+            Console.WriteLine($"No-metadata image read time: {stopwatch.ElapsedMilliseconds} ms, detected: {results.Length}");
+        }
+
+        // ------------------------------------------------------------
+        // Cleanup temporary files and folder
+        // ------------------------------------------------------------
         try
         {
-            File.Delete(originalPath);
-            File.Delete(strippedPath);
-            Directory.Delete(workDir);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect program outcome
+            // Ignore any errors that occur during cleanup
         }
-    }
-
-    /// <summary>
-    /// Measures the time taken to recognize barcodes in the specified image file.
-    /// </summary>
-    /// <param name="imagePath">Path to the image containing a barcode.</param>
-    /// <returns>Elapsed time in milliseconds, or -1 if the file does not exist.</returns>
-    static long MeasureRecognitionTime(string imagePath)
-    {
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"File not found: {imagePath}");
-            return -1;
-        }
-
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        // Use BarCodeReader to decode all supported barcode types
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-        {
-            var results = reader.ReadBarCodes();
-
-            // Output decoded text to verify successful recognition
-            foreach (var result in results)
-            {
-                Console.WriteLine($"Decoded text: {result.CodeText}");
-            }
-        }
-
-        stopwatch.Stop();
-        return stopwatch.ElapsedMilliseconds;
     }
 }

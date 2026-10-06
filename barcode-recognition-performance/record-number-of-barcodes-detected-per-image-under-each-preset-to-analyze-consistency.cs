@@ -1,93 +1,110 @@
-// Title: Detect and count barcodes in generated images using Aspose.BarCode
-// Description: This example generates barcode images for several symbologies, reads each image, and records the number of barcodes detected per image.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs. It shows how to create barcodes with BarcodeGenerator, save them, and use BarCodeReader to detect and count barcodes. Useful for developers testing detection consistency across different barcode types and image formats.
+// Title: Record barcode detection counts per image across quality presets
+// Description: Generates sample barcode images and reads them using various quality settings to count detected barcodes, illustrating how to analyze detection consistency.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates creating barcodes with BarcodeGenerator, configuring BarCodeReader quality presets, and counting detected symbols. Developers commonly use these APIs to evaluate detection performance, tune quality settings, and ensure reliable barcode scanning across different image conditions.
 // Prompt: Record the number of barcodes detected per image under each preset to analyze consistency.
-// Tags: barcode, generation, recognition, png, aspose.barcode, csharp
+// Tags: barcode, generation, recognition, qualitysettings, count, detection, aspose.barcode
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample program that creates barcode images, reads them back, and reports how many barcodes were detected per image.
+/// Demonstrates generating barcodes, reading them with different quality presets,
+/// and recording the number of detected barcodes per image for consistency analysis.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes, detects them, and outputs detection counts.
+    /// Entry point of the example. Generates sample barcodes, applies various quality
+    /// presets during recognition, and outputs detection counts per image.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the sample barcodes
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define a list of presets (symbology + sample text + output file name)
-        var presets = new List<(BaseEncodeType EncodeType, string CodeText, string FileName)>
+        // Define sample barcodes to generate (type, text, file name)
+        var samples = new List<(BaseEncodeType type, string text, string fileName)>
         {
-            (EncodeTypes.Code128, "Sample123", "code128.png"),
-            (EncodeTypes.QR, "https://example.com", "qr.png"),
-            (EncodeTypes.DataMatrix, "DM12345", "datamatrix.png")
+            (EncodeTypes.Code128, "Sample128", "code128.png"),
+            (EncodeTypes.QR, "SampleQR", "qr.png"),
+            (EncodeTypes.DataMatrix, "SampleDM", "datamatrix.png")
         };
 
-        // -----------------------------------------------------------------
-        // Generate barcode images for each preset
-        // -----------------------------------------------------------------
-        foreach (var preset in presets)
+        // Generate barcode images and save them as PNG files
+        foreach (var (type, text, fileName) in samples)
         {
-            string filePath = Path.Combine(tempFolder, preset.FileName);
-            using (var generator = new BarcodeGenerator(preset.EncodeType, preset.CodeText))
+            string filePath = Path.Combine(tempFolder, fileName);
+            using (var generator = new BarcodeGenerator(type, text))
             {
-                // Optional: set a modest XDimension for visibility
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                // Save as PNG
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
         }
 
-        // -----------------------------------------------------------------
-        // Read each image and count detected barcodes
-        // -----------------------------------------------------------------
-        Console.WriteLine("Barcode detection results:");
-        foreach (var preset in presets)
+        // Define the quality presets to test during recognition
+        var presets = new Dictionary<string, QualitySettings>
         {
-            string filePath = Path.Combine(tempFolder, preset.FileName);
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"File not found: {preset.FileName}");
-                continue;
-            }
+            { "HighPerformance", QualitySettings.HighPerformance },
+            { "NormalQuality", QualitySettings.NormalQuality },
+            { "HighQuality", QualitySettings.HighQuality },
+            { "MaxQuality", QualitySettings.MaxQuality }
+        };
 
-            int count = 0;
-            using (var reader = new BarCodeReader(filePath))
+        // Record detection counts per image for each preset
+        var results = new Dictionary<string, Dictionary<string, int>>();
+
+        foreach (var presetKvp in presets)
+        {
+            string presetName = presetKvp.Key;
+            QualitySettings preset = presetKvp.Value;
+            var imageCounts = new Dictionary<string, int>();
+
+            // Iterate over each generated image
+            foreach (var (_, _, fileName) in samples)
             {
-                // Iterate over all detected barcodes in the image
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                string filePath = Path.Combine(tempFolder, fileName);
+                if (!File.Exists(filePath))
                 {
-                    count++; // Increment count for each detected barcode
-                    // Output details of each detection
-                    Console.WriteLine($"Image: {preset.FileName}, Detected: {result.CodeText}, Type: {result.CodeType}");
+                    Console.WriteLine($"File not found: {filePath}");
+                    continue;
+                }
+
+                // Read barcodes using the current quality preset
+                using (var reader = new BarCodeReader(filePath))
+                {
+                    reader.QualitySettings = preset;
+                    int count = reader.ReadBarCodes().Length;
+                    imageCounts[fileName] = count;
                 }
             }
 
-            // Report total number of barcodes detected in the current image
-            Console.WriteLine($"Image: {preset.FileName}, Total barcodes detected: {count}");
+            results[presetName] = imageCounts;
         }
 
-        // -----------------------------------------------------------------
-        // Clean up temporary files (optional)
-        // -----------------------------------------------------------------
+        // Output the recorded detection counts
+        Console.WriteLine("Barcode detection counts per image under each preset:");
+        foreach (var presetKvp in results)
+        {
+            Console.WriteLine($"Preset: {presetKvp.Key}");
+            foreach (var imageKvp in presetKvp.Value)
+            {
+                Console.WriteLine($"  Image: {imageKvp.Key} => Detected: {imageKvp.Value}");
+            }
+        }
+
+        // Clean up temporary files and folder
         try
         {
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // If cleanup fails, ignore – files will be removed by the OS temp cleanup
+            // Ignore cleanup errors
         }
     }
 }

@@ -1,150 +1,106 @@
-// Title: Batch Barcode Generation with Preset Switching Verification
-// Description: Demonstrates generating multiple Code128 barcodes in a batch while changing generator presets between items, then verifies each barcode to ensure earlier results remain unaffected.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, illustrating how to use BarcodeGenerator to apply different visual presets per barcode, save them as PNG, and subsequently read them back with BarCodeReader. Developers often need to batch‑process barcodes with varying appearance settings without corrupting previously generated images.
+// Title: Verify barcode decoding after switching quality presets mid‑batch
+// Description: Demonstrates generating a batch of Code128 barcodes, then reading them while changing the reader's quality preset halfway through, ensuring earlier results remain unaffected.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create images, BarCodeReader with QualitySettings to control decoding performance, and typical batch processing patterns. Developers often need to adjust quality presets for speed or accuracy and must verify that changing settings does not corrupt previously decoded results.
 // Prompt: Verify that switching presets mid‑batch does not corrupt previously obtained results.
-// Tags: barcode symbology, code128, generation, recognition, preset, batch, png, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, qualitysettings, batch, generation, recognition, aspose.barcode, png
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Text;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation of Code128 barcodes with varying visual presets
-/// and validates that changing presets does not affect previously generated results.
+/// Demonstrates generating and reading a batch of Code128 barcodes while switching
+/// quality presets mid‑batch to verify that earlier results remain correct.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a set of barcodes with different presets, saves them,
-    /// then reads each back to verify correctness.
+    /// Entry point of the example. Generates barcodes, reads them with varying quality
+    /// presets, validates decoded texts, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
         // Create a unique temporary folder for the batch
-        string batchFolder = Path.Combine(Path.GetTempPath(), "BatchPresets_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(batchFolder);
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchPresetTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define barcode specifications with preset changes
-        var specs = new List<BarcodeSpec>
+        // Generate sample barcode images and store expected texts
+        List<string> filePaths = new List<string>();
+        List<string> expectedTexts = new List<string>();
+        for (int i = 0; i < 6; i++)
         {
-            new BarcodeSpec
-            {
-                EncodeType = EncodeTypes.Code128,
-                CodeText = "ABC123",
-                // Default preset – no changes
-                PresetAction = gen => { /* no modifications */ }
-            },
-            new BarcodeSpec
-            {
-                EncodeType = EncodeTypes.Code128,
-                CodeText = "DEF456",
-                // Change bar color to red and increase X-dimension
-                PresetAction = gen =>
-                {
-                    gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Red;
-                    gen.Parameters.Barcode.XDimension.Point = 2f;
-                }
-            },
-            new BarcodeSpec
-            {
-                EncodeType = EncodeTypes.Code128,
-                CodeText = "GHI789",
-                // Change bar color to blue and further increase X-dimension
-                PresetAction = gen =>
-                {
-                    gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
-                    gen.Parameters.Barcode.XDimension.Point = 3f;
-                }
-            }
-        };
+            string codeText = $"CODE{i:D3}";
+            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
 
-        // Generate barcodes and collect file paths with expected texts
-        var generatedFiles = new List<(string Path, string ExpectedText)>();
-        for (int i = 0; i < specs.Count; i++)
-        {
-            var spec = specs[i];
-            string filePath = Path.Combine(batchFolder, $"barcode_{i + 1}.png");
-
-            using (var generator = new BarcodeGenerator(spec.EncodeType, spec.CodeText))
+            // Generate a Code128 barcode image
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Apply preset changes for this barcode
-                spec.PresetAction(generator);
-
-                // Save as PNG
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            generatedFiles.Add((filePath, spec.CodeText));
+            filePaths.Add(filePath);
+            expectedTexts.Add(codeText);
         }
 
-        // Verify each generated barcode by reading it back
-        bool allValid = true;
-        foreach (var (path, expectedText) in generatedFiles)
+        // Read the barcodes, switching quality presets mid‑batch
+        bool allMatch = true;
+        for (int i = 0; i < filePaths.Count; i++)
         {
-            if (!File.Exists(path))
-            {
-                Console.WriteLine($"File not found: {path}");
-                allValid = false;
-                continue;
-            }
+            string file = filePaths[i];
+            string expected = expectedTexts[i];
 
-            // Use the appropriate decode type for Code128
-            BaseDecodeType decodeType = DecodeType.Code128;
-
-            try
+            using (var reader = new BarCodeReader(file, DecodeType.Code128))
             {
-                using (var reader = new BarCodeReader(path, decodeType))
+                // Apply NormalQuality to the first half, HighQuality to the second half
+                if (i < filePaths.Count / 2)
                 {
-                    bool found = false;
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        found = true;
-                        string decoded = result.CodeText;
-                        if (decoded == expectedText)
-                        {
-                            Console.WriteLine($"SUCCESS: {Path.GetFileName(path)} decoded correctly as '{decoded}'.");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"FAILURE: {Path.GetFileName(path)} decoded as '{decoded}' but expected '{expectedText}'.");
-                            allValid = false;
-                        }
-                    }
+                    reader.QualitySettings = QualitySettings.NormalQuality;
+                }
+                else
+                {
+                    reader.QualitySettings = QualitySettings.HighQuality;
+                }
 
-                    if (!found)
-                    {
-                        Console.WriteLine($"FAILURE: No barcode detected in {Path.GetFileName(path)}.");
-                        allValid = false;
-                    }
+                // Decode the barcode(s) in the current image
+                BarCodeResult[] results = reader.ReadBarCodes();
+                if (results.Length == 0)
+                {
+                    Console.WriteLine($"No barcode detected in {Path.GetFileName(file)}");
+                    allMatch = false;
+                    continue;
+                }
+
+                string decoded = results[0].CodeText;
+                if (decoded != expected)
+                {
+                    Console.WriteLine($"Mismatch in {Path.GetFileName(file)}: expected '{expected}', got '{decoded}'");
+                    allMatch = false;
+                }
+                else
+                {
+                    Console.WriteLine($"Decoded {Path.GetFileName(file)} successfully: '{decoded}'");
                 }
             }
-            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
-            {
-                Console.WriteLine($"WARNING: Skipping unreadable file {Path.GetFileName(path)}. {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"ERROR: Exception while reading {Path.GetFileName(path)}. {ex.Message}");
-                allValid = false;
-            }
         }
 
-        // Output overall verification result
-        Console.WriteLine(allValid
-            ? "All barcodes verified successfully. Switching presets did not corrupt previous results."
-            : "Some barcodes failed verification. Check the output above for details.");
-    }
+        // Report overall verification result
+        Console.WriteLine(allMatch
+            ? "All barcodes decoded correctly after preset switch."
+            : "Some barcodes failed verification.");
 
-    // Helper class to hold barcode generation data
-    private class BarcodeSpec
-    {
-        public BaseEncodeType EncodeType { get; set; }
-        public string CodeText { get; set; }
-        public Action<BarcodeGenerator> PresetAction { get; set; }
+        // Clean up temporary files and folder
+        try
+        {
+            foreach (string f in filePaths) File.Delete(f);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignored
+        }
     }
 }

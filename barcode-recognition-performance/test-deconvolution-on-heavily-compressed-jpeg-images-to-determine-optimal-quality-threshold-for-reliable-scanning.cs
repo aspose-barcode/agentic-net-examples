@@ -1,95 +1,115 @@
-// Title: Determine optimal JPEG quality for QR code scanning with deconvolution
-// Description: Generates a QR code, recompresses it into JPEG images at multiple quality levels, and evaluates scanning success using Aspose.BarCode deconvolution.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to create barcodes with BarcodeGenerator, recompress images, and read them with BarCodeReader while applying QualitySettings such as DeconvolutionMode and XDimensionMode. Developers often use these APIs to assess image quality thresholds, improve scan reliability on compressed media, and fine‑tune barcode processing pipelines.
+// Title: Determine optimal JPEG quality for barcode scanning using deconvolution
+// Description: Generates a QR barcode, compresses it to JPEG at multiple quality levels, and attempts to read it back using high‑quality deconvolution to identify the lowest quality that still allows reliable detection.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to create a barcode with BarcodeGenerator, encode the image to JPEG with custom quality settings, and read it using BarCodeReader with QualitySettings and DeconvolutionMode. Typical use cases include testing image compression limits for reliable barcode scanning in mobile or web applications where image size matters.
 // Prompt: Test deconvolution on heavily compressed JPEG images to determine optimal quality threshold for reliable scanning.
-// Tags: barcode, qr, deconvolution, jpeg, quality, recognition, generation, aspose.barcode
+// Tags: qr, barcode, jpeg, quality, deconvolution, recognition, generation, aspose.barcode, image-processing
 
 using System;
 using System.IO;
-using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to evaluate the impact of JPEG compression quality on QR code readability
-/// by applying deconvolution and minimal X‑dimension settings during barcode recognition.
+/// Demonstrates how to evaluate JPEG compression quality thresholds for reliable barcode scanning
+/// using Aspose.BarCode generation, image encoding, and deconvolution settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, creates JPEG variants at different
-    /// quality levels, and reports whether each variant can be successfully decoded.
+    /// Entry point of the example. Generates a QR code, compresses it to JPEG at various
+    /// quality levels, and attempts to read it back using high‑quality deconvolution.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for all generated files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDeconvTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a temporary working directory to store generated JPEG files
+        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeDeconvTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // Path for the original PNG image that will serve as the source for JPEG recompression
-        string basePngPath = Path.Combine(tempFolder, "base.png");
-
-        // Generate a sample QR code and save it as a PNG file
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
+        // Generate a QR barcode and keep it in memory as a bitmap
+        BaseEncodeType encodeType = EncodeTypes.QR;
+        using (var generator = new BarcodeGenerator(encodeType, "Test123"))
         {
-            generator.Save(basePngPath, BarCodeImageFormat.Png);
+            using (var pngStream = new MemoryStream())
+            {
+                // Save the barcode as PNG into the memory stream
+                generator.Save(pngStream, BarCodeImageFormat.Png);
+                pngStream.Position = 0;
+
+                using (var bitmap = new Bitmap(pngStream))
+                {
+                    // Locate the JPEG codec required for image compression
+                    ImageCodecInfo jpegCodec = Array.Find(ImageCodecInfo.GetImageEncoders(),
+                        c => c.FormatID == ImageFormat.Jpeg.Guid);
+                    if (jpegCodec == null)
+                    {
+                        Console.WriteLine("JPEG codec not found.");
+                        return;
+                    }
+
+                    // Iterate over a range of JPEG quality levels (100 down to 10)
+                    for (int quality = 100; quality >= 10; quality -= 10)
+                    {
+                        string jpegPath = Path.Combine(workDir, $"barcode_q{quality}.jpg");
+
+                        // Encode the bitmap to JPEG using the current quality setting
+                        using (var encoderParams = new EncoderParameters(1))
+                        {
+                            encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, (long)quality);
+                            bitmap.Save(jpegPath, jpegCodec, encoderParams);
+                        }
+
+                        // Attempt to read the barcode from the generated JPEG file
+                        bool success = false;
+                        if (File.Exists(jpegPath))
+                        {
+                            try
+                            {
+                                using (var reader = new BarCodeReader(jpegPath, DecodeType.AllSupportedTypes))
+                                {
+                                    // Apply high‑quality settings and fast deconvolution for better detection
+                                    reader.QualitySettings = QualitySettings.HighQuality;
+                                    reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+
+                                    // Read all barcodes; if any are found, mark as success
+                                    foreach (var result in reader.ReadBarCodes())
+                                    {
+                                        Console.WriteLine($"Detected ({result.CodeTypeName}): {result.CodeText}");
+                                        success = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+                            {
+                                Console.WriteLine($"Failed to load image at quality {quality}: {ex.Message}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Error processing image at quality {quality}: {ex.Message}");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"JPEG file not created for quality {quality}.");
+                        }
+
+                        // Report the result for the current quality level
+                        Console.WriteLine($"Quality {quality}: {(success ? "Success" : "Failed")}");
+                    }
+                }
+            }
         }
 
-        // Load the PNG into a bitmap so it can be re‑encoded as JPEG with varying quality settings
-        using (var bitmap = new Bitmap(basePngPath))
-        {
-            // Define the JPEG quality levels to be tested
-            int[] qualities = new int[] { 100, 90, 80, 70, 60, 50, 40, 30, 20, 10 };
-
-            // Locate the JPEG codec once to avoid repeated look‑ups
-            ImageCodecInfo jpegCodec = Array.Find(ImageCodecInfo.GetImageEncoders(),
-                c => c.FormatID == ImageFormat.Jpeg.Guid);
-            if (jpegCodec == null)
-            {
-                Console.WriteLine("JPEG codec not found.");
-                return;
-            }
-
-            // Iterate over each quality level, create a JPEG, and attempt to read the barcode
-            foreach (int quality in qualities)
-            {
-                string jpegPath = Path.Combine(tempFolder, $"qr_{quality}.jpg");
-
-                // Re‑encode the bitmap as JPEG using the current quality setting
-                using (var encoderParams = new EncoderParameters(1))
-                {
-                    encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, (long)quality);
-                    bitmap.Save(jpegPath, jpegCodec, encoderParams);
-                }
-
-                // Initialize a barcode reader for the newly created JPEG file
-                using (var reader = new BarCodeReader(jpegPath, DecodeType.AllSupportedTypes))
-                {
-                    // Enable fast deconvolution and minimal X‑dimension to improve detection on low‑quality images
-                    reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
-                    reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-
-                    // Perform the recognition
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    // Determine success based on the presence of a decoded result
-                    bool success = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
-                    Console.WriteLine($"Quality {quality}: {(success ? "Success" : "Failure")}");
-                }
-            }
-        }
-
-        // Cleanup: attempt to delete the temporary folder and its contents
+        // Cleanup temporary files and directory
         try
         {
-            Directory.Delete(tempFolder, true);
+            Directory.Delete(workDir, true);
         }
         catch
         {
-            // If deletion fails (e.g., files still in use), ignore – the OS will clean up temp files later.
+            // Ignore any errors during cleanup
         }
     }
 }

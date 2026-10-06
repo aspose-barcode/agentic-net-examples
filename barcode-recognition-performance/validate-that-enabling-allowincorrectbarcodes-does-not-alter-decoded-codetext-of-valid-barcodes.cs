@@ -1,105 +1,74 @@
 // Title: Validate AllowIncorrectBarcodes does not affect decoded CodeText
-// Description: Demonstrates generating a Code128 barcode, decoding it with and without the AllowIncorrectBarcodes setting, and confirming the decoded text remains unchanged.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with QualitySettings for decoding. Developers often need to verify that decoding options such as AllowIncorrectBarcodes do not alter results for valid barcodes, a common validation scenario in automated testing pipelines.
+// Description: Demonstrates generating a Code128 barcode, reading it with AllowIncorrectBarcodes set to false and true, and confirming the decoded text remains unchanged.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating how QualitySettings.AllowIncorrectBarcodes influences decoding. It uses BarcodeGenerator for creation and BarCodeReader for recognition, common tasks when validating barcode tolerance settings. Developers often need to ensure that enabling tolerance does not modify results for valid barcodes.
 // Prompt: Validate that enabling AllowIncorrectBarcodes does not alter the decoded CodeText of valid barcodes.
-// Tags: code128, barcode generation, barcode recognition, allowincorrectbarcodes, validation
+// Tags: code128, allowincorrectbarcodes, barcoderecognition, generation, validation, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates validation that enabling <c>AllowIncorrectBarcodes</c> does not change the decoded <c>CodeText</c> of a valid barcode.
+/// Demonstrates that setting AllowIncorrectBarcodes does not change the decoded text of a valid barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, decodes it with different settings, compares results, and cleans up.
+    /// Entry point. Generates a barcode, reads it with different AllowIncorrectBarcodes settings, and compares the results.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the test files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for test artifacts
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "barcode.png");
+
+        // Define file path and original barcode text
+        string barcodePath = Path.Combine(tempFolder, "code128.png");
+        string originalText = "AsposeTest";
 
         // Generate a valid Code128 barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test12345"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, originalText))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify the file was created before proceeding
-        if (!File.Exists(barcodePath))
+        // Read the barcode with AllowIncorrectBarcodes set to false
+        string textWithoutAllow;
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            Cleanup(tempFolder);
-            return;
+            reader.QualitySettings.AllowIncorrectBarcodes = false;
+            var results = reader.ReadBarCodes();
+            textWithoutAllow = results.Length > 0 ? results[0].CodeText : null;
         }
 
-        // Decode without AllowIncorrectBarcodes (default behavior)
-        string codeTextDefault = DecodeBarcode(barcodePath, allowIncorrect: false);
+        // Read the same barcode with AllowIncorrectBarcodes set to true
+        string textWithAllow;
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        {
+            reader.QualitySettings.AllowIncorrectBarcodes = true;
+            var results = reader.ReadBarCodes();
+            textWithAllow = results.Length > 0 ? results[0].CodeText : null;
+        }
 
-        // Decode with AllowIncorrectBarcodes enabled
-        string codeTextAllow = DecodeBarcode(barcodePath, allowIncorrect: true);
-
-        // Compare the decoded texts to ensure they are identical
-        bool textsEqual = string.Equals(codeTextDefault, codeTextAllow, StringComparison.Ordinal);
-        Console.WriteLine($"Default decoding result:   {(codeTextDefault ?? "null")}");
-        Console.WriteLine($"AllowIncorrectBarcodes result: {(codeTextAllow ?? "null")}");
-        Console.WriteLine($"CodeText unchanged: {textsEqual}");
+        // Validate that the decoded texts are identical
+        bool isEqual = string.Equals(textWithoutAllow, textWithAllow, StringComparison.Ordinal);
+        Console.WriteLine($"Decoded without AllowIncorrectBarcodes: {textWithoutAllow ?? "null"}");
+        Console.WriteLine($"Decoded with AllowIncorrectBarcodes:    {textWithAllow ?? "null"}");
+        Console.WriteLine($"Texts are equal: {isEqual}");
 
         // Clean up temporary files and folder
-        Cleanup(tempFolder);
-    }
-
-    // Helper method to decode a barcode image with optional AllowIncorrectBarcodes setting
-    private static string DecodeBarcode(string imagePath, bool allowIncorrect)
-    {
-        // Ensure the file exists before attempting to read
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine($"File not found: {imagePath}");
-            return null;
-        }
-
-        // Resolve the decode type for Code128
-        BaseDecodeType decodeType = DecodeType.Code128;
-
-        using (var reader = new BarCodeReader(imagePath, decodeType))
-        {
-            // Enable or disable AllowIncorrectBarcodes as requested
-            reader.QualitySettings.AllowIncorrectBarcodes = allowIncorrect;
-
-            // Perform the read operation
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Return the first decoded CodeText if available
-            if (results != null && results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
-            {
-                return results[0].CodeText;
-            }
-        }
-
-        return null;
-    }
-
-    // Helper method to delete the temporary folder and its contents
-    private static void Cleanup(string folderPath)
-    {
         try
         {
-            if (Directory.Exists(folderPath))
-            {
-                Directory.Delete(folderPath, true);
-            }
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Cleanup failed: {ex.Message}");
+            // Ignored - cleanup failure should not affect validation
         }
     }
 }
