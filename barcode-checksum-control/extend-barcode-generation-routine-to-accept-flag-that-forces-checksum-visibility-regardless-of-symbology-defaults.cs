@@ -1,8 +1,8 @@
-// Title: Force checksum visibility in barcode generation
-// Description: Demonstrates generating a Code39 barcode with an optional flag to always display the checksum in the human‑readable text.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class together with EncodeTypes to create barcodes. Typical use cases include customizing barcode appearance, enabling checksums, and controlling human‑readable text. Developers often need to adjust checksum visibility for compliance or readability, making this pattern useful across many barcode‑related projects.
+// Title: Generate Code128 barcode with optional checksum visibility
+// Description: Demonstrates creating a Code128 barcode image and optionally forcing the checksum to be displayed, based on a command‑line flag.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, EncodeTypes, and barcode parameters such as ChecksumAlwaysShow. Typical use cases include creating barcodes for inventory, shipping, or retail where checksum visibility may be required for compliance or readability. Developers often need to customize barcode appearance and output format, and this snippet shows a concise pattern for those scenarios.
 // Prompt: Extend the barcode generation routine to accept a flag that forces checksum visibility regardless of symbology defaults.
-// Tags: barcode, symbology, generation, checksum, code39, png, aspose.barcode
+// Tags: barcode, code128, checksum, generation, png, aspose.barcode, encode types, image output
 
 using System;
 using System.IO;
@@ -10,48 +10,40 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a barcode image with optional forced checksum visibility.
+/// Demonstrates barcode generation with optional checksum visibility using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Parses an optional command‑line argument to force checksum display,
-    /// creates a Code39 barcode, and saves it as a PNG file.
+    /// Entry point. Accepts an optional "show" argument to force checksum display.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument should be a boolean indicating whether to force checksum visibility.</param>
+    /// <param name="args">Command‑line arguments.</param>
     static void Main(string[] args)
     {
         // Determine whether to force checksum visibility based on the first argument.
         bool forceShowChecksum = false;
-        if (args.Length > 0 && bool.TryParse(args[0], out bool parsed))
+        if (args.Length > 0 && string.Equals(args[0], "show", StringComparison.OrdinalIgnoreCase))
         {
-            forceShowChecksum = parsed;
+            forceShowChecksum = true;
         }
 
-        // Define barcode data and symbology (Code39 supports an optional checksum).
-        string codeText = "12345";
-        BaseEncodeType encodeType = EncodeTypes.Code39;
-
-        // Prepare the output directory and file path.
+        // Prepare output directory and file path.
         string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
         Directory.CreateDirectory(outputDir);
         string outputPath = Path.Combine(outputDir, "barcode.png");
 
-        // Generate the barcode using Aspose.BarCode.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Create a barcode generator for Code128 with the specified data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Enable checksum calculation (optional for Code39).
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-            // Apply the flag to always show the checksum in the human‑readable text.
+            // Apply the checksum visibility flag regardless of the symbology's default behavior.
             generator.Parameters.Barcode.ChecksumAlwaysShow = forceShowChecksum;
 
-            // Save the barcode image in PNG format.
+            // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the result locations and flag status.
+        // Inform the user where the barcode image was saved and the checksum flag state.
         Console.WriteLine($"Barcode saved to: {outputPath}");
-        Console.WriteLine($"Force checksum visibility: {forceShowChecksum}");
+        Console.WriteLine($"Checksum visibility forced: {forceShowChecksum}");
     }
 }

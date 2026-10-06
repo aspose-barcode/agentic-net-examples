@@ -1,67 +1,64 @@
 // Title: Hide Code 39 checksum digit and verify barcode data
-// Description: Demonstrates how to generate a Code 39 barcode without calculating or displaying the checksum digit, then reads the barcode to confirm the decoded text matches the original data.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator and BarCodeReader with the EncodeTypes.Code39FullASCII symbology, configuring BarcodeParameters such as IsChecksumEnabled and ChecksumAlwaysShow. Developers often need to suppress checksum digits for compact human‑readable output or when the checksum is managed externally.
+// Description: Demonstrates how to generate a Code 39 barcode with the checksum digit hidden and then read it back to confirm the checksum is not present.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to configure BarcodeGenerator parameters to disable checksum generation for Code 39 (using EncodeTypes.Code39FullASCII) and how to use BarCodeReader with checksum validation enabled to read the barcode. Developers working with one‑dimensional symbologies often need to hide or ignore checksum digits while still being able to validate scanned data.
 // Prompt: Configure BarcodeParameters to hide the checksum digit for Code 39 and verify the data excludes it.
-// Tags: code39, checksum, hide-checksum, barcode-generation, barcode-recognition, aspose.barcode, csharp
+// Tags: code39, checksum, hide-checksum, barcode-generation, barcode-recognition, png, aspose.barcode
 
 using System;
 using System.IO;
-using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates hiding the checksum digit for a Code 39 barcode and verifying the decoded data.
+/// Example program that generates a Code 39 barcode without a checksum,
+/// reads it back, and displays the extracted data and checksum information.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates a barcode, saves it, reads it back, and validates the text.
+    /// Entry point of the example. Generates a barcode, reads it, and cleans up.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Sample data without checksum
-        string codeText = "ABC123";
+        // Define a temporary file path for the barcode image
+        string tempPath = Path.Combine(Path.GetTempPath(), "code39.png");
 
-        // Define output image path in the temporary folder
-        string outputPath = Path.Combine(Path.GetTempPath(), "code39.png");
-
-        // Generate Code 39 barcode, hide checksum and disable its calculation
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+        // ------------------------------------------------------------
+        // Generate a Code 39 barcode with checksum generation disabled
+        // ------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "CODE39"))
         {
-            // Disable checksum calculation
+            // Turn off checksum generation for the barcode
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
-            // Hide checksum in the human‑readable text
-            generator.Parameters.Barcode.ChecksumAlwaysShow = false;
 
-            // Save the generated barcode image as PNG
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG image
+            generator.Save(tempPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
-
-        // Read back the barcode and verify the decoded text matches the original (no checksum)
-        using (var reader = new BarCodeReader(outputPath, DecodeType.Code39))
+        // ------------------------------------------------------------
+        // Read the barcode back and attempt checksum validation
+        // ------------------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader(tempPath, DecodeType.Code39FullASCII))
         {
-            var result = reader.ReadBarCodes().FirstOrDefault();
-            if (result != null)
+            // Enable checksum validation (will be ignored because no checksum was generated)
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+            // Iterate through all detected barcodes (only one expected)
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Decoded text: {result.CodeText}");
-                if (result.CodeText == codeText)
-                {
-                    Console.WriteLine("Verification succeeded: decoded text matches original (checksum excluded).");
-                }
-                else
-                {
-                    Console.WriteLine("Verification failed: decoded text does not match the original.");
-                }
+                Console.WriteLine($"Read CodeText: {result.CodeText}");
+                Console.WriteLine($"Extracted CheckSum: {result.Extended.OneD.CheckSum}");
             }
-            else
-            {
-                Console.WriteLine("No barcode detected in the image.");
-            }
+        }
+
+        // ------------------------------------------------------------
+        // Clean up the temporary barcode image file
+        // ------------------------------------------------------------
+        if (File.Exists(tempPath))
+        {
+            File.Delete(tempPath);
         }
     }
 }

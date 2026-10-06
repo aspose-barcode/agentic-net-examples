@@ -1,66 +1,60 @@
-// Title: Generate Barcodes for All Supported Symbologies with Checksum and Error Logging
-// Description: The example creates a temporary folder, iterates through every barcode symbology defined in Aspose.BarCode's EncodeTypes, generates a PNG image with checksum enabled, and logs any errors encountered.
-// Category-Description: This sample belongs to the Aspose.BarCode generation category, demonstrating how to use the BarcodeGenerator class together with EncodeTypes to produce barcodes across all supported symbologies. Typical use cases include bulk barcode creation, testing symbology support, or preparing assets for printing. Developers often need to toggle checksum settings, specify output formats, and handle exceptions during batch processing.
+// Title: Generate barcodes for all supported symbologies using Aspose.BarCode
+// Description: This example iterates through every EncodeTypes value, creates a barcode with default checksum handling, and saves each as a PNG file.
+// Category-Description: Demonstrates bulk barcode generation in the Aspose.BarCode library, covering the EncodeTypes enumeration, BarcodeGenerator class, and image export via BarCodeImageFormat. Useful for developers needing to produce sample images, test all symbologies, or batch‑create barcodes without custom checksum settings. Part of a collection of Aspose.BarCode examples showing encoding, rendering, and error handling.
 // Prompt: Write a script that generates barcodes for all symbologies, toggles checksum per default behavior, and logs exceptions.
-// Tags: barcode, symbology, generation, checksum, error handling, aspose.barcode, png, batch processing
+// Tags: barcode, symbology, generation, checksum, exception handling, aspose.barcode, png, csharp
 
 using System;
 using System.IO;
 using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating barcodes for every supported symbology using Aspose.BarCode,
-/// enabling checksum where applicable, and logging any exceptions.
+/// Program that generates a PNG barcode for each supported symbology using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a temporary output directory, iterates over all EncodeTypes,
-    /// generates PNG barcodes with checksum enabled, and writes status messages to the console.
+    /// Entry point. Creates an output folder, iterates over all EncodeTypes, generates barcodes with default checksum behavior, saves them, and logs any errors.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary folder for the generated barcodes
-        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
-        Console.WriteLine($"Barcodes will be saved to: {outputFolder}");
+        // Create a unique temporary output directory.
+        string outputDir = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+        Console.WriteLine("Output directory: " + outputDir);
 
-        // Retrieve all public static fields of EncodeTypes (each represents a symbology)
-        FieldInfo[] symbologyFields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
-
-        // Iterate through each symbology and generate a barcode
-        foreach (FieldInfo field in symbologyFields)
+        // Retrieve all public static fields of the EncodeTypes enumeration.
+        FieldInfo[] fields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
+        foreach (FieldInfo field in fields)
         {
-            string symbologyName = field.Name;
-            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+            // Cast the field value to BaseEncodeType; skip if not a valid type.
+            BaseEncodeType encodeType = field.GetValue(null) as BaseEncodeType;
+            if (encodeType == null)
+            {
+                Console.WriteLine($"Skipping {field.Name}: not a BaseEncodeType.");
+                continue;
+            }
 
-            // Use a generic code text; some symbologies may require specific formats
-            string codeText = "1234567890";
-
-            // Build the full file path for the PNG image
-            string filePath = Path.Combine(outputFolder, $"{symbologyName}.png");
+            // Use the field name as a simple placeholder for the barcode text.
+            string codeText = field.Name;
+            string filePath = Path.Combine(outputDir, $"{field.Name}.png");
 
             try
             {
-                // Create the barcode generator for the current symbology
-                using (var generator = new BarcodeGenerator(encodeType, codeText))
+                // Generate the barcode with default checksum behavior and save as PNG.
+                using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
                 {
-                    // Enable checksum (default behavior) where supported
-                    generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-                    // Save the barcode image as PNG
+                    // No explicit checksum setting; default behavior is applied.
                     generator.Save(filePath, BarCodeImageFormat.Png);
                 }
-
-                Console.WriteLine($"Generated {symbologyName} barcode: {filePath}");
+                Console.WriteLine($"Generated: {filePath}");
             }
             catch (Exception ex)
             {
-                // Log any exception that occurs during generation or saving
-                Console.WriteLine($"Error generating {symbologyName}: {ex.Message}");
+                // Log any exceptions that occur during generation.
+                Console.WriteLine($"Error generating {field.Name}: {ex.Message}");
             }
         }
 
