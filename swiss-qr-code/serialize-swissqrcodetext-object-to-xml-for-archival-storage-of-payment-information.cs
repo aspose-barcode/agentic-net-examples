@@ -1,8 +1,8 @@
-// Title: Serialize Swiss QR Code generation state to XML
-// Description: Demonstrates creating a Swiss QR Code, saving it as a PNG image, and exporting the generator's state to an XML file for archival storage of payment information.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on complex barcode symbologies such as Swiss QR Codes. It showcases the use of BarcodeGenerator, SwissQRCodetext, and related classes to produce QR codes for financial transactions, a common requirement for developers implementing payment standards. The example also illustrates how to persist the generation parameters via XML, enabling later reconstruction or auditing of barcode data.
+// Title: Serialize Swiss QR Code Data to XML and Generate PNG
+// Description: Demonstrates creating a Swiss QR Code payment object, exporting its data to XML for archival storage, and optionally saving a PNG image for visual verification.
+// Category-Description: This example belongs to the Aspose.BarCode suite of barcode generation and serialization operations. It showcases the use of SwissQRCodetext, BarcodeGenerator, and ExportToXml to handle Swiss QR payment data. Developers working with financial QR codes often need to archive payment details in a structured format while also providing a visual representation for users.
 // Prompt: Serialize the SwissQRCodetext object to XML for archival storage of payment information.
-// Tags: barcode, swissqr, xml, serialization, generation, aspose.barcode, qr
+// Tags: swissqr, barcode, serialization, xml, png, aspose.barcode, payment, qr
 
 using System;
 using System.IO;
@@ -11,33 +11,29 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Example program that creates a Swiss QR Code, saves it as an image,
-/// and exports the barcode generation state to an XML file.
+/// Example program that creates a Swiss QR Code payment object, exports its data to XML,
+/// and generates a PNG image of the barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Swiss QR Code, writes the PNG image,
-    /// and serializes the generation state to XML.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a unique temporary output directory for the generated files.
-        // --------------------------------------------------------------------
-        string outputDir = Path.Combine(Path.GetTempPath(), "SwissQRDemo_" + Guid.NewGuid().ToString("N"));
+        // Prepare a temporary output directory for the generated files.
+        string outputDir = Path.Combine(Path.GetTempPath(), "SwissQRDemo");
         Directory.CreateDirectory(outputDir);
 
-        // --------------------------------------------------------------
-        // Build the Swiss QR Code data (payment information) using the
-        // SwissQRCodetext object and its nested Bill and Address objects.
-        // --------------------------------------------------------------
+        // Instantiate a Swiss QR Code text object and populate it with payment details.
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-        swissQr.Bill.Account = "CH4431999123000889012";
+        swissQr.Bill.Account = "CH9300762011623852957";
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Currency = "CHF";
         swissQr.Bill.Reference = "210000000003139471430009017";
+
+        // Set creditor (payee) address information.
         swissQr.Bill.Creditor = new Address
         {
             Name = "John Doe",
@@ -47,6 +43,8 @@ class Program
             Town = "Zurich",
             CountryCode = "CH"
         };
+
+        // Set debtor (payer) address information.
         swissQr.Bill.Debtor = new Address
         {
             Name = "Acme Corp",
@@ -57,36 +55,26 @@ class Program
             CountryCode = "CH"
         };
 
-        // --------------------------------------------------------------
-        // Retrieve the plain text representation of the QR code.
-        // --------------------------------------------------------------
-        string plainText = swissQr.GetConstructedCodetext();
+        // Retrieve the plain QR code text that will be encoded.
+        string plainCodeText = swissQr.GetConstructedCodetext();
 
-        // --------------------------------------------------------------
-        // Define file paths for the PNG image and the XML export.
-        // --------------------------------------------------------------
-        string pngPath = Path.Combine(outputDir, "SwissQR.png");
-        string xmlPath = Path.Combine(outputDir, "SwissQR.xml");
-
-        // --------------------------------------------------------------
-        // Generate the barcode image and export the generator's state to XML.
-        // --------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, plainText))
+        // Create a BarcodeGenerator for QR symbology using the plain text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, plainCodeText))
         {
-            // Set the module size (pixel dimension) for the QR code.
-            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            // Optional: adjust the module size (pixel dimension) of the QR code.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Save the QR code as a PNG image.
-            generator.Save(pngPath, BarCodeImageFormat.Png);
-
-            // Export the complete generation state to an XML file.
+            // Export the generation state, which includes the Swiss QR data, to an XML file.
+            string xmlPath = Path.Combine(outputDir, "SwissQR.xml");
             generator.ExportToXml(xmlPath);
+
+            // Optionally generate a PNG image for visual verification.
+            string pngPath = Path.Combine(outputDir, "SwissQR.png");
+            generator.Save(pngPath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------
-        // Output the locations of the generated files.
-        // --------------------------------------------------------------
-        Console.WriteLine("Swiss QR Code image saved to: " + pngPath);
-        Console.WriteLine("Generation state exported to XML: " + xmlPath);
+        // Inform the user where the files have been saved.
+        Console.WriteLine($"Swiss QR code XML saved to: {Path.Combine(outputDir, "SwissQR.xml")}");
+        Console.WriteLine($"Swiss QR code image saved to: {Path.Combine(outputDir, "SwissQR.png")}");
     }
 }
