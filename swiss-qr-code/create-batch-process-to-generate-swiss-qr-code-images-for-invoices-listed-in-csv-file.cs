@@ -1,8 +1,8 @@
-// Title: Batch generation of Swiss QR Code images from invoice CSV
-// Description: Demonstrates how to read invoice data from a CSV file and create Swiss QR Code barcodes for each invoice, saving them as PNG images.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Swiss QR Codes. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and related address classes to build QR bill data, a common requirement for Swiss payment processing systems. Developers often need to automate QR code creation for large numbers of invoices, making this pattern useful for batch processing scenarios.
+// Title: Batch generation of Swiss QR Code barcodes for invoices from CSV
+// Description: Demonstrates how to read invoice data from a CSV file and generate Swiss QR Code images for each invoice using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode creation with the SwissQRCodetext class. It showcases typical use cases such as batch processing, file I/O, and image output, which developers often need when automating invoice QR code generation for payment processing.
 // Prompt: Create a batch process to generate Swiss QR Code images for invoices listed in a CSV file.
-// Tags: swiss qr code, barcode generation, csv, batch processing, aspose.barcode, complexbarcodegenerator, png
+// Tags: swiss qr code, batch processing, image generation, png, aspose.barcode, complexbarcodegenerator, csv parsing
 
 using System;
 using System.IO;
@@ -10,152 +10,131 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Provides a console application that reads invoice information from a CSV file
-/// and generates a Swiss QR Code image for each invoice using Aspose.BarCode.
+/// Demonstrates batch creation of Swiss QR Code barcodes from invoice data stored in a CSV file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Handles CSV input, creates Swiss QR Code data,
-    /// and saves each barcode as a PNG file in an output directory.
+    /// Entry point of the example. Reads a CSV file, builds Swiss QR Code data for each invoice,
+    /// and saves the generated barcode images as PNG files.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument may be a path to a CSV file.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine CSV file path: use argument if valid, otherwise create a temporary sample CSV.
-        string csvPath;
-        if (args.Length > 0 && File.Exists(args[0]))
-        {
-            csvPath = args[0];
-        }
-        else
-        {
-            // Create a temporary folder for sample data.
-            string tempFolder = Path.Combine(Path.GetTempPath(), "SwissQRBatch_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempFolder);
-            csvPath = Path.Combine(tempFolder, "invoices.csv");
-            CreateSampleCsv(csvPath);
-            Console.WriteLine($"Sample CSV created at: {csvPath}");
-        }
+        // Prepare temporary directories for CSV input and PNG output
+        string baseTemp = Path.Combine(Path.GetTempPath(), "SwissQRBatch_" + Guid.NewGuid().ToString("N"));
+        string csvPath = Path.Combine(baseTemp, "invoices.csv");
+        string outputDir = Path.Combine(baseTemp, "Output");
+        Directory.CreateDirectory(baseTemp);
+        Directory.CreateDirectory(outputDir);
 
-        // Prepare output folder for generated QR code images.
-        string outputFolder = Path.Combine(Path.GetDirectoryName(csvPath) ?? Directory.GetCurrentDirectory(), "SwissQRImages");
-        Directory.CreateDirectory(outputFolder);
+        // Create a sample CSV file (header + three sample invoices)
+        string[] csvLines = new[]
+        {
+            "InvoiceId,CreditorName,CreditorStreet,CreditorHouseNo,CreditorPostalCode,CreditorTown,CreditorCountryCode,Account,Amount,Currency,Reference,DebtorName,DebtorStreet,DebtorHouseNo,DebtorPostalCode,DebtorTown,DebtorCountryCode",
+            "INV001,John Doe,Main Street,12,8000,Zurich,CH,CH9300762011623852957,199.95,CHF,210000000003139471430009017,Acme Corp,Second Street,5,3000,Bern,CH",
+            "INV002,Jane Smith,High Road,8,8200,Zurich,CH,CH4431999123000889012,250.00,CHF,210000000003139471430009018,Globex,Third Avenue,3,4000,Geneva,CH",
+            "INV003,Alpha Ltd,Market Plaza,1,8300,Zurich,CH,CH4431999123000889012,75.50,CHF,210000000003139471430009019,Delta Inc,Fourth Blvd,9,5000,Lausanne,CH"
+        };
+        File.WriteAllLines(csvPath, csvLines);
 
-        // Read all lines from the CSV file.
-        string[] lines = File.ReadAllLines(csvPath);
-        if (lines.Length <= 1)
+        // Read CSV lines into memory
+        List<string> lines = new List<string>(File.ReadAllLines(csvPath));
+        if (lines.Count <= 1)
         {
             Console.WriteLine("CSV file contains no data.");
             return;
         }
 
-        // Process each data line (skip header at index 0).
-        for (int i = 1; i < lines.Length; i++)
+        // Parse header row to obtain column indices (simple approach)
+        string[] headers = lines[0].Split(',');
+        int idxInvoiceId = Array.IndexOf(headers, "InvoiceId");
+        int idxCreditorName = Array.IndexOf(headers, "CreditorName");
+        int idxCreditorStreet = Array.IndexOf(headers, "CreditorStreet");
+        int idxCreditorHouseNo = Array.IndexOf(headers, "CreditorHouseNo");
+        int idxCreditorPostalCode = Array.IndexOf(headers, "CreditorPostalCode");
+        int idxCreditorTown = Array.IndexOf(headers, "CreditorTown");
+        int idxCreditorCountryCode = Array.IndexOf(headers, "CreditorCountryCode");
+        int idxAccount = Array.IndexOf(headers, "Account");
+        int idxAmount = Array.IndexOf(headers, "Amount");
+        int idxCurrency = Array.IndexOf(headers, "Currency");
+        int idxReference = Array.IndexOf(headers, "Reference");
+        int idxDebtorName = Array.IndexOf(headers, "DebtorName");
+        int idxDebtorStreet = Array.IndexOf(headers, "DebtorStreet");
+        int idxDebtorHouseNo = Array.IndexOf(headers, "DebtorHouseNo");
+        int idxDebtorPostalCode = Array.IndexOf(headers, "DebtorPostalCode");
+        int idxDebtorTown = Array.IndexOf(headers, "DebtorTown");
+        int idxDebtorCountryCode = Array.IndexOf(headers, "DebtorCountryCode");
+
+        // Process up to five invoices (safe batch size)
+        int maxItems = Math.Min(5, lines.Count - 1);
+        for (int i = 1; i <= maxItems; i++)
         {
-            string line = lines[i];
-            if (string.IsNullOrWhiteSpace(line))
-                continue; // Skip empty lines.
+            // Split current CSV line into fields
+            string[] fields = lines[i].Split(',');
 
-            string[] fields = line.Split(',');
+            // Extract and trim invoice data
+            string invoiceId = fields[idxInvoiceId].Trim();
+            string creditorName = fields[idxCreditorName].Trim();
+            string creditorStreet = fields[idxCreditorStreet].Trim();
+            string creditorHouseNo = fields[idxCreditorHouseNo].Trim();
+            string creditorPostalCode = fields[idxCreditorPostalCode].Trim();
+            string creditorTown = fields[idxCreditorTown].Trim();
+            string creditorCountryCode = fields[idxCreditorCountryCode].Trim();
+            string account = fields[idxAccount].Trim();
+            decimal amount = decimal.Parse(fields[idxAmount].Trim());
+            string currency = fields[idxCurrency].Trim();
+            string reference = fields[idxReference].Trim();
+            string debtorName = fields[idxDebtorName].Trim();
+            string debtorStreet = fields[idxDebtorStreet].Trim();
+            string debtorHouseNo = fields[idxDebtorHouseNo].Trim();
+            string debtorPostalCode = fields[idxDebtorPostalCode].Trim();
+            string debtorTown = fields[idxDebtorTown].Trim();
+            string debtorCountryCode = fields[idxDebtorCountryCode].Trim();
 
-            // Basic validation: ensure the line has the expected number of columns.
-            if (fields.Length < 17)
+            // Build Swiss QR Code codetext using Aspose.BarCode's SwissQRCodetext class
+            var swissQr = new SwissQRCodetext();
+            swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+            swissQr.Bill.Account = account;
+            swissQr.Bill.Amount = amount;
+            swissQr.Bill.Currency = currency;
+            swissQr.Bill.Reference = reference;
+
+            // Populate creditor address
+            swissQr.Bill.Creditor = new Address
             {
-                Console.WriteLine($"Skipping line {i + 1}: insufficient columns.");
-                continue;
-            }
-
-            // Map CSV columns to variables (order matches the sample CSV header).
-            string invoiceNumber = fields[0].Trim();
-            string account = fields[1].Trim();
-            string amountStr = fields[2].Trim();
-            string currency = fields[3].Trim();
-            string reference = fields[4].Trim();
-
-            // Creditor address fields.
-            string credName = fields[5].Trim();
-            string credStreet = fields[6].Trim();
-            string credHouseNo = fields[7].Trim();
-            string credPostalCode = fields[8].Trim();
-            string credTown = fields[9].Trim();
-            string credCountryCode = fields[10].Trim();
-
-            // Debtor address fields.
-            string debtName = fields[11].Trim();
-            string debtStreet = fields[12].Trim();
-            string debtHouseNo = fields[13].Trim();
-            string debtPostalCode = fields[14].Trim();
-            string debtTown = fields[15].Trim();
-            string debtCountryCode = fields[16].Trim();
-
-            // Parse amount; skip line if invalid.
-            if (!decimal.TryParse(amountStr, out decimal amount))
-            {
-                Console.WriteLine($"Skipping line {i + 1}: invalid amount.");
-                continue;
-            }
-
-            // Build Swiss QR Code codetext using Aspose.BarCode classes.
-            SwissQRCodetext swissQRCode = new SwissQRCodetext
-            {
-                Bill =
-                {
-                    Version = SwissQRBill.QrBillStandardVersion.V2_0,
-                    Account = account,
-                    Amount = amount,
-                    Currency = currency,
-                    Reference = reference,
-                    Creditor = new Address
-                    {
-                        Name = credName,
-                        Street = credStreet,
-                        HouseNo = credHouseNo,
-                        PostalCode = credPostalCode,
-                        Town = credTown,
-                        CountryCode = credCountryCode
-                    },
-                    Debtor = new Address
-                    {
-                        Name = debtName,
-                        Street = debtStreet,
-                        HouseNo = debtHouseNo,
-                        PostalCode = debtPostalCode,
-                        Town = debtTown,
-                        CountryCode = debtCountryCode
-                    }
-                }
+                Name = creditorName,
+                Street = creditorStreet,
+                HouseNo = creditorHouseNo,
+                PostalCode = creditorPostalCode,
+                Town = creditorTown,
+                CountryCode = creditorCountryCode
             };
 
-            // Generate barcode image and save as PNG.
-            string imagePath = Path.Combine(outputFolder, $"{invoiceNumber}_SwissQR.png");
-            using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(swissQRCode))
+            // Populate debtor address
+            swissQr.Bill.Debtor = new Address
             {
-                generator.Parameters.Barcode.XDimension.Pixels = 4; // Set module size.
-                generator.Save(imagePath, BarCodeImageFormat.Png);
-            }
+                Name = debtorName,
+                Street = debtorStreet,
+                HouseNo = debtorHouseNo,
+                PostalCode = debtorPostalCode,
+                Town = debtorTown,
+                CountryCode = debtorCountryCode
+            };
 
-            Console.WriteLine($"Generated QR for invoice {invoiceNumber} at {imagePath}");
+            // Generate the barcode image and save as PNG
+            using (var generator = new ComplexBarcodeGenerator(swissQr))
+            {
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                string outputPath = Path.Combine(outputDir, $"{invoiceId}.png");
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated QR for {invoiceId} at {outputPath}");
+            }
         }
 
         Console.WriteLine("Batch processing completed.");
-    }
-
-    /// <summary>
-    /// Creates a sample CSV file with a header and three example invoice records.
-    /// </summary>
-    /// <param name="path">Full file path where the CSV will be written.</param>
-    private static void CreateSampleCsv(string path)
-    {
-        var lines = new List<string>
-        {
-            "InvoiceNumber,Account,Amount,Currency,Reference,CreditorName,CreditorStreet,CreditorHouseNo,CreditorPostalCode,CreditorTown,CreditorCountryCode,DebtorName,DebtorStreet,DebtorHouseNo,DebtorPostalCode,DebtorTown,DebtorCountryCode",
-            "INV001,CH9300762011623852957,199.95,CHF,210000000003139471430009017,John Doe,Main Street,12,8000,Zürich,CH,Acme Corp,Second Street,5,3000,Bern,CH",
-            "INV002,CH9300762011623852957,250.00,CHF,210000000003139471430009018,Jane Smith,High Road,8,4000,Basel,CH,Widget Ltd,Low Avenue,3,5000,Lausanne,CH",
-            "INV003,CH9300762011623852957,75.50,CHF,210000000003139471430009019,Alpha AG,Market Plaza,1,6000,Genève,CH,Beta GmbH,Industrial Way,9,7000,St. Gallen,CH"
-        };
-        File.WriteAllLines(path, lines);
     }
 }

@@ -1,116 +1,100 @@
-// Title: Read and Decode Swiss QR Code with Aspose.BarCode
-// Description: Generates a Swiss QR Code image, reads it back, and extracts the raw encoded data, handling decoding errors gracefully.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on Swiss QR Bill (QR) symbology. It demonstrates using ComplexBarcodeGenerator to create a QR code, BarCodeReader for decoding, and ComplexCodetextReader for parsing the structured data. Developers working with payment QR codes, invoice automation, or QR-based data exchange commonly need to generate, read, and validate such barcodes.
+// Title: Read Swiss QR Code and extract bill details
+// Description: Demonstrates how to load a Swiss QR Code image, decode its raw text, and parse the bill information using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on QR code decoding and complex code text parsing. It showcases the BarCodeReader class with DecodeType.QR, handling recognition exceptions, and using ComplexCodetextReader to interpret Swiss QR bill data. Developers working with payment QR codes can use this pattern to extract structured information from scanned images.
 // Prompt: Read raw encoded text from a Swiss QR Code image and gracefully handle possible decoding exceptions.
-// Tags: swissqr, qr, barcode, generation, recognition, exception-handling, aspose.barcode
+// Tags: swiss qr code, barcode recognition, qr, aspnet, aspose.barcode, complexcodetextreader, decode, exception handling
 
 using System;
 using System.IO;
 using System.Text;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR Code, reading it back, and handling possible decoding exceptions.
+/// Demonstrates reading a Swiss QR Code image, extracting raw encoded text,
+/// and parsing the bill details while handling possible decoding exceptions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a temporary Swiss QR Code image, decodes it, and outputs the extracted fields.
+    /// Entry point of the example. Sets console encoding, validates the image file,
+    /// reads barcodes, decodes Swiss QR bill data, and outputs the extracted fields.
     /// </summary>
     static void Main()
     {
-        // Ensure Unicode characters (e.g., umlauts) are displayed correctly in the console.
+        // Ensure Unicode characters are displayed correctly in the console.
         Console.OutputEncoding = Encoding.Unicode;
 
-        // Create a temporary folder for the sample image.
-        string tempDir = Path.Combine(Path.GetTempPath(), "SwissQR_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string imagePath = Path.Combine(tempDir, "SwissQRBill.png");
+        // Build the full path to the image file located in the current directory.
+        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "SwissQRBill.png");
 
-        // Build the Swiss QR Code data structure with sample billing information.
-        SwissQRCodetext swissQRCode = new SwissQRCodetext();
-        swissQRCode.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-        swissQRCode.Bill.Account = "CH4431999123000889012";
-        swissQRCode.Bill.Amount = 1000.25m;
-        swissQRCode.Bill.Currency = "CHF";
-        swissQRCode.Bill.Reference = "210000000003139471430009017";
-        swissQRCode.Bill.Creditor = new Address
-        {
-            Name = "Muster & Söhne",
-            Street = "Musterstrasse",
-            HouseNo = "12b",
-            PostalCode = "8200",
-            Town = "Zürich",
-            CountryCode = "CH"
-        };
-        swissQRCode.Bill.Debtor = new Address
-        {
-            Name = "Muster AG",
-            Street = "Musterstrasse",
-            HouseNo = "1",
-            PostalCode = "3030",
-            Town = "Bern",
-            CountryCode = "CH"
-        };
-
-        // Generate the QR code image using the complex barcode generator.
-        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(swissQRCode))
-        {
-            generator.Parameters.Barcode.XDimension.Pixels = 4f; // Set module size for better readability.
-            generator.Save(imagePath);
-        }
-
-        // Verify the image exists before attempting to read it.
+        // Verify that the image file exists before attempting processing.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Generated image not found.");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Read and decode the Swiss QR Code from the generated image.
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
+        try
         {
-            try
+            // Initialize the barcode reader for QR codes using the specified image.
+            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
             {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                BarCodeResult[] results = null;
+
+                try
                 {
-                    // Attempt to parse the raw QR code text into a structured Swiss QR object.
-                    SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(result.CodeText);
-                    if (decoded == null)
+                    // Attempt to read all barcodes present in the image.
+                    results = reader.ReadBarCodes();
+                }
+                catch (RecognitionAbortedException ex)
+                {
+                    // Handle cases where the recognition process is aborted.
+                    Console.WriteLine($"Recognition aborted: {ex.Message}");
+                    return;
+                }
+
+                // If no results were found, inform the user and exit.
+                if (results == null || results.Length == 0)
+                {
+                    Console.WriteLine("No barcode detected.");
+                    return;
+                }
+
+                // Iterate through each detected barcode result.
+                foreach (BarCodeResult result in results)
+                {
+                    // Skip results that do not contain any text.
+                    if (string.IsNullOrEmpty(result.CodeText))
                     {
-                        Console.WriteLine("Failed to parse Swiss QR Code text.");
+                        Console.WriteLine("Empty CodeText in result.");
                         continue;
                     }
 
-                    // Output the extracted billing fields.
-                    Console.WriteLine($"Version:{decoded.Bill.Version}");
-                    Console.WriteLine($"Account:{decoded.Bill.Account}");
-                    Console.WriteLine($"Amount:{decoded.Bill.Amount}");
-                    Console.WriteLine($"Currency:{decoded.Bill.Currency}");
-                    Console.WriteLine($"Reference:{decoded.Bill.Reference}");
-                    Console.WriteLine($"Creditor:{decoded.Bill.Creditor.Name}");
-                    Console.WriteLine($"Debtor:{decoded.Bill.Debtor.Name}");
+                    // Attempt to parse the raw QR code text as a Swiss QR bill.
+                    SwissQRCodetext swissResult = ComplexCodetextReader.TryDecodeSwissQR(result.CodeText);
+                    if (swissResult == null)
+                    {
+                        Console.WriteLine("Failed to decode Swiss QR codetext.");
+                        continue;
+                    }
+
+                    // Output the extracted bill details to the console.
+                    Console.WriteLine($"Version: {swissResult.Bill.Version}");
+                    Console.WriteLine($"Account: {swissResult.Bill.Account}");
+                    Console.WriteLine($"Amount: {swissResult.Bill.Amount}");
+                    Console.WriteLine($"Currency: {swissResult.Bill.Currency}");
+                    Console.WriteLine($"Reference: {swissResult.Bill.Reference}");
+                    Console.WriteLine($"Creditor: {swissResult.Bill.Creditor?.Name}");
+                    Console.WriteLine($"Debtor: {swissResult.Bill.Debtor?.Name}");
                 }
             }
-            catch (Exception ex)
-            {
-                // Gracefully handle any exceptions that occur during barcode reading.
-                Console.WriteLine($"Error during barcode reading: {ex.Message}");
-            }
         }
-
-        // Clean up temporary files; ignore any errors during cleanup.
-        try
+        catch (Exception ex)
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempDir);
-        }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program outcome.
+            // Catch any unexpected errors during processing and display a message.
+            Console.WriteLine($"Error during processing: {ex.Message}");
         }
     }
 }

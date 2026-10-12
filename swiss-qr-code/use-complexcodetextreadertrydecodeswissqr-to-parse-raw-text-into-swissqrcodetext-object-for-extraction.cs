@@ -1,45 +1,44 @@
 // Title: Decode Swiss QR Code using ComplexCodetextReader
-// Description: Demonstrates generating a Swiss QR code, saving it as an image, and decoding it back into a SwissQRCodetext object for data extraction.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator to create a Swiss QR payment code, BarCodeReader to scan the image, and ComplexCodetextReader to parse the raw QR text into a strongly‑typed SwissQRCodetext object. Developers working with payment QR codes, QR bill standards, or any complex barcode formats will find these APIs essential for creating and extracting structured data.
+// Description: Demonstrates generating a Swiss QR Code barcode, saving it to an image, and decoding it back into a SwissQRCodetext object for data extraction.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator to create a Swiss QR Code, BarCodeReader to scan the image, and ComplexCodetextReader to parse the raw QR text into a strongly‑typed SwissQRCodetext object. Developers working with payment QR codes, QR‑based invoices, or any Swiss QR standard will find these APIs essential for creating and reading QR data in .NET applications.
 // Prompt: Use ComplexCodetextReader.TryDecodeSwissQR to parse raw text into a SwissQRCodetext object for extraction.
-// Tags: barcode, swissqr, decoding, complexbarcode, aspose.barcode, qr, payment
+// Tags: swissqr, barcode, generation, recognition, complexbarcode, aspose.barcode
 
 using System;
 using System.IO;
-using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Example program that generates a Swiss QR code, saves it to a temporary file,
-/// reads the QR code back, and extracts the encoded payment information.
+/// Sample program that creates a Swiss QR Code, saves it as an image, reads it back,
+/// and extracts the embedded payment information using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the generation, decoding, and cleanup steps.
+    /// Entry point of the application.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Ensure Unicode characters (e.g., umlauts) are displayed correctly in the console.
-        Console.OutputEncoding = Encoding.Unicode;
-
-        // Create a unique temporary folder to store the generated QR image.
+        // --------------------------------------------------------------------
+        // 1. Prepare a temporary folder to store the generated barcode image.
+        // --------------------------------------------------------------------
         string tempFolder = Path.Combine(Path.GetTempPath(), "SwissQR_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
         string imagePath = Path.Combine(tempFolder, "SwissQR.png");
 
-        // Build the Swiss QR code data structure with sample payment details.
-        SwissQRCodetext swissCodetext = new SwissQRCodetext();
-        swissCodetext.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-        swissCodetext.Bill.Account = "CH4431999123000889012";
-        swissCodetext.Bill.Amount = 1000.25m;
-        swissCodetext.Bill.Currency = "CHF";
-        swissCodetext.Bill.Reference = "210000000003139471430009017";
-        swissCodetext.Bill.Creditor = new Address
+        // ---------------------------------------------------------------
+        // 2. Build the Swiss QR Code data model (payment information).
+        // ---------------------------------------------------------------
+        var swissQRCode = new SwissQRCodetext();
+        swissQRCode.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        swissQRCode.Bill.Account = "CH4431999123000889012";
+        swissQRCode.Bill.Amount = 1000.25m;
+        swissQRCode.Bill.Currency = "CHF";
+        swissQRCode.Bill.Reference = "210000000003139471430009017";
+        swissQRCode.Bill.Creditor = new Address
         {
             Name = "Muster & Söhne",
             Street = "Musterstrasse",
@@ -48,7 +47,7 @@ class Program
             Town = "Zürich",
             CountryCode = "CH"
         };
-        swissCodetext.Bill.Debtor = new Address
+        swissQRCode.Bill.Debtor = new Address
         {
             Name = "Muster AG",
             Street = "Musterstrasse",
@@ -58,60 +57,59 @@ class Program
             CountryCode = "CH"
         };
 
-        // Generate the QR code image using the complex barcode generator.
-        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(swissCodetext))
+        // ---------------------------------------------------------------
+        // 3. Generate the barcode image using ComplexBarcodeGenerator.
+        // ---------------------------------------------------------------
+        using (var generator = new ComplexBarcodeGenerator(swissQRCode))
         {
-            // Configure visual appearance: module size and QR encoding mode.
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            // Set visual parameters: module size and QR encoding mode.
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
             generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
             generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
 
-            // Save the generated QR code to the temporary file.
+            // Save the generated image to the temporary path.
             generator.Save(imagePath);
         }
 
-        // Verify that the image was created before attempting to read it.
-        if (File.Exists(imagePath))
+        // ---------------------------------------------------------------
+        // 4. Read and decode the barcode from the saved image.
+        // ---------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
         {
-            // Initialize a barcode reader for QR codes.
-            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Iterate over all detected QR codes (normally just one).
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // Try to parse the raw QR text into a strongly‑typed SwissQRCodetext object.
+                SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(result.CodeText);
+                if (decoded == null)
                 {
-                    // Decode the raw QR text into a strongly‑typed SwissQRCodetext object.
-                    SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(result.CodeText);
-                    if (decoded == null)
-                    {
-                        Console.WriteLine("Failed to decode Swiss QR code.");
-                        continue;
-                    }
-
-                    // Output the extracted payment information.
-                    Console.WriteLine($"Version: {decoded.Bill.Version}");
-                    Console.WriteLine($"Account: {decoded.Bill.Account}");
-                    Console.WriteLine($"Amount: {decoded.Bill.Amount}");
-                    Console.WriteLine($"Currency: {decoded.Bill.Currency}");
-                    Console.WriteLine($"Reference: {decoded.Bill.Reference}");
-                    Console.WriteLine($"Creditor: {decoded.Bill.Creditor?.Name}");
-                    Console.WriteLine($"Debtor: {decoded.Bill.Debtor?.Name}");
+                    Console.WriteLine("Failed to decode Swiss QR Code.");
+                    continue;
                 }
+
+                // Output the extracted payment details.
+                Console.WriteLine($"Version: {decoded.Bill.Version}");
+                Console.WriteLine($"Account: {decoded.Bill.Account}");
+                Console.WriteLine($"Amount: {decoded.Bill.Amount}");
+                Console.WriteLine($"Currency: {decoded.Bill.Currency}");
+                Console.WriteLine($"Reference: {decoded.Bill.Reference}");
+                Console.WriteLine($"Creditor: {decoded.Bill.Creditor.Name}");
+                Console.WriteLine($"Debtor: {decoded.Bill.Debtor.Name}");
             }
         }
-        else
-        {
-            Console.WriteLine("Generated image not found.");
-        }
 
-        // Clean up temporary files and folder; ignore any errors during deletion.
+        // ---------------------------------------------------------------
+        // 5. Clean up temporary files and directories.
+        // ---------------------------------------------------------------
         try
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder);
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Suppress cleanup exceptions.
+            // Ignored – cleanup failures should not affect program exit.
         }
     }
 }

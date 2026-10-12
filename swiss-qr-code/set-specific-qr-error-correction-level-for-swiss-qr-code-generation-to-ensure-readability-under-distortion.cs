@@ -1,8 +1,8 @@
 // Title: Generate Swiss QR Code with High Error Correction Level
-// Description: Demonstrates creating a Swiss QR Bill using Aspose.BarCode and setting the QR error correction level to Level H to improve readability under distortion.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with SwissQRCodetext to produce a Swiss QR Bill. Typical use cases include generating payment QR codes for Swiss banking applications, where developers need to control QR error correction levels to ensure reliable scanning even when the image is distorted or partially obscured.
+// Description: Demonstrates how to create a Swiss QR Code (QR‑Bill) and set its QR error correction level to High, then save it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on complex barcode creation using the ComplexBarcodeGenerator and SwissQRCodetext classes. It shows how to configure QR‑Bill data, adjust QR error correction levels, and export the result to common image formats. Developers working with payment QR codes, especially Swiss QR‑Bills, often need to control error correction to ensure readability under distortion.
 // Prompt: Set a specific QR error correction level for Swiss QR Code generation to ensure readability under distortion.
-// Tags: swiss qr, qr error correction, barcode generation, aspose.barcode, complexbarcode, png output, payment
+// Tags: barcode, swiss qr code, error correction, png, complexbarcodegenerator, aspose.barcode.generation
 
 using System;
 using System.IO;
@@ -10,18 +10,27 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a Swiss QR Bill and configures a high QR error correction level.
+/// Example program that generates a Swiss QR Code (QR‑Bill) with a high QR error correction level.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a Swiss QR Code with Level H error correction and saves it as a PNG file.
+    /// Entry point of the application. Creates the QR‑Bill data, sets the error correction level,
+    /// and saves the barcode image to disk.
     /// </summary>
     static void Main()
     {
-        // Initialize Swiss QR Code data structure with creditor and payment details
+        // Define and ensure the output directory exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "SwissQR_Output");
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Build the Swiss QR Code payload (QR‑Bill) with creditor and payment details
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Creditor.Name = "John Doe";
         swissQr.Bill.Creditor.CountryCode = "CH";
@@ -29,17 +38,19 @@ class Program
         swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
 
-        // Create a ComplexBarcodeGenerator using the Swiss QR data
+        // Initialize the complex barcode generator using the Swiss QR payload
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Configure the QR part to use the highest error correction level (Level H)
+            // Configure the QR error correction level to High (Level H) for better resilience
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Determine a temporary file path for the output PNG image
-            string outputPath = Path.Combine(Path.GetTempPath(), "SwissQR.png");
+            // Define the full path for the output PNG file
+            string outputPath = Path.Combine(outputDir, "SwissQR_HighErrorCorrection.png");
 
-            // Render and save the barcode image to the specified path
+            // Render and save the barcode image
             generator.Save(outputPath, BarCodeImageFormat.Png);
+
+            // Inform the user where the file was saved
             Console.WriteLine($"Swiss QR Code saved to: {outputPath}");
         }
     }

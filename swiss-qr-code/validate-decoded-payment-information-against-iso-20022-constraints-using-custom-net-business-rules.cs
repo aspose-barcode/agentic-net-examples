@@ -1,188 +1,164 @@
-// Title: Validate Swiss QR Bill payment data against ISO 20022 rules
-// Description: Generates a Swiss QR‑Bill QR code, decodes it, parses the payment fields and validates them according to ISO 20022 constraints.
-// Category-Description: This example demonstrates Aspose.BarCode generation and recognition for QR codes, focusing on the Swiss QR‑Bill format. It shows how to create a QR code with EncodeTypes.QR, read it with BarCodeReader, and apply custom .NET business rules to validate payment information such as IBAN, amount, currency, and reference. Developers working with financial QR codes, ISO 20022 compliance, or barcode‑based payment workflows will find this pattern useful.
+// Title: Generate and Validate Swiss QR Code with ISO 20022 Business Rules
+// Description: Demonstrates creating a Swiss QR Code (QR‑Bill) image, decoding it, and applying custom .NET validation that mirrors ISO 20022 constraints.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on complex barcodes such as Swiss QR Codes. It showcases the ComplexBarcodeGenerator, BarCodeReader, and related classes for creating, saving, and reading QR‑Bill data. Developers often need to generate payment QR codes, extract their payload, and enforce business‑level validation rules, making this a typical use case for financial and invoicing applications.
 // Prompt: Validate decoded payment information against ISO 20022 constraints using custom .NET business rules.
-// Tags: qr, swiss-qr-bill, iso20022, validation, barcode, generation, recognition, aspose.barcode, .net
+// Tags: swissqr, qr-bill, barcode generation, barcode recognition, iso20022, validation, aspnet, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generation, decoding, parsing, and validation of a Swiss QR‑Bill QR code
-/// using Aspose.BarCode. The validation follows selected ISO 20022 constraints.
+/// Demonstrates generation, decoding, and validation of a Swiss QR Code (QR‑Bill) using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, decodes it, parses the data,
-    /// validates the payment information, and cleans up temporary files.
+    /// Entry point that creates a QR‑Bill image, reads it back, and validates the extracted data.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary folder to store the generated QR code image.
-        // --------------------------------------------------------------------
+        // Prepare a unique temporary folder for the generated image
         string tempFolder = Path.Combine(Path.GetTempPath(), "SwissQR_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "SwissQRBill.png");
+        string imagePath = Path.Combine(tempFolder, "SwissQR.png");
 
-        // --------------------------------------------------------------------
-        // Sample Swiss QR Bill data encoded as a semi‑colon delimited string.
-        // --------------------------------------------------------------------
-        string qrText = "Account:CH4431999123000889012;" +
-                        "Amount:1000.25;" +
-                        "Currency:CHF;" +
-                        "Reference:210000000003139471430009017;" +
-                        "CreditorName:Muster & Söhne;" +
-                        "DebtorName:Muster AG";
-
-        // --------------------------------------------------------------------
-        // Generate QR code image using Aspose.BarCode.
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // Build Swiss QR Code payload with required bill information
+        SwissQRCodetext swissCode = new SwissQRCodetext();
+        swissCode.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        swissCode.Bill.Account = "CH4431999123000889012";
+        swissCode.Bill.Amount = 1234.56m;
+        swissCode.Bill.Currency = "CHF";
+        swissCode.Bill.Reference = "210000000003139471430009017";
+        swissCode.Bill.Creditor = new Address
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 4;
-            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
+            Name = "Muster & Söhne",
+            Street = "Musterstrasse",
+            HouseNo = "12b",
+            PostalCode = "8200",
+            Town = "Zürich",
+            CountryCode = "CH"
+        };
+        swissCode.Bill.Debtor = new Address
+        {
+            Name = "Muster AG",
+            Street = "Musterstrasse",
+            HouseNo = "1",
+            PostalCode = "3030",
+            Town = "Bern",
+            CountryCode = "CH"
+        };
+
+        // Generate the QR‑Bill image using ComplexBarcodeGenerator
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(swissCode))
+        {
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;               // Set module size
+            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;   // Enable ECI for UTF‑8
             generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(imagePath, BarCodeImageFormat.Png);                // Save as PNG
         }
 
-        // --------------------------------------------------------------------
-        // Read and decode the QR code image.
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Read the generated QR code and perform validation
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
         {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            if (results.Length == 0)
             {
-                // Parse the decoded text into a strongly‑typed DTO.
-                SwissBillInfo decoded = ParseSwissBillInfo(result.CodeText);
+                Console.WriteLine("No barcode detected.");
+                return;
+            }
+
+            foreach (BarCodeResult result in results)
+            {
+                // Decode the Swiss QR Code text into a strongly‑typed object
+                SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(result.CodeText);
                 if (decoded == null)
                 {
                     Console.WriteLine("Failed to parse Swiss QR Code text.");
                     continue;
                 }
 
-                Console.WriteLine("=== Validation Results ===");
-                // Apply custom validation rules.
-                ValidatePaymentInfo(decoded);
+                // Apply custom ISO 20022‑like validation rules
+                bool isValid = ValidateSwissQR(decoded, out string validationMessage);
+                Console.WriteLine(isValid ? "Validation succeeded." : "Validation failed.");
+                Console.WriteLine(validationMessage);
             }
-        }
-
-        // --------------------------------------------------------------------
-        // Clean up temporary files (optional).
-        // --------------------------------------------------------------------
-        try
-        {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignore cleanup errors.
         }
     }
 
     /// <summary>
-    /// Parses a semi‑colon delimited string into a <see cref="SwissBillInfo"/> instance.
-    /// Returns null if mandatory fields are missing.
+    /// Validates the decoded Swiss QR Code data against a set of simple ISO 20022‑style business rules.
     /// </summary>
-    /// <param name="text">The raw QR code text.</param>
-    /// <returns>Parsed payment information or null.</returns>
-    static SwissBillInfo ParseSwissBillInfo(string text)
+    /// <param name="data">The decoded Swiss QR Code payload.</param>
+    /// <param name="message">Output message describing validation result.</param>
+    /// <returns>True if all checks pass; otherwise false.</returns>
+    static bool ValidateSwissQR(SwissQRCodetext data, out string message)
     {
-        if (string.IsNullOrEmpty(text))
-            return null;
-
-        var info = new SwissBillInfo();
-        string[] parts = text.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-        foreach (string part in parts)
+        // Ensure the QR‑Bill version is supported
+        if (data.Bill.Version != SwissQRBill.QrBillStandardVersion.V2_0)
         {
-            string[] kv = part.Split(new[] { ':' }, 2);
-            if (kv.Length != 2)
-                continue;
-
-            string key = kv[0].Trim();
-            string value = kv[1].Trim();
-
-            switch (key)
-            {
-                case "Account":
-                    info.Account = value;
-                    break;
-                case "Amount":
-                    if (decimal.TryParse(value, out decimal amt))
-                        info.Amount = amt;
-                    break;
-                case "Currency":
-                    info.Currency = value;
-                    break;
-                case "Reference":
-                    info.Reference = value;
-                    break;
-                case "CreditorName":
-                    info.CreditorName = value;
-                    break;
-                case "DebtorName":
-                    info.DebtorName = value;
-                    break;
-            }
+            message = "Unsupported QR bill version.";
+            return false;
         }
 
-        // Ensure at least the mandatory fields were parsed.
-        return string.IsNullOrEmpty(info.Account) ? null : info;
+        // Validate IBAN format for Swiss accounts
+        if (string.IsNullOrWhiteSpace(data.Bill.Account) || !IsValidIban(data.Bill.Account))
+        {
+            message = "Invalid IBAN account.";
+            return false;
+        }
+
+        // Amount must be positive
+        if (data.Bill.Amount <= 0)
+        {
+            message = "Amount must be greater than zero.";
+            return false;
+        }
+
+        // Currency must be Swiss Francs
+        if (data.Bill.Currency != "CHF")
+        {
+            message = "Currency must be CHF.";
+            return false;
+        }
+
+        // Creditor information must be present
+        if (data.Bill.Creditor == null || string.IsNullOrWhiteSpace(data.Bill.Creditor.Name))
+        {
+            message = "Creditor information missing.";
+            return false;
+        }
+
+        // Debtor information must be present
+        if (data.Bill.Debtor == null || string.IsNullOrWhiteSpace(data.Bill.Debtor.Name))
+        {
+            message = "Debtor information missing.";
+            return false;
+        }
+
+        message = "All checks passed.";
+        return true;
     }
 
     /// <summary>
-    /// Validates the parsed payment information against a subset of ISO 20022 rules.
-    /// Writes individual validation results and an overall status to the console.
+    /// Performs a minimal validation of a Swiss IBAN (CH + 21 alphanumeric characters).
     /// </summary>
-    /// <param name="data">The payment data to validate.</param>
-    static void ValidatePaymentInfo(SwissBillInfo data)
+    /// <param name="iban">IBAN string to validate.</param>
+    /// <returns>True if the IBAN meets basic format requirements; otherwise false.</returns>
+    static bool IsValidIban(string iban)
     {
-        // Account (IBAN) validation: must start with CH and be 21 characters.
-        bool accountValid = data.Account != null &&
-                            data.Account.StartsWith("CH") &&
-                            data.Account.Length == 21;
-        Console.WriteLine($"Account valid: {accountValid}");
-
-        // Amount must be positive.
-        bool amountValid = data.Amount > 0;
-        Console.WriteLine($"Amount valid (>0): {amountValid}");
-
-        // Currency must be CHF (case‑insensitive).
-        bool currencyValid = string.Equals(data.Currency, "CHF", StringComparison.OrdinalIgnoreCase);
-        Console.WriteLine($"Currency valid (CHF): {currencyValid}");
-
-        // Reference must be non‑empty and ≤ 27 characters (ISO 20022 limit).
-        bool referenceValid = !string.IsNullOrEmpty(data.Reference) && data.Reference.Length <= 27;
-        Console.WriteLine($"Reference valid (non‑empty, ≤27 chars): {referenceValid}");
-
-        // Creditor name must be non‑empty.
-        bool creditorValid = !string.IsNullOrEmpty(data.CreditorName);
-        Console.WriteLine($"Creditor name valid: {creditorValid}");
-
-        // Debtor name must be non‑empty.
-        bool debtorValid = !string.IsNullOrEmpty(data.DebtorName);
-        Console.WriteLine($"Debtor name valid: {debtorValid}");
-
-        // Overall validation result.
-        bool overall = accountValid && amountValid && currencyValid && referenceValid && creditorValid && debtorValid;
-        Console.WriteLine($"Overall payment information valid: {overall}");
+        // Very basic IBAN validation for Swiss accounts (CH + 21 characters, alphanumeric)
+        if (iban.Length != 21) return false;
+        if (!iban.StartsWith("CH")) return false;
+        foreach (char c in iban)
+        {
+            if (!char.IsLetterOrDigit(c)) return false;
+        }
+        return true;
     }
-}
-
-/// <summary>
-/// Simple DTO to hold parsed Swiss QR Bill information.
-/// </summary>
-class SwissBillInfo
-{
-    public string Account { get; set; }
-    public decimal Amount { get; set; }
-    public string Currency { get; set; }
-    public string Reference { get; set; }
-    public string CreditorName { get; set; }
-    public string DebtorName { get; set; }
 }

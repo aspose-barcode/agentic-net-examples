@@ -1,58 +1,57 @@
 // Title: Generate MaxiCode barcode with transparent background
-// Description: Demonstrates how to create a MaxiCode barcode using Aspose.BarCode and save it as a PNG with a transparent background, suitable for overlaying on UI components.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode3, and related parameter settings to customize appearance, including background transparency. Developers working with advanced symbologies and needing image assets for UI integration can refer to this pattern for generating transparent barcode images.
+// Description: Demonstrates how to create a MaxiCode barcode using Aspose.BarCode.ComplexBarcode with a transparent background, suitable for overlaying on UI components.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with MaxiCodeCodetextMode2 and related message classes to produce high‑density 2‑D barcodes. Typical scenarios include shipping labels, parcel tracking, and UI overlays where a transparent background is required. Developers often need to configure barcode parameters such as colors, size, and encoding options, and then save the result in common image formats.
 // Prompt: Configure ComplexBarcodeGenerator to output a barcode image with transparent background for UI component overlay.
-// Tags: maxicode, complex barcode, transparent background, png, aspose.barcode, barcode generation, ui overlay
+// Tags: maxicode, transparent background, complex barcode, barcode generation, png, aspose.barcode, c#
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode with a transparent background using Aspose.BarCode.
+/// Example program that generates a MaxiCode barcode with a transparent background.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, configures transparency, and saves the image.
+    /// Entry point. Builds a MaxiCode codetext, configures the generator for a transparent background,
+    /// and saves the barcode as a PNG image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the temporary directory
-        string outputPath = Path.Combine(Path.GetTempPath(), "maxicode_transparent.png");
-
-        // Build the MaxiCode codetext for Mode 3 with a standard second message
-        var maxicode = new MaxiCodeCodetextMode3
+        // Prepare complex codetext for MaxiCode mode 2 (includes a structured second message)
+        var maxiCodeCodetext = new MaxiCodeCodetextMode2
         {
-            PostalCode = "B1050",
+            PostalCode = "524032140",
             CountryCode = 56,
             ServiceCategory = 999
         };
 
-        // Create and assign the second message
-        var secondMessage = new MaxiCodeStandardSecondMessage
-        {
-            Message = "Second message"
-        };
-        maxicode.SecondMessage = secondMessage;
+        // Build the structured second message (address lines, state, and year)
+        var structuredMessage = new MaxiCodeStructuredSecondMessage();
+        structuredMessage.Add("634 ALPHA DRIVE");
+        structuredMessage.Add("PITTSBURGH");
+        structuredMessage.Add("PA");
+        structuredMessage.Year = 99;
 
-        // Initialize the complex barcode generator with the prepared codetext
-        using (var generator = new ComplexBarcodeGenerator(maxicode))
+        // Attach the second message to the MaxiCode codetext
+        maxiCodeCodetext.SecondMessage = structuredMessage;
+
+        // Create the barcode generator and set the background to transparent
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
-            // Set the background color to transparent so the image can be overlaid
             generator.Parameters.BackColor = Color.Transparent;
 
-            // Optionally set the bar (foreground) color; default is black
-            generator.Parameters.Barcode.BarColor = Color.Black;
+            // Define the output file path (PNG format preserves transparency)
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeTransparent.png");
 
-            // Save the generated barcode as a PNG file
+            // Save the generated barcode image
             generator.Save(outputPath, BarCodeImageFormat.Png);
-        }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+            // Inform the user where the file was saved
+            Console.WriteLine($"Barcode saved to: {outputPath}");
+        }
     }
 }

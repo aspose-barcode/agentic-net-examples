@@ -1,167 +1,145 @@
-// Title: Generate and Validate Swiss QR Bill Barcode
-// Description: Demonstrates creating a Swiss QR Code (QR‑Bill) image, saving it, and verifying that required fields comply with the Swiss Implementation Guidelines.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on Swiss QR Bill (QR‑Bill) creation using ComplexBarcodeGenerator and validation via BarCodeReader. Developers commonly use these APIs to produce compliant payment QR codes and to programmatically ensure that all mandatory data fields are present and correct.
+// Title: Generate and Validate a Swiss QR Code using Aspose.BarCode
+// Description: Demonstrates creating a Swiss QR Code with required bill data, saving it as an image, and validating the encoded fields against the Swiss Implementation Guidelines.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and BarCodeReader to produce and decode Swiss QR Codes, a common requirement for Swiss payment standards. Developers often need to generate QR codes for invoices and verify that mandatory fields such as creditor information, IBAN, amount, and version are correctly encoded.
 // Prompt: Validate that the generated Swiss QR Code complies with Swiss Implementation Guidelines by checking required data fields.
-// Tags: swiss qr, barcode generation, barcode recognition, qr, swiss-qr-bill, aspose.barcode
+// Tags: swiss qr code, barcode generation, barcode validation, aspnet, aspose.barcode, complexbarcode, qr, payment
 
 using System;
 using System.IO;
-using System.Text;
+using Aspose.BarCode;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Swiss QR Bill barcode, saves it as an image,
-/// and validates the encoded data against the Swiss Implementation Guidelines.
+/// Demonstrates generation and validation of a Swiss QR Code using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the QR code, saves it, and performs validation.
+    /// Entry point. Generates a Swiss QR Code, saves it, reads it back, and validates required fields.
     /// </summary>
     static void Main()
     {
-        // Ensure Unicode characters (e.g., umlauts) are displayed correctly in the console.
-        Console.OutputEncoding = Encoding.Unicode;
+        // Prepare a temporary folder and file path for the generated barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "SwissQR_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "SwissQR.png");
 
-        // Prepare the output file path in the temporary folder.
-        string outputPath = Path.Combine(Path.GetTempPath(), "SwissQRBill.png");
-
-        // ------------------------------------------------------------
-        // Create Swiss QR Code data (QR‑Bill)
-        // ------------------------------------------------------------
+        // Create Swiss QR Code data and populate mandatory bill fields
         var swissQr = new SwissQRCodetext();
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-        swissQr.Bill.Account = "CH4431999123000889012";
-        swissQr.Bill.Amount = 1000.25m;
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Currency = "CHF";
         swissQr.Bill.Reference = "210000000003139471430009017";
 
-        // Populate creditor address.
+        // Set creditor address information
         swissQr.Bill.Creditor = new Address
         {
-            Name = "Muster & Söhne",
-            Street = "Musterstrasse",
-            HouseNo = "12b",
-            PostalCode = "8200",
-            Town = "Zürich",
+            Name = "John Doe",
+            Street = "Main Street",
+            HouseNo = "1",
+            PostalCode = "8000",
+            Town = "Zurich",
             CountryCode = "CH"
         };
 
-        // Populate debtor address.
+        // Set debtor address information
         swissQr.Bill.Debtor = new Address
         {
-            Name = "Muster AG",
-            Street = "Musterstrasse",
-            HouseNo = "1",
-            PostalCode = "3030",
+            Name = "Jane Smith",
+            Street = "Second Street",
+            HouseNo = "2",
+            PostalCode = "3000",
             Town = "Bern",
             CountryCode = "CH"
         };
 
-        // ------------------------------------------------------------
-        // Generate the barcode image
-        // ------------------------------------------------------------
+        // Generate the barcode image using ComplexBarcodeGenerator
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Set visual parameters: module size and QR encoding mode.
-            generator.Parameters.Barcode.XDimension.Pixels = 4;
-            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
-            generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
-
-            // Save the generated QR code as a PNG file.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.XDimension.Pixels = 4; // Set module size
+            generator.Save(barcodePath); // Save as PNG
         }
 
-        // Verify that the image file was successfully created.
-        if (!File.Exists(outputPath))
+        // Verify that the barcode image was created successfully
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Failed to generate Swiss QR Code image.");
+            Console.WriteLine("Failed to generate barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
         // Read and decode the barcode, then validate required fields
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(outputPath, DecodeType.QR))
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
-            bool validationPassed = true;
+            bool anyValid = false;
 
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            foreach (var result in reader.ReadBarCodes())
             {
-                // Attempt to decode the Swiss QR Code text.
-                SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(result.CodeText);
+                var decoded = ComplexCodetextReader.TryDecodeSwissQR(result.CodeText);
                 if (decoded == null)
                 {
                     Console.WriteLine("Unable to decode Swiss QR Code.");
-                    validationPassed = false;
                     continue;
                 }
 
-                // Validate mandatory fields according to the Swiss guidelines.
-                if (decoded.Bill.Version != SwissQRBill.QrBillStandardVersion.V2_0)
+                bool isValid = true;
+
+                // Validate creditor name
+                if (string.IsNullOrWhiteSpace(decoded.Bill.Creditor.Name))
                 {
-                    Console.WriteLine("Invalid or missing Bill.Version.");
-                    validationPassed = false;
+                    Console.WriteLine("Invalid: Creditor name is missing.");
+                    isValid = false;
                 }
 
+                // Validate creditor country code (must be CH)
+                if (decoded.Bill.Creditor.CountryCode != "CH")
+                {
+                    Console.WriteLine("Invalid: Creditor country code must be 'CH'.");
+                    isValid = false;
+                }
+
+                // Validate IBAN presence
                 if (string.IsNullOrWhiteSpace(decoded.Bill.Account))
                 {
-                    Console.WriteLine("Missing Bill.Account.");
-                    validationPassed = false;
+                    Console.WriteLine("Invalid: Account (IBAN) is missing.");
+                    isValid = false;
                 }
 
+                // Validate amount is greater than zero
                 if (decoded.Bill.Amount <= 0)
                 {
-                    Console.WriteLine("Invalid Bill.Amount.");
-                    validationPassed = false;
+                    Console.WriteLine("Invalid: Amount must be greater than zero.");
+                    isValid = false;
                 }
 
-                if (string.IsNullOrWhiteSpace(decoded.Bill.Currency))
+                // Validate bill version matches expected standard
+                if (decoded.Bill.Version != SwissQRBill.QrBillStandardVersion.V2_0)
                 {
-                    Console.WriteLine("Missing Bill.Currency.");
-                    validationPassed = false;
+                    Console.WriteLine("Invalid: Bill version is not V2_0.");
+                    isValid = false;
                 }
 
-                if (decoded.Bill.Creditor == null || string.IsNullOrWhiteSpace(decoded.Bill.Creditor.Name))
-                {
-                    Console.WriteLine("Missing Creditor.Name.");
-                    validationPassed = false;
-                }
-
-                if (decoded.Bill.Creditor == null || string.IsNullOrWhiteSpace(decoded.Bill.Creditor.CountryCode))
-                {
-                    Console.WriteLine("Missing Creditor.CountryCode.");
-                    validationPassed = false;
-                }
-
-                if (decoded.Bill.Debtor == null || string.IsNullOrWhiteSpace(decoded.Bill.Debtor.Name))
-                {
-                    Console.WriteLine("Missing Debtor.Name.");
-                    validationPassed = false;
-                }
-
-                // Output decoded values for reference.
-                Console.WriteLine($"Version: {decoded.Bill.Version}");
-                Console.WriteLine($"Account: {decoded.Bill.Account}");
-                Console.WriteLine($"Amount: {decoded.Bill.Amount}");
-                Console.WriteLine($"Currency: {decoded.Bill.Currency}");
-                Console.WriteLine($"Reference: {decoded.Bill.Reference}");
-                Console.WriteLine($"Creditor: {decoded.Bill.Creditor.Name}");
-                Console.WriteLine($"Debtor: {decoded.Bill.Debtor.Name}");
-
-                // Report overall validation result.
-                if (validationPassed)
-                {
-                    Console.WriteLine("Swiss QR Code validation passed.");
-                }
-                else
-                {
-                    Console.WriteLine("Swiss QR Code validation failed.");
-                }
+                Console.WriteLine(isValid ? "Swiss QR Code validation passed." : "Swiss QR Code validation failed.");
+                anyValid = true;
             }
+
+            if (!anyValid)
+            {
+                Console.WriteLine("No barcode results were read.");
+            }
+        }
+
+        // Cleanup temporary files (optional)
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore cleanup errors
         }
     }
 }

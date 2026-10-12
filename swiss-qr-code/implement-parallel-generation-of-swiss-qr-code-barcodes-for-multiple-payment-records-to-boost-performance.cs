@@ -1,91 +1,153 @@
-// Title: Parallel generation of Swiss QR Code barcodes for payment records
-// Description: Demonstrates how to create Swiss QR Code barcodes for multiple payment records using Aspose.BarCode in parallel to improve performance.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Swiss QR Code. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and related QR settings to produce PNG images, a common requirement for payment processing systems. Developers often need to generate many QR codes quickly, and this pattern illustrates parallel execution for scalability.
+// Title: Parallel Generation of Swiss QR Code Barcodes for Payment Records
+// Description: Demonstrates how to generate Swiss QR Code barcodes for multiple payment records in parallel, improving throughput.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Swiss QR Codes used for Swiss payment standards. It showcases the ComplexBarcodeGenerator, SwissQRCodetext, and related address classes. Developers creating bulk payment documents, invoices, or banking applications often need to generate many QR codes efficiently, and this pattern illustrates typical usage and performance optimization with parallel processing.
 // Prompt: Implement parallel generation of Swiss QR Code barcodes for multiple payment records to boost performance.
-// Tags: swissqr, barcode, generation, png, parallel, aspose.barcode, complexbarcodegenerator
+// Tags: swiss qr code, barcode generation, parallel processing, aspose.barcode, complexbarcode, payment, invoice, png output
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing.Imaging;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates parallel generation of Swiss QR Code barcodes for a set of payment records.
+/// Generates Swiss QR Code barcodes for a collection of payment records using parallel processing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates Swiss QR Code PNG files in parallel and writes their paths to the console.
+    /// Entry point of the application. Creates sample payment data, generates QR codes in parallel,
+    /// and saves the resulting PNG images to a temporary folder.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary output directory for the generated images
-        string outputDir = Path.Combine(Path.GetTempPath(), "SwissQRBatch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
+        // Create a dedicated temporary folder for output
+        string outputFolder = Path.Combine(Path.GetTempPath(), "SwissQR_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Output folder: {outputFolder}");
 
-        // Define a collection of sample payment records to be encoded as Swiss QR Codes
+        // Sample payment records (small batch for demonstration)
         var payments = new List<PaymentRecord>
         {
-            new PaymentRecord { Amount = 150.00m, Reference = "210000000001", CreditorName = "Alice Smith" },
-            new PaymentRecord { Amount = 250.50m, Reference = "210000000002", CreditorName = "Bob Johnson" },
-            new PaymentRecord { Amount = 99.99m,  Reference = "210000000003", CreditorName = "Carol Lee" },
-            new PaymentRecord { Amount = 500.00m, Reference = "210000000004", CreditorName = "David Brown" },
-            new PaymentRecord { Amount = 75.25m,  Reference = "210000000005", CreditorName = "Eve Davis" }
+            new PaymentRecord
+            {
+                CreditorName = "Alice Smith",
+                CreditorStreet = "Main Street",
+                CreditorHouseNo = "10",
+                CreditorPostalCode = "8000",
+                CreditorTown = "Zurich",
+                CreditorCountryCode = "CH",
+                Account = "CH9300762011623852957",
+                Amount = 150.00m,
+                Currency = "CHF",
+                Reference = "2100000000000000000000001"
+            },
+            new PaymentRecord
+            {
+                CreditorName = "Bob Müller",
+                CreditorStreet = "Bahnhofstrasse",
+                CreditorHouseNo = "5A",
+                CreditorPostalCode = "3000",
+                CreditorTown = "Bern",
+                CreditorCountryCode = "CH",
+                Account = "CH9300762011623852957",
+                Amount = 250.75m,
+                Currency = "CHF",
+                Reference = "2100000000000000000000002"
+            },
+            new PaymentRecord
+            {
+                CreditorName = "Carol Dupont",
+                CreditorStreet = "Rue de la Paix",
+                CreditorHouseNo = "12",
+                CreditorPostalCode = "1200",
+                CreditorTown = "Geneva",
+                CreditorCountryCode = "CH",
+                Account = "CH9300762011623852957",
+                Amount = 99.99m,
+                Currency = "CHF",
+                Reference = "2100000000000000000000003"
+            },
+            new PaymentRecord
+            {
+                CreditorName = "David Rossi",
+                CreditorStreet = "Limmatquai",
+                CreditorHouseNo = "3",
+                CreditorPostalCode = "8001",
+                CreditorTown = "Zurich",
+                CreditorCountryCode = "CH",
+                Account = "CH9300762011623852957",
+                Amount = 500.00m,
+                Currency = "CHF",
+                Reference = "2100000000000000000000004"
+            },
+            new PaymentRecord
+            {
+                CreditorName = "Eva Keller",
+                CreditorStreet = "Marktgasse",
+                CreditorHouseNo = "7B",
+                CreditorPostalCode = "6000",
+                CreditorTown = "Luzern",
+                CreditorCountryCode = "CH",
+                Account = "CH9300762011623852957",
+                Amount = 75.50m,
+                Currency = "CHF",
+                Reference = "2100000000000000000000005"
+            }
         };
 
-        // Process each payment record in parallel to speed up barcode generation
-        Parallel.ForEach(payments, payment =>
+        // Parallel generation of Swiss QR Code barcodes
+        Parallel.ForEach(payments, (payment, state, index) =>
         {
-            // Build the Swiss QR Code data structure (codetext) for the current payment
+            // Build Swiss QR Code codetext for the current payment
             var swissQr = new SwissQRCodetext();
             swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-            swissQr.Bill.Account = "CH9300762011623852957";
+            swissQr.Bill.Account = payment.Account;
             swissQr.Bill.Amount = payment.Amount;
-            swissQr.Bill.Currency = "CHF";
+            swissQr.Bill.Currency = payment.Currency;
             swissQr.Bill.Reference = payment.Reference;
             swissQr.Bill.Creditor = new Address
             {
                 Name = payment.CreditorName,
-                Street = "Main Street",
-                HouseNo = "1",
-                PostalCode = "8000",
-                Town = "Zurich",
-                CountryCode = "CH"
+                Street = payment.CreditorStreet,
+                HouseNo = payment.CreditorHouseNo,
+                PostalCode = payment.CreditorPostalCode,
+                Town = payment.CreditorTown,
+                CountryCode = payment.CreditorCountryCode
             };
-            // Optional debtor information can be added here if needed
+            // Optional debtor (left empty for this demo)
 
-            // Determine the file path for the generated PNG image
-            string filePath = Path.Combine(outputDir, $"SwissQR_{payment.Reference}.png");
-
-            // Generate the barcode image using ComplexBarcodeGenerator
+            // Generate barcode using ComplexBarcodeGenerator
             using (var generator = new ComplexBarcodeGenerator(swissQr))
             {
-                generator.Parameters.Barcode.XDimension.Pixels = 4f;               // Set module size
-                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;   // Use ECI encoding mode
-                generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8; // Specify UTF-8 character set
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH; // High error correction
-                generator.Save(filePath, BarCodeImageFormat.Png);                // Save as PNG
-            }
+                // Set visual parameters
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Output the location of the generated barcode
-            Console.WriteLine($"Generated: {filePath}");
+                // Save each barcode as a PNG file
+                string filePath = Path.Combine(outputFolder, $"SwissQR_{index + 1}.png");
+                generator.Save(filePath);
+                Console.WriteLine($"Generated: {filePath}");
+            }
         });
 
-        // Inform the user that all barcodes have been processed
-        Console.WriteLine("All Swiss QR Code barcodes have been generated.");
+        Console.WriteLine("All barcodes generated.");
     }
 
-    /// <summary>
-    /// Simple DTO representing a payment record to be encoded in a Swiss QR Code.
-    /// </summary>
+    // Simple DTO for payment information
     class PaymentRecord
     {
-        public decimal Amount { get; set; }
-        public string Reference { get; set; }
         public string CreditorName { get; set; }
+        public string CreditorStreet { get; set; }
+        public string CreditorHouseNo { get; set; }
+        public string CreditorPostalCode { get; set; }
+        public string CreditorTown { get; set; }
+        public string CreditorCountryCode { get; set; }
+        public string Account { get; set; }
+        public decimal Amount { get; set; }
+        public string Currency { get; set; }
+        public string Reference { get; set; }
     }
 }

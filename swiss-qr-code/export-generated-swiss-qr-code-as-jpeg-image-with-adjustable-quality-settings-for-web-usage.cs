@@ -1,58 +1,84 @@
+// Title: Export Swiss QR Code to JPEG with adjustable quality
+// Description: Demonstrates generating a Swiss QR Code (QR‑Bill) and saving it as a JPEG image while allowing configurable quality settings for web usage.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and related classes to create Swiss QR Codes (QR‑Bills). Typical scenarios include generating payment QR codes for invoices and exporting them in web‑friendly image formats with adjustable resolution and anti‑aliasing.
+// Prompt: Export the generated Swiss QR Code as a JPEG image with adjustable quality settings for web usage.
+// Tags: swiss qr, qr‑bill, barcode generation, jpeg, quality, aspose.barcode, complexbarcodegenerator
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Demonstrates generating a Swiss QR Code (QR‑Bill) and exporting it as a JPEG image with configurable quality settings.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point that creates the output folder, configures image quality, builds the Swiss QR Code data,
+    /// generates the barcode, and saves it as a JPEG file.
+    /// </summary>
     static void Main()
     {
-        // Prepare output path
-        string outputDir = Path.Combine(Path.GetTempPath(), "SwissQRDemo");
+        // Define the output directory and ensure it exists.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
         Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "SwissQR.jpeg");
 
-        // Create Swiss QR Code data
-        var swissQRCode = new SwissQRCodetext();
-        swissQRCode.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-        swissQRCode.Bill.Account = "CH4431999123000889012";
-        swissQRCode.Bill.Amount = 1000.25m;
-        swissQRCode.Bill.Currency = "CHF";
-        swissQRCode.Bill.Reference = "210000000003139471430009017";
-        swissQRCode.Bill.Creditor = new Address
-        {
-            Name = "Muster & Söhne",
-            Street = "Musterstrasse",
-            HouseNo = "12b",
-            PostalCode = "8200",
-            Town = "Zürich",
-            CountryCode = "CH"
-        };
-        swissQRCode.Bill.Debtor = new Address
-        {
-            Name = "Muster AG",
-            Street = "Musterstrasse",
-            HouseNo = "1",
-            PostalCode = "3030",
-            Town = "Bern",
-            CountryCode = "CH"
-        };
+        // Adjustable quality setting (1‑100). Higher values yield better image quality.
+        int quality = 80; // Sample value; adjust as needed.
 
-        // Generate barcode
-        using (var generator = new ComplexBarcodeGenerator(swissQRCode))
+        // Map the quality value to resolution (DPI) and anti‑aliasing settings.
+        float resolution;
+        bool useAntiAlias;
+        if (quality >= 80)
         {
-            // Adjust size and quality for web usage
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            generator.Parameters.Resolution = 72f;          // lower DPI reduces file size
-            generator.Parameters.UseAntiAlias = false;    // disable anti-aliasing for smaller output
-
-            // Save as JPEG
-            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            resolution = 300f;
+            useAntiAlias = true;
+        }
+        else if (quality >= 50)
+        {
+            resolution = 150f;
+            useAntiAlias = true;
+        }
+        else
+        {
+            resolution = 72f;
+            useAntiAlias = false;
         }
 
-        Console.WriteLine($"Swiss QR Code saved to: {outputPath}");
+        // Build the Swiss QR Code data (QR‑Bill) with creditor and payment details.
+        var swissQr = new SwissQRCodetext();
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        swissQr.Bill.Creditor = new Address
+        {
+            Name = "John Doe",
+            Street = "Main Street",
+            HouseNo = "1",
+            PostalCode = "8000",
+            Town = "Zurich",
+            CountryCode = "CH"
+        };
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Amount = 199.95m;
+        swissQr.Bill.Currency = "CHF";
+
+        // Generate the barcode using the complex barcode generator.
+        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        {
+            // Optional appearance settings.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+            // Apply quality‑related settings.
+            generator.Parameters.Resolution = resolution;
+            generator.Parameters.UseAntiAlias = useAntiAlias;
+
+            // Save the generated barcode as a JPEG image.
+            string outputPath = Path.Combine(outputDir, "SwissQRBill.jpg");
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            Console.WriteLine($"Swiss QR Code saved to: {outputPath}");
+        }
     }
 }
