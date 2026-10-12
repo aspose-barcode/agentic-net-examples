@@ -1,51 +1,47 @@
-// Title: Generate GS1 Code 128 barcode with custom human‑readable font and save as PNG
-// Description: Demonstrates creating a GS1 Code 128 barcode, customizing the font of the human‑readable text, and exporting the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use BarcodeGenerator with EncodeTypes.GS1Code128, configure CodeTextParameters (location, font family, size), and save the barcode in a raster format. Developers working with product labeling, inventory tracking, or any GS1‑compliant applications often need to customize the appearance of the human‑readable text while generating barcodes programmatically.
+// Title: Generate GS1 Code 128 barcode with custom human‑readable font
+// Description: Demonstrates creating a GS1 Code 128 barcode, applying a custom Helvetica font to the human‑readable text, and saving the result as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode symbology (GS1 Code 128), customize code‑text appearance, and export to common image formats. Developers working with product identification, inventory, or retail systems often need to generate GS1‑compliant barcodes with readable text, using classes like BarcodeGenerator, EncodeTypes, and BarCodeImageFormat.
 // Prompt: Create a GS1 Code 128 barcode, apply a custom font for human‑readable text, and save as PNG.
-// Tags: gs1code128, barcode generation, custom font, png output, aspose.barcode, code text parameters
+// Tags: gs1, code128, barcode generation, png, custom font, human readable text
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a GS1 Code 128 barcode with custom human‑readable text font and saving it as a PNG file.
+/// Example program that generates a GS1 Code 128 barcode,
+/// customizes the human‑readable text font, and saves the image as PNG.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, configures visual parameters, and writes the image to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Determine output file path in the current directory
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "GS1Code128.png");
-        // Ensure the output directory exists
-        string outputDir = Path.GetDirectoryName(outputPath);
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Determine a temporary file path for the output PNG image
+        string outputPath = Path.Combine(Path.GetTempPath(), "gs1code128.png");
 
-        // Initialize the barcode generator with GS1 Code 128 symbology and sample data
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1Code128, "(02)04006664241007(37)1"))
-        {
-            // Set the X-dimension (module width) to 2 pixels
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+        // GS1 Code 128 requires GS1‑formatted data.
+        // Example: (01) followed by a 14‑digit GTIN.
+        string gs1CodeText = "(01)12345678901231";
 
-            // Place human‑readable text below the barcode
+        // Initialize the barcode generator with the GS1 Code 128 symbology and data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, gs1CodeText))
+        {
+            // Position the human‑readable text below the barcode.
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-            // Apply custom font settings for the human‑readable text
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 14f;
 
-            // Save the generated barcode as a PNG image
+            // Apply a custom Helvetica font (12‑point) to the human‑readable text.
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+
+            // Render and save the barcode as a PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
