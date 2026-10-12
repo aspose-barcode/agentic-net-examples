@@ -1,70 +1,75 @@
-// Title: Determine barcode orientation angle from a BMP image
-// Description: Generates a QR barcode rotated by 45°, saves it as a BMP file, then reads the image to detect barcodes and outputs each barcode's orientation angle.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator to create rotated barcodes, BarCodeReader to detect them, and how to access the Region.Angle property for orientation. Developers working with image preprocessing, barcode scanning, or quality inspection often need to determine barcode rotation to correct or validate scans.
+// Title: Determine Barcode Orientation Angle in a BMP Image
+// Description: This example generates a rotated Code128 barcode, saves it as a BMP file, and then detects the barcode to retrieve its orientation angle.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition workflow focusing on barcode orientation detection. It uses BarcodeGenerator for creating barcodes, BarCodeReader for scanning, and accesses the Region.Angle property to obtain rotation. Useful for developers needing to verify barcode placement, correct rotation, or process images with rotated barcodes.
 // Prompt: Determine barcode orientation angle for each detected barcode in a BMP image.
-// Tags: qr, barcode orientation, bmp, aspose.barcode, generation, recognition, c#
+// Tags: code128, barcode orientation, bmp, generation, recognition, aspose.barcode, rotationangle, detection
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Demonstrates how to generate a rotated QR barcode, save it as BMP,
-/// read the image, and output the orientation angle of each detected barcode.
-/// </summary>
-class Program
+namespace BarcodeOrientationDemo
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary BMP with a rotated QR code,
-    /// reads it back, prints barcode details including orientation, and cleans up.
+    /// Demonstrates how to generate a rotated barcode, save it as a BMP image,
+    /// and then read the image to obtain the orientation angle of each detected barcode.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Create a unique temporary folder for the sample files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeOrientation_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-
-        // Define the full path for the generated BMP image
-        string bmpPath = Path.Combine(tempFolder, "rotated_qr.bmp");
-
-        // Generate a QR barcode rotated by 45 degrees and save it as BMP
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
+        /// <summary>
+        /// Entry point of the demo. Generates a barcode, reads it back, and prints orientation information.
+        /// </summary>
+        static void Main()
         {
-            generator.Parameters.RotationAngle = 45;
-            generator.Save(bmpPath, BarCodeImageFormat.Bmp);
-        }
+            // Create a unique temporary directory to store the sample image
+            string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeOrientationDemo_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            string imagePath = Path.Combine(tempDir, "sample.bmp");
 
-        // Verify that the BMP file was created successfully before attempting to read it
-        if (!File.Exists(bmpPath))
-        {
-            Console.WriteLine("Failed to create the barcode image.");
-            return;
-        }
-
-        // Read all barcodes from the BMP image and output their orientation angles
-        using (var reader = new BarCodeReader(bmpPath, DecodeType.AllSupportedTypes))
-        {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Generate a rotated Code128 barcode and save it as a BMP file
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
             {
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"Orientation Angle: {result.Region.Angle} degrees");
-                Console.WriteLine();
+                generator.Parameters.RotationAngle = 45; // Rotate the barcode by 45 degrees
+                generator.Save(imagePath, BarCodeImageFormat.Bmp);
             }
-        }
 
-        // Attempt to clean up temporary files; ignore any errors during cleanup
-        try
-        {
-            File.Delete(bmpPath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Cleanup failures are non‑critical; they do not affect program outcome
+            // Verify that the image was created successfully
+            if (!File.Exists(imagePath))
+            {
+                Console.WriteLine("Failed to create barcode image.");
+                return;
+            }
+
+            // Read the barcode from the BMP image and output its orientation angle
+            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            {
+                BarCodeResult[] results = reader.ReadBarCodes();
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("No barcodes detected.");
+                }
+                else
+                {
+                    foreach (BarCodeResult result in results)
+                    {
+                        Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                        Console.WriteLine($"CodeText: {result.CodeText}");
+                        Console.WriteLine($"Orientation Angle: {result.Region.Angle} degrees");
+                    }
+                }
+            }
+
+            // Cleanup temporary files and directory
+            try
+            {
+                File.Delete(imagePath);
+                Directory.Delete(tempDir);
+            }
+            catch
+            {
+                // Ignore cleanup errors
+            }
         }
     }
 }

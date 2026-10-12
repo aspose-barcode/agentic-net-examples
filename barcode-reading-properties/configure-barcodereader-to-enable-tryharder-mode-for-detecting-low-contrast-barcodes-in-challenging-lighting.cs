@@ -1,85 +1,55 @@
-// Title: Enable tryHarder mode for low‑contrast QR barcode detection using BarCodeReader
-// Description: Demonstrates configuring BarCodeReader's quality settings to improve detection of low‑contrast QR codes in challenging lighting conditions.
-// Category-Description: This example belongs to the Aspose.BarCode reading category, showcasing how to adjust BarCodeReader's QualitySettings (BarcodeQuality, Deconvolution, ComplexBackground) for robust barcode recognition. Developers often need to read barcodes from poor‑quality images, low‑contrast prints, or complex backgrounds; this pattern provides a practical approach using the Aspose.BarCode API.
-// Prompt: Configure BarCodeReader to enable tryHarder mode for detecting low‑contrast barcodes in challenging lighting.
-// Tags: qr, low-contrast, tryharder, barcode reading, quality settings, aspose.barcode, csharp
+// Title: Enable TryHarder Mode for Low‑Contrast Barcode Detection
+// Description: Demonstrates configuring BarCodeReader to improve detection of low‑contrast barcodes by adjusting quality settings.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It shows how to use the BarCodeReader class together with QualitySettings (ComplexBackgroundMode, BarcodeQualityMode, DeconvolutionMode) to handle challenging images such as low‑contrast or poorly lit barcodes. Developers working on scanning solutions often need to enable “try‑harder” behavior to increase detection robustness in real‑world lighting conditions.
+/// Prompt: Configure BarCodeReader to enable tryHarder mode for detecting low‑contrast barcodes in challenging lighting.
+// Tags: low-contrast, tryharder, barcode, recognition, qualitysettings, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates configuring BarCodeReader to improve detection of low‑contrast QR barcodes.
+/// Example program that configures BarCodeReader for low‑contrast barcode detection.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates a QR barcode, reads it with enhanced quality settings, and outputs the result.
+    /// Entry point. Reads a barcode image, enables try‑harder settings, and prints detected barcodes.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary folder and file path for the generated barcode image
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "barcode.png");
+        // Define the path to the image that contains low‑contrast barcodes.
+        string imagePath = Path.Combine(Path.GetTempPath(), "low_contrast_barcode.png");
 
-        // --------------------------------------------------------------
-        // Generate a simple QR barcode image and save it to the temp file
-        // --------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "LowContrastTest"))
+        // Verify that the image file exists before attempting to read it.
+        if (!File.Exists(imagePath))
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
-
-        // --------------------------------------------------------------
-        // Verify that the barcode image was created successfully
-        // --------------------------------------------------------------
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine($"Image file not found: {imagePath}");
+            Console.WriteLine("Place a barcode image at the above path and rerun the program.");
             return;
         }
 
-        // --------------------------------------------------------------
-        // Read the barcode using BarCodeReader with enhanced settings
-        // (equivalent to a 'tryHarder' mode for low‑contrast detection)
-        // --------------------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        // Create a BarCodeReader that attempts to decode all supported barcode types.
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Aspose.BarCode does not expose a direct 'TryHarder' flag.
-            // Instead, configure quality settings to improve detection of low‑contrast barcodes.
-            reader.QualitySettings.BarcodeQuality = BarcodeQualityMode.Low;               // Thorough analysis mode
-            reader.QualitySettings.Deconvolution = DeconvolutionMode.Slow;               // Heavy deconvolution preprocessing
-            reader.QualitySettings.ComplexBackground = ComplexBackgroundMode.Enabled;   // Handle colored/complex backgrounds
+            // Enable more thorough detection (try‑harder equivalent) by adjusting quality settings:
+            // - ComplexBackground helps when the background is not uniform.
+            // - Low barcode quality mode improves detection on poor‑quality images.
+            // - Fast deconvolution assists with low‑contrast scenarios.
+            reader.QualitySettings.ComplexBackground = ComplexBackgroundMode.Enabled;
+            reader.QualitySettings.BarcodeQuality = BarcodeQualityMode.Low;
+            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
 
-            // Perform the barcode reading operation
+            // Perform the barcode recognition.
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Output the number of barcodes detected and their details
+            // Output the number of barcodes found and their details.
             Console.WriteLine($"Barcodes read: {results.Length}");
             foreach (BarCodeResult result in results)
             {
                 Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
-        }
-
-        // --------------------------------------------------------------
-        // Clean up temporary files and directories
-        // --------------------------------------------------------------
-        try
-        {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignored – cleanup failure should not affect program outcome
         }
     }
 }

@@ -1,14 +1,15 @@
-// Title: Retrieve MaxiCode mode and postal code from PDF
-// Description: Demonstrates how to extract MaxiCode mode and postal code data from each page of a PDF containing MaxiCode symbols using Aspose.BarCode and Aspose.Pdf.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, showing how to convert PDF pages to images, read MaxiCode barcodes, and decode extended MaxiCode data. It uses PdfConverter, BarCodeReader, DecodeType.MaxiCode, and ComplexCodetextReader to obtain mode and postal code information. Developers working with document automation and barcode extraction can use this pattern to process PDFs containing complex barcodes.
+// Title: Retrieve MaxiCode mode and postal code from PDF pages
+// Description: Demonstrates how to extract MaxiCode barcode data, specifically the mode and postal code, from each page of a PDF document.
+// Category-Description: This example belongs to the Aspose.BarCode PDF barcode extraction category. It shows how to use Aspose.Pdf.Facades.PdfConverter to render PDF pages to images, then Aspose.BarCode.BarCodeRecognition.BarCodeReader with DecodeType.MaxiCode to read MaxiCode symbols. Developers often need to process shipping labels or logistics documents containing MaxiCode, extracting mode-specific information such as postal codes for routing and tracking.
 // Prompt: Retrieve MaxiCode mode and postal code data from a PDF containing MaxiCode symbols.
-// Tags: maxicode, barcode recognition, pdf processing, aspose.barcode, aspose.pdf, decode, postalcode
+// Tags: maxicode, barcode, pdf, extraction, aspose.barcode, aspose.pdf, decoding, postalcode
 
 using System;
 using System.IO;
+using Aspose.Pdf.Facades;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Pdf.Facades;
+using Aspose.BarCode;
 
 /// <summary>
 /// Example program that extracts MaxiCode mode and postal code information from a PDF file.
@@ -16,14 +17,12 @@ using Aspose.Pdf.Facades;
 class Program
 {
     /// <summary>
-    /// Entry point. Accepts an optional PDF file path argument, converts each page to an image,
-    /// reads MaxiCode barcodes, and prints the detected mode and postal code.
+    /// Entry point. Scans each page of the specified PDF for MaxiCode barcodes and prints their mode and postal code.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument may be the PDF file path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine PDF path: use first argument if supplied, otherwise default to "sample.pdf".
-        string pdfPath = args.Length > 0 ? args[0] : "sample.pdf";
+        // Path to the source PDF containing MaxiCode symbols.
+        string pdfPath = "sample.pdf";
 
         // Verify that the PDF file exists before proceeding.
         if (!File.Exists(pdfPath))
@@ -33,56 +32,53 @@ class Program
         }
 
         // Initialize PdfConverter to render PDF pages as images.
-        using (PdfConverter pdfConverter = new PdfConverter())
+        using (var pdfConverter = new PdfConverter())
         {
-            // Bind the PDF document to the converter.
             pdfConverter.BindPdf(pdfPath);
-
-            // Enable barcode optimization to improve image quality for barcode reading.
+            // Enable barcode optimization to improve detection accuracy.
             pdfConverter.RenderingOptions.BarcodeOptimization = true;
 
             // Get total number of pages in the PDF.
             int pageCount = pdfConverter.Document.Pages.Count;
 
             // Process each page individually.
-            for (int page = 1; page <= pageCount; page++)
+            for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
             {
                 // Configure converter to render only the current page.
-                pdfConverter.StartPage = page;
-                pdfConverter.EndPage = page;
-
-                // Perform the conversion for the selected page.
+                pdfConverter.StartPage = pageNumber;
+                pdfConverter.EndPage = pageNumber;
                 pdfConverter.DoConvert();
 
-                // Retrieve the rendered image into a memory stream.
-                using (MemoryStream ms = new MemoryStream())
+                // Store the rendered page image in a memory stream.
+                using (var ms = new MemoryStream())
                 {
                     pdfConverter.GetNextImage(ms);
                     ms.Position = 0; // Reset stream position for reading.
 
-                    // Create a BarCodeReader configured for MaxiCode decoding.
-                    using (BarCodeReader reader = new BarCodeReader(ms, DecodeType.MaxiCode))
+                    // Create a BarCodeReader for MaxiCode detection.
+                    using (var reader = new BarCodeReader(ms, DecodeType.MaxiCode))
                     {
-                        // Iterate over all detected barcodes on the page.
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
+                        // Iterate through all detected MaxiCode barcodes on the page.
+                        foreach (var result in reader.ReadBarCodes())
                         {
-                            // Extract the MaxiCode mode from the extended result data.
+                            // Retrieve the MaxiCode mode from the extended result.
                             var mode = result.Extended.MaxiCode.Mode;
+                            // Decode the complex codetext based on the mode.
+                            var complex = ComplexCodetextReader.TryDecodeMaxiCode(mode, result.CodeText);
 
-                            // Decode the complex MaxiCode text to obtain structured information.
-                            MaxiCodeCodetext complex = ComplexCodetextReader.TryDecodeMaxiCode(mode, result.CodeText);
-                            if (complex == null)
-                                continue; // Skip if decoding failed.
-
-                            // Retrieve postal code based on the specific MaxiCode mode.
-                            string postalCode = null;
+                            // Output postal code based on the specific MaxiCode mode.
                             if (complex is MaxiCodeCodetextMode2 mode2)
-                                postalCode = mode2.PostalCode;
+                            {
+                                Console.WriteLine($"Page {pageNumber}: Mode = 2, PostalCode = {mode2.PostalCode}");
+                            }
                             else if (complex is MaxiCodeCodetextMode3 mode3)
-                                postalCode = mode3.PostalCode;
-
-                            // Output the extracted information.
-                            Console.WriteLine($"Page {page}: Mode={mode}, PostalCode={postalCode}");
+                            {
+                                Console.WriteLine($"Page {pageNumber}: Mode = 3, PostalCode = {mode3.PostalCode}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Page {pageNumber}: Unrecognized MaxiCode mode.");
+                            }
                         }
                     }
                 }

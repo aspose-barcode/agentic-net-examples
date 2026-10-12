@@ -1,52 +1,72 @@
-// Title: Read all barcode types from an image using Aspose.BarCode
-// Description: Demonstrates how to instantiate BarCodeReader with a file path and retrieve every supported barcode type found in the image.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, illustrating the use of BarCodeReader and DecodeType.AllSupportedTypes to detect multiple symbologies in a single image. Developers commonly need to process scanned documents, receipts, or product images and extract any barcode present, using the Aspose.BarCode API classes such as BarCodeReader, BarCodeResult, and DecodeType.
+// Title: Read All Detected Barcodes from an Image Using BarCodeReader
+// Description: Demonstrates how to generate a barcode image, then instantiate BarCodeReader to detect and list all barcode types present in the image.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode image and BarCodeReader to scan the image for any supported symbologies. Developers commonly use these APIs to automate barcode creation, batch‑process scanned documents, or integrate barcode scanning into .NET applications.
 // Prompt: Instantiate BarCodeReader with an image file path and read all detected barcode types.
-// Tags: barcode, recognition, allsupportedtypes, aspose.barcode, c#, console
+// Tags: barcode symbology, barcode generation, barcode recognition, read, aspose.barcode, csharp, console
 
 using System;
 using System.IO;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that reads all supported barcode types from a given image file.
+/// Sample program that generates a barcode image, reads all barcodes from it,
+/// and outputs the detected symbology names and values.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Loads an image, checks its existence, and prints any detected barcodes.
+    /// Entry point of the application.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Path to the image that may contain barcodes.
-        string imagePath = "sample.png";
+        // Create a unique temporary folder for the sample barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "sample.png");
 
-        // Verify that the file exists before attempting to read it.
+        // Generate a sample Code128 barcode image and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        {
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the image file was created successfully
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine("Barcode image file not found.");
             return;
         }
 
-        // Create a BarCodeReader that scans for all supported barcode symbologies.
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Instantiate BarCodeReader with the image path and read all detected barcodes
+        using (var reader = new BarCodeReader(imagePath))
         {
-            // Perform the detection and retrieve results.
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // If no barcodes were found, inform the user.
+            // Output the detection results
             if (results.Length == 0)
             {
                 Console.WriteLine("No barcodes detected.");
             }
             else
             {
-                // Output each detected barcode's type and decoded text.
                 foreach (BarCodeResult result in results)
                 {
                     Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
             }
+        }
+
+        // Clean up temporary files and folder
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Ignored – cleanup failures are non‑critical for this demo
         }
     }
 }

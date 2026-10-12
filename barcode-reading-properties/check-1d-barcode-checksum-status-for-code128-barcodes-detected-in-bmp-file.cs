@@ -1,72 +1,62 @@
-// Title: Check Code128 barcode checksum status in BMP image
-// Description: Demonstrates generating a Code128 barcode, saving it as BMP, and reading it to display the checksum status.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create a 1D barcode, BarCodeReader with DecodeType to detect Code128 symbols, and how to enable checksum validation via BarcodeSettings.ChecksumValidation. Developers often need to verify checksum information when processing scanned barcodes for data integrity in inventory, shipping, or point‑of‑sale systems.
+// Title: Check 1D barcode checksum status for Code128 barcodes in a BMP image
+// Description: Demonstrates how to read a BMP file, detect Code128 barcodes, and retrieve checksum information using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader, DecodeType, and checksum validation settings. Developers commonly need to verify barcode integrity, extract extended OneD parameters, and handle missing data when processing scanned images.
 // Prompt: Check 1D barcode checksum status for Code128 barcodes detected in a BMP file.
-// Tags: code128, checksum, barcode, generation, recognition, bmp, 1d, aspose.barcode
+// Tags: code128, checksum, oned, barcode, recognition, bmp, aspose.barcode, decode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, saves it as a BMP file,
-/// reads the barcode back, and outputs its checksum status.
+/// Example program that reads a BMP image, detects Code128 barcodes,
+/// and outputs checksum validation details.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, detection, and cleanup.
+    /// Entry point. Accepts an optional image path argument, validates the file,
+    /// configures checksum validation, and prints barcode type, text, and checksum data.
     /// </summary>
-    static void Main()
+    static void Main(string[] args)
     {
-        // Create a unique temporary folder to store the generated BMP file
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Code128ChecksumDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "code128.bmp");
+        // Determine image path: use first argument if provided, otherwise default to "code128.bmp"
+        string imagePath = args.Length > 0 ? args[0] : "code128.bmp";
 
-        // Generate a Code128 barcode image and save it as BMP
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Aspose1234"))
-        {
-            generator.Parameters.Barcode.XDimension.Pixels = 2; // Set barcode module size
-            generator.Save(imagePath, BarCodeImageFormat.Bmp);
-        }
-
-        // Verify that the image file was created successfully
+        // Verify that the specified file exists before attempting to read it
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // Initialize a reader for Code128 barcodes in the BMP image
+        // Initialize the barcode reader for Code128 symbology on the given image
         using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            // Turn on checksum validation for symbologies that require it
+            // Enable checksum verification for symbologies that require it
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-            // Iterate through all detected barcodes and display details
+            // Iterate through all detected barcodes in the image
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
+                // Output basic barcode information
                 Console.WriteLine($"CodeType: {result.CodeTypeName}");
                 Console.WriteLine($"CodeText: {result.CodeText}");
-                // Extended.OneD contains checksum information for 1D barcodes
-                Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
-            }
-        }
 
-        // Attempt to delete temporary files and folder; ignore any errors
-        try
-        {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Cleanup failures are non‑critical; they do not affect program logic
+                // Access extended OneD parameters to retrieve checksum details, if available
+                if (result.Extended != null && result.Extended.OneD != null)
+                {
+                    Console.WriteLine($"Value: {result.Extended.OneD.Value}");
+                    Console.WriteLine($"CheckSum: {result.Extended.OneD.CheckSum}");
+                }
+                else
+                {
+                    // Inform the user when extended OneD data is not present
+                    Console.WriteLine("OneD extended data not available.");
+                }
+
+                Console.WriteLine(); // Separate entries for readability
+            }
         }
     }
 }

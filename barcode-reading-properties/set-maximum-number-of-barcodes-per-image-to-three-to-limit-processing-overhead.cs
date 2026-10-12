@@ -1,124 +1,110 @@
-// Title: Limit barcode reading to a maximum of three per image
-// Description: Demonstrates generating multiple Code128 barcodes, combining them into a single image, and reading up to three barcodes from the combined image to reduce processing overhead.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, Bitmap and Graphics for image composition, and BarCodeReader for decoding. Typical scenarios include batch barcode creation, image stitching, and controlled barcode scanning where developers need to limit the number of decoded symbols to improve performance.
+// Title: Limit Barcode Decoding to Three per Image
+// Description: Demonstrates generating multiple Code128 barcodes, combining them into a single image, and decoding up to three barcodes from that image to reduce processing overhead.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes, Aspose.Drawing to compose a combined image, and BarCodeReader to extract barcode data. Typical use cases include batch barcode creation, image composition, and performance‑optimized scanning where only a subset of barcodes needs to be processed. Developers often need to limit the number of decoded symbols to avoid unnecessary computation, especially in high‑throughput scenarios.
 // Prompt: Set maximum number of barcodes per image to three to limit processing overhead.
-// Tags: barcode symbology, generation, recognition, code128, limit, image, combine, aspose.barcode, csharp
+// Tags: barcode, code128, generation, recognition, limit, aspose.barcode, image processing, c#
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates multiple Code128 barcodes, combines them into a single image,
-/// and reads up to three barcodes from the combined image.
+/// Generates several Code128 barcodes, merges them into one image, and reads a maximum of three barcodes from the combined image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates temporary barcode images, merges them,
-    /// reads a limited number of barcodes, and cleans up resources.
+    /// Entry point of the example. Creates temporary files, builds a combined barcode image, reads up to three barcodes, and cleans up resources.
     /// </summary>
     static void Main()
     {
         // Create a temporary folder for generated images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarCodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string combinedPath = Path.Combine(tempDir, "combined.png");
 
-        // Generate individual barcode images and store their file paths
-        List<string> barcodeFiles = new List<string>();
-        for (int i = 1; i <= 5; i++)
+        // Sample texts for multiple barcodes
+        List<string> texts = new List<string> { "ABC123", "DEF456", "GHI789", "JKL012", "MNO345" };
+        List<Bitmap> barcodeBitmaps = new List<Bitmap>();
+
+        // Generate individual barcode images
+        foreach (string txt in texts)
         {
-            string filePath = Path.Combine(tempFolder, $"code{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"CODE{i}"))
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, txt))
             {
-                // Adjust X-dimension for better visual size
-                generator.Parameters.Barcode.XDimension.Point = 0.8f;
-                generator.Save(filePath, BarCodeImageFormat.Png);
+                // Set X-dimension to control barcode width
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                Bitmap bmp = generator.GenerateBarCodeImage();
+                barcodeBitmaps.Add(bmp);
             }
-            barcodeFiles.Add(filePath);
         }
 
-        // Combine the generated barcode images into a single wide image
-        string combinedPath = Path.Combine(tempFolder, "combined.png");
-        CombineImages(barcodeFiles, combinedPath);
-
-        // Verify that the combined image was created successfully
-        if (!File.Exists(combinedPath))
+        // Determine combined image size (max width, total height with spacing)
+        int maxWidth = 0;
+        int totalHeight = 0;
+        int spacing = 10;
+        foreach (Bitmap bmp in barcodeBitmaps)
         {
-            Console.WriteLine("Combined image not found.");
-            return;
+            if (bmp.Width > maxWidth) maxWidth = bmp.Width;
+            totalHeight += bmp.Height + spacing;
+        }
+        totalHeight -= spacing; // remove extra spacing after last barcode
+
+        // Create combined bitmap and draw individual barcodes onto it
+        using (Bitmap combined = new Bitmap(maxWidth, totalHeight, PixelFormat.Format32bppArgb))
+        {
+            using (Graphics g = Graphics.FromImage(combined))
+            {
+                g.Clear(Aspose.Drawing.Color.White);
+                int y = 0;
+                foreach (Bitmap bmp in barcodeBitmaps)
+                {
+                    g.DrawImage(bmp, 0, y);
+                    y += bmp.Height + spacing;
+                }
+            }
+
+            // Save combined image to temporary file
+            combined.Save(combinedPath, ImageFormat.Png);
         }
 
-        // Read barcodes from the combined image, processing at most three results
-        using (var reader = new BarCodeReader(combinedPath, DecodeType.Code128))
+        // Dispose individual barcode bitmaps now that they are no longer needed
+        foreach (Bitmap bmp in barcodeBitmaps)
         {
-            int count = 0;
+            bmp.Dispose();
+        }
+
+        // Read barcodes from the combined image, limiting to a maximum of three
+        BaseDecodeType decode = DecodeType.Code128;
+        using (BarCodeReader reader = new BarCodeReader(combinedPath, decode))
+        {
+            int processed = 0;
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
-                count++;
-                if (count >= 3)
-                    break; // Stop after three barcodes to limit overhead
+                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
+                processed++;
+                if (processed >= 3)
+                {
+                    // Stop after processing three barcodes to meet the limit
+                    break;
+                }
             }
-            Console.WriteLine($"Processed {count} barcode(s) (maximum 3).");
+            Console.WriteLine($"Processed {processed} barcode(s) (maximum 3).");
         }
 
-        // Attempt to delete the temporary folder and its contents
+        // Clean up temporary files and directory
         try
         {
-            Directory.Delete(tempFolder, true);
+            File.Delete(combinedPath);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Suppress any cleanup errors (e.g., file locks)
-        }
-    }
-
-    /// <summary>
-    /// Combines a list of image files horizontally into a single output image.
-    /// </summary>
-    /// <param name="imagePaths">File paths of the source images.</param>
-    /// <param name="outputPath">File path where the combined image will be saved.</param>
-    static void CombineImages(List<string> imagePaths, string outputPath)
-    {
-        if (imagePaths.Count == 0)
-            throw new ArgumentException("No images to combine.");
-
-        // Load the first image to obtain width and height of individual barcodes
-        using (var first = new Bitmap(imagePaths[0]))
-        {
-            int singleWidth = first.Width;
-            int singleHeight = first.Height;
-            int totalWidth = singleWidth * imagePaths.Count;
-            int maxHeight = singleHeight;
-
-            // Create a new bitmap large enough to hold all images side by side
-            using (var combined = new Bitmap(totalWidth, maxHeight))
-            {
-                using (var graphics = Graphics.FromImage(combined))
-                {
-                    // Fill background with white for a clean look
-                    graphics.Clear(Color.White);
-
-                    // Draw each barcode image at the appropriate horizontal offset
-                    for (int i = 0; i < imagePaths.Count; i++)
-                    {
-                        using (var img = new Bitmap(imagePaths[i]))
-                        {
-                            int x = i * singleWidth;
-                            graphics.DrawImage(img, x, 0, img.Width, img.Height);
-                        }
-                    }
-                }
-
-                // Save the combined image as PNG
-                combined.Save(outputPath, ImageFormat.Png);
-            }
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

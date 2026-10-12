@@ -1,50 +1,59 @@
-// Title: Limit BarCodeReader to specific symbologies (QR Code and PDF417)
-// Description: Demonstrates generating QR Code and PDF417 barcodes, then reading them while restricting the BarCodeReader to those symbologies for improved performance.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showing how to use BarCodeGenerator to create barcodes and BarCodeReader with DecodeType filters to limit scanning to selected symbologies. Typical use cases include batch processing where only certain barcode types are expected, reducing processing time and resource usage. Developers often need to generate barcodes, read them from images, and optimize recognition by specifying DecodeType values.
-/// Prompt: Limit BarCodeReader to specific symbologies such as QR Code and PDF417 for performance.
-/// Tags: barcode symbology, recognition, performance, qr, pdf417, aspnet, aspose.barcode, csharp
+// Title: Limit BarCodeReader to Specific Symbologies (QR Code and PDF417)
+// Description: Demonstrates generating QR and PDF417 barcodes, then reading them while restricting the BarCodeReader to those symbologies for improved performance.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcode images and BarCodeReader with a symbology filter to efficiently decode them. Developers commonly need to generate barcodes for various data formats and then recognize only the required types to reduce processing time, especially in high‑throughput scenarios.
+// Prompt: Limit BarCodeReader to specific symbologies such as QR Code and PDF417 for performance.
+// Tags: barcode symbology, generation, recognition, performance, qrcode, pdf417, aspose.barcode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating QR Code and PDF417 barcodes and reading them with BarCodeReader limited to those symbologies.
+/// Demonstrates limiting barcode recognition to specific symbologies (QR Code and PDF417) to improve performance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates barcodes, reads them with filtered symbologies, and cleans up temporary files.
+    /// Entry point. Generates sample QR and PDF417 barcodes, reads them using a filtered BarCodeReader, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for sample barcodes
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define file paths for the QR Code and PDF417 images
-        string qrPath = Path.Combine(tempFolder, "qr.png");
-        string pdf417Path = Path.Combine(tempFolder, "pdf417.png");
-
-        // Generate a QR Code image
-        using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR"))
+        // Prepare sample barcode data (encode type, text, output file name)
+        var samples = new (BaseEncodeType Encode, string Text, string FileName)[]
         {
-            qrGenerator.Save(qrPath, BarCodeImageFormat.Png);
+            (EncodeTypes.QR, "Hello QR", "qr.png"),
+            (EncodeTypes.Pdf417, "Hello PDF417", "pdf417.png")
+        };
+
+        // Generate barcode images and save them as PNG files
+        foreach (var (encode, text, fileName) in samples)
+        {
+            string filePath = Path.Combine(tempFolder, fileName);
+            using (var generator = new BarcodeGenerator(encode, text))
+            {
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
         }
 
-        // Generate a PDF417 image
-        using (var pdfGenerator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417"))
+        // List of generated files to be read
+        var filesToRead = new string[]
         {
-            pdfGenerator.Save(pdf417Path, BarCodeImageFormat.Png);
-        }
+            Path.Combine(tempFolder, "qr.png"),
+            Path.Combine(tempFolder, "pdf417.png")
+        };
 
-        // Collection of generated files to be processed
-        var files = new[] { qrPath, pdf417Path };
+        // Define target symbologies for recognition (QR and PDF417 only)
+        BaseDecodeType[] targetTypes = new BaseDecodeType[] { DecodeType.QR, DecodeType.Pdf417 };
 
-        // Iterate over each file and attempt to read barcodes, limiting to QR and PDF417 types
-        foreach (string file in files)
+        // Read each file using BarCodeReader limited to the specified symbologies
+        foreach (string file in filesToRead)
         {
             if (!File.Exists(file))
             {
@@ -52,40 +61,28 @@ class Program
                 continue;
             }
 
-            // Initialize BarCodeReader with specific DecodeType filters for performance
-            using (var reader = new BarCodeReader(file, DecodeType.QR, DecodeType.Pdf417))
+            using (var reader = new BarCodeReader(file, targetTypes))
             {
-                try
+                // Apply a high‑performance preset to speed up recognition
+                reader.QualitySettings = QualitySettings.HighPerformance;
+
+                BarCodeResult[] results = reader.ReadBarCodes();
+                Console.WriteLine($"Reading '{Path.GetFileName(file)}' - found {results.Length} barcode(s):");
+                foreach (BarCodeResult result in results)
                 {
-                    BarCodeResult[] results = reader.ReadBarCodes();
-                    Console.WriteLine($"Reading '{Path.GetFileName(file)}' - Detected {results.Length} barcode(s):");
-                    foreach (BarCodeResult result in results)
-                    {
-                        Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                    }
-                }
-                catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
-                {
-                    Console.WriteLine($"Unable to load image '{file}': {ex.Message}");
+                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
             }
         }
 
-        // Clean up temporary files and directory
+        // Clean up temporary files and folder
         try
         {
-            foreach (string file in files)
-            {
-                if (File.Exists(file))
-                {
-                    File.Delete(file);
-                }
-            }
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program exit
+            // Ignore cleanup errors
         }
     }
 }

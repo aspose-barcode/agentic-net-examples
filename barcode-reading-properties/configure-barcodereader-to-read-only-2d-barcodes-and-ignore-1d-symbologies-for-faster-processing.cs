@@ -1,85 +1,105 @@
 // Title: Read Only 2D Barcodes with BarCodeReader
-// Description: Demonstrates configuring Aspose.BarCode's BarCodeReader to detect only 2‑dimensional symbologies, ignoring 1D barcodes for faster processing.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating how to limit decoding to 2D symbologies using the BarCodeReader class. Typical use cases include high‑throughput scanning where only QR, DataMatrix, PDF417, etc., are relevant, reducing CPU load. Developers often need to set DecodeType to Types2D to speed up processing and avoid unwanted 1D results.
+// Description: Demonstrates configuring BarCodeReader to scan only 2D symbologies, ignoring 1D barcodes for faster processing.
+// Category-Description: This example belongs to the Aspose.BarCode reading category, showcasing how to use BarCodeReader with the DecodeType.Types2D preset. It highlights typical scenarios where developers need to filter out 1D symbologies to improve performance, such as bulk image processing or real‑time scanning applications. Key API classes include BarCodeReader, DecodeType, and BarCodeResult.
 // Prompt: Configure BarCodeReader to read only 2D barcodes and ignore 1D symbologies for faster processing.
-// Tags: barcode, 2d, symbology, recognition, aspose.barcode, decode, reader, performance
+// Tags: barcode, symbology, read, 2d, types2d, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates configuring BarCodeReader to read only 2D barcodes and ignore 1D symbologies.
+/// Sample program that generates a 2D QR code and a 1D Code128 barcode,
+/// then reads only the 2D barcode using BarCodeReader configured with the Types2D preset.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates sample QR and Code128 barcodes, then reads only the 2D barcode from each file.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarCodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define file paths for the sample barcodes
-        string qrPath = Path.Combine(tempFolder, "qr.png");
-        string code128Path = Path.Combine(tempFolder, "code128.png");
+        // Collection to hold paths of generated barcode files
+        var barcodeFiles = new List<string>();
 
-        // Generate a QR Code (2D) and save it as PNG
-        using (BarcodeGenerator qrGenerator = new BarcodeGenerator(EncodeTypes.QR, "Hello 2D"))
+        // -------------------------------------------------
+        // Generate a 2D QR Code and add its path to the list
+        // -------------------------------------------------
+        string qrPath = Path.Combine(tempFolder, "qr.png");
+        using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, "Hello2D"))
         {
             qrGenerator.Save(qrPath, BarCodeImageFormat.Png);
         }
+        if (File.Exists(qrPath))
+            barcodeFiles.Add(qrPath);
 
-        // Generate a Code128 barcode (1D) and save it as PNG
-        using (BarcodeGenerator code128Generator = new BarcodeGenerator(EncodeTypes.Code128, "Hello1D"))
+        // -------------------------------------------------
+        // Generate a 1D Code128 barcode and add its path to the list
+        // -------------------------------------------------
+        string code128Path = Path.Combine(tempFolder, "code128.png");
+        using (var code128Generator = new BarcodeGenerator(EncodeTypes.Code128, "Hello1D"))
         {
             code128Generator.Save(code128Path, BarCodeImageFormat.Png);
         }
+        if (File.Exists(code128Path))
+            barcodeFiles.Add(code128Path);
 
-        // List of files to be processed by the reader
-        string[] files = new[] { qrPath, code128Path };
-
-        foreach (string file in files)
+        // -------------------------------------------------
+        // Read only 2D barcodes using the Types2D preset
+        // -------------------------------------------------
+        foreach (string file in barcodeFiles)
         {
-            // Verify that the file exists before attempting to read it
             if (!File.Exists(file))
             {
                 Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            // Configure BarCodeReader to detect only 2D barcodes (ignore 1D symbologies)
-            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.Types2D))
+            // Initialize BarCodeReader to decode only 2D symbologies
+            using (var reader = new BarCodeReader(file, DecodeType.Types2D))
             {
+                Console.WriteLine($"Reading file: {Path.GetFileName(file)}");
                 BarCodeResult[] results = reader.ReadBarCodes();
 
                 if (results.Length == 0)
                 {
-                    Console.WriteLine($"{Path.GetFileName(file)}: No 2D barcode detected.");
+                    Console.WriteLine("  No 2D barcode detected.");
                 }
                 else
                 {
-                    // Output each detected 2D barcode's type and text
                     foreach (BarCodeResult result in results)
                     {
-                        Console.WriteLine($"{Path.GetFileName(file)}: {result.CodeTypeName} - {result.CodeText}");
+                        Console.WriteLine($"  Detected: {result.CodeTypeName} - {result.CodeText}");
                     }
                 }
             }
         }
 
-        // Optional cleanup of the temporary folder
+        // -------------------------------------------------
+        // Clean up temporary files and folder
+        // -------------------------------------------------
         try
         {
-            Directory.Delete(tempFolder, true);
+            foreach (string file in barcodeFiles)
+            {
+                if (File.Exists(file))
+                    File.Delete(file);
+            }
+
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
         }
-        catch
+        catch (Exception ex)
         {
-            // Suppress any errors during cleanup
+            Console.WriteLine($"Cleanup error: {ex.Message}");
         }
     }
 }
