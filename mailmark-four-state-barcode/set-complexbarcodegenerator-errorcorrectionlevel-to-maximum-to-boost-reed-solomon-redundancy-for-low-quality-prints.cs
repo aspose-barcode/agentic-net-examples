@@ -1,50 +1,54 @@
-// Title: Generate Swiss QR Code with Maximum Error Correction
-// Description: Demonstrates creating a Swiss QR bill barcode using Aspose.BarCode with the highest QR error correction level to improve readability on low‑quality prints.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and QR error correction settings. Developers working with payment QR codes, such as Swiss QR bills, often need to adjust error correction levels to ensure reliable scanning under suboptimal printing conditions. The snippet illustrates typical steps: preparing codetext, configuring generator parameters, and saving the image.
+// Title: Generate QR Code with Maximum Error Correction (Level H)
+// Description: Demonstrates how to create a QR code using Aspose.BarCode with the highest Reed‑Solomon error‑correction level to improve readability on low‑quality prints.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR code creation and configuration. It showcases the use of BarcodeGenerator, EncodeTypes, and QRErrorLevel classes to adjust error correction. Developers often need to increase redundancy for QR codes used in printing, packaging, or scanning environments where print quality may be poor.
 // Prompt: Set ComplexBarcodeGenerator ErrorCorrectionLevel to maximum to boost Reed‑Solomon redundancy for low‑quality prints.
-// Tags: barcode, complex barcode, swiss qr, error correction, qr, png, aspose.barcode, generation
+// Tags: qr code, error correction, reed-solomon, barcode generation, aspose.barcode, png output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Swiss QR bill barcode with the highest QR error correction level.
+/// Example program that generates a QR code with the maximum error‑correction level (Level H) using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Prepares Swiss QR codetext, configures the generator, and saves the barcode image.
+    /// Entry point of the application. Creates a temporary folder, generates a QR code with high redundancy, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Prepare Swiss QR codetext with creditor and payment details
-        var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";
-        swissQr.Bill.Creditor.CountryCode = "CH";
-        swissQr.Bill.Account = "CH9300762011623852957";
-        swissQr.Bill.Amount = 199.95m;
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-
-        // Create a ComplexBarcodeGenerator using the prepared codetext
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        // --------------------------------------------------------------------
+        // Prepare output directory
+        // --------------------------------------------------------------------
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo");
+        if (!Directory.Exists(outputDir))
         {
-            // Set the QR error correction level to the maximum (Level H) for better redundancy
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Define full path for the resulting image file
+        string outputPath = Path.Combine(outputDir, "QrCode_MaxError.png");
+
+        // --------------------------------------------------------------------
+        // Create and configure the QR code generator
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
+        {
+            // Set the highest Reed‑Solomon error correction level (Level H)
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Optionally adjust the module size (X dimension) for visual clarity
-            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // Optionally increase the size of each QR module (pixel dimension)
+            generator.Parameters.Barcode.XDimension.Pixels = 8f;
 
-            // Define the output file path and save the barcode as a PNG image
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "SwissQR_MaxError.png");
+            // Save the generated QR code as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Inform the user where the image was saved
-            Console.WriteLine($"Barcode saved to: {outputPath}");
         }
+
+        // Inform the user where the image was saved
+        Console.WriteLine($"QR code with maximum error correction saved to: {outputPath}");
     }
 }

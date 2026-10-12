@@ -1,56 +1,57 @@
-// Title: Generate Mailmark Barcode and Return Image Bytes
-// Description: Demonstrates creating a Mailmark 4-state barcode, saving it to a MemoryStream, and obtaining the PNG image bytes for use in a web API response.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on complex barcode types such as Mailmark. It showcases the use of ComplexBarcodeGenerator and related parameter classes to configure barcode appearance, a common requirement for developers integrating barcode images into web services, mobile apps, or document workflows. Typical use cases include generating printable barcodes on the fly, returning image data via APIs, and customizing barcode dimensions.
+// Title: Generate Mailmark 2D Barcode and Return Image Bytes
+// Description: This example creates a Mailmark 2D barcode using Aspose.BarCode, writes it to a MemoryStream, and obtains the PNG image bytes, suitable for returning from a web API.
+// Category-Description: Demonstrates Aspose.BarCode complex barcode generation for Mailmark symbology. It showcases the use of Mailmark2DCodetext, ComplexBarcodeGenerator, and image format settings. Developers building web services that need to embed barcode images in responses will find this pattern useful for creating PNG byte arrays on the fly.
 // Prompt: Generate a Mailmark barcode into a MemoryStream and return image bytes to a web API.
-// Tags: mailmark, barcode, generation, png, memorystream, aspnet, aspose.barcode, complexbarcode
+// Tags: mailmark, barcode, generation, memory stream, png, aspose.barcode, complexbarcode, image bytes
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a Mailmark barcode, writes it to a memory stream,
-/// and outputs the resulting PNG image bytes. Suitable for integration into a web API.
+/// Example program that generates a Mailmark 2D barcode and extracts the image bytes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Builds a MailmarkCodetext, generates the barcode,
-    /// and writes the image bytes to the console (simulating API response handling).
+    /// Entry point of the example. Creates a Mailmark 2D codetext, generates the barcode,
+    /// saves it to a MemoryStream as PNG, and outputs the length of the resulting byte array.
     /// </summary>
     static void Main()
     {
-        // Define the Mailmark 4‑state codetext with required fields.
-        var mailmark = new MailmarkCodetext
+        // Initialize Mailmark 2D codetext with required fields
+        var mailmark2D = new Mailmark2DCodetext
         {
-            Format = 4,
-            VersionID = 1,
-            Class = "0",
-            SupplychainID = 384224,
-            ItemID = 16563762,
-            DestinationPostCodePlusDPS = "EF61AH8T "
+            UPUCountryID = "JGB ",
+            InformationTypeID = "0",
+            VersionID = "1",
+            Class = "1",
+            SupplyChainID = 123,
+            ItemID = 1234,
+            DestinationPostCodeAndDPS = "EF61AH8T ",
+            DataMatrixType = Mailmark2DType.Type_7,
+            CustomerContent = "CUSTOM"
         };
 
-        // Create a memory stream to hold the generated PNG image.
+        // Create a memory stream to hold the generated barcode image
         using (var memoryStream = new MemoryStream())
         {
-            // Initialize the complex barcode generator with the Mailmark codetext.
-            using (var generator = new ComplexBarcodeGenerator(mailmark))
+            // Use ComplexBarcodeGenerator to render the Mailmark barcode
+            using (var generator = new ComplexBarcodeGenerator(mailmark2D))
             {
-                // Set the X‑dimension (module width) to 4 pixels for better readability.
-                generator.Parameters.Barcode.XDimension.Pixels = 4;
+                // Set the X-dimension (module size) in pixels for better resolution
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-                // Save the barcode image into the memory stream in PNG format.
+                // Save the barcode as a PNG image into the memory stream
                 generator.Save(memoryStream, BarCodeImageFormat.Png);
             }
 
-            // Retrieve the image bytes from the memory stream.
+            // Convert the memory stream contents to a byte array
             byte[] imageBytes = memoryStream.ToArray();
 
-            // Output the size of the generated image and its Base64 representation.
-            Console.WriteLine($"Generated Mailmark barcode image bytes: {imageBytes.Length}");
-            Console.WriteLine(Convert.ToBase64String(imageBytes));
+            // Output the size of the generated image byte array (for demonstration)
+            Console.WriteLine($"Generated Mailmark 2D barcode byte array length: {imageBytes.Length}");
         }
     }
 }

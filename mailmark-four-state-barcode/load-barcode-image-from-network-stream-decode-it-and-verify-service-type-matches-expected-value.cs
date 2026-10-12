@@ -1,74 +1,63 @@
-// Title: Decode QR Code from Network Stream and Verify Symbology
-// Description: Loads a barcode image from a URL, decodes it using Aspose.BarCode, and checks that the detected symbology matches the expected value.
-// Category-Description: This example demonstrates how to retrieve a barcode image over HTTP, use Aspose.BarCode's BarCodeReader to recognize all supported symbologies, and validate the result. It showcases key API classes such as BarCodeReader, BarCodeResult, DecodeType, and BaseDecodeType—common in scenarios like inventory scanning, ticket validation, or any application that needs to process barcodes received from remote sources. Developers often need to combine network I/O with barcode recognition to automate verification workflows.
-/// Prompt: Load a barcode image from a network stream, decode it, and verify service type matches expected value.
-/// Tags: barcode, decoding, network, qrcode, aspose.barcode, csharp
+// Title: Decode a barcode from a network stream and verify its symbology
+// Description: Demonstrates loading a barcode image via HTTP, decoding all supported symbologies, and checking that the detected type matches an expected value.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating how to use BarCodeReader with a Stream source. It covers typical use cases such as reading barcodes from remote files, iterating over multiple results, and performing validation logic. Developers working with barcode scanning, image processing, or integration with web services often need these patterns.
+// Prompt: Load a barcode image from a network stream, decode it, and verify service type matches expected value.
+// Tags: barcode, qr, decode, network, http, aspose.barcode, barcodereader, stream, validation
 
 using System;
 using System.IO;
 using System.Net.Http;
-using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates loading a barcode image from a remote URL, decoding it, and verifying that the detected symbology matches an expected value.
+/// Example program that downloads a barcode image, decodes it, and verifies the detected symbology.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Retrieves the image, decodes barcodes, and validates the symbology.
+    /// Entry point. Downloads the image, reads all barcodes, and checks for a matching type.
     /// </summary>
     static void Main()
     {
         // URL of the barcode image to process
-        string imageUrl = "https://example.com/samplebarcode.png";
+        string imageUrl = "https://example.com/sample.png";
 
-        // Expected symbology identifier (e.g., "QR")
-        string expectedSymbology = "QR";
+        // Expected barcode type name (e.g., "QR")
+        string expectedTypeName = "QR";
 
-        // Resolve the expected symbology to a BaseDecodeType enum value using reflection
-        var field = typeof(DecodeType).GetField(expectedSymbology);
-        if (field == null)
-        {
-            Console.WriteLine($"Unknown expected symbology: {expectedSymbology}");
-            return;
-        }
-        BaseDecodeType expectedDecodeType = (BaseDecodeType)field.GetValue(null);
-
-        // Create an HttpClient to download the image stream
+        // HttpClient is used to fetch the image stream from the network
         using (var httpClient = new HttpClient())
         {
             try
             {
-                // Synchronously fetch the image stream from the URL
+                // Synchronously get the image stream (blocking call for simplicity)
                 using (Stream stream = httpClient.GetStreamAsync(imageUrl).GetAwaiter().GetResult())
                 {
-                    // Initialize the barcode reader to recognize all supported types
+                    // Initialize the barcode reader to decode all supported types from the stream
                     using (var reader = new BarCodeReader(stream, DecodeType.AllSupportedTypes))
                     {
-                        bool any = false;
+                        bool matchFound = false;
 
-                        // Iterate through all detected barcodes in the image
+                        // Iterate through all detected barcodes
                         foreach (BarCodeResult result in reader.ReadBarCodes())
                         {
-                            any = true;
-                            Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
+                            Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
 
-                            // Compare the detected symbology with the expected one
-                            if (result.CodeType.Equals(expectedDecodeType))
+                            // Compare the detected type with the expected value (case‑insensitive)
+                            if (string.Equals(result.CodeTypeName, expectedTypeName, StringComparison.OrdinalIgnoreCase))
                             {
-                                Console.WriteLine("Service type matches expected value.");
-                            }
-                            else
-                            {
-                                Console.WriteLine($"Service type mismatch. Expected: {expectedSymbology}, Got: {result.CodeTypeName}");
+                                matchFound = true;
                             }
                         }
 
-                        // Inform the user if no barcodes were found
-                        if (!any)
+                        // Output verification result
+                        if (matchFound)
                         {
-                            Console.WriteLine("No barcode detected in the image.");
+                            Console.WriteLine("Service type matches expected value.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Service type does NOT match expected value.");
                         }
                     }
                 }

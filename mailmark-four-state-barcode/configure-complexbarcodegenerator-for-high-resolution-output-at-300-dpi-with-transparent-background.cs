@@ -1,51 +1,55 @@
-// Title: Generate Swiss QR Code with Transparent Background at 300 DPI
-// Description: Demonstrates creating a Swiss QR bill barcode using Aspose.BarCode, configuring a 300 DPI resolution and a transparent background, and saving the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of ComplexBarcodeGenerator and SwissQRCodetext to produce high‑resolution, custom‑styled barcodes. Developers often need to generate payment QR codes, embed them in documents, or render them with specific visual requirements such as transparency or DPI settings. The snippet illustrates typical steps: preparing data, configuring generator parameters, and exporting to common image formats.
+// Title: Generate MaxiCode barcode with high‑resolution transparent PNG
+// Description: Demonstrates creating a MaxiCode barcode using Aspose.BarCode's ComplexBarcodeGenerator, setting 300 DPI resolution and a transparent background, and saving it as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with MaxiCodeCodetextMode3 and related message classes to produce advanced 2‑D barcodes. Typical scenarios include logistics, parcel tracking, and inventory systems where MaxiCode is required. Developers often need to control image resolution, background transparency, and output format, which this sample illustrates.
 // Prompt: Configure ComplexBarcodeGenerator for high‑resolution output at 300 DPI with transparent background.
-// Tags: swissqr, barcode generation, high resolution, transparent background, png, complexbarcodegenerator, swissqrcodetext
+// Tags: maxicode, complex barcode, high resolution, transparent background, png, aspose.barcode, barcode generation
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR bill barcode with high resolution and transparent background.
+/// Example program that generates a MaxiCode barcode with high resolution and a transparent background.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates output folder, builds Swiss QR data, configures generator, and saves PNG.
+    /// Entry point of the application. Creates a MaxiCode barcode, configures image settings, and saves the result as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Ensure the output directory exists
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
-        if (!Directory.Exists(outputDir))
+        // Prepare a temporary output directory for the generated barcode image
+        string outputDir = Path.Combine(Path.GetTempPath(), "ComplexBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "maxicode.png");
+
+        // Create the second message part required for MaxiCode mode 3
+        var secondMessage = new MaxiCodeStandardSecondMessage
         {
-            Directory.CreateDirectory(outputDir);
+            Message = "Sample Message"
+        };
+
+        // Build the MaxiCode codetext with required fields (postal code, country, service category, and second message)
+        var codetext = new MaxiCodeCodetextMode3
+        {
+            PostalCode = "B1050",
+            CountryCode = 56,
+            ServiceCategory = 999,
+            SecondMessage = secondMessage
+        };
+
+        // Generate the barcode, set high‑resolution (300 DPI) and transparent background, then save as PNG
+        using (var generator = new ComplexBarcodeGenerator(codetext))
+        {
+            generator.Parameters.Resolution = 300f; // 300 DPI for high‑quality output
+            generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent; // Transparent background
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Build Swiss QR code data (bill information)
-        var swissQr = new SwissQRCodetext();
-        swissQr.Bill.Creditor.Name = "John Doe";
-        swissQr.Bill.Creditor.CountryCode = "CH";
-        swissQr.Bill.Account = "CH9300762011623852957";
-        swissQr.Bill.Amount = 199.95m;
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-
-        // Define the output file path
-        string outputPath = Path.Combine(outputDir, "SwissQR_Transparent_300dpi.png");
-
-        // Generate the barcode with desired resolution and transparent background
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
-        {
-            generator.Parameters.Resolution = 300f;               // Set DPI to 300
-            generator.Parameters.BackColor = Color.Transparent; // Make background transparent
-            generator.Save(outputPath, BarCodeImageFormat.Png);   // Save as PNG
-        }
-
+        // Inform the user where the barcode image was saved
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
