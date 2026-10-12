@@ -1,8 +1,8 @@
 // Title: Batch decode Dutch KIX barcodes from generated images
-// Description: Demonstrates generating a set of Dutch KIX barcodes, decoding them in batch, and logging successes and failures.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader with a specific DecodeType to read them, and typical file handling for batch processing. Developers often need to process multiple barcode images from storage, detect errors, and record results, making this pattern useful for automated scanning workflows.
+// Description: Generates a set of Dutch KIX barcode images, decodes them in a batch operation, and records any failures to a log file.
+// Category-Description: This example demonstrates Aspose.BarCode's generation and recognition APIs for Dutch KIX symbology. It showcases the use of BarcodeGenerator to create barcodes, BarCodeReader with a specific DecodeType for batch decoding, and common patterns for error handling and logging. Developers working on bulk barcode processing, automated verification, or cloud‑based image pipelines will find these techniques useful.
 // Prompt: Perform batch decoding of Dutch KIX barcodes from a cloud storage container and log failures.
-// Tags: dutch,kix,barcode,generation,recognition,batch,processing,logging
+// Tags: dutchkix, barcode, generation, recognition, batch, logging, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,107 +10,139 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates Dutch KIX barcodes, decodes them in batch,
-/// and writes a detailed log of successes and failures.
+/// Demonstrates batch generation and decoding of Dutch KIX barcodes,
+/// logging any decoding failures for later analysis.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates temporary barcode images, attempts to decode each,
-    /// and records the outcome to a log file.
+    /// Entry point of the example. Generates sample barcodes, decodes them,
+    /// and writes a detailed log of successes and failures.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the batch processing
+        // Create a dedicated temporary folder for the batch operation
         string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(batchFolder);
 
-        // Define the path for the log file that will capture results
-        string logPath = Path.Combine(batchFolder, "batch_decode_log.txt");
+        // Prepare a log file for failures and start timestamp
+        string logPath = Path.Combine(batchFolder, "decode_log.txt");
+        File.WriteAllText(logPath, $"Batch decode started at {DateTime.Now}{Environment.NewLine}");
 
-        // Sample data that will be encoded into Dutch KIX barcodes
-        List<string> codeTexts = new List<string>
+        // Sample data for Dutch KIX barcodes
+        List<string> sampleTexts = new List<string>
         {
             "123456ASPOSE",
             "ABCDEF1234",
+            "ZXCVBNM987",
             "KIXTEST01",
-            "POST2023",
-            "ZXCVBNM"
+            "POSTCODE9"
         };
 
-        // Collection to store the full file paths of generated barcode images
-        List<string> barcodeFiles = new List<string>();
-
-        // -----------------------------------------------------------------
-        // Generate barcode images for each sample text
-        // -----------------------------------------------------------------
-        foreach (string text in codeTexts)
+        // Generate barcode images from the sample data
+        List<string> generatedFiles = new List<string>();
+        foreach (string text in sampleTexts)
         {
-            string filePath = Path.Combine(batchFolder, $"DutchKIX_{text}.png");
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DutchKIX, text))
+            string filePath = Path.Combine(batchFolder, $"{text}.png");
+            using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.DutchKIX, text))
             {
-                // Configure visual appearance
-                generator.Parameters.Barcode.XDimension.Pixels = 4f;
-                generator.Parameters.Barcode.BarHeight.Pixels = 50f;
-
-                // Save the barcode as a PNG image
-                generator.Save(filePath, BarCodeImageFormat.Png);
+                gen.Parameters.Barcode.XDimension.Pixels = 4;
+                gen.Parameters.Barcode.BarHeight.Pixels = 50;
+                gen.Save(filePath, BarCodeImageFormat.Png);
             }
-            barcodeFiles.Add(filePath);
+            generatedFiles.Add(filePath);
         }
 
-        // -----------------------------------------------------------------
-        // Batch decode the generated barcode images
-        // -----------------------------------------------------------------
-        foreach (string file in barcodeFiles)
+        // Resolve DecodeType for Dutch KIX via reflection (required for BarCodeReader)
+        BaseDecodeType dutchKixDecode = ResolveDecodeType("DutchKIX");
+        if (dutchKixDecode == null)
+        {
+            Console.WriteLine("Failed to resolve DecodeType for DutchKIX. Exiting.");
+            return;
+        }
+
+        // Batch decode each generated file and log any issues
+        foreach (string file in generatedFiles)
         {
             try
             {
-                // Specify the expected barcode type for decoding
-                BaseDecodeType decodeType = DecodeType.DutchKIX;
-
-                using (BarCodeReader reader = new BarCodeReader(file, decodeType))
+                using (BarCodeReader reader = new BarCodeReader(file, dutchKixDecode))
                 {
                     BarCodeResult[] results = reader.ReadBarCodes();
-
                     if (results.Length == 0)
                     {
-                        // No barcode detected – log as failure
-                        string msg = $"FAILURE: {Path.GetFileName(file)} - No barcode detected.";
+                        string msg = $"No barcode detected in file: {Path.GetFileName(file)}";
                         Console.WriteLine(msg);
-                        File.AppendAllText(logPath, msg + Environment.NewLine);
+                        AppendLog(logPath, msg);
                     }
                     else
                     {
-                        // Log each successfully decoded barcode
                         foreach (BarCodeResult result in results)
                         {
-                            string msg = $"SUCCESS: {Path.GetFileName(file)} - Type: {result.CodeTypeName}, Text: {result.CodeText}";
-                            Console.WriteLine(msg);
-                            File.AppendAllText(logPath, msg + Environment.NewLine);
+                            string info = $"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}";
+                            Console.WriteLine(info);
                         }
                     }
                 }
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException ex) // Image loading failed or unsupported format
             {
-                // Image could not be loaded – log as failure
-                string msg = $"FAILURE: {Path.GetFileName(file)} - Image loading failed. {ex.Message}";
-                Console.WriteLine(msg);
-                File.AppendAllText(logPath, msg + Environment.NewLine);
+                string err = $"Failed to process file {Path.GetFileName(file)}: {ex.Message}";
+                Console.WriteLine(err);
+                AppendLog(logPath, err);
             }
-            catch (Exception ex)
+            catch (Exception ex) // Any other unexpected error
             {
-                // Unexpected error – log as failure
-                string msg = $"FAILURE: {Path.GetFileName(file)} - Unexpected error. {ex.Message}";
-                Console.WriteLine(msg);
-                File.AppendAllText(logPath, msg + Environment.NewLine);
+                string err = $"Unexpected error for file {Path.GetFileName(file)}: {ex.Message}";
+                Console.WriteLine(err);
+                AppendLog(logPath, err);
             }
         }
 
-        // Inform the user that processing is complete and where the log is stored
-        Console.WriteLine($"Batch processing completed. Log saved to: {logPath}");
+        Console.WriteLine($"Batch decoding completed. Log written to: {logPath}");
+
+        // Cleanup: delete temporary files and folder (optional)
+        // Commented out to allow inspection of generated files after run
+        // foreach (string f in generatedFiles) File.Delete(f);
+        // File.Delete(logPath);
+        // Directory.Delete(batchFolder);
+    }
+
+    /// <summary>
+    /// Resolves a DecodeType field by name using reflection.
+    /// Returns null if the symbology name is not found.
+    /// </summary>
+    /// <param name="symbologyName">The name of the DecodeType field (e.g., "DutchKIX").</param>
+    /// <returns>The corresponding BaseDecodeType instance or null.</returns>
+    static BaseDecodeType ResolveDecodeType(string symbologyName)
+    {
+        var field = typeof(DecodeType).GetField(symbologyName);
+        if (field == null)
+        {
+            Console.WriteLine($"Unknown decode symbology: {symbologyName}");
+            return null;
+        }
+        return (BaseDecodeType)field.GetValue(null);
+    }
+
+    /// <summary>
+    /// Appends a timestamped message to the specified log file.
+    /// Errors during logging are silently ignored to keep the batch process alive.
+    /// </summary>
+    /// <param name="logFile">Path to the log file.</param>
+    /// <param name="message">Message to append.</param>
+    static void AppendLog(string logFile, string message)
+    {
+        try
+        {
+            File.AppendAllText(logFile, $"{DateTime.Now}: {message}{Environment.NewLine}");
+        }
+        catch
+        {
+            // Suppress any logging errors to avoid crashing the batch process
+        }
     }
 }

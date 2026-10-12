@@ -1,8 +1,8 @@
-// Title: Generate Postnet Barcodes from Text Files
-// Description: This example creates temporary input and output directories, reads postal codes from text files, and generates Postnet barcode images using Aspose.BarCode.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation for postal symbologies. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and image saving with BarCodeImageFormat. Developers building mailing solutions often need to convert numeric postal codes into machine‑readable barcodes for printing or electronic processing; this sample provides a quick reference for such scenarios.
+// Title: Generate RM4SCC Postal Barcodes from Files
+// Description: Demonstrates creating temporary input files, generating RM4SCC postal barcodes for each file, and saving them as PNG images.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator (EncodeTypes.RM4SCC) to create postal barcodes, customize dimensions, and save them as images. It also illustrates reading back the generated barcode with BarCodeReader (DecodeType.RM4SCC) for verification. Developers working with postal services, logistics, or any scenario requiring RM4SCC barcodes will find this pattern useful.
 // Prompt: Develop a Windows service that monitors a folder and generates postal barcodes for new files automatically.
-// Tags: postnet, barcode generation, image output, aspose.barcode, c#
+// Tags: postal barcode, rm4scc, barcode generation, barcode recognition, image output, aspose.barcode, c#
 
 using System;
 using System.IO;
@@ -10,90 +10,87 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample console application that generates Postnet barcodes from text files.
+/// Sample console application that creates temporary files, generates RM4SCC postal barcodes for each file,
+/// saves the barcodes as PNG images, and optionally verifies them by reading back the generated images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates temporary folders, writes sample code files, reads them, and generates PNG barcode images.
+    /// Entry point of the application. Executes the barcode generation workflow.
     /// </summary>
     static void Main()
     {
-        // Create a unique base folder in the temp directory
-        string baseFolder = Path.Combine(Path.GetTempPath(), "PostalBatch_" + Guid.NewGuid().ToString("N"));
-        // Define subfolders for input text files and output barcode images
-        string inputFolder = Path.Combine(baseFolder, "Input");
-        string outputFolder = Path.Combine(baseFolder, "Output");
+        // --------------------------------------------------------------------
+        // 1. Create a unique temporary input folder and populate it with sample files.
+        // --------------------------------------------------------------------
+        string inputFolder = Path.Combine(Path.GetTempPath(), "PostalInput_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(inputFolder);
-        Directory.CreateDirectory(outputFolder);
-
-        // Sample postal codes for Postnet (numeric strings)
-        string[] sampleCodes = new string[]
-        {
-            "1159628792", // 10 digits (valid for Postnet)
-            "123456789",  // 9 digits
-            "12345"       // 5 digits
-        };
-
-        // Write each sample code to a separate text file in the input folder
-        for (int i = 0; i < sampleCodes.Length; i++)
+        var inputFiles = new string[3];
+        for (int i = 0; i < inputFiles.Length; i++)
         {
             string filePath = Path.Combine(inputFolder, $"Sample{i + 1}.txt");
-            File.WriteAllText(filePath, sampleCodes[i]);
+            File.WriteAllText(filePath, $"Sample content {i + 1}");
+            inputFiles[i] = filePath;
         }
 
-        // List of files to process (could be discovered dynamically in a real service)
-        string[] files = new string[]
-        {
-            Path.Combine(inputFolder, "Sample1.txt"),
-            Path.Combine(inputFolder, "Sample2.txt"),
-            Path.Combine(inputFolder, "Sample3.txt")
-        };
+        // --------------------------------------------------------------------
+        // 2. Create a unique temporary output folder for the generated barcode images.
+        // --------------------------------------------------------------------
+        string outputFolder = Path.Combine(Path.GetTempPath(), "PostalOutput_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // Iterate over each file, read the code, and generate a Postnet barcode image
-        foreach (string file in files)
+        // --------------------------------------------------------------------
+        // 3. Process each input file: generate an RM4SCC barcode based on the file index,
+        //    save the barcode image, and optionally read it back for verification.
+        // --------------------------------------------------------------------
+        for (int i = 0; i < inputFiles.Length; i++)
         {
+            string file = inputFiles[i];
             if (!File.Exists(file))
             {
                 Console.WriteLine($"File not found: {file}");
                 continue;
             }
 
-            // Read and trim the postal code from the file
-            string codeText = File.ReadAllText(file).Trim();
-            if (string.IsNullOrEmpty(codeText))
-            {
-                Console.WriteLine($"Empty code text in file: {file}");
-                continue;
-            }
+            // Build a code text suitable for RM4SCC (example format).
+            string codeText = $"RM9996050{i + 1:D2}CH";
 
-            try
+            // Generate the barcode image using Aspose.BarCode.
+            using (var generator = new BarcodeGenerator(EncodeTypes.RM4SCC, codeText))
             {
-                // Initialize the barcode generator for Postnet with the read code
-                using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, codeText))
+                // Set the X-dimension (module width) to 2 pixels for better readability.
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+                // Determine the output PNG file path.
+                string outputPath = Path.Combine(outputFolder, Path.GetFileNameWithoutExtension(file) + ".png");
+
+                // Save the generated barcode as a PNG image.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated barcode for '{Path.GetFileName(file)}' at '{outputPath}'");
+
+                // ----------------------------------------------------------------
+                // Optional verification: read back the generated barcode image.
+                // ----------------------------------------------------------------
+                using (Bitmap bitmap = generator.GenerateBarCodeImage())
                 {
-                    // Set the X-dimension (module width) in pixels
-                    generator.Parameters.Barcode.XDimension.Pixels = 3f;
-                    // Determine the output PNG file path
-                    string outputPath = Path.Combine(outputFolder, Path.GetFileNameWithoutExtension(file) + ".png");
-                    // Save the generated barcode image
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Generated barcode for '{codeText}' -> {outputPath}");
+                    using (var reader = new BarCodeReader(bitmap, DecodeType.RM4SCC))
+                    {
+                        foreach (BarCodeResult result in reader.ReadBarCodes())
+                        {
+                            Console.WriteLine($"Read back: Type={result.CodeTypeName}, Text={result.CodeText}");
+                        }
+                    }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error generating barcode for file '{file}': {ex.Message}");
-            }
         }
 
-        // List all generated PNG files for verification
-        Console.WriteLine("Generated barcode files:");
-        foreach (string img in Directory.GetFiles(outputFolder, "*.png"))
-        {
-            Console.WriteLine(img);
-        }
+        // --------------------------------------------------------------------
+        // 4. Cleanup (optional): delete the temporary folders created for the demo.
+        // --------------------------------------------------------------------
+        // Directory.Delete(inputFolder, true);
+        // Directory.Delete(outputFolder, true);
     }
 }

@@ -1,12 +1,11 @@
-// Title: Generate RM4SCC barcodes from XML and export to multi‑page PDF
-// Description: Demonstrates reading codes from an XML file, creating RM4SCC barcodes, and compiling them into a PDF document with one barcode per page.
-// Category-Description: This example belongs to the Aspose.BarCode for .NET barcode generation category, illustrating how to use BarcodeGenerator with EncodeTypes.RM4SCC, configure barcode dimensions, and embed generated images into an Aspose.Pdf Document. Typical use cases include batch barcode creation from data sources and producing printable PDF reports. Developers often need to combine barcode generation with PDF composition for inventory, shipping, or labeling solutions.
+// Title: Generate RM4SCC Barcodes from XML and Export to Multi‑Page PDF
+// Description: The example reads an XML file, extracts code values, creates RM4SCC barcodes for each, and compiles them into a multi‑page PDF document.
+// Category-Description: This sample belongs to the Aspose.BarCode for .NET barcode generation category, demonstrating how to use BarcodeGenerator with EncodeTypes.RM4SCC, configure barcode dimensions, and combine generated images into a PDF using Aspose.Pdf. Developers often need to batch‑process data sources such as XML or databases to produce printable barcode PDFs for inventory, shipping, or labeling workflows.
 // Prompt: Generate RM4SCC barcodes for each record in an XML file and write output to a multi‑page PDF.
-// Tags: rm4scc, barcode generation, xml, pdf, aspose.barcode, aspose.pdf, batch processing
+// Tags: rm4scc, barcode generation, xml parsing, pdf output, aspose.barcode, aspose.pdf, c# example
 
 using System;
 using System.IO;
-using System.Linq;
 using System.Xml.Linq;
 using System.Collections.Generic;
 using Aspose.BarCode;
@@ -14,86 +13,109 @@ using Aspose.BarCode.Generation;
 using Aspose.Pdf;
 
 /// <summary>
-/// Program that reads codes from an XML file, generates RM4SCC barcodes,
-/// and writes them to a multi‑page PDF document.
+/// Demonstrates reading barcode data from an XML file, generating RM4SCC barcodes,
+/// and assembling them into a multi‑page PDF using Aspose.BarCode and Aspose.Pdf.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates sample XML if missing, extracts up to four codes,
-    /// generates PNG barcodes, embeds them into a PDF, and saves the result.
+    /// Entry point of the example. Executes the XML parsing, barcode generation,
+    /// PDF creation, and cleanup steps.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define input XML and output PDF file paths.
-        string inputPath = "input.xml";
-        string outputPath = "output.pdf";
+        // Define the input XML file path.
+        string xmlPath = "input.xml";
 
-        // If the input XML does not exist, create a sample file with a few records.
-        if (!File.Exists(inputPath))
+        // Verify that the XML file exists before proceeding.
+        if (!File.Exists(xmlPath))
         {
-            var sample = new XDocument(
-                new XElement("Records",
-                    new XElement("Record", new XElement("Code", "123456ASPOSE")),
-                    new XElement("Record", new XElement("Code", "ABCDEF")),
-                    new XElement("Record", new XElement("Code", "987654"))
-                )
-            );
-            sample.Save(inputPath);
+            Console.WriteLine($"XML file not found: {xmlPath}");
+            return;
         }
 
-        // Load the XML document and extract up to four non‑empty code values.
-        XDocument doc = XDocument.Load(inputPath);
-        var codes = doc.Root.Elements("Record")
-            .Select(r => (string)r.Element("Code"))
-            .Where(c => !string.IsNullOrEmpty(c))
-            .Take(4)
-            .ToList();
+        // Load the XML document, handling any parsing errors.
+        XDocument doc;
+        try
+        {
+            doc = XDocument.Load(xmlPath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to load XML: {ex.Message}");
+            return;
+        }
 
-        // Prepare a new PDF document and a list to hold barcode image streams.
-        var pdfDoc = new Document();
+        // Extract barcode values from <Record><Code> elements.
+        var codes = new List<string>();
+        foreach (var record in doc.Descendants("Record"))
+        {
+            var codeElement = record.Element("Code");
+            if (codeElement != null)
+            {
+                string code = codeElement.Value?.Trim();
+                if (!string.IsNullOrEmpty(code))
+                    codes.Add(code);
+            }
+        }
+
+        // Ensure that at least one barcode value was found.
+        if (codes.Count == 0)
+        {
+            Console.WriteLine("No barcode data found in XML.");
+            return;
+        }
+
+        // Limit the number of pages for evaluation mode (max 4 barcodes).
+        int maxPages = Math.Min(codes.Count, 4);
         var streams = new List<MemoryStream>();
 
-        // Iterate over each code, generate a barcode image, and add it to a new PDF page.
-        foreach (var code in codes)
+        // Generate a PNG image for each barcode and store it in memory.
+        for (int i = 0; i < maxPages; i++)
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.RM4SCC, code))
+            using (var generator = new BarcodeGenerator(EncodeTypes.RM4SCC, codes[i]))
             {
                 // Configure barcode appearance.
                 generator.Parameters.Barcode.XDimension.Pixels = 4;
                 generator.Parameters.Barcode.BarHeight.Pixels = 50;
 
-                // Save the barcode as a PNG into a memory stream.
+                // Save the barcode image to a memory stream.
                 var ms = new MemoryStream();
                 generator.Save(ms, BarCodeImageFormat.Png);
                 ms.Position = 0;
                 streams.Add(ms);
+            }
+        }
 
-                // Add a new page to the PDF and place the barcode image at the center.
+        // Define the output PDF file name.
+        string outputPdf = "RM4SCC_Barcodes.pdf";
+
+        // Create a PDF document and add each barcode image as a separate page.
+        using (var pdfDoc = new Document())
+        {
+            foreach (var ms in streams)
+            {
                 var page = pdfDoc.Pages.Add();
                 var pdfImage = new Image
                 {
                     ImageStream = ms,
-                    FixWidth = 200,
-                    FixHeight = 200,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
+                    FixWidth = 200.0,
+                    FixHeight = 100.0,
+                    HorizontalAlignment = HorizontalAlignment.Center
                 };
                 page.Paragraphs.Add(pdfImage);
             }
+
+            // Save the assembled PDF to disk.
+            pdfDoc.Save(outputPdf);
         }
 
-        // Save the assembled PDF to the specified output path.
-        pdfDoc.Save(outputPath);
-
-        // Dispose all memory streams to release resources.
-        foreach (var s in streams)
+        // Release all memory streams.
+        foreach (var ms in streams)
         {
-            s.Dispose();
+            ms.Dispose();
         }
 
-        // Inform the user about the successful generation.
-        Console.WriteLine($"Generated PDF with {codes.Count} barcodes at '{outputPath}'.");
+        Console.WriteLine($"PDF generated: {outputPdf}");
     }
 }

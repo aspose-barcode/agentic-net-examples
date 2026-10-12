@@ -1,41 +1,53 @@
 // Title: Set XDimension for Planet barcode and verify module width
-// Description: Demonstrates how to configure the XDimension (module width) of a Planet barcode to 0.75 mm using Aspose.BarCode and confirms the setting.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings. Typical use cases include customizing barcode dimensions for printing standards and ensuring compliance with size specifications. Developers often need to adjust XDimension to control module width for various symbologies.
+// Description: Demonstrates how to set the XDimension (module width) to 0.75 mm for a Planet barcode using Aspose.BarCode, then saves the image and outputs verification data.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating configuration of barcode parameters such as XDimension. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and image saving with BarCodeImageFormat. Developers often need to adjust module size for printing accuracy, and this snippet provides a quick reference for setting and confirming XDimension values.
 // Prompt: Set XDimension to 0.75 mm for a Planet barcode and verify resulting module width.
-// Tags: planet barcode, xdimension, module width, barcode generation, aspose.barcode, png output
+// Tags: planet, xdimension, barcode, generation, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates setting XDimension for a Planet barcode and verifying the module width.
+/// Demonstrates setting XDimension for a Planet barcode and verifying the resulting module width.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Planet barcode with XDimension set to 0.75 mm, saves it as PNG, and outputs the set value.
+    /// Entry point. Generates a Planet barcode with a custom XDimension, saves it as PNG, and prints verification details.
     /// </summary>
     static void Main()
     {
-        // Determine temporary output file path
-        string outputPath = Path.Combine(Path.GetTempPath(), "PlanetBarcode.png");
+        // Create a unique temporary folder for output
+        string tempFolder = Path.Combine(Path.GetTempPath(), "PlanetXDim_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Initialize barcode generator for Planet symbology with sample data
+        // Define full path for the generated PNG image
+        string outputPath = Path.Combine(tempFolder, "planet.png");
+
+        // Initialize the barcode generator for Planet symbology with sample data
         using (var generator = new BarcodeGenerator(EncodeTypes.Planet, "123456"))
         {
-            // Configure XDimension (module width) to 0.75 millimeters
+            // Set the module width (XDimension) to 0.75 mm
             generator.Parameters.Barcode.XDimension.Millimeters = 0.75f;
 
-            // Save the generated barcode image as PNG
+            // Save the barcode image as PNG
             generator.Save(outputPath, BarCodeImageFormat.Png);
 
-            // Retrieve and display the XDimension value to verify the setting
-            float setValue = generator.Parameters.Barcode.XDimension.Millimeters;
-            Console.WriteLine($"XDimension set to {setValue} mm for Planet barcode.");
-            Console.WriteLine($"Barcode image saved to: {outputPath}");
+            // Retrieve and display the XDimension that was set
+            float setXDim = generator.Parameters.Barcode.XDimension.Millimeters;
+            Console.WriteLine($"XDimension set to (mm): {setXDim}");
+
+            // Load the saved image to verify its pixel dimensions
+            using (var bitmap = new Bitmap(outputPath))
+            {
+                Console.WriteLine($"Generated image width (pixels): {bitmap.Width}");
+            }
         }
+
+        // Output the location of the saved barcode image
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

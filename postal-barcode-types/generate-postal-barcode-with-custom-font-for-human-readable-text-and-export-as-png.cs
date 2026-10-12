@@ -1,49 +1,59 @@
-// Title: Generate Postal Barcode with Custom Font and Save as PNG
-// Description: This example creates a Planet postal barcode, applies a custom Helvetica font to the human‑readable text, and saves the image as a PNG file.
-// Category-Description: Demonstrates Aspose.BarCode generation of postal symbologies. Shows how to configure barcode dimensions, set manual font properties for code text, and export the result using BarCodeGenerator and BarCodeImageFormat. Useful for developers needing to produce printable postal barcodes with customized appearance.
+// Title: Generate Postal Planet Barcode with Custom Font and PNG Output
+// Description: Demonstrates creating a Planet postal barcode, applying a custom Helvetica font to the human‑readable text, and saving the result as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.Planet, configure barcode dimensions, customize CodeTextParameters (font, location), and export the barcode to a PNG file. Typical use cases include generating postal barcodes for mailing systems where a specific font is required for readability. Developers often need to adjust visual settings and output formats, making this a common reference for barcode creation tasks.
 // Prompt: Generate a postal barcode with a custom font for the human‑readable text and export as PNG.
-// Tags: postal barcode, custom font, png output, aspose.barcode, barcode generation
+// Tags: postal, planet, custom font, png, generation, aspose.barcode, codetextparameters
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Planet postal barcode with a custom font and saves it as a PNG image.
+/// Example program that creates a Planet postal barcode with a custom font for the human‑readable text
+/// and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates the barcode, configures its appearance, and writes the PNG file to disk.
+    /// Entry point of the application. Generates the barcode, configures visual parameters,
+    /// and writes the output file to the local "output" folder.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the current working directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "PostalBarcode.png");
-        // The data to encode in the barcode.
-        string codeText = "123456";
+        // Determine the output directory relative to the current working directory
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
 
-        // Initialize the barcode generator for the Planet postal symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Planet, codeText))
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputDir))
         {
-            // Set barcode dimensions: X-dimension (module width) and bar height.
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Configure the human‑readable text to use a custom font.
-            generator.Parameters.Barcode.CodeTextParameters.FontMode = FontMode.Manual; // Enable manual font settings.
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica"; // Font family.
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f; // Font size.
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below; // Position text below the barcode.
+        // Full path for the generated PNG file
+        string outputPath = Path.Combine(outputDir, "PostalPlanetCustomFont.png");
 
-            // Save the generated barcode as a PNG image.
+        // Initialize the barcode generator for Planet symbology with the desired data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Planet, "123456"))
+        {
+            // Set barcode size parameters
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;          // Width of a single module
+            generator.Parameters.Barcode.BarHeight.Pixels = 50f;        // Height of the main barcode bars
+            generator.Parameters.Barcode.Postal.ShortBarHeight.Pixels = 20f; // Height of the short (postal) bars
+
+            // Position the human‑readable text below the barcode
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+
+            // Apply a custom Helvetica font to the human‑readable text
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved.
-        Console.WriteLine($"Postal barcode saved to: {outputPath}");
+        // Inform the user where the file was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

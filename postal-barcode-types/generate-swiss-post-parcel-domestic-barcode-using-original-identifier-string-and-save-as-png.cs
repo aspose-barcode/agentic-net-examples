@@ -1,60 +1,53 @@
-// Title: Generate Swiss Post Parcel domestic barcode and save as PNG
-// Description: Demonstrates creating a Swiss Post Parcel barcode from an identifier string and saving it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator with EncodeTypes.SwissPostParcel, configure visual parameters, save the image, and then read back the barcode using BarCodeReader. Developers working with postal barcode symbologies can use this pattern for generating and validating barcodes in shipping and logistics applications.
+// Title: Generate Swiss Post Parcel Domestic Barcode and Save as PNG
+// Description: Demonstrates creating a Swiss Post Parcel domestic barcode from an original identifier string and saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.SwissPostParcel to produce postal barcodes. Typical use cases include generating shipping labels for Swiss Post parcels, where developers need to encode the original identifier into a barcode image for printing or electronic distribution. The snippet shows setting basic barcode parameters such as X‑dimension and bar height before saving the result.
 // Prompt: Generate a Swiss Post Parcel domestic barcode using original identifier string and save as PNG.
-// Tags: barcode generation, swiss post parcel, png, aspose.barcode, barcode recognition
+// Tags: swisspost, parcel, domestic, barcode, generation, png, aspnet, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Swiss Post Parcel domestic barcode, saving it as PNG,
-/// and reading it back to verify the encoded data.
+/// Demonstrates generating a Swiss Post Parcel domestic barcode and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, saves it, and reads it back.
+    /// Entry point of the example. Creates output folder, generates barcode, and saves the image.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Original identifier string for the Swiss Post Parcel barcode
-        string identifier = "98.34.123456.12345678";
+        // Define the directory where the barcode image will be saved.
+        string outputDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
 
-        // Build the full path for the output PNG file
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "SwissPostDomesticMail.png");
-
-        // Initialize the barcode generator with SwissPostParcel symbology and the identifier
-        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, identifier))
+        // Ensure the output directory exists.
+        if (!Directory.Exists(outputDirectory))
         {
-            // Set visual parameters: X dimension and bar height in pixels
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
-
-            // Save the generated barcode image to a PNG file
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Generate a bitmap of the barcode for subsequent reading
-            using (Aspose.Drawing.Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Initialize a barcode reader for SwissPostParcel symbology
-                using (var reader = new BarCodeReader(bitmap, DecodeType.SwissPostParcel))
-                {
-                    // Iterate through all detected barcodes and output their type and data
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
-                    {
-                        Console.WriteLine($"Barcode type:{result.CodeTypeName}, Barcode Data:{result.CodeText}");
-                    }
-                }
-            }
+            Directory.CreateDirectory(outputDirectory);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Build the full file path for the PNG image.
+        string outputPath = Path.Combine(outputDirectory, "SwissPostDomesticMail.png");
+
+        // Original identifier string required by Swiss Post Parcel barcode.
+        string originalIdentifier = "98.34.123456.12345678";
+
+        // Initialize the barcode generator with the Swiss Post Parcel symbology and identifier.
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, originalIdentifier))
+        {
+            // Set the X-dimension (module width) in pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Set the bar height in pixels.
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
+
+            // Save the generated barcode as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
+
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Swiss Post Domestic barcode saved to: {outputPath}");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Reed‑Solomon Error Correction Test for Australia Post Barcode
-// Description: Demonstrates generating an Australia Post barcode, intentionally corrupting it, and verifying that Reed‑Solomon error correction can recover the original data.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on error‑correction capabilities. It uses BarcodeGenerator, BarCodeReader, and related settings to illustrate how Reed‑Solomon correction works for Australia Post symbology, a common requirement for postal automation and validation scenarios. Developers looking for unit‑test patterns or sample code for robust barcode handling will find this useful.
+// Title: Reed‑Solomon Error Correction for Australia Post Barcode
+// Description: Demonstrates how Aspose.BarCode can recover a corrupted Australia Post barcode using Reed‑Solomon error correction.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on error‑correction techniques. It showcases the BarcodeGenerator for creating an Australia Post barcode, manipulation of the image to simulate damage, and the BarCodeReader with high‑performance quality settings to decode the damaged image. Developers working with postal symbologies often need to verify that Reed‑Solomon correction restores data after image degradation.
 // Prompt: Write a unit test that verifies Reed‑Solomon error correction produces correct output for Australia Post barcode.
-// Tags: australia post, reed-solomon, error correction, barcode generation, barcode recognition, unit test, aspose.barcode
+// Tags: australia post, reed-solomon, error correction, barcode generation, barcode recognition, unit test, aspnet, csharp
 
 using System;
 using System.IO;
@@ -13,88 +13,64 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains the entry point for the Reed‑Solomon error correction demonstration for Australia Post barcodes.
+/// Example program that generates an Australia Post barcode, corrupts it,
+/// and verifies that Reed‑Solomon error correction can recover the original data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates an Australia Post barcode, corrupts it, and checks whether the Reed‑Solomon error correction can successfully decode it.
+    /// Entry point. Generates, corrupts, and reads back the barcode, printing the result.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for test artifacts
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AustraliaPostTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Define a valid Australia Post code:
+        // FCC 59, 8‑digit DPID, 2‑character CTable customer info
+        string codeText = "5901234567AB";
 
-        // Paths for the original and corrupted barcode images
-        string originalPath = Path.Combine(tempFolder, "original.png");
-        string corruptedPath = Path.Combine(tempFolder, "corrupted.png");
-
-        // Define a valid Australia Post code (FCC 59, 8‑digit DPID, 2 CTable chars)
-        string codeText = "5901234567AB"; // FCC=59, DPID=01234567, customer info "AB"
-
-        // Generate the barcode image
+        // Create a barcode generator for the Australia Post symbology
         using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
         {
+            // Set visual parameters
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Parameters.Barcode.BarHeight.Pixels = 50f;
             generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
-            generator.Save(originalPath, BarCodeImageFormat.Png);
-        }
 
-        // Corrupt the image by drawing a white rectangle over part of it
-        using (var bitmap = (Bitmap)Image.FromFile(originalPath))
-        {
-            using (var graphics = Graphics.FromImage(bitmap))
+            // Generate the barcode image as a bitmap
+            using (var bitmap = generator.GenerateBarCodeImage())
             {
-                // Draw a white rectangle covering roughly the middle of the barcode
-                int rectWidth = bitmap.Width / 4;
-                int rectHeight = bitmap.Height / 2;
-                int rectX = (bitmap.Width - rectWidth) / 2;
-                int rectY = (bitmap.Height - rectHeight) / 2;
-                using (var brush = new SolidBrush(Color.White))
+                // Simulate damage by overwriting a small region with white pixels
+                for (int x = 0; x < 5; x++)
                 {
-                    graphics.FillRectangle(brush, rectX, rectY, rectWidth, rectHeight);
+                    for (int y = 0; y < 5; y++)
+                    {
+                        bitmap.SetPixel(x, y, Color.White);
+                    }
+                }
+
+                // Save the corrupted bitmap to a memory stream (PNG format)
+                using (var corruptedStream = new MemoryStream())
+                {
+                    bitmap.Save(corruptedStream, ImageFormat.Png);
+                    corruptedStream.Position = 0; // Reset stream position for reading
+
+                    // Initialize a reader for Australia Post barcodes
+                    BaseDecodeType decodeType = DecodeType.AustraliaPost;
+                    using (var reader = new BarCodeReader(corruptedStream, decodeType))
+                    {
+                        // Apply high‑performance quality settings (optional)
+                        reader.QualitySettings = QualitySettings.HighPerformance;
+
+                        // Attempt to read the barcode from the corrupted image
+                        var results = reader.ReadBarCodes();
+
+                        // Determine success: at least one result with non‑empty CodeText
+                        bool success = results != null && results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
+
+                        // Output the verification result
+                        Console.WriteLine(success ? "Reed‑Solomon error correction succeeded." : "Reed‑Solomon error correction failed.");
+                    }
                 }
             }
-            bitmap.Save(corruptedPath, ImageFormat.Png);
-        }
-
-        // Attempt to read the corrupted barcode using Reed‑Solomon error correction
-        bool readSuccess = false;
-        BaseDecodeType decodeType = DecodeType.AustraliaPost;
-        using (var reader = new BarCodeReader(corruptedPath, decodeType))
-        {
-            // Configure recognition to match the encoding table used during generation
-            reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
-
-            var results = reader.ReadBarCodes();
-            if (results != null && results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
-            {
-                readSuccess = true;
-            }
-        }
-
-        // Output test result
-        if (readSuccess)
-        {
-            Console.WriteLine("PASSED: Reed‑Solomon error correction recovered the barcode.");
-        }
-        else
-        {
-            Console.WriteLine("FAILED: Barcode could not be recovered.");
-        }
-
-        // Clean up temporary files and folder
-        try
-        {
-            if (File.Exists(originalPath)) File.Delete(originalPath);
-            if (File.Exists(corruptedPath)) File.Delete(corruptedPath);
-            if (Directory.Exists(tempFolder)) Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignored – cleanup failure should not affect test outcome
         }
     }
 }

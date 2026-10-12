@@ -1,33 +1,38 @@
-// Title: Generate Mailmark 4‑state barcode with custom XDimension
-// Description: Demonstrates creating a Mailmark 4‑state postal barcode using Aspose.BarCode, setting a 0.5 mm X‑dimension, and saving it as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Mailmark 4‑state postal symbols. It showcases the use of MailmarkCodetext and ComplexBarcodeGenerator classes to configure barcode data, error correction, and sizing. Developers working with postal automation, mail sorting, or logistics can refer to this pattern for generating compliant Mailmark barcodes in .NET applications.
+// Title: Generate Mailmark 4‑state barcode with Reed‑Solomon correction and custom XDimension
+// Description: This example creates a Mailmark 4‑state postal barcode using Aspose.BarCode, applies Reed‑Solomon error correction, sets a custom XDimension of 0.5 mm, and saves the result as a PNG image.
+// Category-Description: Aspose.BarCode examples for complex postal barcodes. Demonstrates how to generate Mailmark 4‑state barcodes with Reed‑Solomon correction using ComplexBarcodeGenerator and MailmarkCodetext classes. Typical use cases include encoding postal routing information for mail sorting systems. Developers often need to customize dimensions, error correction, and output formats.
 // Prompt: Generate a Mailmark 4‑state postal barcode with Reed‑Solomon correction and custom XDimension of 0.5 mm.
-// Tags: mailmark, postal barcode, 4-state, reed-solomon, xdimension, png, aspnet, aspose.barcode, complexbarcodegenerator
+// Tags: mailmark, postal barcode, 4-state, reed-solomon, xdimension, png, aspose.barcode, complexbarcodegenerator
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generation of a Mailmark 4‑state barcode with custom X‑dimension using Aspose.BarCode.
+/// Demonstrates generation of a Mailmark 4‑state barcode with Reed‑Solomon correction
+/// and a custom XDimension, then saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, configures parameters, and saves the image to a temporary folder.
+    /// Entry point of the example. Creates output directory, configures Mailmark data,
+    /// generates the barcode, and writes the file path to the console.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the output file
-        string outputDir = Path.Combine(Path.GetTempPath(), "MailmarkDemo_" + Guid.NewGuid().ToString("N"));
+        // Define a temporary folder to store the generated barcode image.
+        string outputDir = Path.Combine(Path.GetTempPath(), "MailmarkDemo");
         Directory.CreateDirectory(outputDir);
+
+        // Full path for the resulting PNG file.
         string outputPath = Path.Combine(outputDir, "Mailmark4State.png");
 
-        // Define the Mailmark data fields
-        MailmarkCodetext mailmark = new MailmarkCodetext
+        // Configure Mailmark codetext with required fields.
+        var mailmark = new MailmarkCodetext
         {
-            Format = 4,
+            Format = 4,                     // 4‑state format
             VersionID = 1,
             Class = "0",
             SupplychainID = 384224,
@@ -35,17 +40,17 @@ class Program
             DestinationPostCodePlusDPS = "EF61AH8T "
         };
 
-        // Initialize the complex barcode generator with the Mailmark codetext
-        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
+        // Generate the barcode using ComplexBarcodeGenerator.
+        using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
-            // Set the X‑dimension to 0.5 mm (Reed‑Solomon correction is inherent to Mailmark 4‑state)
+            // Set XDimension to 0.5 mm (custom module size).
             generator.Parameters.Barcode.XDimension.Millimeters = 0.5f;
 
-            // Save the generated barcode as a PNG image
+            // Save the barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine("Mailmark 4‑state barcode saved to: " + outputPath);
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Mailmark barcode saved to: {outputPath}");
     }
 }

@@ -1,44 +1,46 @@
-// Title: Generate Swiss Post Parcel Additional Service Code Barcode (Code 128)
-// Description: Creates a Code 128 barcode for a Swiss Post parcel additional service code and adds a human‑readable caption.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates using BarcodeGenerator to create a Code 128 barcode, customizing visual parameters such as X‑dimension, bar height, and caption settings, and then using BarCodeReader to decode and verify the barcode. Developers working with postal services, logistics, or any scenario requiring custom service codes will find this pattern useful for producing machine‑readable images with clear human‑readable annotations.
+// Title: Generate Swiss Post Parcel Additional Service Code128 Barcode with Caption
+// Description: Creates a Code 128 barcode representing a Swiss Post parcel additional service code and adds a human‑readable caption above it. The resulting image is saved as a PNG file.
+// Category-Description: This example demonstrates Aspose.BarCode barcode generation for shipping and logistics scenarios. It uses the BarcodeGenerator class with EncodeTypes.Code128, configures barcode dimensions, hides the default code text, and adds a custom caption. Typical use cases include creating parcel labels, service codes, and other logistics barcodes where a readable description is required alongside the machine‑readable symbol.
 // Prompt: Generate a Swiss Post Parcel additional service code barcode in Code 128 format with human‑readable description.
-// Tags: barcode symbology, generation, recognition, code128, swisspost, caption, png
+// Tags: swisspost, parcel, additional-service, code128, barcode, generation, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Swiss Post parcel additional service barcode (Code 128) with a human‑readable caption and verifying it.
+/// Demonstrates how to generate a Swiss Post parcel additional service barcode (Code 128) with a caption.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, saves it, and reads it back to confirm the encoded data.
+    /// Entry point of the example. Generates the barcode and saves it as a PNG image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the temporary directory.
-        string outputPath = Path.Combine(Path.GetTempPath(), "SwissPostAdditionalService.png");
-
-        // Service code (e.g., "0327" for Return receipt) and its human‑readable description.
+        // Define the service code and its human‑readable description.
         string serviceCode = "0327"; // Return receipt (AR)
         string description = "AR";
 
-        // Create a barcode generator for Code128 with the service code as data.
+        // Prepare the output folder in the system temporary directory.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "SwissPostAdditionalService");
+        Directory.CreateDirectory(outputFolder);
+        string outputPath = Path.Combine(outputFolder, "AdditionalService_Code128.png");
+
+        // Create a BarcodeGenerator for Code 128 using the service code.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, serviceCode))
         {
-            // Set visual dimensions: X‑dimension and bar height.
+            // Set basic barcode appearance: module size and bar height.
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
             generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
-            // Hide the default code text (the raw data) to avoid duplication.
+            // Hide the default code text that would appear below the barcode.
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-            // Configure a caption above the barcode to display the human‑readable description.
+            // Configure a caption above the barcode to show the human‑readable description.
             generator.Parameters.CaptionAbove.Visible = true;
             generator.Parameters.CaptionAbove.Alignment = TextAlignment.Left;
             generator.Parameters.CaptionAbove.Text = description;
@@ -49,23 +51,7 @@ class Program
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
+        // Inform the user where the barcode image was saved.
         Console.WriteLine($"Barcode saved to: {outputPath}");
-
-        // Verify the saved barcode by reading it back if the file exists.
-        if (File.Exists(outputPath))
-        {
-            BaseDecodeType decodeType = DecodeType.Code128;
-            using (var reader = new BarCodeReader(outputPath, decodeType))
-            {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"Detected type: {result.CodeTypeName}, Data: {result.CodeText}");
-                }
-            }
-        }
-        else
-        {
-            Console.WriteLine("Failed to create barcode image.");
-        }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate Swiss Post Parcel barcode and save as TIFF
-// Description: Demonstrates creating a Swiss Post Parcel domestic barcode with an 18‑digit value beginning with 98, then saving it as a TIFF image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.SwissPostParcel. It illustrates typical tasks such as setting barcode dimensions, configuring image format, and exporting to a file—common operations for developers integrating Swiss Post parcel barcodes into shipping or logistics applications.
+// Title: Generate Swiss Post Parcel domestic barcode and save as TIFF
+// Description: Demonstrates creating an 18‑digit Swiss Post Parcel domestic barcode (starting with 98) and saving it as a TIFF image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.SwissPostParcel to produce postal barcodes. Typical use cases include generating shipping labels for Swiss Post parcels where a specific 18‑digit numeric code is required. Developers often need to set barcode dimensions and export the result to common image formats such as TIFF for printing or archival.
 // Prompt: Generate a Swiss Post Parcel domestic barcode using an 18‑digit code starting with 98 and output TIFF.
-// Tags: swisspostparcel, barcode generation, tiff, aspnet, aspose.barcode, encode types
+// Tags: swisspost, parcel, barcode, generation, tiff, aspnet, aspose.barcode, encode types
 
 using System;
 using System.IO;
@@ -10,33 +10,35 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a Swiss Post Parcel barcode and saves it as a TIFF file.
+/// Demonstrates generating a Swiss Post Parcel domestic barcode and saving it as a TIFF file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, configures dimensions, saves to a temporary TIFF file, and writes the output path to console.
+    /// Entry point. Creates an 18‑digit Swiss Post Parcel barcode and writes it to a TIFF image.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the output file path in the system's temporary folder
-        string outputPath = Path.Combine(Path.GetTempPath(), "SwissPostParcel.tif");
+        // Define the 18‑digit barcode value (must start with 98 for Swiss Post Parcel)
+        string code = "983412345612345678";
 
-        // Initialize the barcode generator with Swiss Post Parcel symbology and an 18‑digit value starting with 98
-        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, "983412345612345678"))
+        // Determine output file path in the current working directory
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "SwissPostDomestic.tif");
+
+        // Initialize the barcode generator with the Swiss Post Parcel symbology and the code
+        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, code))
         {
-            // Set the X‑dimension (module width) to 2 pixels
+            // Set the X dimension (module width) in pixels
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            // Set the barcode height to 40 pixels
+            // Set the barcode height in pixels
             generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
-            // Save the generated barcode as a TIFF image in CMYK color space
-            generator.Save(outputPath, BarCodeImageFormat.TiffInCmyk);
+            // Save the generated barcode as a TIFF image
+            generator.Save(outputPath, BarCodeImageFormat.Tiff);
         }
 
         // Output the location of the saved barcode image
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
