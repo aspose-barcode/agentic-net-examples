@@ -1,94 +1,104 @@
-// Title: Demonstrate configuring Aspose.BarCode ProcessorSettings via a reusable wrapper
-// Description: Shows how to generate a Code128 barcode, read it with default settings, then apply custom processor settings through a wrapper class for easy reuse.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It illustrates the use of BarcodeGenerator, BarCodeReader, and the static ProcessorSettings class to control multi‑core processing. Developers often need to tune performance or resource usage when scanning large batches of images; encapsulating these settings in a wrapper simplifies configuration across projects and promotes consistent behavior.
+// Title: ProcessorSettings Wrapper Example for Aspose.BarCode
+// Description: Demonstrates how to encapsulate Aspose.BarCode processor settings in a reusable wrapper class and use it to generate and read a Code128 barcode.
+// Category-Description: This example belongs to the Aspose.BarCode processing configuration category. It shows how to work with the ProcessorSettings API to control multithreading behavior, and combines it with barcode generation (BarcodeGenerator) and recognition (BarCodeReader). Developers often need to tune performance settings for high‑throughput scanning scenarios, and a wrapper class simplifies reuse across projects.
 // Prompt: Implement a wrapper class that encapsulates ProcessorSettings configuration for easy reuse across projects.
-// Tags: barcode symbology, generation, recognition, processorsettings, wrapper, csharp, aspose.barcode
+// Tags: barcode symbology, generation, recognition, processor settings, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using System.Diagnostics;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Encapsulates configuration of <see cref="BarCodeReader.ProcessorSettings"/> for reuse.
+/// Wrapper for configuring Aspose.BarCode <see cref="BarCodeReader.ProcessorSettings"/>.
+/// Provides a simple way to set multithreading options in a single object that can be reused across projects.
 /// </summary>
-public static class ProcessorSettingsWrapper
+public class ProcessorSettingsWrapper
 {
     /// <summary>
-    /// Applies the specified processor settings to the static <see cref="BarCodeReader.ProcessorSettings"/> instance.
+    /// Gets or sets a value indicating whether all available CPU cores should be used.
     /// </summary>
-    /// <param name="useAllCores">If true, all CPU cores are used for barcode recognition.</param>
-    /// <param name="onlyThisCoresCount">Number of cores to restrict processing to when <paramref name="useAllCores"/> is false.</param>
-    /// <param name="maxAdditionalThreads">Maximum number of additional threads allowed for processing.</param>
-    public static void Apply(bool useAllCores, int onlyThisCoresCount, int maxAdditionalThreads)
+    public bool UseAllCores { get; set; }
+
+    /// <summary>
+    /// Gets or sets the number of cores to use when <see cref="UseAllCores"/> is false.
+    /// </summary>
+    public int UseOnlyThisCoresCount { get; set; }
+
+    /// <summary>
+    /// Gets or sets the maximum number of additional threads allowed for processing.
+    /// </summary>
+    public int MaxAdditionalAllowedThreads { get; set; }
+
+    /// <summary>
+    /// Applies the configured settings to <see cref="BarCodeReader.ProcessorSettings"/>.
+    /// </summary>
+    public void Apply()
     {
-        // Configure the global processor settings used by BarCodeReader instances.
-        BarCodeReader.ProcessorSettings.UseAllCores = useAllCores;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = onlyThisCoresCount;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = maxAdditionalThreads;
+        BarCodeReader.ProcessorSettings.UseAllCores = UseAllCores;
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = UseOnlyThisCoresCount;
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = MaxAdditionalAllowedThreads;
     }
 }
 
 class Program
 {
     /// <summary>
-    /// Demonstrates barcode generation, reading with default settings, applying custom processor settings,
-    /// and reading again to show the effect of the configuration.
+    /// Entry point of the example. Configures processor settings, generates a barcode, reads it back, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the demo files.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "code128.png");
-
-        // Generate a Code128 barcode image and save it as PNG.
-        BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345");
-        generator.Save(imagePath, BarCodeImageFormat.Png);
-        Console.WriteLine($"Barcode image saved to: {imagePath}");
-
-        // -----------------------------------------------------------------
-        // Read the barcode using the default processor settings.
-        // -----------------------------------------------------------------
-        Console.WriteLine("\nReading with default ProcessorSettings:");
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // Configure processor settings via the wrapper
+        var settingsWrapper = new ProcessorSettingsWrapper
         {
-            BarCodeResult[] results = reader.ReadBarCodes();
-            foreach (BarCodeResult result in results)
+            UseAllCores = false,
+            UseOnlyThisCoresCount = 1,
+            MaxAdditionalAllowedThreads = 0
+        };
+        settingsWrapper.Apply();
+
+        // Create a temporary directory for the barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "sample.png");
+
+        // Generate a simple Code128 barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        {
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // Set up the reader to decode Code128 barcodes
+        BaseDecodeType decodeType = DecodeType.Code128;
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        {
+            // Measure recognition time
+            Stopwatch sw = Stopwatch.StartNew();
+            reader.ReadBarCodes();
+            sw.Stop();
+
+            // Output results
+            Console.WriteLine($"Barcodes read: {reader.FoundCount}, Recognition time: {sw.ElapsedMilliseconds} ms");
+            foreach (var result in reader.FoundBarCodes)
             {
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // -----------------------------------------------------------------
-        // Apply custom processor settings (single‑core mode) via the wrapper.
-        // -----------------------------------------------------------------
-        ProcessorSettingsWrapper.Apply(useAllCores: false, onlyThisCoresCount: 1, maxAdditionalThreads: 0);
-        Console.WriteLine("\nProcessorSettings configured for single‑core recognition.");
-
-        // -----------------------------------------------------------------
-        // Read the barcode again with the new processor settings.
-        // -----------------------------------------------------------------
-        Console.WriteLine("\nReading with custom ProcessorSettings:");
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            BarCodeResult[] results = reader.ReadBarCodes();
-            foreach (BarCodeResult result in results)
-            {
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
-            }
-        }
-
-        // Cleanup temporary files (optional).
+        // Attempt to delete temporary files and directory
         try
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignored – cleanup is not critical for the demo.
+            // Ignored - cleanup failure should not crash the program
         }
     }
 }

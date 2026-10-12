@@ -1,17 +1,19 @@
-// Title: Restrict barcode recognition to a specific number of CPU cores
-// Description: Demonstrates how to limit Aspose.BarCode barcode recognition to exactly four CPU cores using ProcessorSettings.
-// Category-Description: This example belongs to the Aspose.BarCode performance tuning category. It showcases the use of BarCodeReader and its ProcessorSettings to control multithreading during barcode recognition. Developers often need to balance CPU usage and recognition speed, especially in server or CI environments, and this pattern provides a straightforward way to cap core utilization.
+// Title: Restrict Barcode Recognition to Four CPU Cores
+// Description: Demonstrates how to limit Aspose.BarCode barcode recognition to a specific number of CPU cores while generating and reading a Code128 barcode image.
+// Category-Description: This example belongs to the barcode generation and recognition category of Aspose.BarCode. It showcases the use of BarcodeGenerator for creating a barcode image and BarCodeReader with ProcessorSettings to control recognition performance. Developers often need to balance speed and resource usage when processing large batches of images, making core count restriction a common requirement.
 // Prompt: Set ProcessorSettings.UseOnlyThisCoresCount to 4 to restrict barcode recognition to four CPU cores.
-// Tags: barcode, recognition, performance, multithreading, aspose.barcode, code128, csharp
+// Tags: code128, barcode recognition, png, barcodereader, barcodegenerator, processorsettings
 
 using System;
+using System.Diagnostics;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Sample program that generates a Code128 barcode, restricts recognition to four CPU cores,
-/// reads the barcode, and cleans up temporary files.
+/// Example program that generates a Code128 barcode, restricts the recognition
+/// process to four CPU cores, reads the barcode, and cleans up temporary files.
 /// </summary>
 class Program
 {
@@ -20,52 +22,50 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the sample barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "sample.png");
+        // Restrict barcode recognition to use only 4 CPU cores
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 4;
 
-        // Generate a simple Code128 barcode and save it as PNG
+        // Prepare a temporary directory to store the generated barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "sample.png");
+
+        // Generate a Code128 barcode and save it as a PNG file
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Restrict barcode recognition to exactly 4 CPU cores
-        BarCodeReader.ProcessorSettings.UseAllCores = false;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 4;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
-
-        // Verify the image exists before attempting to read
-        if (File.Exists(imagePath))
+        // Verify that the barcode image was created successfully
+        if (!File.Exists(barcodePath))
         {
-            // Initialize the reader for Code128 symbology
-            using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // Read the barcode using the configured processor settings
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        {
+            Stopwatch watch = Stopwatch.StartNew(); // Start timing the recognition
+            var results = reader.ReadBarCodes();    // Perform barcode recognition
+            watch.Stop();                           // Stop timing
+
+            Console.WriteLine($"Barcodes read: {results.Length}, Recognition time: {watch.ElapsedMilliseconds} ms");
+            foreach (var result in results)
             {
-                // Perform recognition and iterate over results
-                var results = reader.ReadBarCodes();
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
-                }
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
-        else
-        {
-            Console.WriteLine("Barcode image not found: " + imagePath);
-        }
 
-        // Clean up temporary files and directories
+        // Clean up temporary files and directory
         try
         {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder, true);
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
         }
         catch
         {
-            // Ignored - cleanup failure should not crash the program
+            // Ignore any cleanup errors
         }
     }
 }

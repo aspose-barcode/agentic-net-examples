@@ -1,74 +1,70 @@
-// Title: Cap Additional Worker Threads for Barcode Processing
-// Description: Demonstrates how to limit the number of extra threads used by Aspose.BarCode's processor settings while generating and reading a QR code.
-// Category-Description: This example belongs to the Aspose.BarCode multithreading and performance tuning category. It shows how to configure ProcessorSettings, generate a QR code with BarcodeGenerator, and read it using BarCodeReader. Developers working with high‑throughput barcode scanning often need to control thread usage to avoid resource contention.
+// Title: Controlling Barcode Reader Thread Pool Size
+// Description: Demonstrates how to limit additional worker threads for barcode reading using Aspose.BarCode's ProcessorSettings.
+// Category-Description: This example belongs to the Aspose.BarCode multithreading management category, illustrating the use of BarCodeReader.ProcessorSettings to cap extra threads. Developers working with high‑throughput barcode scanning often need to control thread usage to avoid resource exhaustion. The snippet shows generating a Code128 barcode, configuring thread limits, and reading the barcode.
 // Prompt: Set ProcessorSettings.MaxAdditionalAllowedThreads to 2 to cap extra worker threads for controlled multithreading.
-// Tags: qr code, multithreading, processor settings, aspose.barcode, barcode generation, barcode recognition, performance
+// Tags: code128, multithreading, png, barcodegenerator, barcodereader, processorsettings
 
 using System;
 using System.IO;
-using System.Diagnostics;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that caps additional worker threads for barcode processing,
-/// generates a QR code, reads it back, and cleans up temporary files.
+/// Demonstrates setting a limit on additional worker threads for barcode reading and processing a sample Code128 barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Generates a barcode, configures thread limits, reads the barcode, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Configure the processor to allow a maximum of 2 additional threads for barcode reading.
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 2;
-        Console.WriteLine($"ProcessorSettings.MaxAdditionalAllowedThreads = {BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads}");
-
-        // Create a unique temporary folder to store the generated barcode image.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the sample barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string barcodeFile = Path.Combine(tempFolder, "sample.png");
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Generate a QR code image with the specified text.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
+        // Generate a Code128 barcode image and save it as PNG
+        GenerateBarcode(barcodePath);
+
+        // Limit the number of additional worker threads used by the barcode reader
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 2;
+
+        // Initialize the barcode reader for Code128 and read the generated image
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            // Set the module size (X dimension) for the QR code.
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            var results = reader.ReadBarCodes();
+            foreach (var result in results)
             {
-                // Save the generated QR code as a PNG file.
-                bitmap.Save(barcodeFile, ImageFormat.Png);
+                Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
             }
         }
 
-        // Read the generated QR code from the file.
-        using (BarCodeReader reader = new BarCodeReader(barcodeFile, DecodeType.QR))
-        {
-            Stopwatch sw = Stopwatch.StartNew(); // Start timing the read operation.
-            BarCodeResult[] results = reader.ReadBarCodes();
-            sw.Stop(); // Stop timing.
-
-            Console.WriteLine($"Read {results.Length} barcode(s) in {sw.ElapsedMilliseconds} ms");
-            foreach (BarCodeResult result in results)
-            {
-                // Output the type and decoded text of each barcode found.
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
-            }
-        }
-
-        // Attempt to delete the temporary files and folder; ignore any errors.
+        // Attempt to delete the temporary folder and its contents
         try
         {
-            File.Delete(barcodeFile);
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program exit.
+            // Suppress any exceptions during cleanup to avoid breaking the flow
+        }
+    }
+
+    /// <summary>
+    /// Generates a Code128 barcode image with the specified text and saves it to the given path.
+    /// </summary>
+    /// <param name="path">Full file path where the PNG image will be saved.</param>
+    static void GenerateBarcode(string path)
+    {
+        // Create a barcode generator for Code128 with sample data
+        var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890");
+        using (Bitmap bitmap = generator.GenerateBarCodeImage())
+        {
+            // Save the generated bitmap as a PNG file
+            bitmap.Save(path, ImageFormat.Png);
         }
     }
 }

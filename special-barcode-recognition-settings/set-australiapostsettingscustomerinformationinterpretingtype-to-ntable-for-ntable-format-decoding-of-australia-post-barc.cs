@@ -1,8 +1,8 @@
-// Title: Australia Post barcode generation and NTable decoding example
-// Description: Demonstrates generating an Australia Post barcode using NTable encoding and decoding it with NTable format interpretation.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Typical use cases include postal automation, logistics, and inventory systems where Australia Post barcodes are processed. Developers often need to configure encoding tables and decoding settings via the AustraliaPostSettings and related API classes.
-/// Prompt: Set AustraliaPostSettings.CustomerInformationInterpretingType to NTable for NTable format decoding of Australia Post barcodes.
-/// Tags: australia post, barcode, ntable, generation, recognition, aspose.barcode
+// Title: Decode Australia Post barcode using NTable customer information interpreting
+// Description: Demonstrates generating an Australia Post barcode with NTable encoding and then decoding it using the NTable format. Useful for handling customer information in Australia Post barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and AustraliaPostSettings to encode and decode Australia Post barcodes with specific customer information interpreting types. Developers working with postal barcode standards often need to switch between encoding tables such as NTable for accurate data extraction.
+// Prompt: Set AustraliaPostSettings.CustomerInformationInterpretingType to NTable for NTable format decoding of Australia Post barcodes.
+// Tags: australia post, barcode generation, barcode recognition, ntable, customer information interpreting, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,77 +11,54 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Provides a simple console application that generates an Australia Post barcode
-/// with NTable encoding and then reads it back using NTable decoding settings.
+/// Demonstrates generating and decoding an Australia Post barcode using NTable customer information interpreting.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, saves it to a temporary file, reads and decodes it,
-    /// then cleans up the temporary resources.
+    /// Entry point of the example. Generates a barcode, saves it, reads it back with NTable decoding, and outputs the results.
     /// </summary>
-    static void Main()
+    static void Main(string[] args)
     {
-        // --------------------------------------------------------------------
-        // Prepare a unique temporary folder for the barcode image
-        // --------------------------------------------------------------------
+        // Create a unique temporary folder to store the barcode image
         string tempFolder = Path.Combine(Path.GetTempPath(), "AustraliaPostDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+
+        // Define the full file path for the generated barcode image
         string barcodePath = Path.Combine(tempFolder, "AustraliaPostNTable.png");
 
-        // --------------------------------------------------------------------
-        // Generate an Australia Post barcode using NTable encoding
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "620123456701234"))
+        // Sample Australia Post barcode text (FCC 62, DPID 01234567, customer info digits)
+        string codeText = "620123456701234";
+
+        // Generate an Australia Post barcode using NTable encoding for the customer information
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
         {
             // Set visual parameters
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Parameters.Barcode.BarHeight.Pixels = 50f;
 
-            // Configure the encoding table to NTable
+            // Specify NTable as the customer information interpreting type
             generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.NTable;
 
             // Save the barcode image as PNG
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Verify that the barcode image was created successfully
-        // --------------------------------------------------------------------
-        if (!File.Exists(barcodePath))
+        // Read the generated barcode image, configuring the reader to use NTable decoding
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.AustraliaPost))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // --------------------------------------------------------------------
-        // Read the barcode and set decoding format to NTable
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AustraliaPost))
-        {
-            // Apply NTable decoding settings
+            // Apply NTable decoding for customer information
             reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.NTable;
 
-            // Iterate through all detected barcodes (should be one)
+            // Iterate through all detected barcodes (should be one) and output details
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"Code Type: {result.CodeTypeName}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
             }
         }
 
-        // --------------------------------------------------------------------
-        // Clean up temporary files and directory
-        // --------------------------------------------------------------------
-        try
-        {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program outcome
-        }
+        // Optional cleanup: delete the temporary folder and its contents
+        // Directory.Delete(tempFolder, true);
     }
 }

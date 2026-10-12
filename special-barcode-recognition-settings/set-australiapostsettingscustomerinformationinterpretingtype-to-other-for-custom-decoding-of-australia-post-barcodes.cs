@@ -1,76 +1,89 @@
-// Title: Custom decoding of Australia Post barcodes using CustomerInformationInterpretingType.Other
-// Description: Demonstrates how to generate an Australia Post barcode and decode it with the CustomerInformationInterpretingType set to Other, enabling custom interpretation of the customer information field.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, focusing on the Australia Post symbology. Developers often need to customize how the customer information segment is interpreted; this snippet shows the key API classes (BarcodeGenerator, BarCodeReader, CustomerInformationInterpretingType) and typical steps for such scenarios.
+// Title: Custom Decoding of Australia Post Barcodes Using CustomerInformationInterpretingType.Other
+// Description: Demonstrates how to generate an Australia Post barcode and decode it with the CustomerInformationInterpretingType set to Other, enabling custom interpretation of customer information.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on Australia Post symbology. It showcases the use of BarcodeGenerator, BarCodeReader, and the AustraliaPostSettings.CustomerInformationInterpretingType property to customize encoding and decoding. Developers working with postal barcode standards often need to adjust interpretation settings for custom data formats, and this snippet illustrates the typical workflow.
 // Prompt: Set AustraliaPostSettings.CustomerInformationInterpretingType to Other for custom decoding of Australia Post barcodes.
-// Tags: australia post, barcode, custom decoding, customerinformationinterpretingtype, generation, recognition, c#, aspose.barcode
+// Tags: barcode, australia post, custom decoding, customerinformationinterpretingtype, generation, recognition, aspnet, c#
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates setting <c>CustomerInformationInterpretingType</c> to <c>Other</c> for Australia Post barcodes.
+/// Example program that generates an Australia Post barcode with a custom
+/// CustomerInformationInterpretingType and then reads it back using the same setting.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example.
+    /// Entry point of the example. Generates a barcode, decodes it with custom settings,
+    /// and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Prepare a temporary directory and file path for the barcode image
-        // ------------------------------------------------------------
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarCodeDemo_" + Guid.NewGuid().ToString("N"));
+        // --------------------------------------------------------------------
+        // Prepare temporary directory and file path for the barcode image
+        // --------------------------------------------------------------------
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeAustraliaPostDemo");
         Directory.CreateDirectory(tempDir);
-        string imagePath = Path.Combine(tempDir, "AustraliaPostOther.png");
+        string barcodePath = Path.Combine(tempDir, "AustraliaPostOther.png");
 
-        // ------------------------------------------------------------
-        // Generate an Australia Post barcode with CustomerInformationInterpretingType set to Other
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "6201234567321032103210"))
+        // --------------------------------------------------------------------
+        // Generate an Australia Post barcode with CustomerInformationInterpretingType.Other
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "62012345670123"))
         {
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Parameters.Barcode.BarHeight.Pixels = 50f;
             generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.Other;
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Verify that the barcode image was successfully created
-        // ------------------------------------------------------------
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------------
+        // Verify that the barcode image was created successfully
+        // --------------------------------------------------------------------
+        if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read the barcode and configure the decoder to interpret customer information as Other
-        // ------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AustraliaPost))
+        // --------------------------------------------------------------------
+        // Read the barcode using the same custom decoding type (Other)
+        // --------------------------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AustraliaPost))
         {
             reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.Other;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            if (results.Length == 0)
             {
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine("No barcode detected.");
+            }
+            else
+            {
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                }
             }
         }
 
-        // ------------------------------------------------------------
-        // Clean up temporary files and directory
-        // ------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // Clean up temporary files and directory (optional)
+        // --------------------------------------------------------------------
         try
         {
-            File.Delete(imagePath);
+            File.Delete(barcodePath);
             Directory.Delete(tempDir);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program outcome
+            // Ignore any errors during cleanup
         }
     }
 }

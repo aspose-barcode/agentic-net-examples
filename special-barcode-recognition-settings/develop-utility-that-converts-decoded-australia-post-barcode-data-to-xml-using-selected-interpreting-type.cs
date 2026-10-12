@@ -1,89 +1,93 @@
-// Title: Convert Australia Post Barcode to XML Using CTable Interpreting Type
-// Description: Demonstrates generating an Australia Post barcode, reading it, and converting the decoded data to an XML document.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator, BarCodeReader, and related settings to create an Australia Post barcode, decode it, and format the result as XML. Developers working with postal symbologies often need to generate barcodes for mailing and then parse the encoded customer information for integration with backend systems.
+// Title: Australia Post Barcode Generation, Decoding, and XML Export
+// Description: This example creates Australia Post barcodes for different interpreting types, decodes them, and writes the decoded information to an XML file.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition for Australia Post symbology. It uses BarcodeGenerator, BarCodeReader, and related parameter classes to encode data, set the CustomerInformationInterpretingType, and extract decoded values. Developers often need to generate barcodes for testing, read them from images, and export results to structured formats such as XML for integration with other systems.
 // Prompt: Develop a utility that converts decoded Australia Post barcode data to XML using the selected interpreting type.
-// Tags: australia post, barcode generation, barcode recognition, xml output, aspose.barcode, aspose.barcode.generation, aspose.barcode.recognition
+// Tags: australia post, barcode generation, barcode decoding, xml output, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Xml.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates an Australia Post barcode, reads it back,
-/// and outputs the decoded information as an XML document.
+/// Demonstrates generating Australia Post barcodes, decoding them, and exporting the results to XML.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Generates sample barcodes, reads them back, and creates an XML document with the decoded data.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for barcode images
+        // Create a unique temporary folder for generated images and XML output
         string tempFolder = Path.Combine(Path.GetTempPath(), "AustraliaPostDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define barcode data and file path
-        string codeText = "6201234567ASPOSE";
-        string imagePath = Path.Combine(tempFolder, "AustraliaPostCTable.png");
-
-        // Generate Australia Post barcode with CTable interpreting type
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        // Define sample data for each interpreting type
+        var samples = new List<(string FileName, string CodeText, CustomerInformationInterpretingType InterpretingType)>
         {
-            // Set visual parameters
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+            ("CTable.png", "6201234567ASPOSE", CustomerInformationInterpretingType.CTable),
+            ("NTable.png", "620123456701234", CustomerInformationInterpretingType.NTable),
+            ("Other.png", "6201234567321032103210", CustomerInformationInterpretingType.Other)
+        };
 
-            // Specify the interpreting type for customer information
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
-
-            // Save the barcode image to the temporary folder
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the image was created
-        if (!File.Exists(imagePath))
+        // Generate barcode images based on the sample data
+        foreach (var sample in samples)
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Read the barcode and convert the result to XML
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AustraliaPost))
-        {
-            // Ensure the reader uses the same interpreting type as the generator
-            reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
-
-            // Iterate through all detected barcodes (only one expected)
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            string filePath = Path.Combine(tempFolder, sample.FileName);
+            using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, sample.CodeText))
             {
-                // Build an XML document with the decoded information
-                XDocument xmlDoc = new XDocument(
-                    new XElement("AustraliaPostBarcode",
-                        new XElement("CodeType", result.CodeTypeName),
-                        new XElement("CodeText", result.CodeText),
-                        new XElement("InterpretingType", CustomerInformationInterpretingType.CTable.ToString())
-                    )
-                );
+                // Set visual parameters
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                generator.Parameters.Barcode.BarHeight.Pixels = 50f;
 
-                // Output the XML to the console
-                Console.WriteLine(xmlDoc);
+                // Apply the specific interpreting type for Australia Post encoding
+                generator.Parameters.Barcode.AustralianPost.EncodingTable = sample.InterpretingType;
+
+                // Save the barcode image as PNG
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
         }
 
-        // Clean up temporary files (optional)
-        try
+        // Prepare the root element for the XML document
+        var root = new XElement("Barcodes");
+        BaseDecodeType decodeType = DecodeType.AustraliaPost;
+
+        // Decode each generated barcode and add its information to the XML
+        foreach (var sample in samples)
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder);
+            string filePath = Path.Combine(tempFolder, sample.FileName);
+            using (var reader = new BarCodeReader(filePath, decodeType))
+            {
+                // Ensure the reader uses the same interpreting type as was used during generation
+                reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = sample.InterpretingType;
+
+                // Read all barcodes found in the image (typically one per file)
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    var barcodeElement = new XElement("Barcode",
+                        new XAttribute("File", sample.FileName),
+                        new XAttribute("InterpretingType", sample.InterpretingType.ToString()),
+                        new XElement("CodeText", result.CodeText ?? string.Empty),
+                        new XElement("CodeType", result.CodeTypeName ?? string.Empty));
+
+                    root.Add(barcodeElement);
+                }
+            }
         }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+
+        // Create the XML document and save it to the temporary folder
+        var doc = new XDocument(root);
+        string xmlPath = Path.Combine(tempFolder, "DecodedBarcodes.xml");
+        doc.Save(xmlPath);
+
+        // Output locations and XML content for user reference
+        Console.WriteLine("Barcode images and XML have been generated in:");
+        Console.WriteLine(tempFolder);
+        Console.WriteLine("XML content:");
+        Console.WriteLine(doc);
     }
 }
