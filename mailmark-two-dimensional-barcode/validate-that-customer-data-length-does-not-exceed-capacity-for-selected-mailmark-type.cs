@@ -1,49 +1,44 @@
-// Title: Validate Mailmark2D Customer Data Length Against Capacity
-// Description: Demonstrates how to verify that a customer data string fits within the allowed length for a selected Mailmark2D type before generating the barcode.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of Mailmark2DCodetext, ComplexBarcodeGenerator, and related classes to create Mailmark2D barcodes. Typical scenarios include postal automation and logistics where developers need to ensure data fits the symbology's capacity limits before rendering the barcode.
+// Title: Mailmark 2D Barcode Generation with Customer Data Length Validation
+// Description: Demonstrates how to validate the length of customer data against the capacity of a selected Mailmark 2D type and generate a Mailmark barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Mailmark 2D symbology. It showcases the use of Mailmark2DCodetext, ComplexBarcodeGenerator, and related parameter settings to create high‑density DataMatrix barcodes for postal applications. Developers working with postal automation, logistics, or any scenario requiring Mailmark barcodes can reference this pattern for data validation, barcode configuration, and image output.
 // Prompt: Validate that customer data length does not exceed capacity for the selected Mailmark type.
-// Tags: barcode, mailmark, validation, datamatrix, aspose.barcode, complexbarcode, csharp
+// Tags: mailmark, barcode, validation, csharp, aspose.barcode, complexbarcode, datamatrix, image, png
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that validates customer data length for a chosen Mailmark2D type
-/// and generates a Mailmark2D barcode if the data fits within the allowed capacity.
+/// Example program that validates customer data length for a Mailmark 2D type and generates a barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs validation, creates the Mailmark2D codetext,
-    /// and saves the generated barcode image to a temporary file.
+    /// Entry point. Validates data length, creates Mailmark2DCodetext, and saves the barcode as PNG.
     /// </summary>
     static void Main()
     {
         // ------------------------------------------------------------
-        // Define the Mailmark2D type and sample customer data to validate
+        // Sample input data and selected Mailmark type
         // ------------------------------------------------------------
-        Mailmark2DType selectedType = Mailmark2DType.Type_9;
-        string customerData = "CUSTOMER DATA EXAMPLE";
+        string customerData = "CUSTOM";
+        Mailmark2DType selectedType = Mailmark2DType.Type_7;
 
         // ------------------------------------------------------------
-        // Validate that the customer data length does not exceed the type's capacity
+        // Validate that the customer data fits within the allowed capacity
         // ------------------------------------------------------------
-        int maxLength = GetCustomerContentCapacity(selectedType);
+        int maxLength = GetMaxCustomerDataLength(selectedType);
         if (customerData.Length > maxLength)
         {
-            Console.WriteLine($"Error: Customer data length ({customerData.Length}) exceeds capacity ({maxLength}) for Mailmark2D type {selectedType}.");
-            return;
+            throw new ArgumentException(
+                $"Customer data length ({customerData.Length}) exceeds maximum ({maxLength}) for type {selectedType}.");
         }
-        Console.WriteLine($"Customer data length ({customerData.Length}) is within capacity ({maxLength}) for Mailmark2D type {selectedType}.");
 
         // ------------------------------------------------------------
-        // Build the Mailmark2DCodetext object with the validated data
+        // Populate Mailmark2DCodetext with required fields
         // ------------------------------------------------------------
-        var mailmark2D = new Mailmark2DCodetext
+        Mailmark2DCodetext mailmark2D = new Mailmark2DCodetext
         {
             UPUCountryID = "JGB ",
             InformationTypeID = "0",
@@ -53,45 +48,42 @@ class Program
             ItemID = 456,
             DestinationPostCodeAndDPS = "EF61AH8T ",
             CustomerContent = customerData,
-            CustomerContentEncodeMode = DataMatrixEncodeMode.C40,
             DataMatrixType = selectedType
         };
 
         // ------------------------------------------------------------
-        // Generate the barcode image and save it to a temporary location
+        // Generate the barcode image and save it as PNG
         // ------------------------------------------------------------
         string outputPath = Path.Combine(Path.GetTempPath(), "Mailmark2D.png");
         using (var generator = new ComplexBarcodeGenerator(mailmark2D))
         {
-            // Set the X-dimension (module size) for better readability
+            // Set X-dimension (module size) in pixels for better readability
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Save(outputPath);
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Barcode generated at: {outputPath}");
+        Console.WriteLine($"Barcode generated successfully: {outputPath}");
     }
 
     /// <summary>
-    /// Retrieves the maximum allowed length of the CustomerContent field for a given Mailmark2D type.
+    /// Returns the maximum allowed length of the CustomerContent field for a given Mailmark2D type.
     /// </summary>
-    /// <param name="type">The Mailmark2D type whose capacity is required.</param>
-    /// <returns>The maximum number of characters allowed for CustomerContent.</returns>
-    /// <exception cref="ArgumentException">Thrown when an unsupported Mailmark2D type is supplied.</exception>
-    static int GetCustomerContentCapacity(Mailmark2DType type)
+    /// <param name="type">The Mailmark2D type to evaluate.</param>
+    /// <returns>Maximum number of characters allowed for CustomerContent.</returns>
+    static int GetMaxCustomerDataLength(Mailmark2DType type)
     {
-        // Mapping of Mailmark2D types to their respective customer content capacities
-        var capacities = new Dictionary<Mailmark2DType, int>
+        // Capacities based on Mailmark 2D specifications
+        switch (type)
         {
-            { Mailmark2DType.Type_7, 20 },
-            { Mailmark2DType.Type_9, 30 },
-            { Mailmark2DType.Type_29, 50 }
-        };
-
-        if (!capacities.TryGetValue(type, out int capacity))
-        {
-            throw new ArgumentException($"Unsupported Mailmark2D type: {type}");
+            case Mailmark2DType.Type_7:
+                return 6;
+            case Mailmark2DType.Type_9:
+                return 12;
+            case Mailmark2DType.Type_29:
+                return 30;
+            default:
+                throw new ArgumentOutOfRangeException(
+                    nameof(type), $"Unsupported Mailmark2DType: {type}");
         }
-
-        return capacity;
     }
 }

@@ -1,66 +1,66 @@
-// Title: Generate MaxiCode Complex Barcode with Custom DPI and Dimensions
-// Description: Demonstrates how to create a MaxiCode complex barcode, set a 300 dpi resolution, and define custom image width and height for printing.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with MaxiCodeCodetextMode3 and related classes to produce high‑resolution barcodes. Typical use cases include printing shipping labels, tickets, or any scenario where precise image size and resolution are required. Developers often need to control DPI, image dimensions, and module size when integrating barcodes into print workflows.
+// Title: Generate a MaxiCode complex barcode with custom size and 300 dpi PNG output
+// Description: This example creates a MaxiCode (Mode 3) barcode using Aspose.BarCode's ComplexBarcodeGenerator, sets a 300 dpi resolution, and defines explicit pixel dimensions for printing.
+// Category-Description: Shows how to work with Aspose.BarCode's complex barcode APIs, specifically ComplexBarcodeGenerator and MaxiCode codetext classes. Typical use cases include creating high‑resolution, size‑controlled barcodes for packaging and shipping labels. Developers often need to adjust resolution, image dimensions, and appearance before saving to common image formats.
 // Prompt: Configure ComplexBarcodeGenerator to produce a 300 dpi PNG image with custom dimensions for printing.
-// Tags: maxicode, complexbarcode, barcode generation, resolution, png, aspose.barcode, image dimensions
+// Tags: maxicode, complex barcode, png, generation, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a MaxiCode complex barcode with custom DPI and image dimensions.
+/// Demonstrates generating a MaxiCode complex barcode with custom size and 300 dpi PNG output.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Builds the MaxiCode codetext, configures the generator,
-    /// and saves the resulting PNG image to a temporary location.
+    /// Entry point that creates and saves the barcode image.
     /// </summary>
     static void Main()
     {
-        // Prepare complex codetext for MaxiCode (structured second message)
-        var secondMessage = new MaxiCodeStructuredSecondMessage();
-        secondMessage.Add("123 Main St");
-        secondMessage.Add("Anytown");
-        secondMessage.Add("CA");
-        secondMessage.Year = 23;
-
-        // Assemble the full codetext for Mode 3 MaxiCode
-        var codetext = new MaxiCodeCodetextMode3
+        // Prepare complex codetext (MaxiCode example)
+        var secondMessage = new MaxiCodeStandardSecondMessage
         {
-            PostalCode = "12345",
-            CountryCode = 1,
-            ServiceCategory = 0,
+            Message = "Sample MaxiCode"
+        };
+
+        var maxiCodeCodetext = new MaxiCodeCodetextMode3
+        {
+            PostalCode = "B1050",
+            CountryCode = 56,
+            ServiceCategory = 999,
             SecondMessage = secondMessage
         };
 
-        // Determine output file path in the system temporary folder
-        string outputPath = Path.Combine(Path.GetTempPath(), "maxicode.png");
+        // Define output file path
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "maxicode.png");
 
-        // Generate barcode with custom resolution and dimensions
-        using (var generator = new ComplexBarcodeGenerator(codetext))
+        // Generate barcode with custom settings
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
-            // Set image resolution to 300 DPI
+            // Set resolution to 300 dpi
             generator.Parameters.Resolution = 300f;
 
-            // Use nearest auto‑size mode to respect explicitly set dimensions
+            // Use fixed image dimensions (pixels)
             generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
-
-            // Define custom image width and height (in pixels)
             generator.Parameters.ImageWidth.Pixels = 600f;
             generator.Parameters.ImageHeight.Pixels = 400f;
 
-            // Set module (X‑dimension) size for the barcode
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+            // Set module size (X dimension)
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Save the generated barcode as a PNG file
+            // Optional appearance settings
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
+
+            // Save the barcode as a PNG file
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the image was saved
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

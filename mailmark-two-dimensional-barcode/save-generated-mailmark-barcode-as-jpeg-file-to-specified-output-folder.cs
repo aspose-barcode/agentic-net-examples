@@ -1,8 +1,8 @@
-// Title: Generate and Save Mailmark Barcode as JPEG
-// Description: Demonstrates creating a Mailmark barcode using Aspose.BarCode and saving it as a JPEG image to a specified folder.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of the BarcodeGenerator class with EncodeTypes.Mailmark, configuring barcode parameters such as X‑Dimension and Bar Height, and saving the result with BarCodeImageFormat. Typical scenarios include generating shipping labels, tracking codes, or any Mailmark‑based identifiers where developers need to produce high‑quality image files for printing or digital distribution.
+// Title: Generate and Save Mailmark C-Type Barcode as JPEG
+// Description: Demonstrates creating a Mailmark C-type barcode and saving it as a JPEG image file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.Mailmark to produce Mailmark barcodes. Typical use cases include encoding postal information for mail sorting and tracking. Developers often need to customize dimensions and export the barcode to common image formats such as JPEG for integration into documents or web services.
 // Prompt: Save the generated Mailmark barcode as a JPEG file to a specified output folder.
-// Tags: mailmark, barcode, generation, jpeg, aspose.barcode, encode, imageformat
+// Tags: mailmark, barcode, jpeg, generation, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,18 +11,26 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Mailmark barcode and saves it as a JPEG file.
+/// Example program that generates a Mailmark C-type barcode and saves it as a JPEG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Mailmark barcode image and writes it to the output folder.
+    /// Entry point of the application. Generates the barcode and writes it to the output folder.
     /// </summary>
-    /// <param name="args">Optional command‑line argument specifying the output folder.</param>
+    /// <param name="args">Optional command‑line argument specifying the output folder path.</param>
     static void Main(string[] args)
     {
-        // Determine the output folder: use the first argument if provided, otherwise create an "Output" folder in the current directory.
-        string outputFolder = args.Length > 0 ? args[0] : Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        // Determine the output folder: use the first argument if provided; otherwise create a temporary folder.
+        string outputFolder;
+        if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
+        {
+            outputFolder = args[0];
+        }
+        else
+        {
+            outputFolder = Path.Combine(Path.GetTempPath(), "MailmarkOutput_" + Guid.NewGuid().ToString("N"));
+        }
 
         // Ensure the output directory exists.
         if (!Directory.Exists(outputFolder))
@@ -30,24 +38,24 @@ class Program
             Directory.CreateDirectory(outputFolder);
         }
 
-        // Build the full path for the resulting JPEG file.
-        string outputPath = Path.Combine(outputFolder, "MailmarkC.jpeg");
+        // Build the full path for the JPEG file.
+        string outputFile = Path.Combine(outputFolder, "MailmarkCType.jpg");
 
-        // Sample Mailmark C type code text.
-        string codeText = "21B2254800659JW5O9QA6Y";
+        // Sample Mailmark C-type code text (26 characters).
+        string mailmarkCode = "21B2254800659JW5O9QA6Y";
 
-        // Create a barcode generator for the Mailmark symbology with the specified code text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Mailmark, codeText))
+        // Generate the barcode using Aspose.BarCode.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Mailmark, mailmarkCode))
         {
-            // Set barcode visual parameters.
-            generator.Parameters.Barcode.XDimension.Pixels = 4;   // Width of a single module.
-            generator.Parameters.Barcode.BarHeight.Pixels = 50; // Height of the barcode bars.
+            // Optional appearance settings: set module size and bar height.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
 
             // Save the generated barcode as a JPEG image.
-            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            generator.Save(outputFile, BarCodeImageFormat.Jpeg);
         }
 
         // Inform the user where the file was saved.
-        Console.WriteLine($"Mailmark barcode saved to: {outputPath}");
+        Console.WriteLine($"Mailmark barcode saved to: {outputFile}");
     }
 }

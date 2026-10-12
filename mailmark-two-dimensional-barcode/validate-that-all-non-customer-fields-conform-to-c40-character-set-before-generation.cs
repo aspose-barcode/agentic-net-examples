@@ -1,90 +1,73 @@
-// Title: Validate C40 character set for Mailmark 2D barcode fields
-// Description: Demonstrates how to validate non‑customer fields against the C40 character set before generating a Mailmark 2D barcode using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode creation and data validation. It showcases the use of ComplexBarcodeGenerator, Mailmark2DCodetext, and BarCodeImageFormat classes to produce a Mailmark 2D barcode after ensuring required fields meet the C40 character set constraints. Developers working with postal barcodes often need to validate field content before encoding to avoid generation errors.
+// Title: Validate non‑customer fields for C40 character set and generate Mailmark 2D barcode
+// Description: Demonstrates how to validate that non‑customer fields of a Mailmark 2D barcode conform to the C40 character set before generating the barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of Aspose.BarCode.ComplexBarcode classes such as Mailmark2DCodetext and ComplexBarcodeGenerator to create Mailmark 2D symbols. Typical scenarios include postal automation and logistics where specific field validation (e.g., C40 character set) is required before barcode rendering. Developers often need to validate input data, configure encoding modes, and save the resulting image in common formats.
 // Prompt: Validate that all non‑customer fields conform to the C40 character set before generation.
-// Tags: mailmark, c40, validation, barcode generation, aspose.barcode, complexbarcode, png
+// Tags: barcode, validation, c40, mailmark, complexbarcode, generation, png, aspose.barcode
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates validation of Mailmark 2D barcode fields against the C40 character set
-/// and generation of the barcode image using Aspose.BarCode.
+/// Example program that validates non‑customer fields against the C40 character set
+/// and generates a Mailmark 2D barcode image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Validates fields, generates barcode if validation passes, and writes output path.
+    /// Entry point. Sets up Mailmark2D data, validates fields, generates and saves the barcode.
     /// </summary>
     static void Main()
     {
-        // Define sample non‑customer fields for a Mailmark 2D barcode
-        var mailmark = new Mailmark2DCodetext
+        // Define sample Mailmark 2D data with required fields
+        var mailmark2D = new Mailmark2DCodetext
         {
             UPUCountryID = "JGB ",
             InformationTypeID = "0",
             VersionID = "1",
             Class = "1",
             SupplyChainID = 123,
-            ItemID = 1234
+            ItemID = 1234,
+            DestinationPostCodeAndDPS = "EF61AH8T ",
+            CustomerContent = "ABC123",
+            CustomerContentEncodeMode = DataMatrixEncodeMode.C40,
+            DataMatrixType = Mailmark2DType.Type_7
         };
 
-        // Gather string fields that must conform to the C40 character set
-        var fieldsToValidate = new List<(string Name, string Value)>
-        {
-            ("UPUCountryID", mailmark.UPUCountryID),
-            ("InformationTypeID", mailmark.InformationTypeID),
-            ("VersionID", mailmark.VersionID),
-            ("Class", mailmark.Class)
-        };
+        // Validate each non‑customer field to ensure it contains only C40 characters
+        ValidateC40(mailmark2D.UPUCountryID, nameof(mailmark2D.UPUCountryID));
+        ValidateC40(mailmark2D.InformationTypeID, nameof(mailmark2D.InformationTypeID));
+        ValidateC40(mailmark2D.VersionID, nameof(mailmark2D.VersionID));
+        ValidateC40(mailmark2D.Class, nameof(mailmark2D.Class));
+        ValidateC40(mailmark2D.DestinationPostCodeAndDPS, nameof(mailmark2D.DestinationPostCodeAndDPS));
 
-        // Perform validation and report any invalid fields
-        bool allValid = true;
-        foreach (var (name, value) in fieldsToValidate)
-        {
-            if (!IsC40Valid(value))
-            {
-                Console.WriteLine($"Field '{name}' contains invalid characters for C40 set: \"{value}\"");
-                allValid = false;
-            }
-        }
-
-        // Abort generation if validation failed
-        if (!allValid)
-        {
-            Console.WriteLine("Validation failed. Barcode will not be generated.");
-            return;
-        }
-
-        // Generate the Mailmark 2D barcode and save it as a PNG file
+        // Generate the barcode and save it as a PNG file in the temporary folder
         string outputPath = Path.Combine(Path.GetTempPath(), "Mailmark2D.png");
-        using (var generator = new ComplexBarcodeGenerator(mailmark))
+        using (var generator = new ComplexBarcodeGenerator(mailmark2D))
         {
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Barcode generated successfully at: {outputPath}");
+        Console.WriteLine($"Mailmark 2D barcode saved to: {outputPath}");
     }
 
-    // C40 character set: digits 0‑9, uppercase A‑Z, space
-    static bool IsC40Valid(string text)
+    /// <summary>
+    /// Validates that a string contains only characters allowed in the C40 character set (digits, uppercase letters, space).
+    /// </summary>
+    /// <param name="value">The string value to validate.</param>
+    /// <param name="fieldName">The name of the field being validated (used in exception messages).</param>
+    static void ValidateC40(string value, string fieldName)
     {
-        if (string.IsNullOrEmpty(text))
-            return true;
+        if (value == null)
+            throw new ArgumentException($"{fieldName} cannot be null.");
 
-        foreach (char ch in text)
-        {
-            if (ch == ' ')
-                continue;
-            if (ch >= '0' && ch <= '9')
-                continue;
-            if (ch >= 'A' && ch <= 'Z')
-                continue;
-            return false;
-        }
-        return true;
+        // C40 character set: digits, uppercase letters, space
+        if (!Regex.IsMatch(value, @"^[0-9A-Z ]*$"))
+            throw new ArgumentException($"{fieldName} contains characters outside the C40 set.");
     }
 }
