@@ -1,67 +1,73 @@
-// Title: QR Code Generation and Quality-Based Decoding Example
-// Description: Demonstrates generating a QR barcode image, saving it, then reading it back while evaluating the reading quality. If the quality is 100, the decoded data is automatically accepted.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating QR codes and BarCodeReader for decoding them, highlighting how to assess the ReadingQuality property to make acceptance decisions. Developers working with barcode scanning, quality assessment, and automated validation will find this pattern useful for building robust barcode processing pipelines.
+// Title: Demonstrate QR Code Generation and Strong ReadingQuality Evaluation
+// Description: This example generates a QR code image, reads it back, and treats a ReadingQuality of 100 as strong, automatically accepting the decoded data.
+// Category-Description: Shows how to use Aspose.BarCode for barcode generation and recognition, focusing on QR code handling. It demonstrates the BarcodeGenerator, BarCodeReader, and BarCodeResult classes, common tasks such as creating temporary files, saving images, and evaluating reading quality. Developers looking for quick QR code creation and confidence‑based validation will find this pattern useful.
 // Prompt: Treat ReadingQuality 100 as strong and automatically accept the decoded data without additional verification.
-// Tags: qr, barcode generation, barcode recognition, readingquality, aspose.barcode, csharp
+// Tags: qr code, generation, recognition, readingquality, aspose.barcode, barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates QR barcode generation, saving to a temporary file, and reading it back with quality evaluation.
+/// Demonstrates generating a QR code, reading it, and automatically accepting data when reading quality is maximal.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, reads it, and decides acceptance based on ReadingQuality.
+    /// Entry point that creates a temporary QR code, reads it, and processes reading quality.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to avoid naming collisions.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define the full file path for the generated barcode image.
-        string barcodePath = Path.Combine(tempFolder, "sample_qr.png");
+        // Define the full path for the generated barcode image
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Generate a QR barcode with the text "HelloWorld" and save it as a PNG file.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "HelloWorld"))
+        // Generate a QR code image with the text "StrongQualityTest"
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "StrongQualityTest"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created.
+        // Verify that the barcode image was successfully created
         if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Initialize a reader for QR codes and iterate over all detected barcodes.
+        // Read the barcode from the image and evaluate its ReadingQuality
         using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                // Retrieve the reading quality reported by the recognizer.
-                double quality = result.ReadingQuality;
+            BarCodeResult[] results = reader.ReadBarCodes();
 
-                // Accept the result automatically when quality is 100; otherwise, reject it.
-                if (quality == 100.0)
+            if (results.Length == 0)
+            {
+                Console.WriteLine("No barcode detected.");
+            }
+            else
+            {
+                foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine($"Accepted (Quality {quality}): {result.CodeText}");
-                }
-                else
-                {
-                    Console.WriteLine($"Rejected (Quality {quality}): {result.CodeText}");
+                    double quality = result.ReadingQuality;
+                    if (quality == 100)
+                    {
+                        // Treat as strong quality and accept automatically
+                        Console.WriteLine($"Accepted (Strong Quality): {result.CodeText}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Quality {quality}: {result.CodeText}");
+                    }
                 }
             }
         }
 
-        // Attempt to clean up temporary files; ignore any errors during cleanup.
+        // Clean up temporary files and folder
         try
         {
             File.Delete(barcodePath);
@@ -69,7 +75,7 @@ class Program
         }
         catch
         {
-            // Cleanup failures are non‑critical; they do not affect program logic.
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

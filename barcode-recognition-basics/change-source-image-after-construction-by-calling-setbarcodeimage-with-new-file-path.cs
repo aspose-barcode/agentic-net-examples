@@ -1,67 +1,69 @@
-// Title: Change barcode source image after construction using SetBarCodeImage
-// Description: Demonstrates how to generate two barcodes, then read them using a single BarCodeReader instance by switching the source image with SetBarCodeImage. Shows practical use of reusing a reader for multiple images.
-// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It illustrates the use of BarcodeGenerator to create barcode images and BarCodeReader to decode them, highlighting the SetBarCodeImage method for changing the input image without recreating the reader. Developers working with batch barcode scanning or dynamic image sources often need to reuse a reader instance to improve performance.
+// Title: Change barcode source image using SetBarCodeImage
+// Description: Generates two barcode images and reads them with a single BarCodeReader, switching the source image between reads via SetBarCodeImage.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator for creating barcodes and the BarCodeReader for decoding them. Developers often need to process multiple images efficiently; reusing a BarCodeReader instance and changing its source image with SetBarCodeImage reduces overhead and simplifies code.
 // Prompt: Change the source image after construction by calling SetBarCodeImage with a new file path.
-// Tags: barcode generation, barcode recognition, setbarcodeimage, code128, qr, aspnet, csharp, aspose.barcode
+// Tags: barcode generation, barcode recognition, setbarcodeimage, code128, qr, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates two barcode images and reads them using a single
-/// <see cref="BarCodeReader"/> instance, switching the source image via <c>SetBarCodeImage</c>.
+/// Demonstrates how to change the source image of a BarCodeReader after construction using SetBarCodeImage.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates barcode images, reads them, and cleans up temporary files.
+    /// Entry point. Generates two barcode images, reads them with a single BarCodeReader, and switches the source image between reads.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a temporary folder for sample images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarCodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
         // Define file paths for the two barcode images
-        string firstImagePath = Path.Combine(tempFolder, "code128.png");
-        string secondImagePath = Path.Combine(tempFolder, "qr.png");
+        string firstImagePath = Path.Combine(tempFolder, "first.png");
+        string secondImagePath = Path.Combine(tempFolder, "second.png");
 
         // Generate the first barcode (Code128) and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "First"))
         {
             generator.Save(firstImagePath, BarCodeImageFormat.Png);
         }
 
         // Generate the second barcode (QR) and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "HelloWorld"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Second"))
         {
             generator.Save(secondImagePath, BarCodeImageFormat.Png);
         }
 
-        // Initialize a single BarCodeReader instance
+        // Verify that both image files were created successfully
+        if (!File.Exists(firstImagePath) || !File.Exists(secondImagePath))
+        {
+            Console.WriteLine("Failed to create barcode images.");
+            return;
+        }
+
+        // Use a single BarCodeReader instance to read both images
         using (var reader = new BarCodeReader())
         {
-            // Set the first image as the source and configure the reader for Code128
+            // Set the source to the first image and read its barcodes
             reader.SetBarCodeImage(firstImagePath);
-            reader.SetBarCodeReadType(DecodeType.Code128);
             Console.WriteLine("Reading first image:");
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
 
-            // Switch to the second image and configure the reader for QR
+            // Change the source to the second image and read its barcodes
             reader.SetBarCodeImage(secondImagePath);
-            reader.SetBarCodeReadType(DecodeType.QR);
             Console.WriteLine("Reading second image:");
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
@@ -74,7 +76,7 @@ class Program
         }
         catch
         {
-            // Ignore any cleanup errors
+            // Ignore cleanup errors
         }
     }
 }

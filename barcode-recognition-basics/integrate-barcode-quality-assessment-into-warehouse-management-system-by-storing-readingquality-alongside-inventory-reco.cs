@@ -1,104 +1,126 @@
-// Title: Barcode Quality Assessment for Inventory Items
-// Description: Demonstrates generating QR barcodes for inventory items, reading them back, and capturing the reading quality metric for storage alongside inventory data.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create QR codes, BarCodeReader to decode them, and the ReadingQuality property to evaluate scan reliability. Developers building warehouse management or inventory tracking systems often need to generate barcodes, verify their readability, and store quality metrics for quality control and error handling. The example uses key API classes such as BarcodeGenerator, BarCodeReader, BarCodeResult, and related enums.
-/// Prompt: Integrate barcode quality assessment into a warehouse management system by storing ReadingQuality alongside inventory records.
-/// Tags: barcode, qr, quality-assessment, generation, recognition, inventory, aspose.barcode
+// Title: Barcode Generation, Quality Assessment, and CSV Storage for Inventory Items
+// Description: Demonstrates generating Code128 barcodes, reading them to obtain quality metrics, and persisting the results alongside inventory data.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding and retrieving ReadingQuality, and typical data‑persistence steps such as writing to CSV. Developers building warehouse management or inventory tracking systems often need to generate barcodes, assess their scan quality, and store this information for quality control and reporting.
+// Prompt: Integrate barcode quality assessment into a warehouse management system by storing ReadingQuality alongside inventory records.
+// Tags: barcode symbology, generation, recognition, quality assessment, csv, inventory, aspose.barcode, code128
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
-namespace BarcodeQualityDemo
+/// <summary>
+/// Represents an inventory item with its barcode data and the measured reading quality.
+/// </summary>
+class InventoryItem
+{
+    public string ItemId { get; set; }
+    public string CodeText { get; set; }
+    public double ReadingQuality { get; set; }
+}
+
+/// <summary>
+/// Demonstrates barcode creation, quality evaluation, and CSV persistence for a set of inventory items.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Represents an inventory item with basic details and a barcode reading quality metric.
+    /// Entry point of the example. Generates barcodes, reads them to obtain quality metrics, and saves the results to a CSV file.
     /// </summary>
-    class InventoryItem
+    static void Main()
     {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string BarcodeText { get; set; } = string.Empty;
-        public int ReadingQuality { get; set; }
-    }
-
-    /// <summary>
-    /// Demonstrates generating QR barcodes for inventory items, reading them back, and recording the reading quality.
-    /// </summary>
-    class Program
-    {
-        /// <summary>
-        /// Entry point of the demo. Generates barcodes, reads them, captures quality, and outputs results.
-        /// </summary>
-        static void Main()
+        // ------------------------------------------------------------
+        // 1. Prepare sample inventory data
+        // ------------------------------------------------------------
+        var items = new List<InventoryItem>
         {
-            // Create a temporary folder to store generated barcode images.
-            string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempFolder);
+            new InventoryItem { ItemId = "ITEM001", CodeText = "ABC123456" },
+            new InventoryItem { ItemId = "ITEM002", CodeText = "DEF987654" },
+            new InventoryItem { ItemId = "ITEM003", CodeText = "GHI555777" }
+        };
 
-            // Sample inventory items to process.
-            List<InventoryItem> items = new List<InventoryItem>
+        // ------------------------------------------------------------
+        // 2. Create a temporary folder to store generated barcode images
+        // ------------------------------------------------------------
+        string barcodeFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(barcodeFolder);
+
+        var processedItems = new List<InventoryItem>();
+
+        // ------------------------------------------------------------
+        // 3. Process each inventory item: generate barcode, read quality
+        // ------------------------------------------------------------
+        foreach (var item in items)
+        {
+            // 3a. Generate barcode image for the current item
+            string barcodePath = Path.Combine(barcodeFolder, item.ItemId + ".png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, item.CodeText))
             {
-                new InventoryItem { Id = 1, Name = "Widget A", BarcodeText = "WIDGETA001" },
-                new InventoryItem { Id = 2, Name = "Widget B", BarcodeText = "WIDGETB002" },
-                new InventoryItem { Id = 3, Name = "Widget C", BarcodeText = "WIDGETC003" }
-            };
-
-            // Process each inventory item: generate barcode, read it, and store reading quality.
-            foreach (InventoryItem item in items)
-            {
-                // Define the file path for the barcode image.
-                string imagePath = Path.Combine(tempFolder, $"item_{item.Id}.png");
-
-                // Generate a QR barcode image for the item's barcode text.
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, item.BarcodeText))
-                {
-                    generator.Save(imagePath, BarCodeImageFormat.Png);
-                }
-
-                // Verify that the image was created before attempting to read it.
-                if (File.Exists(imagePath))
-                {
-                    // Read the barcode from the generated image and capture its reading quality.
-                    using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
-                    {
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
-                        {
-                            // Round the quality to the nearest integer and assign to the item.
-                            item.ReadingQuality = (int)Math.Round(result.ReadingQuality);
-                        }
-                    }
-                }
-                else
-                {
-                    // Log an error if barcode generation failed.
-                    Console.WriteLine($"Failed to generate barcode image for item {item.Id}");
-                }
+                // Optional visual settings for better contrast
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                generator.Save(barcodePath, BarCodeImageFormat.Png);
             }
 
-            // Output the inventory records with their associated reading quality values.
-            Console.WriteLine("Inventory Records with Barcode Reading Quality:");
-            foreach (InventoryItem item in items)
+            // 3b. Verify that the image file was created successfully
+            if (!File.Exists(barcodePath))
             {
-                Console.WriteLine($"Id: {item.Id}, Name: {item.Name}, Barcode: {item.BarcodeText}, ReadingQuality: {item.ReadingQuality}");
+                Console.WriteLine($"Failed to create barcode image for {item.ItemId}");
+                continue;
             }
 
-            // Clean up temporary files and folder.
-            try
+            // 3c. Read the barcode and capture the reading quality metric
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
             {
-                foreach (string file in Directory.GetFiles(tempFolder))
+                // Default quality settings are used; they can be customized via reader.QualitySettings
+                BarCodeResult[] results = reader.ReadBarCodes();
+                if (results.Length == 0)
                 {
-                    File.Delete(file);
+                    Console.WriteLine($"No barcode detected for {item.ItemId}");
+                    continue;
                 }
-                Directory.Delete(tempFolder);
+
+                // Assume the first result corresponds to the generated barcode
+                var result = results[0];
+                item.ReadingQuality = result.ReadingQuality;
+                // Update CodeText in case the reader normalizes or corrects it
+                item.CodeText = result.CodeText;
+                processedItems.Add(item);
+                Console.WriteLine($"Item {item.ItemId}: Quality={item.ReadingQuality}");
             }
-            catch (Exception ex)
+        }
+
+        // ------------------------------------------------------------
+        // 4. Persist the processed inventory records (including quality) to a CSV file
+        // ------------------------------------------------------------
+        string csvPath = Path.Combine(Directory.GetCurrentDirectory(), "inventory_records.csv");
+        using (var writer = new StreamWriter(csvPath, false))
+        {
+            writer.WriteLine("ItemId,CodeText,ReadingQuality");
+            foreach (var itm in processedItems)
             {
-                Console.WriteLine($"Cleanup error: {ex.Message}");
+                writer.WriteLine($"{itm.ItemId},{itm.CodeText},{itm.ReadingQuality}");
             }
+        }
+
+        Console.WriteLine($"Inventory records saved to {csvPath}");
+
+        // ------------------------------------------------------------
+        // 5. Clean up temporary barcode images
+        // ------------------------------------------------------------
+        try
+        {
+            foreach (var file in Directory.GetFiles(barcodeFolder))
+            {
+                File.Delete(file);
+            }
+            Directory.Delete(barcodeFolder);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Cleanup error: {ex.Message}");
         }
     }
 }

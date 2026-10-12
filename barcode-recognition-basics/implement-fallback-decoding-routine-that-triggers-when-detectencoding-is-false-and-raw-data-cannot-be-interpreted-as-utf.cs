@@ -1,8 +1,8 @@
-// Title: QR Code Generation and Fallback Decoding with Custom Encoding
-// Description: Demonstrates generating a QR code using a custom Windows-1253 encoding and reading it with DetectEncoding disabled, applying a fallback decoding routine when the default UTF-8 interpretation fails.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for scanning, and handling encoding issues with DetectEncoding. Developers often need to generate barcodes in non‑UTF8 encodings and reliably decode them across different systems, making fallback strategies essential.
+// Title: QR Code Generation with Custom Encoding and Fallback Decoding
+// Description: Demonstrates generating a QR code using a custom Windows-1253 (Greek) encoding, then reading it with encoding detection disabled and applying a UTF-8 fallback strategy.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for scanning, and the BarcodeSettings.DetectEncoding property to control automatic character set detection. Developers often need to handle custom encodings and provide fallback decoding logic when raw barcode data cannot be interpreted as UTF-8.
 // Prompt: Implement a fallback decoding routine that triggers when DetectEncoding is false and raw data cannot be interpreted as UTF8.
-// Tags: qr code, custom encoding, fallback decoding, aspose.barcode, barcode generation, barcode recognition, c#
+// Tags: qr code, custom encoding, fallback decoding, aspose.barcode, barcode generation, barcode recognition, utf8, windows-1253
 
 using System;
 using System.IO;
@@ -10,84 +10,92 @@ using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates QR code generation with a custom encoding and fallback decoding when automatic encoding detection is disabled.
+/// Demonstrates QR code generation with a custom encoding and a fallback decoding routine when UTF‑8 decoding fails.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the example. Generates a QR code, reads it without automatic encoding detection,
-    /// and applies a fallback decoding routine if the decoded text contains replacement characters.
+    /// attempts UTF‑8 decoding, and falls back to the original custom encoding if needed.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a unique temporary folder for the generated barcode image.
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "FallbackDemo_" + Guid.NewGuid().ToString("N"));
+        // ------------------------------------------------------------
+        // Prepare a temporary folder and file path for the barcode image
+        // ------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "customEncodingQR.png");
+        string barcodePath = Path.Combine(tempFolder, "sample_qr.png");
 
-        // --------------------------------------------------------------------
-        // Generate a QR code using the Windows-1253 (Greek) encoding.
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
+        // Generate a QR code using a custom Windows-1253 (Greek) encoding
+        // ------------------------------------------------------------
+        Encoding customEncoding = Encoding.GetEncoding(1253); // Greek code page
+        string codeText = "AsposeΣΑΩ";
+
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 4; // Set module size.
-            string text = "AsposeΣΑΩ";
-            Encoding customEncoding = Encoding.GetEncoding(1253);
-            generator.SetCodeText(text, customEncoding); // Apply custom encoding.
-            generator.Save(imagePath, BarCodeImageFormat.Png); // Save as PNG.
+            // Set the code text with the custom encoding
+            generator.SetCodeText(codeText, customEncoding);
+            // Adjust QR module size for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 8;
+            // Save the generated QR code as a PNG image
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine("Barcode generated at: " + imagePath);
-        Console.WriteLine();
-
-        // --------------------------------------------------------------------
-        // Read the barcode with automatic encoding detection turned off.
-        // --------------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // ------------------------------------------------------------
+        // Read the barcode with automatic encoding detection turned off
+        // ------------------------------------------------------------
+        BaseDecodeType decodeType = DecodeType.QR;
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, decodeType))
         {
-            reader.BarcodeSettings.DetectEncoding = false; // Disable auto-detection.
+            // Disable automatic detection of character encoding
+            reader.BarcodeSettings.DetectEncoding = false;
 
+            // Iterate through all detected barcodes (only one in this case)
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                string rawText = result.CodeText;
-                // Determine if fallback decoding is needed (presence of replacement char �).
-                bool needsFallback = rawText != null && rawText.Contains('�');
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
 
-                if (needsFallback)
+                // --------------------------------------------------------
+                // Attempt to decode the raw bytes as strict UTF-8
+                // --------------------------------------------------------
+                byte[] rawBytes = result.CodeBytes;
+                string decodedText;
+                try
                 {
-                    // Fallback decoding using the known custom encoding (Windows-1253).
-                    string fallbackText = result.GetCodeText(Encoding.GetEncoding(1253));
-                    Console.WriteLine("Fallback decoded text: " + fallbackText);
+                    // Throw on invalid UTF-8 sequences to trigger fallback
+                    Encoding utf8Strict = new UTF8Encoding(false, true);
+                    decodedText = utf8Strict.GetString(rawBytes);
+                    Console.WriteLine($"UTF8 Decoded Text: {decodedText}");
                 }
-                else
+                catch (DecoderFallbackException)
                 {
-                    Console.WriteLine("Decoded text: " + rawText);
+                    // ----------------------------------------------------
+                    // Fallback: decode using the original custom Windows-1253 encoding
+                    // ----------------------------------------------------
+                    decodedText = customEncoding.GetString(rawBytes);
+                    Console.WriteLine($"Fallback Decoded Text (1253): {decodedText}");
                 }
-
-                Console.WriteLine("Code Type: " + result.CodeTypeName);
-                Console.WriteLine("Reading Quality: " + result.ReadingQuality);
-                Console.WriteLine();
             }
         }
 
-        // --------------------------------------------------------------------
-        // Clean up temporary files (optional).
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
+        // Clean up temporary files and directories
+        // ------------------------------------------------------------
         try
         {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
             if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder);
+                Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore cleanup errors.
+            // Ignored - cleanup failures should not affect program exit
         }
     }
 }

@@ -1,11 +1,12 @@
-// Title: Compare QR code reading quality under varying lighting
-// Description: Demonstrates generating a QR code, creating darker and brighter variants, and measuring the ReadingQuality of each image to assess how lighting affects recognition.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, illustrating how to use BarcodeGenerator to create barcodes, manipulate images with Aspose.Drawing, and employ BarCodeReader to decode QR codes and retrieve the ReadingQuality metric. Developers often need to evaluate barcode readability under different conditions, such as lighting or contrast, to optimize scanning performance in real‑world applications.
+// Title: QR Code Reading Quality Comparison under Varying Lighting
+// Description: Demonstrates how to generate a QR code, create a darkened version to simulate low lighting, and compare the ReadingQuality values returned by Aspose.BarCode's recognition engine.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on quality assessment of decoded symbols. It uses BarcodeGenerator to create barcodes, BarCodeReader with QualitySettings, and examines the ReadingQuality property of BarCodeResult. Developers often need to evaluate how environmental factors such as lighting affect scan reliability, and this snippet shows a quick way to benchmark QR code readability across different image conditions.
 // Prompt: Compare recognition quality of QR codes captured under different lighting conditions by analyzing ReadingQuality values.
-// Tags: qr, barcode, readingquality, lighting, recognition, aspose.barcode, generation, image-processing
+// Tags: qr code, readingquality, barcode recognition, quality settings, aspose.barcode, image processing, lighting conditions
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
@@ -13,97 +14,106 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates QR code generation, lighting variation, and reading quality analysis.
+/// Demonstrates generation of a QR code, creation of a darkened variant,
+/// and comparison of the ReadingQuality values obtained from Aspose.BarCode
+/// when recognizing each image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates QR images with normal, dark, and bright lighting, reads them,
-    /// and reports the ReadingQuality values and average.
+    /// Entry point of the demo. Generates sample images, runs recognition,
+    /// prints results, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to store generated images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "QrQuality_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for sample images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "QrQualityDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define file paths for the three lighting conditions
-        string basePath = Path.Combine(tempFolder, "qr_normal.png");
+        // Sample QR code text
+        string qrText = "Aspose.BarCode Demo";
+
+        // Paths for original and darkened images
+        string originalPath = Path.Combine(tempFolder, "qr_original.png");
         string darkPath = Path.Combine(tempFolder, "qr_dark.png");
-        string brightPath = Path.Combine(tempFolder, "qr_bright.png");
 
-        // Generate a base QR code image with default lighting
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Text"))
+        // Generate original QR code image
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
         {
-            generator.Save(basePath, BarCodeImageFormat.Png);
+            generator.Save(originalPath, BarCodeImageFormat.Png);
         }
 
-        // Create a darker version by overlaying a semi‑transparent black rectangle
-        using (var bitmap = new Bitmap(basePath))
+        // Create a darkened version of the QR code to simulate low lighting
+        using (var originalBmp = new Bitmap(originalPath))
         {
-            using (var graphics = Graphics.FromImage(bitmap))
+            int width = originalBmp.Width;
+            int height = originalBmp.Height;
+            using (var darkBmp = new Bitmap(width, height, originalBmp.PixelFormat))
             {
-                using (var brush = new SolidBrush(Color.FromArgb(120, 0, 0, 0)))
+                for (int y = 0; y < height; y++)
                 {
-                    graphics.FillRectangle(brush, 0, 0, bitmap.Width, bitmap.Height);
+                    for (int x = 0; x < width; x++)
+                    {
+                        Color srcColor = originalBmp.GetPixel(x, y);
+                        // Simple darkening: halve the RGB components, keep alpha unchanged
+                        int r = srcColor.R / 2;
+                        int g = srcColor.G / 2;
+                        int b = srcColor.B / 2;
+                        Color darkColor = Color.FromArgb(srcColor.A, r, g, b);
+                        darkBmp.SetPixel(x, y, darkColor);
+                    }
                 }
-                bitmap.Save(darkPath, ImageFormat.Png);
+                darkBmp.Save(darkPath, Aspose.Drawing.Imaging.ImageFormat.Png);
             }
         }
 
-        // Create a brighter version by overlaying a semi‑transparent white rectangle
-        using (var bitmap = new Bitmap(basePath))
+        // List of images to evaluate
+        List<string> images = new List<string> { originalPath, darkPath };
+
+        // Decode type for QR codes
+        BaseDecodeType decodeType = DecodeType.QR;
+
+        Console.WriteLine("QR Code Reading Quality Comparison:");
+        foreach (string imgPath in images)
         {
-            using (var graphics = Graphics.FromImage(bitmap))
+            if (!File.Exists(imgPath))
             {
-                using (var brush = new SolidBrush(Color.FromArgb(80, 255, 255, 255)))
-                {
-                    graphics.FillRectangle(brush, 0, 0, bitmap.Width, bitmap.Height);
-                }
-                bitmap.Save(brightPath, ImageFormat.Png);
-            }
-        }
-
-        // Collect all generated image file paths
-        var imageFiles = new[] { basePath, darkPath, brightPath };
-
-        double totalQuality = 0;
-        int count = 0;
-
-        // Iterate through each image and evaluate its QR code reading quality
-        foreach (string imagePath in imageFiles)
-        {
-            if (!File.Exists(imagePath))
-            {
-                Console.WriteLine($"File not found: {imagePath}");
+                Console.WriteLine($"File not found: {imgPath}");
                 continue;
             }
 
-            // Initialize a reader for QR codes in the current image
-            using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+            // Initialize reader for the current image with QR decode type
+            using (var reader = new BarCodeReader(imgPath, decodeType))
             {
-                // Process each detected barcode result
+                // Use high quality preset for better assessment
+                reader.QualitySettings = QualitySettings.HighQuality;
+
+                bool anyFound = false;
+                // Iterate through all detected barcodes (should be one per image)
                 foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    double quality = result.ReadingQuality;
-                    Console.WriteLine($"{Path.GetFileName(imagePath)} - CodeType: {result.CodeTypeName}, Quality: {quality}");
-                    totalQuality += quality;
-                    count++;
+                    anyFound = true;
+                    Console.WriteLine($"Image: {Path.GetFileName(imgPath)}");
+                    Console.WriteLine($"  CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"  CodeText: {result.CodeText}");
+                    Console.WriteLine($"  ReadingQuality: {result.ReadingQuality}");
+                }
+
+                if (!anyFound)
+                {
+                    Console.WriteLine($"Image: {Path.GetFileName(imgPath)} - No barcode detected.");
                 }
             }
         }
 
-        // Output the average reading quality across all samples, if any were processed
-        if (count > 0)
-        {
-            double averageQuality = totalQuality / count;
-            Console.WriteLine($"Average ReadingQuality across samples: {averageQuality:F2}");
-        }
-
-        // Cleanup temporary folder (optional)
+        // Cleanup temporary files
         try
         {
-            Directory.Delete(tempFolder, true);
+            foreach (string file in Directory.GetFiles(tempFolder))
+            {
+                File.Delete(file);
+            }
+            Directory.Delete(tempFolder);
         }
         catch
         {

@@ -1,8 +1,8 @@
-// Title: Barcode recognition speed comparison: limited DecodeType vs MultiDecodeType
-// Description: Demonstrates how to generate sample barcodes and measure the time required to read them using a limited set of DecodeTypes versus using MultiDecodeType.
-// Category-Description: This example belongs to the Aspose.BarCode recognition performance category. It showcases the use of BarCodeGenerator for creating barcodes, BarCodeReader for decoding, and the DecodeType and MultiDecodeType classes to control which symbologies are processed. Developers often need to benchmark or optimize barcode scanning speed in bulk processing scenarios, and this snippet provides a baseline for such measurements.
+// Title: Measure barcode decoding speed with limited vs all decode types
+// Description: Demonstrates how to generate sample barcodes, then compare the time required to decode them using DecodeType.AllSupportedTypes versus a MultiDecodeType with a limited set of symbologies.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition performance category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader with DecodeType or MultiDecodeType to read them, and Stopwatch to measure execution time. Developers often need to benchmark decoding speed when restricting supported symbologies to improve performance in high‑throughput scenarios.
 // Prompt: Measure the impact of limiting DecodeType versus using MultyDecodeType on overall recognition speed.
-// Tags: barcode symbology, performance, speed, decode type, multidecodetype, aspose.barcode, generation, recognition
+// Tags: barcode, decoding, performance, speed, decode-type, multidecode, aspose.barcode, barcodereader, barcodegenerator
 
 using System;
 using System.IO;
@@ -14,12 +14,12 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates measuring barcode recognition speed when limiting DecodeType versus using MultiDecodeType.
+/// Demonstrates measuring barcode decoding speed when using all supported decode types versus a limited set via MultiDecodeType.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, measures reading time with two approaches, and outputs results.
+    /// Entry point. Generates sample barcodes, measures decoding times, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
@@ -27,62 +27,88 @@ class Program
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSpeedTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define symbologies to generate and test
-        BaseEncodeType[] encodeTypes = new BaseEncodeType[]
-        {
-            EncodeTypes.Code128,
-            EncodeTypes.QR,
-            EncodeTypes.DataMatrix
-        };
-
-        // Generate sample barcode images and collect file paths
+        // Generate sample barcode images and collect their file paths
         List<string> barcodeFiles = new List<string>();
-        for (int i = 0; i < encodeTypes.Length; i++)
-        {
-            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
-            var generator = new BarcodeGenerator(encodeTypes[i], $"Test{i}");
-            generator.Save(filePath, BarCodeImageFormat.Png);
-            barcodeFiles.Add(filePath);
-        }
+        GenerateBarcode(EncodeTypes.Code128, "CODE128_SAMPLE", Path.Combine(tempFolder, "code128.png"), barcodeFiles);
+        GenerateBarcode(EncodeTypes.QR, "QR_SAMPLE", Path.Combine(tempFolder, "qr.png"), barcodeFiles);
+        GenerateBarcode(EncodeTypes.DataMatrix, "DM_SAMPLE", Path.Combine(tempFolder, "datamatrix.png"), barcodeFiles);
 
-        // Measure reading time with limited DecodeType (SetBarCodeReadType)
-        Stopwatch swLimited = new Stopwatch();
-        swLimited.Start();
-        foreach (string file in barcodeFiles)
+        // Measure reading time when using all supported decode types
+        long allSupportedTicks = MeasureReadingAllSupported(barcodeFiles);
+        Console.WriteLine($"Reading with DecodeType.AllSupportedTypes took {allSupportedTicks} ms");
+
+        // Measure reading time when limiting decode types via MultiDecodeType
+        BaseDecodeType[] limitedTypes = new BaseDecodeType[] { DecodeType.Code128, DecodeType.QR, DecodeType.DataMatrix };
+        long limitedTicks = MeasureReadingWithMultiDecode(barcodeFiles, limitedTypes);
+        Console.WriteLine($"Reading with MultiDecodeType (limited) took {limitedTicks} ms");
+
+        // Cleanup temporary files and folder
+        try
+        {
+            foreach (var file in barcodeFiles)
+            {
+                if (File.Exists(file))
+                    File.Delete(file);
+            }
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program outcome
+        }
+    }
+
+    /// <summary>
+    /// Generates a barcode image using the specified encode type and text, saves it to the given path, and records the file path.
+    /// </summary>
+    static void GenerateBarcode(BaseEncodeType encodeType, string text, string outputPath, List<string> list)
+    {
+        using (var generator = new BarcodeGenerator(encodeType, text))
+        {
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+            list.Add(outputPath);
+        }
+    }
+
+    /// <summary>
+    /// Measures the total time required to read all barcodes using DecodeType.AllSupportedTypes.
+    /// </summary>
+    static long MeasureReadingAllSupported(List<string> files)
+    {
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+
+        foreach (var file in files)
         {
             using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
             {
-                // Restrict reader to specific symbologies
-                reader.SetBarCodeReadType(DecodeType.Code128, DecodeType.QR, DecodeType.DataMatrix);
                 BarCodeResult[] results = reader.ReadBarCodes();
-                // Optionally process results
+                // No further processing needed; just ensure reading occurs
             }
         }
-        swLimited.Stop();
 
-        // Measure reading time with MultiDecodeType
-        Stopwatch swMulti = new Stopwatch();
-        var multiDecode = new MultiDecodeType(DecodeType.Code128, DecodeType.QR, DecodeType.DataMatrix);
-        swMulti.Start();
-        foreach (string file in barcodeFiles)
+        sw.Stop();
+        return sw.ElapsedMilliseconds;
+    }
+
+    /// <summary>
+    /// Measures the total time required to read all barcodes using a MultiDecodeType with a limited set of symbologies.
+    /// </summary>
+    static long MeasureReadingWithMultiDecode(List<string> files, BaseDecodeType[] types)
+    {
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+
+        foreach (var file in files)
         {
+            var multiDecode = new MultiDecodeType(types);
             using (var reader = new BarCodeReader(file, multiDecode))
             {
                 BarCodeResult[] results = reader.ReadBarCodes();
-                // Optionally process results
             }
         }
-        swMulti.Stop();
 
-        // Output the timing results
-        Console.WriteLine($"Reading with limited DecodeType (SetBarCodeReadType) took: {swLimited.ElapsedMilliseconds} ms");
-        Console.WriteLine($"Reading with MultiDecodeType took: {swMulti.ElapsedMilliseconds} ms");
-
-        // Clean up temporary files and folder
-        foreach (string file in barcodeFiles)
-        {
-            try { File.Delete(file); } catch { }
-        }
-        try { Directory.Delete(tempFolder, true); } catch { }
+        sw.Stop();
+        return sw.ElapsedMilliseconds;
     }
 }

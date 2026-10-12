@@ -1,78 +1,84 @@
-// Title: Read barcodes from JPEG using BarCodeReader
-// Description: Demonstrates generating a Code128 barcode, saving it as a JPEG, and then reading it back with BarCodeReader to obtain detection results.
-// Category-Description: This example belongs to the Aspose.BarCode barcode reading and generation category. It shows how to use BarcodeGenerator to create an image and BarCodeReader to decode all supported symbologies from a file. Developers often need to process scanned images, extract barcode data, and retrieve positional information for further processing such as inventory management or document automation.
+// Title: Read barcodes from a JPEG image using BarCodeReader
+// Description: Demonstrates how to generate a Code128 barcode, save it as a JPEG, and then read it back using Aspose.BarCode's BarCodeReader to obtain detection details.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader, DecodeType, and BarCodeResult classes. Typical scenarios include scanning images, extracting barcode data, and analyzing detection quality. Developers often need to read barcodes from various image formats and retrieve region information for further processing.
 // Prompt: Read barcodes from a JPEG file using BarCodeReader constructor and retrieve detection results.
-// Tags: barcode, code128, jpeg, read, generation, aspose.barcode, barcodereader, barcodegenerator, detection, region
+// Tags: barcode, read, jpeg, barcodereader, detection, aspose.barcode, code128, decode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a barcode image, saves it as JPEG, and reads it back using Aspose.BarCode.
+/// Demonstrates barcode generation, saving to JPEG, and reading detection results using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, writes it to a temporary JPEG file, then reads and displays detection results.
+    /// Entry point. Generates a sample barcode image, reads it, and outputs detection information.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeReadDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for the sample barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "sample.jpg");
 
-        // Define the full path for the sample JPEG image
-        string imagePath = Path.Combine(tempFolder, "sample.jpg");
-
-        // Generate a Code128 barcode and save it as a JPEG image
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Generate a simple Code128 barcode and save as JPEG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Jpeg);
+            generator.Save(barcodePath, BarCodeImageFormat.Jpeg);
         }
 
-        // Verify that the image file was created before attempting to read it
-        if (!File.Exists(imagePath))
+        // Verify the file exists before attempting to read
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            Console.WriteLine($"Barcode image not found: {barcodePath}");
             return;
         }
 
-        // Read all supported barcodes from the JPEG file
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Read barcodes from the JPEG file using BarCodeReader
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            Console.WriteLine("ReadFromFile:");
+            // Optional: set quality settings if desired
+            // reader.QualitySettings = QualitySettings.HighPerformance;
+
+            // Perform the detection
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Output detection results or indicate that none were found
             if (results.Length == 0)
             {
                 Console.WriteLine("No barcodes detected.");
             }
             else
             {
+                // Output details for each detected barcode
                 foreach (BarCodeResult result in results)
                 {
-                    // Display the type and text of each detected barcode
-                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    Console.WriteLine($"Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Text: {result.CodeText}");
+                    Console.WriteLine($"Quality: {result.ReadingQuality}");
 
-                    // Show the region (position and size) of the barcode within the image
+                    // Retrieve region bounds
                     var bounds = result.Region.Rectangle;
-                    Console.WriteLine($"Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}, Angle:{result.Region.Angle}");
+                    Console.WriteLine($"Region - X:{bounds.X}, Y:{bounds.Y}, Width:{bounds.Width}, Height:{bounds.Height}");
+                    Console.WriteLine($"Angle: {result.Region.Angle}");
+                    Console.WriteLine(new string('-', 40));
                 }
             }
         }
 
-        // Optional cleanup of temporary files (comment out if inspection of files is needed)
+        // Clean up temporary files
         try
         {
-            Directory.Delete(tempFolder, true);
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Suppress any errors that occur during cleanup
+            // Ignore cleanup errors
         }
     }
 }

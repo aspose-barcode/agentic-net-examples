@@ -1,80 +1,48 @@
-// Title: QR Code Generation and QR-Only Decoding Example
-// Description: Demonstrates generating a QR code image and reading it back while restricting the decoder to QR symbology only.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create QR codes and BarCodeReader to decode them. Developers often need to generate barcodes for data encoding and later scan images, sometimes limiting recognition to specific symbologies for performance or accuracy. The key API classes illustrated are BarcodeGenerator, BarCodeImageFormat, BarCodeReader, DecodeType, and BarCodeResult.
+// Title: Decode QR Code from Image Using Aspose.BarCode
+// Description: Demonstrates how to configure Aspose.BarCode to read only QR symbology from an image file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It showcases the use of BarCodeReader with a specific BaseDecodeType (QR) to limit scanning to QR codes. Developers commonly use these APIs to extract data from images containing barcodes, selecting appropriate symbologies for performance or accuracy reasons. Typical use cases include scanning product labels, tickets, or QR-based authentication tokens.
 // Prompt: Set DecodeType to QR before reading an image to limit recognition to QR symbology only.
-// Tags: qr, barcode, generation, recognition, decode, aspose.barcode
+// Tags: qr,barcode,recognition,decode,aspose.barcode,csharp,console
 
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Generates a QR code image, reads it back using QR‑only decoding, and cleans up temporary files.
+/// Example program that reads QR codes from an image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary directory, generates a QR code, decodes it,
-    /// and then removes all temporary artifacts.
+    /// Entry point. Accepts an optional image path argument, validates the file,
+    /// configures the reader for QR decoding only, and prints detected code information.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; first argument may be the image file path.</param>
+    static void Main(string[] args)
     {
-        // Create a unique temporary folder for the demo files
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // Determine the image file path: use argument if provided, otherwise default.
+        string imagePath = args.Length > 0 ? args[0] : "sample_qr.png";
 
-        // Define the full path for the QR code image
-        string imagePath = Path.Combine(tempDir, "qr.png");
-
-        // -------------------------------------------------
-        // Generate a QR code image and save it as PNG
-        // -------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
-        {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the image was created successfully
+        // Verify that the specified file exists before attempting to read.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine($"File not found: {imagePath}");
             return;
         }
 
-        // -------------------------------------------------
-        // Read the image, limiting recognition to QR symbology only
-        // -------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
-        {
-            BarCodeResult[] results = reader.ReadBarCodes();
+        // Restrict decoding to QR symbology only.
+        BaseDecodeType decodeType = DecodeType.QR;
 
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No QR code detected.");
-            }
-            else
-            {
-                foreach (BarCodeResult result in results)
-                {
-                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Code Text: {result.CodeText}");
-                }
-            }
-        }
-
-        // -------------------------------------------------
-        // Cleanup temporary files and directory
-        // -------------------------------------------------
-        try
+        // Initialize the barcode reader with the image path and the QR decode type.
+        using (BarCodeReader reader = new BarCodeReader(imagePath, decodeType))
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempDir);
-        }
-        catch
-        {
-            // Ignore any errors that occur during cleanup
+            // Iterate through all detected barcodes (should be QR codes only).
+            foreach (BarCodeResult result in reader.ReadBarCodes())
+            {
+                // Output the type and text of each detected QR code.
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
+            }
         }
     }
 }

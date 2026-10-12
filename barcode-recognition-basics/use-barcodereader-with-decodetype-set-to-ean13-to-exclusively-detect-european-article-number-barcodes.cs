@@ -1,61 +1,62 @@
-// Title: Detect EAN13 Barcodes Using BarCodeReader
-// Description: Demonstrates generating an EAN13 barcode image and reading it with BarCodeReader configured to decode only EAN13 symbology.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create a PNG image of an EAN13 barcode and BarCodeReader with DecodeType.EAN13 to restrict detection to European Article Number barcodes. Developers working with product labeling, inventory systems, or retail applications frequently need to generate and read EAN13 codes, making these APIs essential for accurate barcode handling.
-// Prompt: Use BarCodeReader with DecodeType set to EAN13 to exclusively detect European Article Number barcodes.
-// Tags: ean13, barcode, decode, reader, generation, png, aspose.barcode
+// Title: EAN13 Barcode Generation and Detection Example
+// Description: Demonstrates generating an EAN13 barcode image and using BarCodeReader with DecodeType set to EAN13 to detect only European Article Number barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create an EAN13 barcode and BarCodeReader with DecodeType.EAN13 to restrict scanning to this symbology. Developers working with product labeling, inventory systems, or retail applications often need to generate and read EAN13 codes, and this snippet illustrates the typical API classes and workflow.
+/// Prompt: Use BarCodeReader with DecodeType set to EAN13 to exclusively detect European Article Number barcodes.
+/// Tags: ean13, barcode, generation, recognition, decode, aspnet, aspose.barcode, symbology, one-dimensional
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Sample program that creates an EAN13 barcode image and reads it using BarCodeReader
-/// with DecodeType set to EAN13, ensuring only European Article Number barcodes are detected.
+/// Provides a simple demonstration of generating an EAN13 barcode image
+/// and reading it back using <see cref="BarCodeReader"/> with <see cref="DecodeType.EAN13"/>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Generates a temporary EAN13 barcode image,
-    /// reads it with a restricted decoder, outputs the results, and cleans up.
+    /// Entry point of the example. Generates a temporary EAN13 barcode image,
+    /// reads it using a restricted decode type, outputs the results, and cleans up.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Create a temporary folder for the sample barcode image
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder to store the generated barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "EAN13Demo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+
+        // Define the full path for the barcode image file
         string imagePath = Path.Combine(tempFolder, "ean13.png");
 
-        // --------------------------------------------------------------------
-        // Generate an EAN13 barcode image and save it as PNG
-        // --------------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        // Generate a sample EAN13 barcode image and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
         {
             // Set the X-dimension (module width) to 2 pixels for better readability
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Verify the image file exists before attempting to read it
-        // --------------------------------------------------------------------
+        // Verify that the image file was created successfully
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("Failed to generate the barcode image.");
             return;
         }
 
-        // --------------------------------------------------------------------
         // Read the barcode using DecodeType.EAN13 to restrict detection to EAN13 only
-        // --------------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.EAN13))
+        using (var reader = new BarCodeReader(imagePath, DecodeType.EAN13))
         {
-            try
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Check whether any EAN13 barcodes were detected
+            if (results.Length == 0)
             {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                Console.WriteLine("No EAN13 barcode detected.");
+            }
+            else
+            {
+                // Output details for each detected barcode
+                foreach (var result in results)
                 {
                     Console.WriteLine($"CodeType: {result.CodeTypeName}");
                     Console.WriteLine($"CodeText: {result.CodeText}");
@@ -63,15 +64,9 @@ class Program
                     Console.WriteLine($"CheckSum: {result.Extended.OneD.CheckSum}");
                 }
             }
-            catch (ArgumentException ex)
-            {
-                Console.WriteLine($"Error reading barcode: {ex.Message}");
-            }
         }
 
-        // --------------------------------------------------------------------
-        // Clean up temporary files and folder
-        // --------------------------------------------------------------------
+        // Clean up temporary files and directory
         try
         {
             File.Delete(imagePath);
@@ -79,7 +74,7 @@ class Program
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

@@ -1,69 +1,90 @@
-// Title: Read barcodes from each PDF page by converting pages to PNG images
-// Description: Demonstrates extracting each page of a PDF as a high‑resolution PNG image and using Aspose.BarCode's BarCodeReader to detect all supported barcode types.
-// Category-Description: This example belongs to the Aspose.BarCode for .NET barcode recognition category, illustrating how to combine Aspose.Pdf page rendering with BarCodeReader. Typical use cases include scanning invoices, shipping documents, or any PDF containing barcodes. Developers often need to render PDF pages to images before feeding them to the barcode engine, using Document, PngDevice, and BarCodeReader classes.
+// Title: Read barcodes from PDF pages by converting each page to an image
+// Description: Demonstrates generating a Code128 barcode, embedding it in a PDF, extracting each page as a PNG image, and decoding any barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode PDF processing collection, illustrating how to combine Aspose.Pdf and Aspose.BarCode APIs to read barcodes from PDF documents. It showcases creating a PDF, rendering pages to images with PngDevice, and using BarCodeReader to detect all supported symbologies. Developers often need this pattern for invoice scanning, document verification, or batch processing of scanned PDFs.
 // Prompt: Read barcodes from PDF pages by extracting each page as an image and feeding it to BarCodeReader.
-// Tags: pdf, barcode, recognition, image conversion, aspnet, aspose.pdf, aspose.barcode, decodeall
+// Tags: code128, barcode reading, pdf, image conversion, png, aspose.pdf, aspose.barcode, decode
 
 using System;
 using System.IO;
 using Aspose.Pdf;
 using Aspose.Pdf.Devices;
+using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates reading barcodes from a PDF by converting each page to an image and scanning it.
+/// Demonstrates barcode generation, PDF embedding, page image extraction, and barcode recognition using Aspose libraries.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Loads a PDF, renders each page to PNG, and prints detected barcodes.
+    /// Entry point that creates a temporary PDF with a barcode, extracts each page as an image, and reads any barcodes found.
     /// </summary>
     static void Main()
     {
-        // Build the full path to the sample PDF located in the current working directory.
-        string pdfPath = Path.Combine(Directory.GetCurrentDirectory(), "sample.pdf");
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodePdfDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string pdfPath = Path.Combine(tempFolder, "sample.pdf");
 
-        // Verify that the PDF file exists before attempting to process it.
-        if (!File.Exists(pdfPath))
+        // Generate a Code128 barcode image and embed it into a new PDF document
+        using (var barcodeStream = new MemoryStream())
         {
-            Console.WriteLine($"PDF file not found at path: {pdfPath}");
-            return;
-        }
-
-        // Open the PDF document using Aspose.Pdf.
-        using (Document pdfDoc = new Document(pdfPath))
-        {
-            // Create a PNG device with a resolution of 300 DPI for high‑quality image rendering.
-            PngDevice pngDevice = new PngDevice(new Resolution(300));
-
-            // Determine the number of pages in the PDF.
-            int pageCount = pdfDoc.Pages.Count;
-            if (pageCount == 0)
+            // Create the barcode and save it as PNG into the memory stream
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                Console.WriteLine("PDF contains no pages.");
-                return;
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                barcodeStream.Position = 0; // Reset stream position for reading
             }
 
-            // Iterate through each page, render it to a memory stream, and scan for barcodes.
-            for (int i = 1; i <= pageCount; i++)
+            // Build a PDF containing the barcode image
+            using (var pdfDoc = new Document())
             {
-                using (MemoryStream ms = new MemoryStream())
+                var page = pdfDoc.Pages.Add();
+                var image = new Aspose.Pdf.Image
                 {
-                    // Render the current PDF page to the memory stream as a PNG image.
-                    pngDevice.Process(pdfDoc.Pages[i], ms);
-                    ms.Position = 0; // Reset stream position for reading.
+                    ImageStream = barcodeStream // Assign the barcode image stream to the PDF image
+                };
+                page.Paragraphs.Add(image);
+                pdfDoc.Save(pdfPath); // Save the PDF to the temporary location
+            }
 
-                    // Initialize the barcode reader to detect all supported barcode types.
-                    using (BarCodeReader reader = new BarCodeReader(ms, DecodeType.AllSupportedTypes))
+            // Open the saved PDF and process each page
+            using (var pdfDoc = new Document(pdfPath))
+            {
+                // Set up a PNG device to render PDF pages at 300 DPI
+                var pngDevice = new PngDevice(new Resolution(300));
+
+                // Iterate through all pages in the PDF
+                for (int i = 1; i <= pdfDoc.Pages.Count; i++)
+                {
+                    // Render the current page to a memory stream as PNG
+                    using (var pageStream = new MemoryStream())
                     {
-                        // Read and output each detected barcode on the current page.
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
+                        pngDevice.Process(pdfDoc.Pages[i], pageStream);
+                        pageStream.Position = 0; // Reset for reading by BarCodeReader
+
+                        // Use BarCodeReader to detect any barcodes on the rendered page image
+                        using (var reader = new BarCodeReader(pageStream, DecodeType.AllSupportedTypes))
                         {
-                            Console.WriteLine($"Page {i}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
+                            foreach (var result in reader.ReadBarCodes())
+                            {
+                                Console.WriteLine($"Page {i}: Type={result.CodeTypeName}, Text={result.CodeText}");
+                            }
                         }
                     }
                 }
             }
+        }
+
+        // Attempt to delete the temporary folder and its contents
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Suppress any exceptions during cleanup (e.g., file locks)
         }
     }
 }
