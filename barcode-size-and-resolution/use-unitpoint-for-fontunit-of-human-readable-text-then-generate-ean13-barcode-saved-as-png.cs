@@ -1,38 +1,42 @@
-// Title: Generate EAN13 barcode with point‑size font and save as PNG
-// Description: Demonstrates creating an EAN‑13 barcode, configuring the human‑readable text font using Unit.Point, and exporting the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, EncodeTypes, and CodeTextParameters to produce barcodes for product labeling, inventory, and retail applications. Developers often need to customize font size, placement, and output format when integrating barcodes into documents or printing workflows.
+// Title: Generate EAN13 barcode with point-sized human‑readable text and save as PNG
+// Description: Demonstrates how to create an EAN‑13 barcode, set the human‑readable text font size using points, and save the image as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to produce product barcodes. Typical scenarios include creating retail labels, inventory tags, and packaging graphics where precise font sizing and placement of human‑readable text are required. Developers often need to control font units, location, and output format when integrating barcode creation into .NET applications.
 // Prompt: Use Unit.Point for FontUnit of human‑readable text, then generate EAN13 barcode saved as PNG.
 // Tags: ean13, barcode, generation, png, fontunit, point, aspose.barcode
 
 using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates an EAN‑13 barcode, sets the human‑readable text font size using Unit.Point,
-/// and saves the barcode image as a PNG file.
+/// Example program that generates an EAN‑13 barcode, configures the human‑readable text
+/// using point units for the font size, and saves the result as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Creates the barcode, applies font settings, and writes the image file.
     /// </summary>
     static void Main()
     {
         // Define the output file name.
         string outputPath = "ean13.png";
 
-        // Create a BarcodeGenerator for EAN13 with the specified numeric value.
-        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
+        // Initialize the barcode generator with EAN‑13 symbology and a valid 13‑digit value.
+        using (var generator = new BarcodeGenerator(EncodeTypes.EAN13, "1234567890128"))
         {
-            // Set the human‑readable text font size in points (Unit.Point).
-            gen.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+            // Set the human‑readable text font size using points (Unit.Point).
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
 
-            // Position the human‑readable text below the barcode.
-            gen.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            // Optional: specify the font family for the human‑readable text.
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
+
+            // Position the human‑readable text below the barcode bars.
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
 
             // Save the generated barcode as a PNG image.
-            gen.Save(outputPath, BarCodeImageFormat.Png);
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
         // Inform the user where the barcode image was saved.

@@ -1,73 +1,63 @@
-// Title: Convert Inches and Millimeters for Barcode XDimension
-// Description: Demonstrates conversion between inches and millimeters and applying the values to the XDimension property of a barcode generated with Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode size parameters using the XDimension property. It covers the EncodeTypes, BarcodeGenerator, and BarCodeImageFormat classes, typical for developers needing precise module sizing in different measurement units. Such examples help when integrating barcode creation into reporting, labeling, or packaging solutions.
+// Title: Inches to Millimeters Conversion for Barcode XDimension
+// Description: Demonstrates how to convert between inches and millimeters when setting the XDimension of a barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and XDimension properties for size calculations. Developers often need to switch measurement units to meet printing or design requirements, and this snippet shows the typical pattern for unit conversion and barcode image creation.
 // Prompt: Create helper method converting values between Inches and Millimeters for barcode size calculations.
-// Tags: barcode symbology, size conversion, inches, millimeters, aspose.barcode, generation, png output
+// Tags: barcode, conversion, inches, millimeters, xdimension, code128, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates conversion between inches and millimeters and uses the values to set barcode XDimension.
+/// Provides helper methods and a demo for converting measurement units and generating barcodes with Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates helper conversions, generates two barcodes (one using inches, one using millimeters), and saves them as PNG files.
-    /// </summary>
-    static void Main()
-    {
-        // Demonstrate helper methods for unit conversion
-        float inches = 0.1f; // 0.1 inch
-        double millimeters = InchesToMillimeters(inches);
-        double backToInches = MillimetersToInches(millimeters);
-
-        Console.WriteLine($"Inches: {inches} -> Millimeters: {millimeters:F2} -> Back to Inches: {backToInches:F4}");
-
-        // Prepare output directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        Directory.CreateDirectory(outputDir);
-
-        // Generate barcode with XDimension specified in inches
-        using (BarcodeGenerator generatorInches = new BarcodeGenerator(EncodeTypes.Code128, "INCHES"))
-        {
-            generatorInches.Parameters.Barcode.XDimension.Inches = inches;
-            string pathInches = Path.Combine(outputDir, "Barcode_Inches.png");
-            generatorInches.Save(pathInches, BarCodeImageFormat.Png);
-            Console.WriteLine($"Saved barcode with XDimension in inches to: {pathInches}");
-        }
-
-        // Generate barcode with XDimension specified in millimeters (converted from inches)
-        using (BarcodeGenerator generatorMillimeters = new BarcodeGenerator(EncodeTypes.Code128, "MILLIMETERS"))
-        {
-            generatorMillimeters.Parameters.Barcode.XDimension.Millimeters = (float)millimeters;
-            string pathMillimeters = Path.Combine(outputDir, "Barcode_Millimeters.png");
-            generatorMillimeters.Save(pathMillimeters, BarCodeImageFormat.Png);
-            Console.WriteLine($"Saved barcode with XDimension in millimeters to: {pathMillimeters}");
-        }
-    }
-
-    /// <summary>
     /// Converts inches to millimeters.
     /// </summary>
-    /// <param name="inches">Value in inches.</param>
-    /// <returns>Equivalent value in millimeters.</returns>
-    static double InchesToMillimeters(double inches)
-    {
-        return inches * 25.4;
-    }
+    static float InchesToMillimeters(float inches) => inches * 25.4f;
 
     /// <summary>
     /// Converts millimeters to inches.
     /// </summary>
-    /// <param name="millimeters">Value in millimeters.</param>
-    /// <returns>Equivalent value in inches.</returns>
-    static double MillimetersToInches(double millimeters)
+    static float MillimetersToInches(float millimeters) => millimeters / 25.4f;
+
+    /// <summary>
+    /// Entry point that creates barcodes using both inches and millimeters for the XDimension and prints conversion results.
+    /// </summary>
+    static void Main()
     {
-        return millimeters / 25.4;
+        // Prepare output directory
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
+
+        // Define XDimension in inches and convert to millimeters
+        float xDimInches = 0.1f;
+        float xDimMillimeters = InchesToMillimeters(xDimInches);
+
+        // Generate barcode using inches as the measurement unit
+        using (var generatorInches = new BarcodeGenerator(EncodeTypes.Code128, "INCHES"))
+        {
+            generatorInches.Parameters.Barcode.XDimension.Inches = xDimInches;
+            string pathInches = Path.Combine(outputDir, "barcode_inches.png");
+            generatorInches.Save(pathInches, BarCodeImageFormat.Png);
+            Console.WriteLine($"Barcode saved (inches) to {pathInches}");
+        }
+
+        // Generate barcode using millimeters as the measurement unit
+        using (var generatorMm = new BarcodeGenerator(EncodeTypes.Code128, "MILLIMETERS"))
+        {
+            generatorMm.Parameters.Barcode.XDimension.Millimeters = xDimMillimeters;
+            string pathMm = Path.Combine(outputDir, "barcode_mm.png");
+            generatorMm.Save(pathMm, BarCodeImageFormat.Png);
+            Console.WriteLine($"Barcode saved (mm) to {pathMm}");
+        }
+
+        // Demonstrate reverse conversion from millimeters to inches
+        float mmValue = 5.0f;
+        float inchesValue = MillimetersToInches(mmValue);
+        Console.WriteLine($"{mmValue} mm = {inchesValue:F4} inches");
     }
 }

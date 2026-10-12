@@ -1,52 +1,55 @@
-// Title: Calculate XDimension in Pixels for 2 mm module width at 300 dpi
-// Description: Demonstrates how to compute the XDimension (module width) in pixels for a 2 mm barcode module at 300 dpi and apply it to a Code128 barcode generator.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating resolution handling and precise module sizing. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create high‑resolution barcodes. Developers often need to control XDimension for printing accuracy and scanner compatibility, making this pattern common in manufacturing and logistics applications.
+// Title: Calculate XDimension in Pixels for a 2 mm Module Width at 300 dpi
+// Description: Demonstrates how to compute the XDimension (module width) in pixels for a barcode based on a given millimeter size and DPI, then applies it to a BarcodeGenerator.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance by setting resolution and XDimension. It uses the BarcodeGenerator class with EncodeTypes and BarCodeImageFormat to create a Code128 barcode image. Developers often need to control module size for printing precision, especially when matching physical dimensions to screen or printer DPI.
 // Prompt: Calculate XDimension in Pixels for 2 mm module width at 300 dpi, then set it on generator.
-// Tags: code128, xdimension, png, barcodegenerator, aspose.barcode
+// Tags: barcode, xdimension, resolution, code128, png, aspose.barcode, generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that calculates the XDimension in pixels for a given module width
-/// and DPI, then generates a Code128 barcode with that setting.
+/// Example program that calculates the XDimension (module width) in pixels for a
+/// specified millimeter size and DPI, then generates a Code128 barcode image
+/// using those settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs the calculation, configures the generator,
-    /// and saves the resulting barcode image.
+    /// Entry point of the example. Performs the calculation, configures the
+    /// barcode generator, and saves the resulting image to a temporary file.
     /// </summary>
     static void Main()
     {
-        // Define the desired module width (in millimeters) and the target resolution (DPI)
-        float moduleWidthMillimeters = 2f;
-        float dpi = 300f;
+        // Desired module width in millimeters and resolution in DPI
+        const float moduleWidthMm = 2f;
+        const float resolutionDpi = 300f;
 
-        // Convert the module width from millimeters to inches (1 inch = 25.4 mm)
-        // and then to pixels using the DPI value
-        float xDimensionPixels = (moduleWidthMillimeters / 25.4f) * dpi;
+        // Calculate XDimension in pixels: pixels = mm * dpi / 25.4
+        float xDimensionPixels = moduleWidthMm * resolutionDpi / 25.4f;
 
-        // Prepare a temporary folder to store the generated barcode image
-        string outputFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeExample");
-        Directory.CreateDirectory(outputFolder);
-        string outputPath = Path.Combine(outputFolder, "barcode.png");
-
-        // Create a barcode generator for Code128 with the sample data "123456"
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Prepare output file path in the system's temporary directory
+        string outputPath = Path.Combine(Path.GetTempPath(), "XDimensionBarcode.png");
+        string outputDir = Path.GetDirectoryName(outputPath);
+        if (!Directory.Exists(outputDir))
         {
-            // Apply the calculated resolution and XDimension (in pixels) to the generator
-            generator.Parameters.Resolution = dpi;
-            generator.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;
+            // Ensure the directory exists before saving the image
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Save the generated barcode as a PNG image
+        // Create a barcode generator for Code128, set resolution and XDimension, then save the image
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample"))
+        {
+            generator.Parameters.Resolution = resolutionDpi;
+            generator.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the saved file and the XDimension value used
+        // Output the location of the saved barcode and the calculated XDimension value
         Console.WriteLine($"Barcode saved to: {outputPath}");
-        Console.WriteLine($"XDimension set to {xDimensionPixels} pixels (2 mm at {dpi} dpi).");
+        Console.WriteLine($"Calculated XDimension (pixels): {xDimensionPixels}");
     }
 }

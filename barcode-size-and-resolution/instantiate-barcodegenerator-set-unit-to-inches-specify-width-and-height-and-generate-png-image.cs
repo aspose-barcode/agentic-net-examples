@@ -1,44 +1,41 @@
-// Title: Generate Code128 Barcode Image with Specified Size in Inches
-// Description: This example creates a Code128 barcode, sets its dimensions in inches, and saves it as a PNG file.
-// Category-Description: Demonstrates Aspose.BarCode generation API usage for creating barcodes with custom image size and resolution. It covers the BarcodeGenerator class, EncodeTypes enumeration, and image format options, which are common tasks for developers needing to produce printable or displayable barcodes in .NET applications.
+// Title: Generate a PNG barcode image with dimensions specified in inches
+// Description: Demonstrates how to create a barcode using Aspose.BarCode, set its size in inches, and save it as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and image parameter settings. Developers often need to control barcode dimensions and resolution for printing or UI display, and this snippet shows typical steps for setting measurement units, size, and exporting to common image formats.
 // Prompt: Instantiate BarcodeGenerator, set unit to Inches, specify width and height, and generate a PNG image.
-// Tags: barcode, code128, generation, inches, image size, png, aspose.barcode, c#
+// Tags: barcode, code128, generation, inches, width, height, png, aspose.barcode, image, resolution
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode image with custom dimensions in inches.
+/// Demonstrates generating a Code128 barcode image with custom dimensions in inches and saving it as PNG.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, configures size and resolution, and saves as PNG.
+    /// Entry point. Creates a barcode, configures size in inches, sets resolution, and writes the PNG file.
     /// </summary>
     static void Main()
     {
-        // Determine the full path for the output PNG file
+        // Define the full path for the output PNG file
         string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
 
-        // Initialize the barcode generator with Code128 symbology and the desired text
+        // Initialize the barcode generator with Code128 symbology and sample text
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set image width to 2 inches
-            generator.Parameters.ImageWidth.Inches = 2f;
+            // Set the barcode image width and height using inches as the measurement unit
+            generator.Parameters.ImageWidth.Inches = 2.0f;   // 2 inches wide
+            generator.Parameters.ImageHeight.Inches = 1.0f;  // 1 inch tall
 
-            // Set image height to 1 inch
-            generator.Parameters.ImageHeight.Inches = 1f;
-
-            // Optional: increase resolution to 300 DPI for higher quality output
+            // Optionally define the image resolution (dots per inch)
             generator.Parameters.Resolution = 300;
 
             // Save the generated barcode as a PNG image to the specified path
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
+        // Inform the user where the barcode image has been saved
         Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

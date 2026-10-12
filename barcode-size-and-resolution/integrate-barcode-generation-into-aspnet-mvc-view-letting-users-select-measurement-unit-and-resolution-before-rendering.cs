@@ -1,100 +1,77 @@
-// Title: Barcode Generation with Custom Measurement Unit and Resolution
-// Description: Demonstrates generating a QR barcode while allowing the caller to specify the measurement unit (pixels, millimeters, points, inches) and image resolution (dpi). The barcode is saved as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create barcodes dynamically. Typical use cases include generating barcodes on-the-fly for web applications, reports, or printing workflows where developers need control over size units and image resolution.
+// Title: Barcode generation with selectable measurement unit and resolution
+// Description: Demonstrates generating a Code128 barcode where the measurement unit for XDimension and image resolution are chosen by the user, useful for web scenarios such as ASP.NET MVC.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters like XDimension units and image resolution using the BarcodeGenerator class. Typical use cases include dynamic barcode creation in web applications, where developers need to adapt size and DPI for different output media. Developers often need to set measurement units (pixels, millimeters, inches, points) and resolution before saving the barcode image.
 // Prompt: Integrate barcode generation into ASP.NET MVC view, letting users select measurement unit and resolution before rendering.
-// Tags: barcode symbology, generation, qr, measurement unit, resolution, aspnet mvc, aspose.barcode, png, csharp
+// Tags: barcode, code128, generation, measurement unit, resolution, aspnet mvc, aspose.barcode, png
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Provides a console entry point that generates a QR barcode with user‑specified measurement unit and resolution.
+/// Demonstrates barcode generation with configurable measurement unit and resolution.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a QR barcode image using the selected measurement unit and DPI resolution.
+    /// Entry point. Simulates user selection of measurement unit and resolution, generates a barcode, and saves it to a temporary folder.
     /// </summary>
-    /// <param name="args">
-    /// Optional command‑line arguments:
-    /// <list type="bullet">
-    /// <item><description>args[0] – measurement unit (Pixels, Millimeters, Points, Inches). Defaults to "Pixels".</description></item>
-    /// <item><description>args[1] – integer DPI resolution. Defaults to 300.</description></item>
-    /// </list>
-    /// </param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // ------------------------------------------------------------
-        // Simulate user selections from command‑line arguments
-        // ------------------------------------------------------------
-        string unitChoice = args.Length > 0 ? args[0] : "Pixels";
-        int resolutionDpi = 300;
-        if (args.Length > 1 && int.TryParse(args[1], out int parsedRes))
-        {
-            resolutionDpi = parsedRes;
-        }
+        // Simulated user input that would normally come from an ASP.NET MVC view.
+        string codeText = "ASPOSE123";
+        string selectedUnit = "Millimeters"; // Options: Pixels, Millimeters, Inches, Point
+        float selectedResolution = 300f; // DPI
 
-        // ------------------------------------------------------------
-        // Prepare output folder and file path
-        // ------------------------------------------------------------
+        // Prepare output folder in the system's temporary directory.
         string outputFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
         Directory.CreateDirectory(outputFolder);
         string outputPath = Path.Combine(outputFolder, "barcode.png");
 
-        try
+        // Generate the barcode with the selected settings.
+        GenerateBarcode(codeText, selectedUnit, selectedResolution, outputPath);
+
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode generated at: {outputPath}");
+    }
+
+    /// <summary>
+    /// Generates a Code128 barcode using the specified text, measurement unit, and resolution, then saves it to the given path.
+    /// </summary>
+    /// <param name="text">The data to encode in the barcode.</param>
+    /// <param name="unit">The measurement unit for XDimension (Pixels, Millimeters, Inches, Point).</param>
+    /// <param name="resolution">The image resolution in DPI.</param>
+    /// <param name="outputPath">The file path where the barcode image will be saved.</param>
+    static void GenerateBarcode(string text, string unit, float resolution, string outputPath)
+    {
+        // Initialize the barcode generator with Code128 symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
         {
-            // ------------------------------------------------------------
-            // Create a BarcodeGenerator for QR code with sample data
-            // ------------------------------------------------------------
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample"))
+            // Set measurement unit for XDimension based on user selection.
+            switch (unit?.Trim().ToLowerInvariant())
             {
-                // ------------------------------------------------------------
-                // Apply the selected measurement unit to the X‑dimension
-                // ------------------------------------------------------------
-                switch (unitChoice.ToLowerInvariant())
-                {
-                    case "pixels":
-                        generator.Parameters.Barcode.XDimension.Pixels = 3f;
-                        break;
-                    case "millimeters":
-                        generator.Parameters.Barcode.XDimension.Millimeters = 2f;
-                        break;
-                    case "points":
-                        generator.Parameters.Barcode.XDimension.Point = 1f;
-                        break;
-                    case "inches":
-                        generator.Parameters.Barcode.XDimension.Inches = 0.1f;
-                        break;
-                    default:
-                        // Default to pixels if the unit is unknown
-                        generator.Parameters.Barcode.XDimension.Pixels = 3f;
-                        break;
-                }
-
-                // ------------------------------------------------------------
-                // Set the image resolution (dots per inch)
-                // ------------------------------------------------------------
-                generator.Parameters.Resolution = (float)resolutionDpi;
-
-                // ------------------------------------------------------------
-                // Save the generated barcode as a PNG file
-                // ------------------------------------------------------------
-                generator.Save(outputPath, BarCodeImageFormat.Png);
+                case "pixels":
+                    generator.Parameters.Barcode.XDimension.Pixels = 3f;
+                    break;
+                case "inches":
+                    generator.Parameters.Barcode.XDimension.Inches = 0.02f; // approx 2 hundredths of an inch
+                    break;
+                case "point":
+                    generator.Parameters.Barcode.XDimension.Point = 2f;
+                    break;
+                case "millimeters":
+                default:
+                    generator.Parameters.Barcode.XDimension.Millimeters = 2f;
+                    break;
             }
 
-            // ------------------------------------------------------------
-            // Inform the user about the successful generation
-            // ------------------------------------------------------------
-            Console.WriteLine($"Barcode generated with unit '{unitChoice}' and resolution {resolutionDpi} dpi.");
-            Console.WriteLine($"Saved to: {outputPath}");
-        }
-        catch (Exception ex)
-        {
-            // ------------------------------------------------------------
-            // Report any errors that occurred during generation
-            // ------------------------------------------------------------
-            Console.WriteLine($"Error generating barcode: {ex.Message}");
+            // Apply the desired image resolution (dots per inch).
+            generator.Parameters.Resolution = resolution;
+
+            // Save the generated barcode as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
     }
 }
