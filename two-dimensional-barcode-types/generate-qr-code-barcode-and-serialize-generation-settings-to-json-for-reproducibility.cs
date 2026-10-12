@@ -1,8 +1,8 @@
-// Title: Generate QR Code and Export Settings to JSON
-// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, saving it as a PNG image, and serializing the generation parameters to a JSON file for reproducibility.
-// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce a QR Code, then captures key generation settings (code text, symbology, dimensions, error correction level) and writes them to JSON using System.Text.Json. Developers working with barcode creation and needing to persist or share configuration settings will find this pattern useful for automated testing, configuration management, and repeatable barcode generation.
+// Title: Generate QR Code and Export Generation Settings to JSON
+// Description: Demonstrates creating a QR Code barcode image and serializing its generation parameters to a JSON file for reproducibility.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use BarcodeGenerator with QR symbology, configure properties such as X‑Dimension and error correction level, and persist settings. Developers often need to recreate identical barcodes across environments, so exporting the configuration to JSON is a common practice. The key API classes include BarcodeGenerator, EncodeTypes, QRErrorLevel, and BarCodeImageFormat.
 // Prompt: Generate QR Code barcode and serialize generation settings to JSON for reproducibility.
-// Tags: qr code, barcode generation, json serialization, aspose.barcode, csharp
+// Tags: qr code, barcode generation, json serialization, aspose.barcode, encode types, qrcode, settings export
 
 using System;
 using System.IO;
@@ -12,60 +12,49 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates QR Code generation with Aspose.BarCode and serialization of its settings to JSON.
+/// Demonstrates QR Code generation and serialization of its settings to JSON.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Simple DTO for persisting barcode generation settings.
+    /// Entry point. Generates a QR Code image, saves it, and writes the generation parameters to a JSON file.
     /// </summary>
-    class BarcodeSettings
+    static void Main(string[] args)
     {
-        public string CodeText { get; set; }
-        public string EncodeType { get; set; }
-        public float XDimensionPixels { get; set; }
-        public string QRErrorLevel { get; set; }
-    }
-
-    /// <summary>
-    /// Entry point. Generates a QR Code, saves the image, and writes generation parameters to a JSON file.
-    /// </summary>
-    static void Main()
-    {
-        // Create a unique temporary directory for output files
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Define output directory in the temporary folder and ensure it exists.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
         Directory.CreateDirectory(outputDir);
 
-        // Define file paths for the PNG image and JSON settings
+        // Paths for the generated QR image and the JSON settings file.
         string imagePath = Path.Combine(outputDir, "qr.png");
-        string jsonPath = Path.Combine(outputDir, "settings.json");
+        string jsonPath = Path.Combine(outputDir, "qr_settings.json");
 
-        // Initialize the barcode generator for QR Code with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello, Aspose!"))
+        // Create a QR Code generator with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Configure QR-specific parameters
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;               // Set module size
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH; // High error correction
+            // Set QR Code specific parameters.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;               // Size of a single module.
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM; // Error correction level.
 
-            // Save the generated QR Code as a PNG image
+            // Save the QR Code image as PNG.
             generator.Save(imagePath, BarCodeImageFormat.Png);
 
-            // Capture the relevant settings for later reproducibility
-            var settings = new BarcodeSettings
+            // Capture relevant generation settings for serialization.
+            var settings = new
             {
+                EncodeType = "QR",
                 CodeText = generator.CodeText,
-                EncodeType = nameof(EncodeTypes.QR),
                 XDimensionPixels = generator.Parameters.Barcode.XDimension.Pixels,
-                QRErrorLevel = generator.Parameters.Barcode.QR.ErrorLevel.ToString()
+                QRErrorLevel = generator.Parameters.Barcode.QR.ErrorLevel.ToString(),
+                QRVersion = generator.Parameters.Barcode.QR.Version.ToString()
             };
 
-            // Serialize settings to formatted JSON
-            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
-            string json = JsonSerializer.Serialize(settings, jsonOptions);
+            // Serialize settings to formatted JSON and write to file.
+            string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(jsonPath, json);
         }
 
-        // Inform the user where the files have been saved
+        // Inform the user where the files have been saved.
         Console.WriteLine($"QR code image saved to: {imagePath}");
         Console.WriteLine($"Generation settings saved to: {jsonPath}");
     }

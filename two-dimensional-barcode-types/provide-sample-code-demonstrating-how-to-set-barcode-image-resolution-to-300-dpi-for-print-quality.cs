@@ -1,8 +1,8 @@
-// Title: Set Barcode Image Resolution to 300 DPI
-// Description: Demonstrates how to generate a barcode image with a resolution of 300 DPI, suitable for high‑quality printing.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure image resolution using the BarcodeGenerator class. Developers often need to produce barcodes for printed materials where DPI impacts clarity; the API allows setting the Resolution property before saving in common formats like PNG.
+// Title: Set barcode image resolution to 300 DPI for high-quality printing
+// Description: Demonstrates how to configure the barcode generator to produce a 300 DPI PNG image, suitable for print.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to adjust rendering parameters such as resolution. It uses the BarcodeGenerator class and its Parameters property to control output quality. Developers often need to set DPI for print-ready barcodes, ensuring sharpness and compliance with printing standards.
 // Prompt: Provide sample code demonstrating how to set barcode image resolution to 300 DPI for print quality.
-// Tags: barcode symbology, resolution, print quality, generation, png, aspose.barcode
+// Tags: barcode symbology, resolution, image generation, png, aspose.barcode, code128
 
 using System;
 using System.IO;
@@ -10,29 +10,32 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a Code128 barcode image with a resolution of 300 DPI and saves it as a PNG file.
+/// Demonstrates setting barcode image resolution to 300 DPI using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Generates a Code128 barcode saved as a 300 DPI PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output PNG file in the current directory.
-        string outputFile = Path.Combine(Directory.GetCurrentDirectory(), "Barcode300DPI.png");
+        // Define a temporary output directory for the generated barcode image
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeResolutionDemo");
+        // Ensure the directory exists
+        Directory.CreateDirectory(outputDir);
+        // Build the full file path for the PNG output
+        string outputPath = Path.Combine(outputDir, "barcode_300dpi.png");
 
-        // Create a BarcodeGenerator for Code128 symbology with the desired data.
+        // Create a barcode generator for Code128 with the specified data
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the image resolution to 300 DPI for print‑quality output.
+            // Set the image resolution to 300 DPI for print-quality output
             generator.Parameters.Resolution = 300f;
-
-            // Save the generated barcode as a PNG image to the specified path.
-            generator.Save(outputFile, BarCodeImageFormat.Png);
+            // Save the barcode as a PNG file at the defined path
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image saved to: {outputFile}");
+        // Inform the user where the barcode image has been saved
+        Console.WriteLine($"Barcode saved at: {outputPath}");
     }
 }

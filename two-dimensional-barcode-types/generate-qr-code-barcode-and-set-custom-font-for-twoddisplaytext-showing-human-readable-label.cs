@@ -1,58 +1,51 @@
-// Title: Generate QR Code with custom human‑readable label font
-// Description: Demonstrates creating a QR Code barcode, setting a custom font for the human‑readable text displayed below the symbol, and saving the image as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Two‑dimensional symbologies (QR Code) and text rendering customization. It showcases the BarcodeGenerator class, EncodeTypes, and CodeTextParameters for adjusting display text, font properties, and positioning—common tasks for developers needing branded or readable barcodes in reports, packaging, or web applications.
+// Title: Generate QR Code with custom font for human‑readable label
+// Description: Demonstrates how to create a QR Code barcode using Aspose.BarCode, set a custom font for the TwoDDisplayText, and save the image as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on two‑dimensional symbologies. It shows how to configure CodeTextParameters such as FontMode, Font, and TwoDDisplayText for QR Code generation. Developers commonly use these APIs to add readable text beneath or alongside barcodes for branding or user guidance, and to customize appearance for different output formats.
 // Prompt: Generate QR Code barcode and set custom font for TwoDDisplayText showing human readable label.
-// Tags: qr code, two-dimensional, custom font, display text, aspnet, aspose.barcode, png
+// Tags: qr code, two-dimensional, font customization, codetext, aspnet, aspose.barcode, png
 
 using System;
 using System.IO;
-using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a QR Code with a custom font for the human‑readable label.
+/// Example program that generates a QR Code barcode, applies a custom font to the
+/// human‑readable label (TwoDDisplayText), and saves the result as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a QR Code, customizes the display text font, saves the image, and writes the output path.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory and ensure it exists.
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir);
+        // Determine the full path where the generated PNG will be saved.
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr_custom_font.png");
 
-        // Full path for the generated PNG file.
-        string outputPath = Path.Combine(outputDir, "qr_custom_font.png");
-
-        // Initialize the barcode generator for QR Code symbology.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Create a BarcodeGenerator for QR Code with the data "1234567890".
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "1234567890"))
         {
-            // Set the encoded data (URL) using UTF‑8 encoding.
-            generator.SetCodeText("https://example.com", Encoding.UTF8);
-
-            // Set the human‑readable text that appears below the QR Code.
-            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "Example QR";
-
-            // Switch to manual font mode to apply custom font settings.
+            // --------------------------------------------------------------------
+            // Configure the appearance of the human‑readable text (TwoDDisplayText)
+            // --------------------------------------------------------------------
+            // Use manual font settings instead of the default automatic mode.
             generator.Parameters.Barcode.CodeTextParameters.FontMode = FontMode.Manual;
 
-            // Configure the custom font: Helvetica, bold, 14 points.
+            // Set the desired font family and size for the label.
             generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
-            generator.Parameters.Barcode.CodeTextParameters.Font.Style = FontStyle.Bold;
             generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 14f;
 
-            // Position the display text below the QR Code symbol.
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+            // Define the text that will be displayed alongside the QR Code.
+            // This does not affect the encoded data; it only provides a readable label.
+            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "My QR Code";
 
-            // Save the generated barcode as a PNG image.
+            // Save the generated barcode image to the specified path in PNG format.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved.
-        Console.WriteLine($"QR code saved to: {outputPath}");
+        // Inform the user where the image has been saved.
+        Console.WriteLine($"QR Code with custom font saved to: {outputPath}");
     }
 }

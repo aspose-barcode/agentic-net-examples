@@ -1,48 +1,42 @@
-// Title: Generate QR Code barcode using Aspose.BarCode
-// Description: Demonstrates creating a QR Code image with Aspose.BarCode and saving it to a temporary folder.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to configure QR Code parameters such as X‑dimension, error correction level, and version using the BarcodeGenerator class. Typical use cases include generating QR codes for URLs, product information, or authentication tokens in web and mobile applications. Developers often need to produce QR images in various formats (PNG, JPEG, etc.) and store them programmatically.
+// Title: Generate QR Code barcode and save as PNG in a temporary folder
+// Description: Demonstrates how to create a QR Code barcode using Aspose.BarCode, configure its appearance, and write the image to a temporary directory.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.QR, setting XDimension and error correction level, and exporting to common image formats such as PNG. Developers working on QR Code creation, automated image generation, or integration with containerized workflows can reference this pattern for quick implementation.
 // Prompt: Generate QR Code barcode and use Docker container to run generation in isolated environment.
-// Tags: qr code, barcode generation, aspnet, aspose.barcode, png, temporary directory
+// Tags: qr code, barcode generation, png output, aspose.barcode, aspose.barcode.generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates QR Code generation with Aspose.BarCode and saves the image to a temporary directory.
+/// Entry point for the QR Code generation example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a QR Code for a sample URL, configures its appearance, and writes the PNG file path to the console.
+    /// Generates a QR Code barcode, saves it as a PNG file in a temporary directory, and writes the output path to the console.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
         // Create a unique temporary folder for output
-        string outputDir = Path.Combine(Path.GetTempPath(), "QrGen_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
+        string outputFolder = Path.Combine(Path.GetTempPath(), "QrBarcode_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        string outputPath = Path.Combine(outputFolder, "qr.png");
 
-        // Define full file path for the PNG image
-        string filePath = Path.Combine(outputDir, "qr.png");
-
-        // Initialize the barcode generator for QR type with the target data
+        // Initialize the barcode generator for QR Code with the desired data
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set the size of each QR module (pixel dimension)
+            // Optional appearance settings: set module size and high error correction level
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Configure QR error correction level (M) and let the library choose the version automatically
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-            generator.Parameters.Barcode.QR.Version = QRVersion.Auto;
-
-            // Save the generated QR code as a PNG file
-            generator.Save(filePath, BarCodeImageFormat.Png);
+            // Save the generated QR Code as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the generated image
-        Console.WriteLine($"QR code saved to: {filePath}");
+        // Inform the user where the QR Code image was saved
+        Console.WriteLine("QR Code generated at: " + outputPath);
     }
 }

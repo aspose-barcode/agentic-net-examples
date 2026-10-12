@@ -1,8 +1,8 @@
-// Title: Generate QR Code at 200 DPI and save as JPEG
-// Description: This example creates a QR Code barcode, sets its resolution to 200 DPI, and saves the image as a JPEG file.
-// Category-Description: This sample belongs to the Aspose.BarCode barcode generation category, demonstrating how to configure barcode parameters such as resolution and output format using the BarcodeGenerator class. Typical use cases include creating high‑resolution QR codes for printing or digital distribution. Developers often need to adjust DPI and choose image formats when integrating barcode generation into applications.
+// Title: Generate QR Code at 200 DPI and Save as JPEG
+// Description: This example creates a QR Code barcode with a resolution of 200 DPI and saves it as a JPEG image.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class. It shows how to configure encoding type, set image resolution, and export the barcode to a common image format. Developers working with QR codes for URLs, product tracking, or mobile scanning often need to control DPI for print quality and choose JPEG for web-friendly distribution.
 // Prompt: Generate a QR Code barcode scaled to two hundred DPI and save as JPEG.
-// Tags: qr code, barcode generation, resolution, dpi, jpeg, aspose.barcode, aspose.barcode.generation
+// Tags: qr code, barcode generation, resolution, jpeg, aspose.barcode, encode types, image output
 
 using System;
 using System.IO;
@@ -10,33 +10,38 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode at 200 DPI and saving it as a JPEG image.
+/// Demonstrates generating a QR Code barcode with a specific DPI and saving it as a JPEG file using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the QR Code and writes the output path to the console.
+    /// Entry point that creates an output folder, generates a QR Code, sets resolution, saves the image, and writes the result path to the console.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define a temporary output directory for the generated barcode image
-        string outputDirectory = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        // Ensure the directory exists
-        Directory.CreateDirectory(outputDirectory);
-        // Build the full file path for the JPEG image
-        string outputPath = Path.Combine(outputDirectory, "qr_200dpi.jpg");
+        // Determine the output directory relative to the current working directory.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
 
-        // Initialize the barcode generator with QR code type and sample data
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
+        // Ensure the output directory exists; create it if it does not.
+        if (!Directory.Exists(outputDir))
         {
-            // Set the resolution to 200 DPI
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Build the full file path for the resulting JPEG image.
+        string outputPath = Path.Combine(outputDir, "qr_200dpi.jpg");
+
+        // Initialize the barcode generator for a QR code with the desired text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        {
+            // Set the image resolution to 200 DPI.
             generator.Parameters.Resolution = 200f;
-            // Save the generated barcode as a JPEG file
+
+            // Save the generated barcode as a JPEG file.
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Output the location of the saved QR Code image
-        Console.WriteLine($"QR Code saved to: {outputPath}");
+        // Inform the user where the QR Code image has been saved.
+        Console.WriteLine($"QR Code saved to {outputPath}");
     }
 }

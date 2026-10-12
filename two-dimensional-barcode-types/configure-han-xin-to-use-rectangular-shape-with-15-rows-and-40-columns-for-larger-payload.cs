@@ -1,52 +1,50 @@
-// Title: Generate Han Xin barcode with automatic version selection
-// Description: Demonstrates creating a Han Xin barcode for a longer payload, letting the encoder choose the appropriate square version automatically.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Han Xin symbology. It showcases the use of BarcodeGenerator, HanXin parameters, and image saving with Aspose.Drawing. Developers often need to generate high‑capacity barcodes and control version and error correction levels, making this a typical reference for such tasks.
+// Title: Generate Han Xin Barcode with Automatic Version Selection
+// Description: Demonstrates creating a Han Xin barcode using Aspose.BarCode, automatically selecting the version based on payload size.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Han Xin symbology. It shows how to configure barcode parameters such as version and error correction level using the BarcodeGenerator and its Parameters API. Developers commonly use these APIs to generate QR-like barcodes for data encoding, customizing size, shape, and error resilience.
 // Prompt: Configure Han Xin to use rectangular shape with 15 rows and 40 columns for larger payload.
-// Tags: hanxin, barcode, generation, png, aspose.barcode, aspose.drawing
+// Tags: hanxin, barcode, generation, automatic version, error correction, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Han Xin barcode with automatic version selection for a larger payload.
+/// Example program that generates a Han Xin barcode image using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode image and saves it to a temporary folder.
+    /// Entry point of the application. Generates a Han Xin barcode with automatic version selection
+    /// and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define and create a temporary output directory for the generated image
-        string outputDir = Path.Combine(Path.GetTempPath(), "HanXinExample");
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "hanxin.png");
+        // Define a sample payload that requires a larger Han Xin barcode.
+        string codeText = "This is a sample payload that requires a larger Han Xin barcode.";
 
-        // Sample text that requires a larger Han Xin version
-        string codeText = "This is a longer payload to demonstrate Han Xin barcode generation with automatic version selection.";
+        // Create a temporary folder to store the generated barcode image.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "HanXinExample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        string outputPath = Path.Combine(outputFolder, "HanXin.png");
 
-        // Initialize the barcode generator for Han Xin symbology with the provided text
+        // Initialize the barcode generator for Han Xin symbology with the provided payload.
         using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
         {
-            // Han Xin supports only square symbols; rectangular shape is not available.
-            // Set version to Auto so the encoder selects the smallest square version that fits the payload.
+            // Han Xin supports only square versions; rectangular shapes are not available.
+            // Set the version to Auto so the library selects the appropriate size based on the payload.
             generator.Parameters.Barcode.HanXin.Version = HanXinVersion.Auto;
-            // Choose an error correction level (L2) suitable for the payload size.
+
+            // Optional: configure error correction level to improve data recovery capability.
             generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L2;
 
-            // Generate the barcode image as a Bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Save the bitmap to a PNG file
-                bitmap.Save(outputPath, ImageFormat.Png);
-            }
+            // Save the generated barcode image to the specified path in PNG format.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Han Xin barcode saved to: {outputPath}");
+        // Output the location of the generated barcode image.
+        Console.WriteLine("Han Xin barcode generated at:");
+        Console.WriteLine(outputPath);
     }
 }

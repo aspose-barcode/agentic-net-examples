@@ -1,8 +1,8 @@
 // Title: Generate Code128 barcode and log generation duration
-// Description: This example creates a Code128 barcode image, saves it as PNG, and records the time taken for generation.
-// Category-Description: Demonstrates Aspose.BarCode generation operations, focusing on the BarcodeGenerator class, EncodeTypes enumeration, and BarCodeImageFormat settings. Typical scenarios include creating barcodes for product labeling, inventory tracking, or shipping documents, where developers need to produce images quickly and log performance metrics. This example belongs to the barcode creation and performance logging category of Aspose.BarCode samples.
+// Description: This example creates a Code128 barcode image, measures how long the generation takes, and records the duration in a log file.
+// Category-Description: Demonstrates Aspose.BarCode generation operations, focusing on the BarcodeGenerator class, EncodeTypes, and BarCodeImageFormat. Typical scenarios include creating barcodes for product labeling, inventory tracking, or receipts while monitoring performance. Developers often need to log generation times for diagnostics or auditing, making this pattern useful across many barcode‑related projects.
 // Prompt: Implement logging of barcode generation duration using Stopwatch and output to application log.
-// Tags: barcode, code128, generation, png, logging, stopwatch, aspose.barcode, performance
+// Tags: barcode, code128, generation, performance, logging, aspose.barcode, stopwatch, png
 
 using System;
 using System.Diagnostics;
@@ -11,49 +11,45 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it as PNG, and logging the generation duration.
+/// Demonstrates barcode generation with performance logging using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, measures execution time, and writes a log entry.
+    /// Entry point that creates a Code128 barcode, measures generation time, and writes a log entry.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory for the barcode image and log file.
+        // Prepare output directory and file paths
         string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
+        string barcodePath = Path.Combine(outputDir, "barcode.png");
+        string logPath = Path.Combine(outputDir, "generation.log");
 
-        // Ensure the output directory exists.
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Build full paths for the barcode image and the log file.
-        string outputPath = Path.Combine(outputDir, "barcode.png");
-        string logPath = Path.Combine(outputDir, "log.txt");
+        // Define barcode data and symbology
         string codeText = "1234567890";
+        BaseEncodeType encodeType = EncodeTypes.Code128;
 
-        // Start measuring the barcode generation time.
-        Stopwatch stopwatch = new Stopwatch();
-        stopwatch.Start();
+        // Start measuring generation duration
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
 
-        // Generate the barcode using Code128 symbology and save it as PNG.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Generate the barcode and save it as a PNG image
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Stop the timer and calculate elapsed time.
-        stopwatch.Stop();
-        TimeSpan duration = stopwatch.Elapsed;
+        // Stop the timer after generation completes
+        sw.Stop();
 
-        // Prepare a log entry with the duration and output location.
-        string logMessage = $"Generated barcode '{codeText}' in {duration.TotalMilliseconds} ms. Saved to: {outputPath}{Environment.NewLine}";
+        // Compose a log entry with timestamp and elapsed time
+        string logEntry = $"[{DateTime.Now:O}] Barcode generated in {sw.Elapsed.TotalMilliseconds} ms. File: {barcodePath}{Environment.NewLine}";
+        File.AppendAllText(logPath, logEntry);
 
-        // Output the log entry to console and append it to the log file.
-        Console.WriteLine(logMessage);
-        File.AppendAllText(logPath, logMessage);
+        // Output paths and timing information to the console
+        Console.WriteLine("Barcode generated at: " + barcodePath);
+        Console.WriteLine("Generation time (ms): " + sw.Elapsed.TotalMilliseconds);
+        Console.WriteLine("Log written to: " + logPath);
     }
 }

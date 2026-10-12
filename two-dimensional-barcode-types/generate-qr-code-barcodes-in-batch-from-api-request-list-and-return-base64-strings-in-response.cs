@@ -1,88 +1,85 @@
-// Title: Generate QR Code barcodes in batch and return Base64 strings
-// Description: Demonstrates creating QR Code barcodes for multiple inputs using Aspose.BarCode, encoding them as PNG, and returning the images as Base64 strings. Useful for APIs that need to deliver barcode images without file I/O.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showing how to use the BarcodeGenerator class with QR symbology, configure error correction, and export images to memory streams. Typical use cases include batch barcode creation for web services, mobile apps, or reporting where images are transmitted as Base64. Developers often need to generate barcodes on the fly, adjust parameters, and serialize the output for JSON responses.
-// Prompt: Generate QR Code barcodes in batch from API request list and return base64 strings in response.
-// Tags: qr code, batch generation, base64, aspose.barcode, aspose.barcode.generation, png, api
+// Title: Batch QR Code Generation with Base64 Output
+// Description: Demonstrates how to generate multiple QR Code barcodes using Aspose.BarCode, encode them as PNG, and return the images as Base64 strings.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce QR symbols, configure error correction levels, and output images in common formats. Developers building APIs that need to deliver QR codes as Base64 strings for web or mobile clients will find this pattern useful.
+/// Prompt: Generate QR Code barcodes in batch from API request list and return base64 strings in response.
+/// Tags: qr code, barcode generation, base64, aspose.barcode, png, batch processing
 
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates batch generation of QR Code barcodes and conversion to Base64 strings.
+/// Provides an example of batch QR Code generation and conversion to Base64 strings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates barcode requests, generates PNG images, and outputs Base64 strings.
+    /// Entry point of the example. Generates QR codes for a list of requests,
+    /// encodes each image as PNG, converts it to a Base64 string, and writes the results to the console.
     /// </summary>
     static void Main()
     {
-        // Prepare a list of barcode generation requests.
-        var requests = new List<BarcodeRequest>
+        // Define a sample list of QR code generation requests (simulating an API payload)
+        var requests = new List<QrRequest>
         {
-            new BarcodeRequest { Id = 1, Text = "Hello World" },
-            new BarcodeRequest { Id = 2, Text = "https://example.com" },
-            new BarcodeRequest { Id = 3, Text = "1234567890" }
+            new QrRequest { Text = "Hello World", ErrorLevel = QRErrorLevel.LevelL },
+            new QrRequest { Text = "Aspose.BarCode QR", ErrorLevel = QRErrorLevel.LevelM },
+            new QrRequest { Text = "https://www.example.com", ErrorLevel = QRErrorLevel.LevelH }
         };
 
-        // Container for successful barcode generation responses.
-        var responses = new List<BarcodeResponse>();
+        // Collection to hold the Base64-encoded PNG images
+        var responses = new List<string>();
 
-        // Iterate over each request and generate a QR Code.
+        // Process each request: generate QR code, save to memory, convert to Base64
         foreach (var req in requests)
         {
-            try
+            // Initialize the barcode generator for QR symbology with the provided text
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, req.Text))
             {
-                // Initialize the generator with QR symbology and the request text.
-                using (var generator = new BarcodeGenerator(EncodeTypes.QR, req.Text))
+                // Configure QR-specific parameters
+                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
+                generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
+                generator.Parameters.Barcode.QR.ErrorLevel = req.ErrorLevel;
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+
+                // Save the generated barcode to a memory stream in PNG format
+                using (var ms = new MemoryStream())
                 {
-                    // Set QR error correction level to Medium.
-                    generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                    generator.Save(ms, BarCodeImageFormat.Png);
 
-                    // Save the generated barcode to a memory stream as PNG.
-                    using (var ms = new MemoryStream())
-                    {
-                        generator.Save(ms, BarCodeImageFormat.Png);
-
-                        // Convert the PNG bytes to a Base64 string.
-                        string base64 = Convert.ToBase64String(ms.ToArray());
-
-                        // Add the response entry with the original request Id.
-                        responses.Add(new BarcodeResponse { Id = req.Id, Base64 = base64 });
-                    }
+                    // Convert the PNG byte array to a Base64 string and store it
+                    string base64 = Convert.ToBase64String(ms.ToArray());
+                    responses.Add(base64);
                 }
             }
-            catch (Exception ex)
-            {
-                // Log any errors that occur during generation.
-                Console.WriteLine($"Failed to generate barcode for Id {req.Id}: {ex.Message}");
-            }
         }
 
-        // Output the generated Base64 strings to the console.
-        foreach (var resp in responses)
+        // Output each Base64 string to the console for verification
+        for (int i = 0; i < responses.Count; i++)
         {
-            Console.WriteLine($"Id: {resp.Id}");
-            Console.WriteLine(resp.Base64);
+            Console.WriteLine($"Barcode {i + 1} Base64:");
+            Console.WriteLine(responses[i]);
+            Console.WriteLine();
         }
     }
 
-    // Simple DTO representing a barcode generation request.
-    class BarcodeRequest
+    /// <summary>
+    /// Simple DTO representing a QR code generation request.
+    /// </summary>
+    class QrRequest
     {
-        public int Id { get; set; }
+        /// <summary>
+        /// Text to encode in the QR code.
+        /// </summary>
         public string Text { get; set; }
-    }
 
-    // Simple DTO representing a barcode generation response.
-    class BarcodeResponse
-    {
-        public int Id { get; set; }
-        public string Base64 { get; set; }
+        /// <summary>
+        /// Desired error correction level for the QR code.
+        /// </summary>
+        public QRErrorLevel ErrorLevel { get; set; }
     }
 }

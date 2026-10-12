@@ -1,8 +1,8 @@
-// Title: Generate DotCode barcode with numeric data and save as BMP
-// Description: Demonstrates creating a DotCode barcode using Aspose.BarCode with a numeric CodeText and saving the result as a BMP image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.DotCode to produce 2‑D barcodes. Typical use cases include encoding numeric identifiers for inventory, tracking, or authentication purposes, where developers need to generate and export barcode images in common formats such as BMP. The snippet shows the essential steps—initializing the generator, specifying the symbology and data, and saving the image—useful for quick integration in .NET applications.
+// Title: Generate DotCode barcode and save as BMP image
+// Description: Demonstrates creating a DotCode barcode with numeric data using Aspose.BarCode and saving it as a BMP image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.DotCode to produce barcodes. Typical use cases include encoding numeric identifiers for inventory, tracking, or labeling systems, where developers need to generate and export barcode images in various formats such as BMP, PNG, or JPEG.
 // Prompt: Generate a DotCode barcode with default settings for numeric CodeText and save as BMP image.
-// Tags: dotcode, barcode, generation, bmp, aspose.barcode, csharp, encode
+// Tags: dotcode, barcode, generation, bmp, aspose.barcode, encode, imageformat
 
 using System;
 using System.IO;
@@ -11,8 +11,7 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a DotCode barcode with numeric content
-/// and saves it as a BMP image using Aspose.BarCode.
+/// Example program that creates a DotCode barcode from numeric text and saves it as a BMP file.
 /// </summary>
 class Program
 {
@@ -21,19 +20,20 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the current directory.
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "DotCodeNumeric.bmp");
-        // Numeric data to encode in the barcode.
-        string codeText = "1234567890";
+        // Define the full path for the output BMP file.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "DotCodeNumeric.bmp");
 
-        // Create a BarcodeGenerator for DotCode symbology with the specified code text.
+        // Set the numeric data to be encoded in the barcode.
+        string codeText = "123456";
+
+        // Initialize the barcode generator with DotCode symbology and the specified code text.
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DotCode, codeText))
         {
-            // Save the generated barcode image as BMP.
+            // Save the generated barcode image in BMP format to the output path.
             generator.Save(outputPath, BarCodeImageFormat.Bmp);
         }
 
-        // Inform the user where the barcode image was saved.
+        // Inform the user where the barcode image has been saved.
         Console.WriteLine($"DotCode barcode saved to: {outputPath}");
     }
 }

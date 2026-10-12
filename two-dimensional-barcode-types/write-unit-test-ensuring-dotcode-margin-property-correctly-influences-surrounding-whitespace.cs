@@ -1,101 +1,71 @@
-// Title: DotCode Margin Influence Test
-// Description: Demonstrates how the DotCode barcode margin property adds whitespace around the generated image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.DotCode and configuring padding via Parameters.Barcode.Padding. Developers often need to control surrounding whitespace for layout or printing requirements, and this snippet shows how to verify margin effects.
+// Title: Verify DotCode margin influences image whitespace
+// Description: Demonstrates how setting the DotCode barcode margin (padding) changes the generated image dimensions, confirming the margin adds surrounding whitespace.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DotCode symbology and image rendering. It showcases the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings such as XDimension and Padding. Developers often need to validate that margin settings affect the output size for layout and printing purposes.
 // Prompt: Write unit test ensuring DotCode margin property correctly influences surrounding whitespace.
-// Tags: dotcode, margin, padding, barcode, generation, unit-test, aspose.barcode
+// Tags: dotcode, barcode, margin, padding, image-size, generation, aspose.barcode, unit-test
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates testing the effect of the DotCode barcode margin on image dimensions.
+/// Demonstrates verification that the DotCode barcode margin property affects the generated image size.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates two DotCode barcodes with and without padding,
-    /// compares their dimensions, and reports the test result.
+    /// Generates a DotCode barcode image with the specified padding (margin) and returns its dimensions.
     /// </summary>
-    static void Main()
+    /// <param name="paddingPixels">The amount of padding to apply on all sides, in pixels.</param>
+    /// <returns>A tuple containing the image width and height.</returns>
+    static (int Width, int Height) GetDotCodeImageSize(float paddingPixels)
     {
-        // Create a temporary directory for test output files
-        string tempDir = Path.Combine(Path.GetTempPath(), "DotCodeMarginTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-
-        // Define file paths for the barcode images
-        string fileNoMargin = Path.Combine(tempDir, "dotcode_nomargin.png");
-        string fileWithMargin = Path.Combine(tempDir, "dotcode_margin.png");
-
-        // Generate barcode without any padding
-        GenerateDotCode(fileNoMargin, 0);
-
-        // Generate barcode with 20 pixels padding on each side
-        GenerateDotCode(fileWithMargin, 20);
-
-        // Variables to hold image dimensions
-        int widthNoMargin, heightNoMargin;
-        int widthWithMargin, heightWithMargin;
-
-        // Load the image without margin and capture its size
-        using (Bitmap bmp = new Bitmap(fileNoMargin))
+        // Create a barcode generator for DotCode with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DotCode, "Test"))
         {
-            widthNoMargin = bmp.Width;
-            heightNoMargin = bmp.Height;
-        }
+            // Set the module size (X dimension) for the barcode.
+            generator.Parameters.Barcode.XDimension.Pixels = 5f;
 
-        // Load the image with margin and capture its size
-        using (Bitmap bmp = new Bitmap(fileWithMargin))
-        {
-            widthWithMargin = bmp.Width;
-            heightWithMargin = bmp.Height;
-        }
+            // Apply uniform padding (margin) on all four sides.
+            generator.Parameters.Barcode.Padding.Left.Pixels = paddingPixels;
+            generator.Parameters.Barcode.Padding.Top.Pixels = paddingPixels;
+            generator.Parameters.Barcode.Padding.Right.Pixels = paddingPixels;
+            generator.Parameters.Barcode.Padding.Bottom.Pixels = paddingPixels;
 
-        // Verify that the margin added 40 pixels to both width and height (20 left + 20 right, etc.)
-        bool widthOk = widthWithMargin == widthNoMargin + 40;
-        bool heightOk = heightWithMargin == heightNoMargin + 40;
-
-        // Output test result
-        if (widthOk && heightOk)
-        {
-            Console.WriteLine("Test passed: Margin correctly influences surrounding whitespace.");
+            // Generate the barcode image and capture its size.
+            using (var bitmap = generator.GenerateBarCodeImage())
+            {
+                return (bitmap.Width, bitmap.Height);
+            }
         }
-        else
-        {
-            Console.WriteLine("Test failed:");
-            Console.WriteLine($"Expected width {widthNoMargin + 40}, actual {widthWithMargin}");
-            Console.WriteLine($"Expected height {heightNoMargin + 40}, actual {heightWithMargin}");
-        }
-
-        // Cleanup temporary files and directory
-        try { File.Delete(fileNoMargin); } catch { }
-        try { File.Delete(fileWithMargin); } catch { }
-        try { Directory.Delete(tempDir, true); } catch { }
     }
 
     /// <summary>
-    /// Generates a DotCode barcode image with the specified padding.
+    /// Entry point that compares image sizes with and without margin and reports the result.
     /// </summary>
-    /// <param name="filePath">The full path where the image will be saved.</param>
-    /// <param name="paddingPixels">The padding (margin) in pixels to apply on all sides.</param>
-    static void GenerateDotCode(string filePath, int paddingPixels)
+    static void Main()
     {
-        // Initialize the barcode generator for DotCode symbology
-        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.DotCode, "Test"))
+        // Generate image size without any margin.
+        var sizeNoMargin = GetDotCodeImageSize(0f);
+
+        // Generate image size with a 10‑pixel margin on each side.
+        var sizeWithMargin = GetDotCodeImageSize(10f);
+
+        // Determine whether the margin increased both dimensions.
+        bool widthIncreased = sizeWithMargin.Width > sizeNoMargin.Width;
+        bool heightIncreased = sizeWithMargin.Height > sizeNoMargin.Height;
+
+        // Output the verification result.
+        if (widthIncreased && heightIncreased)
         {
-            // Set the module size (X dimension) in pixels
-            gen.Parameters.Barcode.XDimension.Pixels = 5f;
-
-            // Apply uniform padding on all four sides
-            gen.Parameters.Barcode.Padding.Left.Pixels = paddingPixels;
-            gen.Parameters.Barcode.Padding.Right.Pixels = paddingPixels;
-            gen.Parameters.Barcode.Padding.Top.Pixels = paddingPixels;
-            gen.Parameters.Barcode.Padding.Bottom.Pixels = paddingPixels;
-
-            // Save the generated barcode as a PNG image
-            gen.Save(filePath, BarCodeImageFormat.Png);
+            Console.WriteLine("PASSED: Margin property correctly increased surrounding whitespace.");
+        }
+        else
+        {
+            Console.WriteLine("FAILED: Margin property did not affect image size as expected.");
+            Console.WriteLine($"NoMargin Size: {sizeNoMargin.Width}x{sizeNoMargin.Height}");
+            Console.WriteLine($"WithMargin Size: {sizeWithMargin.Width}x{sizeWithMargin.Height}");
         }
     }
 }

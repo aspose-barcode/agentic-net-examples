@@ -1,106 +1,76 @@
-// Title: Validate GS1 Composite barcode generation and verification
-// Description: Demonstrates generating a GS1 Composite barcode, saving it as PNG, and validating the encoded linear and 2D components using Aspose.BarCode's recognition and validation API.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on GS1 Composite symbology. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and related parameter objects for configuring GS1 Composite barcodes. Developers commonly use these APIs to create compliant GS1 barcodes for product identification and to verify that generated codes meet GS1 specifications.
+// Title: Validate GS1 Composite barcode generation and validation
+// Description: Demonstrates creating a GS1 Composite barcode, saving it as PNG, reading it back, and verifying its components against the original data.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on GS1 Composite symbology. It shows how to use BarcodeGenerator with EncodeTypes.GS1CompositeBar, configure linear and 2‑D component types, save the image, then employ BarCodeReader with DecodeType.GS1CompositeBar to extract and validate the OneD and TwoD parts. Developers working with GS1 standards often need to generate composite barcodes and ensure the encoded data complies with the specification, making this pattern useful for inventory, logistics, and retail applications.
 // Prompt: Validate generated GS1 Composite barcode against GS1 specification using the library's validation API.
-// Tags: gs1, composite, barcode, generation, validation, aspnet, aspose.barcode
+// Tags: gs1 composite barcode, generation, recognition, validation, aspnet.barcode, encode types, decode type, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generation and validation of a GS1 Composite barcode using Aspose.BarCode.
+/// Demonstrates generation, saving, reading, and validation of a GS1 Composite barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a GS1 Composite barcode, saves it, reads it back, and validates the components.
+    /// Entry point of the example. Generates a GS1 Composite barcode, reads it back, and validates its components.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary folder and file path for the barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Gs1CompositeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "gs1composite.png");
+        // Define temporary file path for the generated barcode image
+        string tempPath = Path.Combine(Path.GetTempPath(), "gs1Composite.png");
 
-        // Define linear and 2D components (both must contain a valid GS1 AI (01) with 14 digits)
-        string linearComponent = "(01)12345678901231";
-        string twoDComponent = "(01)00123456789012";
+        // Prepare linear and 2‑D component data according to GS1 syntax
+        string linearComponent = "(01)98898765432106";
+        string twoDComponent = "(10)ABCD0123";
+
+        // Combine components using the GS1 Composite separator '|'
         string codeText = $"{linearComponent}|{twoDComponent}";
 
-        // Generate the GS1 Composite barcode with specific parameters
+        // Generate the GS1 Composite barcode and save it as PNG
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            // Set X-dimension to 2 pixels for better readability
+            // Set barcode visual parameters
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
-
-            // Hide the human‑readable text (not needed for validation)
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-            // Configure the 2D component type and the linear component symbology
+            // Configure GS1 Composite specific settings
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_A;
             generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-
-            // Allow non‑GS1 encoding for flexibility (set to false to enforce strict GS1)
             generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
 
-            // Save the generated barcode as a PNG image
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            // Save the generated barcode image to the temporary path
+            generator.Save(tempPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image file was successfully created
-        if (!File.Exists(barcodePath))
+        // Read the saved barcode image and decode the GS1 Composite components
+        using (var reader = new BarCodeReader(tempPath, DecodeType.GS1CompositeBar))
         {
-            Console.WriteLine("Failed to generate barcode image.");
-            return;
-        }
-
-        // Read and validate the generated barcode using the GS1 Composite decoder
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.GS1CompositeBar))
-        {
-            bool validationPassed = false;
-
-            // Iterate through all recognized barcodes (should be only one)
             foreach (var result in reader.ReadBarCodes())
             {
-                // Extract extended GS1 Composite information (linear and 2D components)
-                var ext = result.Extended.GS1CompositeBar;
-                string readLinear = ext.OneDCodeText;
-                string readTwoD = ext.TwoDCodeText;
+                Console.WriteLine("Read GS1 Composite barcode:");
+                Console.WriteLine($"OneD Type: {result.Extended.GS1CompositeBar.OneDType}");
+                Console.WriteLine($"OneD CodeText: {result.Extended.GS1CompositeBar.OneDCodeText}");
+                Console.WriteLine($"TwoD Type: {result.Extended.GS1CompositeBar.TwoDType}");
+                Console.WriteLine($"TwoD CodeText: {result.Extended.GS1CompositeBar.TwoDCodeText}");
 
-                // Simple validation: compare the read components with the original values
-                if (readLinear == linearComponent && readTwoD == twoDComponent)
-                {
-                    validationPassed = true;
-                    Console.WriteLine("Validation succeeded:");
-                    Console.WriteLine($"Linear component: {readLinear}");
-                    Console.WriteLine($"2D component: {readTwoD}");
-                }
-                else
-                {
-                    Console.WriteLine("Validation failed:");
-                    Console.WriteLine($"Expected linear: {linearComponent}, read: {readLinear}");
-                    Console.WriteLine($"Expected 2D: {twoDComponent}, read: {readTwoD}");
-                }
-            }
+                // Validate that the decoded components match the original input
+                bool isValid = result.Extended.GS1CompositeBar.OneDCodeText == linearComponent &&
+                               result.Extended.GS1CompositeBar.TwoDCodeText == twoDComponent;
 
-            if (!validationPassed)
-            {
-                Console.WriteLine("No valid GS1 Composite barcode was recognized.");
+                Console.WriteLine($"Validation result: {(isValid ? "Valid" : "Invalid")}");
             }
         }
 
-        // Clean up temporary files (optional)
-        try
+        // Clean up the temporary barcode image file
+        if (File.Exists(tempPath))
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignore any errors during cleanup
+            File.Delete(tempPath);
         }
     }
 }

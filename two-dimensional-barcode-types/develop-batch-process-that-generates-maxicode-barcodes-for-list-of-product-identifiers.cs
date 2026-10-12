@@ -1,8 +1,8 @@
 // Title: Batch Generation of MaxiCode Barcodes for Product IDs
-// Description: Demonstrates how to generate MaxiCode barcodes for a collection of product identifiers and save each as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating batch processing of barcodes using the BarcodeGenerator class. It covers creating a temporary output directory, iterating over a list of data, configuring barcode parameters (such as XDimension), and saving images in PNG format. Developers working with bulk barcode creation, inventory labeling, or shipping applications can use this pattern as a starting point.
+// Description: Demonstrates how to generate MaxiCode barcodes in a batch for a collection of product identifiers and save them as PNG files.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.MaxiCode. It shows typical batch processing scenarios where developers need to create multiple barcodes, configure visual properties, and store images to disk. Useful for inventory, shipping, and logistics applications that require MaxiCode symbology.
 // Prompt: Develop a batch process that generates MaxiCode barcodes for a list of product identifiers.
-// Tags: maxicode, barcode generation, batch processing, png, aspose.barcode, c#
+// Tags: maxicode, barcode generation, batch processing, png, aspose.barcode, encode types, c#
 
 using System;
 using System.IO;
@@ -10,20 +10,18 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides a console application that creates MaxiCode barcodes for a predefined list of product IDs
-/// and stores each barcode as a PNG file in a temporary batch folder.
+/// Demonstrates batch creation of MaxiCode barcodes for a list of product identifiers.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates and saves MaxiCode barcodes for each product identifier.
+    /// Entry point that generates and saves MaxiCode barcode images for each product ID.
     /// </summary>
     static void Main()
     {
-        // Define a sample collection of product identifiers to be encoded as MaxiCode barcodes.
+        // Define a sample list of product identifiers to be encoded.
         List<string> productIds = new List<string>
         {
             "PROD001",
@@ -33,29 +31,28 @@ class Program
             "PROD005"
         };
 
-        // Create a unique temporary directory to hold the generated barcode images.
-        string outputDir = Path.Combine(Path.GetTempPath(), "MaxiCodeBatch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-        Console.WriteLine($"Generating MaxiCode barcodes in: {outputDir}");
+        // Create a unique temporary folder to store the generated barcode images.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Generating MaxiCode barcodes in: {outputFolder}");
 
-        // Iterate over each product ID, generate a barcode, and save it as a PNG file.
+        // Iterate over each product ID and generate a corresponding MaxiCode barcode.
         for (int i = 0; i < productIds.Count; i++)
         {
             string id = productIds[i];
-            string filePath = Path.Combine(outputDir, $"{id}.png");
+            string filePath = Path.Combine(outputFolder, $"{id}.png");
 
             try
             {
-                // Initialize the barcode generator with MaxiCode symbology and the current product ID.
+                // Initialize the barcode generator with MaxiCode symbology and the current ID.
                 using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, id))
                 {
-                    // Set the module (pixel) size for the barcode; adjust as needed for readability.
+                    // Optional visual settings: set module size and colors.
                     generator.Parameters.Barcode.XDimension.Pixels = 10f;
+                    generator.Parameters.Barcode.BarColor = Color.Black;
+                    generator.Parameters.BackColor = Color.White;
 
-                    // Optional: specify a particular MaxiCode encoding mode (e.g., Mode4 for arbitrary text).
-                    // generator.Parameters.Barcode.MaxiCode.EncodeMode = MaxiCodeEncodeMode.Mode4;
-
-                    // Save the generated barcode image to the designated file path in PNG format.
+                    // Save the generated barcode as a PNG image to the designated file path.
                     generator.Save(filePath, BarCodeImageFormat.Png);
                 }
 
@@ -68,6 +65,6 @@ class Program
             }
         }
 
-        Console.WriteLine("Batch generation completed.");
+        Console.WriteLine("Batch processing completed.");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Batch generate Han Xin barcodes from Excel rows
-// Description: This example reads text values from the first column of an Excel worksheet, generates a Han Xin barcode for each entry, and embeds the barcode image into the adjacent column.
-// Category-Description: Demonstrates how to combine Aspose.Cells and Aspose.BarCode to automate barcode creation within spreadsheets. It covers loading a workbook, iterating rows, using BarcodeGenerator (EncodeTypes.HanXin), saving images, and inserting pictures via Aspose.Cells.Drawing. Ideal for developers needing bulk barcode generation for inventory, shipping, or tracking applications.
+// Title: Batch Han Xin Barcode Generation from Excel
+// Description: Demonstrates reading an Excel worksheet, creating a Han Xin barcode for each non‑empty cell in the first column, saving the images as PNG files, and embedding the barcode images back into the worksheet.
+// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Cells batch processing category. It shows how to use BarcodeGenerator (Aspose.BarCode.Generation) together with Workbook and Worksheet (Aspose.Cells) to generate barcodes, save them to files, and insert them as pictures. Typical scenarios include bulk barcode creation for inventory, shipping labels, or data export where each row requires a unique barcode. Developers often need to automate reading data sources, generating barcodes, and updating documents in a single workflow.
 // Prompt: Create a batch job that reads an Excel sheet and generates Han Xin barcodes for each row.
-// Tags: hanxin, barcode, batch, excel, aspose.cells, aspose.barcode, image, png, generation
+// Tags: hanxin, barcode, batch, excel, aspose.cells, aspose.barcode, png, image generation, embedding
 
 using System;
 using System.IO;
@@ -11,83 +11,92 @@ using Aspose.Cells.Drawing;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates batch processing of an Excel file to generate and embed Han Xin barcodes.
+/// Program that reads an Excel file, generates Han Xin barcodes for each row,
+/// saves the barcode images, and inserts them back into the worksheet.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Reads an input Excel file, creates barcode images for each row,
-    /// inserts them into the worksheet, and saves the result.
+    /// Entry point. Performs the batch barcode generation workflow.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary working directory
-        string tempDir = Path.Combine(Path.GetTempPath(), "HanXinBatch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-
-        // Define paths for the input and output Excel files
-        string excelPath = Path.Combine(tempDir, "Input.xlsx");
-        string outputExcelPath = Path.Combine(tempDir, "Output.xlsx");
-
-        // Create a sample Excel file if it does not already exist
+        // Prepare a sample Excel file if it does not already exist
+        string excelPath = Path.Combine(Path.GetTempPath(), "HanXinBatch.xlsx");
         if (!File.Exists(excelPath))
         {
-            using (var wb = new Workbook())
-            {
-                var ws = wb.Worksheets[0];
-                ws.Cells[0, 0].PutValue("Sample Text 1");
-                ws.Cells[1, 0].PutValue("Sample Text 2");
-                ws.Cells[2, 0].PutValue("Sample Text 3");
-                ws.Cells[3, 0].PutValue("Sample Text 4");
-                ws.Cells[4, 0].PutValue("Sample Text 5");
-                wb.Save(excelPath, SaveFormat.Xlsx);
-            }
+            CreateSampleExcel(excelPath);
         }
 
-        // Load the Excel workbook for processing
-        using (var workbook = new Workbook(excelPath))
+        // Create a unique output folder for the generated barcode images
+        string outputFolder = Path.Combine(Path.GetTempPath(), "HanXinBarcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+
+        // Load the workbook and get the first worksheet
+        Workbook workbook = new Workbook(excelPath);
+        Worksheet sheet = workbook.Worksheets[0];
+
+        // Determine the last row that contains data (assume first column holds the text to encode)
+        int maxRow = sheet.Cells.MaxDataRow;
+        for (int row = 0; row <= maxRow; row++)
         {
-            var worksheet = workbook.Worksheets[0];
-            int lastRow = worksheet.Cells.MaxDataRow;
+            // Read the text from column A (index 0)
+            string codeText = sheet.Cells[row, 0].StringValue;
+            if (string.IsNullOrWhiteSpace(codeText))
+                continue; // Skip empty rows
 
-            // Limit processing to the first 5 rows for safety
-            int rowsToProcess = Math.Min(lastRow + 1, 5);
-            for (int row = 0; row < rowsToProcess; row++)
+            // Generate a Han Xin barcode for the current text
+            using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
             {
-                var cell = worksheet.Cells[row, 0];
-                if (cell == null || cell.Value == null)
-                    continue;
+                // Use automatic encoding mode and set error correction level to L2
+                generator.Parameters.Barcode.HanXin.EncodeMode = HanXinEncodeMode.Auto;
+                generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L2;
 
-                string codeText = cell.StringValue;
-                if (string.IsNullOrWhiteSpace(codeText))
-                    continue;
-
-                // Generate a Han Xin barcode image for the cell value
-                string imageFile = Path.Combine(tempDir, $"barcode_{row}.png");
-                using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
+                // Save the barcode image to a memory stream in PNG format
+                using (var ms = new MemoryStream())
                 {
-                    generator.Parameters.Barcode.HanXin.EncodeMode = HanXinEncodeMode.Auto;
-                    generator.Save(imageFile, BarCodeImageFormat.Png);
-                }
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    ms.Position = 0;
 
-                // Insert the generated barcode image into column B of the same row
-                using (FileStream imgStream = new FileStream(imageFile, FileMode.Open, FileAccess.Read))
-                {
-                    int pictureIndex = worksheet.Pictures.Add(row, 1, imgStream);
-                    Picture picture = worksheet.Pictures[pictureIndex];
+                    // Write the image file to the output folder
+                    string imagePath = Path.Combine(outputFolder, $"barcode_row{row}.png");
+                    using (var fileStream = new FileStream(imagePath, FileMode.Create, FileAccess.Write))
+                    {
+                        ms.CopyTo(fileStream);
+                    }
+
+                    // Insert the barcode image into column B of the same row
+                    int pictureColumn = 1; // Column B (zero‑based index)
+                    int pictureIndex = sheet.Pictures.Add(row, pictureColumn, ms);
+                    Picture picture = sheet.Pictures[pictureIndex];
                     picture.Placement = PlacementType.FreeFloating;
                 }
             }
-
-            // Save the modified workbook containing the embedded barcodes
-            workbook.Save(outputExcelPath, SaveFormat.Xlsx);
         }
 
-        Console.WriteLine("Batch processing completed.");
-        Console.WriteLine($"Input Excel: {excelPath}");
-        Console.WriteLine($"Output Excel with barcodes: {outputExcelPath}");
+        // Save the workbook with the embedded barcode images
+        string updatedExcelPath = Path.Combine(Path.GetTempPath(), "HanXinBatch_Updated.xlsx");
+        workbook.Save(updatedExcelPath, SaveFormat.Xlsx);
+
+        // Inform the user where the results are stored
+        Console.WriteLine("Barcode generation completed.");
+        Console.WriteLine("Images saved to: " + outputFolder);
+        Console.WriteLine("Updated Excel saved to: " + updatedExcelPath);
+    }
+
+    /// <summary>
+    /// Creates a simple Excel file with sample data for barcode generation.
+    /// </summary>
+    /// <param name="path">Full path where the workbook will be saved.</param>
+    private static void CreateSampleExcel(string path)
+    {
+        Workbook wb = new Workbook();
+        Worksheet ws = wb.Worksheets[0];
+        ws.Cells[0, 0].PutValue("ABC123");
+        ws.Cells[1, 0].PutValue("汉字测试");
+        ws.Cells[2, 0].PutValue("https://example.com");
+        wb.Save(path, SaveFormat.Xlsx);
     }
 }

@@ -1,8 +1,8 @@
 // Title: Generate QR Code with Version 10 and Save as BMP
-// Description: Demonstrates creating a QR Code barcode with a specific version (10) using Aspose.BarCode and exporting it to a BMP image file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation with custom version settings. It showcases the use of BarcodeGenerator, EncodeTypes, QRVersion, and BarCodeImageFormat classes to produce high‑resolution QR symbols for applications such as product labeling, authentication, or data sharing. Developers often need to control QR version to fit data size and desired image dimensions.
+// Description: Demonstrates how to create a QR Code barcode with a specific version (10) using Aspose.BarCode and export it as a BMP image file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and QR version settings. Developers commonly generate QR codes for product labeling, marketing, or data sharing, needing control over version size and image format. The snippet shows typical steps: configure parameters, set QR version, adjust module size, and save to BMP.
 // Prompt: Generate a QR Code barcode with version ten specified and export as BMP.
-// Tags: qr code, barcode generation, version10, bmp, aspose.barcode, encode types, qrversion
+// Tags: qr, barcode, generation, bmp, aspose.barcode, barcodegenerator
 
 using System;
 using System.IO;
@@ -10,37 +10,32 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode with version 10 and saving it as a BMP file.
+/// Example program that creates a QR Code with version 10 and saves it as a BMP file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the QR Code and writes it to disk.
+    /// Entry point of the application.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine output directory and ensure it exists
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        Directory.CreateDirectory(outputDir);
+        // Define the output file path in the current directory.
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "qr_version10.bmp");
 
-        // Build full file path for BMP output
-        string filePath = Path.Combine(outputDir, "QrCodeVersion10.bmp");
-
-        // Initialize generator with QR encoding and data
-        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // Initialize the barcode generator for QR Code with the desired text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            // Set module size (XDimension) in pixels
-            gen.Parameters.Barcode.XDimension.Pixels = 4;
+            // Set the QR Code version to 10 (controls the data capacity and matrix size).
+            generator.Parameters.Barcode.QR.Version = QRVersion.Version10;
 
-            // Specify QR version 10
-            gen.Parameters.Barcode.QR.Version = QRVersion.Version10;
+            // Optional: define the size of each module (pixel dimension) for better readability.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Save barcode as BMP
-            gen.Save(filePath, BarCodeImageFormat.Bmp);
+            // Save the generated barcode as a BMP image to the specified path.
+            generator.Save(outputPath, BarCodeImageFormat.Bmp);
         }
 
-        // Inform user of saved file location
-        Console.WriteLine($"QR Code saved to {filePath}");
+        // Inform the user where the BMP file has been saved.
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

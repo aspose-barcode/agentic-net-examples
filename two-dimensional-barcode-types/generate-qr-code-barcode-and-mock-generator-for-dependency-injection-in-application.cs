@@ -1,108 +1,90 @@
-// Title: Generate QR Code barcode with Aspose and provide a mock generator for DI
-// Description: Demonstrates creating a QR Code using Aspose.BarCode and a mock implementation that returns a placeholder image, useful for dependency injection in unit tests.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with QR symbology, configure parameters like X‑Dimension and error correction level, and save the result as PNG. It also shows how to create a lightweight mock generator implementing a common IBarcodeGenerator interface for testing scenarios where the real barcode generation is unnecessary. Developers often need such patterns to decouple barcode creation from business logic and enable easy unit testing.
+// Title: QR Code generation with Aspose.BarCode and mock implementation for DI
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode and provides a mock generator to facilitate dependency injection in unit tests.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with QR symbology, configure parameters like XDimension and error correction level, and save the image as PNG. It also illustrates a simple mock implementation of a barcode generator interface for testing purposes, a common pattern for developers integrating barcode creation into applications via dependency injection.
 // Prompt: Generate a QR Code barcode and mock generator for dependency injection in application.
-// Tags: qr code, barcode generation, dependency injection, mock, aspose.barcode, png, unit testing
+// Tags: qr code, barcode generation, dependency injection, mock, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 namespace BarcodeDemo
 {
     /// <summary>
-    /// Simple abstraction for barcode generation. Allows swapping real and mock implementations.
+    /// Defines a contract for generating barcodes, enabling real and mock implementations.
     /// </summary>
     public interface IBarcodeGenerator
     {
         /// <summary>
-        /// Generates a barcode image for the specified text and returns the image bytes.
+        /// Generates a barcode from the specified text and saves it to the given path.
         /// </summary>
         /// <param name="text">The data to encode in the barcode.</param>
-        /// <returns>Byte array containing the generated image.</returns>
-        byte[] Generate(string text);
+        /// <param name="outputPath">The file system path where the barcode image will be saved.</param>
+        void Generate(string text, string outputPath);
     }
 
     /// <summary>
-    /// Real barcode generator that uses Aspose.BarCode to create QR Code images.
+    /// Real implementation that uses Aspose.BarCode to generate QR Code images.
     /// </summary>
     public class AsposeBarcodeGenerator : IBarcodeGenerator
     {
-        public byte[] Generate(string text)
+        /// <inheritdoc/>
+        public void Generate(string text, string outputPath)
         {
-            // Create a QR Code generator with the supplied text.
+            // Create a BarcodeGenerator for QR symbology with the provided text.
             using (var generator = new BarcodeGenerator(EncodeTypes.QR, text))
             {
-                // Set QR Code specific parameters.
-                generator.Parameters.Barcode.XDimension.Point = 4f;               // Size of a single module.
-                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM; // Medium error correction.
+                // Set the size of each QR module (pixel dimension).
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-                // Save the generated barcode to a memory stream in PNG format.
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                    return ms.ToArray();
-                }
+                // Configure the error correction level (Level M provides a good balance).
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+                // Save the generated QR code as a PNG file.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
             }
         }
     }
 
     /// <summary>
-    /// Mock barcode generator that returns a 1x1 white PNG image.
-    /// Useful for unit tests where actual barcode generation is unnecessary.
+    /// Mock implementation used for unit testing or DI scenarios where actual barcode generation is unnecessary.
     /// </summary>
     public class MockBarcodeGenerator : IBarcodeGenerator
     {
-        public byte[] Generate(string text)
+        /// <inheritdoc/>
+        public void Generate(string text, string outputPath)
         {
-            // Create a minimal bitmap.
-            using (var bitmap = new Bitmap(1, 1))
-            {
-                // Fill the bitmap with white color.
-                using (var graphics = Graphics.FromImage(bitmap))
-                {
-                    graphics.Clear(Color.White);
-                }
-
-                // Encode the bitmap to PNG and return the bytes.
-                using (var ms = new MemoryStream())
-                {
-                    bitmap.Save(ms, ImageFormat.Png);
-                    return ms.ToArray();
-                }
-            }
+            // Simulate barcode generation by writing a descriptive message to the console.
+            Console.WriteLine($"Mock generate QR code with text '{text}' to '{outputPath}'");
         }
     }
 
     /// <summary>
-    /// Entry point of the demo application. Generates a real QR Code and a mock image, then writes them to disk.
+    /// Entry point of the demo application that showcases real and mock barcode generation.
     /// </summary>
     class Program
     {
         /// <summary>
-        /// Main method that orchestrates barcode generation and file output.
+        /// Executes the demo: creates a temporary folder, generates a real QR code, and runs the mock generator.
         /// </summary>
         static void Main()
         {
-            // Sample text to encode.
-            string sampleText = "Hello Aspose QR!";
+            // Prepare a temporary directory for output files.
+            string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeQrDemo");
+            Directory.CreateDirectory(tempFolder);
 
-            // Use the real generator to create a QR Code.
+            // Generate a real QR code using the Aspose implementation.
+            string realOutput = Path.Combine(tempFolder, "real_qr.png");
             IBarcodeGenerator realGenerator = new AsposeBarcodeGenerator();
-            byte[] qrBytes = realGenerator.Generate(sampleText);
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr.png");
-            File.WriteAllBytes(outputPath, qrBytes);
-            Console.WriteLine($"QR code saved to {outputPath}");
+            realGenerator.Generate("Hello Aspose QR", realOutput);
+            Console.WriteLine($"Real QR code saved to: {realOutput}");
 
-            // Use the mock generator to create a placeholder image.
+            // Run the mock generator to demonstrate DI-friendly testing.
+            string mockOutput = Path.Combine(tempFolder, "mock_qr.png");
             IBarcodeGenerator mockGenerator = new MockBarcodeGenerator();
-            byte[] mockBytes = mockGenerator.Generate(sampleText);
-            string mockPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_mock.png");
-            File.WriteAllBytes(mockPath, mockBytes);
-            Console.WriteLine($"Mock QR code saved to {mockPath}");
+            mockGenerator.Generate("Mock QR Text", mockOutput);
         }
     }
 }

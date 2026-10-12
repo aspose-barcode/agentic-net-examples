@@ -1,94 +1,67 @@
-// Title: Embedding Non‑GS1 Data in the 2D Component of a GS1 Composite Barcode
-// Description: Demonstrates how to generate a GS1 Composite barcode where the 2D component contains non‑GS1 data, and how to read back both the linear and 2D components.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on GS1 Composite barcodes. It showcases the use of BarcodeGenerator, BarCodeReader, and related parameter classes (e.g., TwoDComponentType, EncodeTypes) to embed custom data in the 2D part of a composite symbol—common when combining GS1‑compliant linear data with additional application‑specific information. Developers often need to create such barcodes for packaging, logistics, or product labeling where extra data must travel alongside standard GS1 identifiers.
+// Title: Embedding non‑GS1 data in the 2D component of a GS1 Composite barcode
+// Description: Demonstrates how to generate a GS1 Composite barcode with non‑GS1 data in its 2D component, save it as an image, and read back both the linear and 2D parts.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on GS1 Composite barcodes. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and related parameter objects. Typical use cases include creating composite barcodes that combine GS1 linear data with custom 2D payloads, and extracting each component for verification or processing. Developers often need to control encoding options, component types, and read detailed results, which this snippet illustrates.
 // Prompt: Provide option to embed non‑GS1 data in the 2D component of a GS1 Composite barcode.
-// Tags: gs1 composite barcode, non-gs1 data, barcode generation, barcode recognition, aspose.barcode, png output
+// Tags: gs1 composite, barcode generation, barcode recognition, non-gs1 data, 2d component, c#, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Generates a GS1 Composite barcode with non‑GS1 data in the 2D component,
-/// saves it as a PNG file, and then reads back the barcode to display both
-/// the full code text and the extracted 2D component text.
+/// Demonstrates embedding non‑GS1 data in the 2D component of a GS1 Composite barcode,
+/// saving the image, and reading its components.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode creation, saving, and reading.
+    /// Entry point. Generates the barcode, saves it, and reads its components.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare the output directory where the barcode image will be stored.
-        // --------------------------------------------------------------------
+        // ------------------------------------------------------------
+        // Prepare the output directory and file path for the barcode image
+        // ------------------------------------------------------------
         string outputDir = Path.Combine(Path.GetTempPath(), "GS1CompositeDemo");
-        Directory.CreateDirectory(outputDir);
-
-        // --------------------------------------------------------------
-        // Define the full file path for the generated barcode image.
-        // --------------------------------------------------------------
-        string barcodePath = Path.Combine(outputDir, "GS1Composite_NonGS1_2D.png");
-
-        // --------------------------------------------------------------
-        // Linear part (GS1) and non‑GS1 data for the 2D component.
-        // The pipe character (|) separates the linear and 2D data sections.
-        // --------------------------------------------------------------
-        string codeText = "(01)98898765432106|Aspose.BarCode";
-
-        // --------------------------------------------------------------
-        // Generate the GS1 Composite barcode with the specified settings.
-        // --------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
+        if (!Directory.Exists(outputDir))
         {
-            // Set the X-dimension (module width) in pixels.
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            Directory.CreateDirectory(outputDir);
+        }
+        string barcodePath = Path.Combine(outputDir, "GS1CompositeNonGS1.png");
 
-            // Hide the human‑readable text for the linear component.
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+        // ------------------------------------------------------------
+        // Create a GS1 Composite barcode where the 2D component holds non‑GS1 data
+        // ------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(
+            EncodeTypes.GS1CompositeBar,
+            "(01)98898765432106(3202)012345|Aspose.Barcode"))
+        {
+            // Set visual and encoding parameters
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;                     // Module size
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None; // Hide human‑readable text
+            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_B; // Choose 2D component type
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128; // Linear part encoding
+            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false; // Permit non‑GS1 data in 2D part
 
-            // Specify that the 2D component should be a CC‑C (Composite Component) type.
-            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
-
-            // Use GS1‑Code128 for the linear component of the composite barcode.
-            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-
-            // Allow non‑GS1 data in the 2D component.
-            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
-
-            // Save the generated barcode as a PNG image.
+            // Save the generated barcode as a PNG image
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
         Console.WriteLine($"Barcode saved to: {barcodePath}");
 
-        // --------------------------------------------------------------
-        // Read back the barcode image and display the detected texts.
-        // --------------------------------------------------------------
-        if (File.Exists(barcodePath))
+        // ------------------------------------------------------------
+        // Read the saved barcode and output the texts of both components
+        // ------------------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.GS1CompositeBar))
         {
-            using (var reader = new BarCodeReader(barcodePath, DecodeType.GS1CompositeBar))
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    // Full code text (linear + 2D) detected by the reader.
-                    Console.WriteLine("Detected Code Text: " + result.CodeText);
-
-                    // If extended GS1 Composite information is available, show the 2D component text.
-                    if (result.Extended?.GS1CompositeBar != null)
-                    {
-                        Console.WriteLine("2D Component Text: " + result.Extended.GS1CompositeBar.TwoDCodeText);
-                    }
-                }
+                Console.WriteLine("Linear (1D) component text: " + result.Extended.GS1CompositeBar.OneDCodeText);
+                Console.WriteLine("2D component text: " + result.Extended.GS1CompositeBar.TwoDCodeText);
+                Console.WriteLine("2D component type: " + result.Extended.GS1CompositeBar.TwoDType);
             }
-        }
-        else
-        {
-            Console.WriteLine("Failed to locate the generated barcode image.");
         }
     }
 }

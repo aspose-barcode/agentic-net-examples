@@ -1,8 +1,8 @@
-// Title: Generate and rotate QR Code barcode
-// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode and rotating it 180 degrees for upside‑down display.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code images. It shows setting barcode parameters such as RotationAngle to modify orientation, a common requirement when displaying barcodes in non‑standard layouts or on rotated media. Developers often need to generate barcodes programmatically and adjust their visual appearance for printing or UI purposes.
+// Title: Generate QR Code and Rotate 180 Degrees
+// Description: This example creates a QR Code barcode containing the text "Hello World", rotates it 180 degrees, and saves it as a PNG image.
+// Category-Description: Demonstrates Aspose.BarCode generation of QR Code symbology using the BarcodeGenerator class. Shows how to configure barcode parameters such as rotation angle and export the result to a PNG file. Ideal for developers needing to produce rotated barcodes for upside‑down displays, packaging, or custom UI layouts.
 // Prompt: Generate QR Code barcode and rotate barcode 180 degrees for upside‑down display.
-// Tags: qr code, rotation, barcode generation, aspnet, aspose.barcode, png
+// Tags: qr, barcode, rotation, png, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -10,32 +10,29 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode and rotating it 180 degrees for upside‑down display.
+/// Example program that generates a QR Code, rotates it 180 degrees, and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the QR Code, applies rotation, saves the image, and outputs the file path.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define output directory in the system's temporary folder
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        // Ensure the output directory exists
-        Directory.CreateDirectory(outputDir);
-        // Build the full path for the output PNG file
-        string outputPath = Path.Combine(outputDir, "QRCodeRotated180.png");
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_rotated.png");
 
-        // Initialize the barcode generator with QR encoding and the desired text
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello, World!"))
+        // Create a BarcodeGenerator for QR Code with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
         {
-            // Rotate the barcode 180 degrees for upside‑down display
+            // Rotate the generated barcode 180 degrees for upside‑down display.
             generator.Parameters.RotationAngle = 180f;
-            // Save the generated barcode as a PNG image
+
+            // Save the rotated barcode as a PNG image to the specified path.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the saved QR Code image
-        Console.WriteLine($"QR Code saved to: {outputPath}");
+        // Inform the user where the QR code image has been saved.
+        Console.WriteLine($"QR code saved to: {outputPath}");
     }
 }

@@ -1,58 +1,53 @@
-// Title: Generate MaxiCode barcode with parameter logging
-// Description: Demonstrates creating a MaxiCode barcode, logging its generation parameters (mode, aspect ratio, encoding mode), and saving the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.MaxiCode. It shows typical tasks such as configuring MaxiCode-specific settings, retrieving parameter values for diagnostics, and exporting the barcode to common image formats. Developers working with shipping labels, logistics, or inventory systems often need these operations.
+// Title: Generate MaxiCode barcode and log generation parameters
+// Description: Demonstrates creating a MaxiCode barcode (Mode2) with custom X dimension and aspect ratio, logging its mode, aspect ratio, and encoding mode, and saving the image as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.MaxiCode. It shows typical use cases such as setting MaxiCode-specific parameters (Mode, AspectRatio, EncodeMode) and retrieving them for logging or debugging. Developers working with shipping labels, logistics, or inventory systems often need to generate MaxiCode symbols and verify their configuration.
 // Prompt: Implement logging of MaxiCode generation parameters, including mode, aspect ratio, and encoding mode.
-// Tags: maxicode, barcode, generation, logging, png, aspose.barcode
+// Tags: maxicode, barcode generation, logging, aspose.barcode, png, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates MaxiCode barcode generation, parameter logging, and image saving using Aspose.BarCode.
+/// Demonstrates generating a MaxiCode barcode, logging its parameters, and saving the image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a MaxiCode barcode, writes its configuration to the console, and saves the image.
+    /// Entry point of the example. Generates the barcode, logs parameters, and writes the PNG file.
     /// </summary>
     static void Main()
     {
-        // Prepare the output file path in the temporary directory.
-        string outputPath = Path.Combine(Path.GetTempPath(), "maxicode.png");
+        // Define temporary output file path
+        string outputPath = Path.Combine(Path.GetTempPath(), "MaxiCodeSample.png");
 
-        // Sample code text (ASCII to avoid Binary mode issues).
-        string codeText = "Sample MaxiCode";
+        // Build the codetext according to MaxiCode Mode2 format
+        string gs = "\u001d";
+        string rs = "\u001e";
+        string eot = "\u0004";
+        string codetext = $"[)>{rs}01{gs}B1050{gs}056{gs}001{gs}ADDITIONAL DATA{eot}";
 
-        // Create and configure a MaxiCode generator.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
+        // Create a barcode generator for MaxiCode
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codetext))
         {
-            // Set the MaxiCode mode (e.g., Mode2 for standard shipping labels).
+            // Configure barcode appearance and MaxiCode-specific settings
+            generator.Parameters.Barcode.XDimension.Pixels = 15f;
             generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode2;
-
-            // Define the aspect ratio for the generated barcode.
+            generator.Parameters.Barcode.MaxiCode.EncodeMode = MaxiCodeEncodeMode.Auto;
             generator.Parameters.Barcode.MaxiCode.AspectRatio = 0.5f;
 
-            // Choose the encoding mode (Binary in this example).
-            generator.Parameters.Barcode.MaxiCode.EncodeMode = MaxiCodeEncodeMode.Binary;
+            // Log the configured MaxiCode parameters
+            Console.WriteLine($"MaxiCode Mode: {generator.Parameters.Barcode.MaxiCode.Mode}");
+            Console.WriteLine($"Aspect Ratio: {generator.Parameters.Barcode.MaxiCode.AspectRatio}");
+            Console.WriteLine($"Encode Mode: {generator.Parameters.Barcode.MaxiCode.EncodeMode}");
 
-            // Log the configured parameters to the console for diagnostic purposes.
-            Console.WriteLine("MaxiCode Generation Parameters:");
-            Console.WriteLine($"  Mode          : {generator.Parameters.Barcode.MaxiCode.Mode}");
-            Console.WriteLine($"  Aspect Ratio  : {generator.Parameters.Barcode.MaxiCode.AspectRatio}");
-            Console.WriteLine($"  Encode Mode   : {generator.Parameters.Barcode.MaxiCode.EncodeMode}");
-
-            // Attempt to save the generated barcode as a PNG image.
-            try
-            {
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Barcode saved to: {outputPath}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving barcode: {ex.Message}");
-            }
+            // Save the generated barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

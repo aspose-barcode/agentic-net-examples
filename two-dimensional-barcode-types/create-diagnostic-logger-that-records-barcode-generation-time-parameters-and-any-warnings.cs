@@ -1,105 +1,100 @@
-// Title: Barcode Generation with Diagnostic Logging
-// Description: Generates a Code128 barcode image while logging generation parameters, timing, and any warnings to a log file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to use the BarcodeGenerator class and its Parameters property to configure barcode appearance, resolution, and layout. Typical use cases include creating barcodes for product labeling, inventory systems, and shipping documents, where developers often need to capture generation details for auditing or troubleshooting. The example also shows how to record diagnostic information such as execution time and potential warnings, a common requirement for robust barcode processing pipelines.
+// Title: Diagnostic Logger for Barcode Generation
+// Description: Demonstrates how to generate a Code128 barcode while logging generation time, parameters, and warnings.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, its Parameters, and saving the image. Developers often need to log barcode creation details for diagnostics, performance monitoring, and troubleshooting. The snippet illustrates typical API calls for setting symbology, visual properties, and handling errors.
 // Prompt: Create a diagnostic logger that records barcode generation time, parameters, and any warnings.
-// Tags: barcode symbology, generation, logging, code128, png, aspose.barcode, diagnostics
+// Tags: barcode, code128, generation, logging, diagnostics, aspose.barcode, png, performance
 
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation using Aspose.BarCode with detailed diagnostic logging.
+/// Example program that generates a Code128 barcode, logs configuration parameters,
+/// measures generation time, and records any warnings to a log file.
 /// </summary>
 class Program
 {
+    // Path to the diagnostic log file.
+    static readonly string LogFilePath = "barcode_log.txt";
+
     /// <summary>
-    /// Entry point that creates a temporary output folder, configures a BarcodeGenerator,
-    /// saves the barcode image, and writes a log containing parameters, timing, and warnings.
+    /// Writes a message to the console and appends it to the log file.
+    /// Logging failures are silently ignored to avoid crashing the program.
+    /// </summary>
+    /// <param name="message">The message to log.</param>
+    static void Log(string message)
+    {
+        Console.WriteLine(message);
+        try
+        {
+            File.AppendAllText(LogFilePath, message + Environment.NewLine);
+        }
+        catch
+        {
+            // Ignored - logging failure should not crash the program
+        }
+    }
+
+    /// <summary>
+    /// Main entry point. Generates a barcode, logs parameters and timing,
+    /// and handles any exceptions by logging warnings.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for output
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-        string barcodePath = Path.Combine(outputDir, "sample.png");
-        string logPath = Path.Combine(outputDir, "generation.log");
+        // Initialize the log file with a header.
+        try
+        {
+            File.WriteAllText(LogFilePath, "Barcode Generation Log" + Environment.NewLine);
+        }
+        catch
+        {
+            // If unable to write, continue with console logging only.
+        }
 
-        // Sample barcode data
-        string codeText = "1234567890";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-
-        // Initialize log builder with start time and basic info
-        var logBuilder = new StringBuilder();
-        logBuilder.AppendLine($"Barcode generation started at {DateTime.UtcNow:O}");
-        logBuilder.AppendLine($"Output directory: {outputDir}");
-        logBuilder.AppendLine($"Code text: {codeText}");
-        logBuilder.AppendLine($"Encode type: {encodeType}");
-
-        // Start timing the generation process
-        var stopwatch = Stopwatch.StartNew();
+        string outputPath = "sample_barcode.png";
+        Stopwatch stopwatch = new Stopwatch();
 
         try
         {
-            // Initialize the generator with the chosen symbology and data
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            // Create a BarcodeGenerator for Code128 with the specified data.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
             {
-                // Configure generation parameters
-                generator.Parameters.Resolution = 300f;
-                generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
-                generator.Parameters.ImageWidth.Pixels = 300f;
-                generator.Parameters.ImageHeight.Pixels = 150f;
+                // Configure visual and technical barcode parameters.
                 generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Parameters.Barcode.BarHeight.Point = 50f;
                 generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
                 generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                generator.Parameters.Resolution = 300f;
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
                 generator.Parameters.RotationAngle = 0f;
-                generator.Parameters.Barcode.Padding.Left.Point = 5f;
-                generator.Parameters.Barcode.Padding.Top.Point = 5f;
-                generator.Parameters.Barcode.Padding.Right.Point = 5f;
-                generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
 
-                // Log configured parameters for diagnostics
-                logBuilder.AppendLine("Generator parameters:");
-                logBuilder.AppendLine($"  Resolution: {generator.Parameters.Resolution}");
-                logBuilder.AppendLine($"  AutoSizeMode: {generator.Parameters.AutoSizeMode}");
-                logBuilder.AppendLine($"  ImageWidth: {generator.Parameters.ImageWidth.Pixels}");
-                logBuilder.AppendLine($"  ImageHeight: {generator.Parameters.ImageHeight.Pixels}");
-                logBuilder.AppendLine($"  XDimension: {generator.Parameters.Barcode.XDimension.Point}");
-                logBuilder.AppendLine($"  BarColor: {generator.Parameters.Barcode.BarColor}");
-                logBuilder.AppendLine($"  BackColor: {generator.Parameters.BackColor}");
-                logBuilder.AppendLine($"  RotationAngle: {generator.Parameters.RotationAngle}");
-                logBuilder.AppendLine($"  Padding (L,T,R,B): {generator.Parameters.Barcode.Padding.Left.Point}, {generator.Parameters.Barcode.Padding.Top.Point}, {generator.Parameters.Barcode.Padding.Right.Point}, {generator.Parameters.Barcode.Padding.Bottom.Point}");
+                // Log the configured parameters for diagnostic purposes.
+                Log("Configured Parameters:");
+                Log($"  XDimension (points): {generator.Parameters.Barcode.XDimension.Point}");
+                Log($"  BarHeight (points): {generator.Parameters.Barcode.BarHeight.Point}");
+                Log($"  BarColor: {generator.Parameters.Barcode.BarColor}");
+                Log($"  BackColor: {generator.Parameters.BackColor}");
+                Log($"  Resolution (dpi): {generator.Parameters.Resolution}");
+                Log($"  AutoSizeMode: {generator.Parameters.AutoSizeMode}");
+                Log($"  RotationAngle: {generator.Parameters.RotationAngle}");
 
-                // Save the barcode image to the specified path
-                generator.Save(barcodePath, BarCodeImageFormat.Png);
+                // Measure the time taken to generate and save the barcode image.
+                stopwatch.Start();
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                stopwatch.Stop();
+
+                // Log the elapsed time and output location.
+                Log($"Barcode generated in {stopwatch.ElapsedMilliseconds} ms and saved to '{outputPath}'.");
             }
-
-            // Stop timing after successful generation
-            stopwatch.Stop();
-            logBuilder.AppendLine($"Barcode generated successfully in {stopwatch.ElapsedMilliseconds} ms.");
-            logBuilder.AppendLine($"Barcode image saved to: {barcodePath}");
         }
         catch (Exception ex)
         {
-            // Capture any exception, stop timing, and log a warning
-            stopwatch.Stop();
-            logBuilder.AppendLine($"Warning: Exception during barcode generation - {ex.GetType().Name}: {ex.Message}");
-            logBuilder.AppendLine($"Elapsed time before failure: {stopwatch.ElapsedMilliseconds} ms.");
-        }
-
-        // Write log to file and also output to console for immediate feedback
-        try
-        {
-            File.WriteAllText(logPath, logBuilder.ToString());
-            Console.WriteLine(logBuilder.ToString());
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to write log file: {ex.Message}");
+            // Log any warnings or errors that occur during generation.
+            Log($"Warning: {ex.GetType().Name} - {ex.Message}");
         }
     }
 }

@@ -1,60 +1,84 @@
-// Title: Generate QR Code in Binary Mode with Error Handling
-// Description: Demonstrates creating a QR code using Aspose.BarCode in Binary encoding mode and handling errors when the input contains non‑ASCII characters.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on QR code creation and encoding mode configuration. It showcases the use of BarcodeGenerator, EncodeTypes, and QREncodeMode classes to produce barcode images. Developers often need to select appropriate encoding modes (e.g., Binary, Alphanumeric) based on data content; this snippet illustrates handling unsupported characters when Binary mode is chosen.
+// Title: QR Code Generation with Binary Encode Mode and Error Handling
+// Description: Demonstrates generating QR codes in binary encode mode, handling errors when non‑ASCII text is supplied, and correctly using raw byte data.
+// Category-Description: This example belongs to the Aspose.BarCode QR code generation category, illustrating how to configure QREncodeMode, handle unsupported encoding scenarios, and use the BarcodeGenerator class. Developers working with QR symbology often need to switch between text and binary modes, validate input encoding, and generate PNG images. The snippet shows typical use cases such as error handling for invalid text in binary mode and proper byte array handling.
 // Prompt: Implement error handling for unsupported encoding mode when Binary mode receives non‑ASCII text.
-// Tags: qr code,binary encoding,error handling,aspose.barcode,generation,barcode image
+// Tags: qr code,binary encode mode,error handling,aspose.barcode,barcode generation,png output
 
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a QR code in Binary encoding mode using Aspose.BarCode.
+/// Example program that demonstrates QR code generation in binary mode,
+/// including error handling for unsupported non‑ASCII text and correct byte array usage.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a QR code from sample text and saves it as PNG.
+    /// Entry point of the application. Generates QR codes using binary encode mode,
+    /// first with invalid non‑ASCII text to show error handling, then with proper byte data.
     /// </summary>
     static void Main()
     {
-        // Sample text containing non‑ASCII characters (will trigger error in Binary mode)
-        string codeText = "Hello世界";
+        // Prepare a temporary output directory for generated barcode images
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Determine a temporary file path for the generated image
-        string outputPath = Path.Combine(Path.GetTempPath(), "qr_binary.png");
+        // ------------------------------------------------------------
+        // Example 1: Attempt binary mode with non‑ASCII text (expected to fail)
+        // ------------------------------------------------------------
+        string nonAsciiText = "こんにちは"; // Japanese Hiragana characters
+        string binaryFailPath = Path.Combine(outputDir, "qr_binary_fail.png");
 
-        // Generate the QR code with the specified text and output location
-        GenerateBinaryQrCode(codeText, outputPath);
-    }
-
-    /// <summary>
-    /// Generates a QR code using Binary encoding mode and saves it to a file.
-    /// Handles exceptions when the provided text contains characters unsupported by Binary mode.
-    /// </summary>
-    /// <param name="text">The data to encode in the QR code.</param>
-    /// <param name="outputFile">The full path where the PNG image will be saved.</param>
-    static void GenerateBinaryQrCode(string text, string outputFile)
-    {
         try
         {
-            // Initialize the barcode generator for QR type with the supplied text
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, text))
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
             {
-                // Configure the QR code to use Binary encoding (does not support Unicode characters)
+                // Set QR code to binary encode mode
                 generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Binary;
 
-                // Save the generated barcode image as PNG
-                generator.Save(outputFile, BarCodeImageFormat.Png);
-                Console.WriteLine($"Barcode generated successfully: {outputFile}");
+                // Attempt to assign Unicode text directly (will raise an exception)
+                generator.SetCodeText(nonAsciiText, Encoding.UTF8);
+
+                // Save the barcode image (this line should not be reached)
+                generator.Save(binaryFailPath, BarCodeImageFormat.Png);
+                Console.WriteLine("Generated barcode (unexpectedly succeeded): " + binaryFailPath);
             }
         }
         catch (Exception ex)
         {
-            // Output a friendly error message indicating unsupported characters for Binary mode
-            Console.WriteLine($"Error: Unsupported encoding mode for the provided text. {ex.Message}");
+            // Expected error handling for unsupported encoding in binary mode
+            Console.WriteLine("Binary mode error (expected for non‑ASCII text): " + ex.Message);
+        }
+
+        // ------------------------------------------------------------
+        // Example 2: Correct binary usage with a byte array
+        // ------------------------------------------------------------
+        byte[] binaryData = Encoding.UTF8.GetBytes(nonAsciiText);
+        string binarySuccessPath = Path.Combine(outputDir, "qr_binary_success.png");
+
+        try
+        {
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+            {
+                // Set QR code to binary encode mode
+                generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Binary;
+
+                // Provide raw byte data directly to the generator
+                generator.SetCodeText(binaryData);
+
+                // Save the generated barcode image
+                generator.Save(binarySuccessPath, BarCodeImageFormat.Png);
+                Console.WriteLine("Generated binary barcode successfully: " + binarySuccessPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle any unexpected errors during barcode generation
+            Console.WriteLine("Failed to generate binary barcode: " + ex.Message);
         }
     }
 }

@@ -1,135 +1,125 @@
-// Title: Generate QR Code Barcode Using Settings from appsettings.json
-// Description: Demonstrates how to generate a QR Code barcode with Aspose.BarCode, reading generation parameters such as code text, error correction level, dimensions, and colors from an appsettings.json configuration file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and QR-specific parameters. Typical use cases include creating QR codes with custom appearance and error correction based on external configuration, a common requirement for dynamic barcode creation in web and desktop applications.
+// Title: Generate QR Code with Aspose.BarCode using JSON configuration
+// Description: Demonstrates how to create a QR Code barcode, reading generation parameters from a JSON file and saving the result as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and QR-specific parameters such as error correction level, version, and module size. Developers often need to externalize barcode settings for flexibility; this pattern reads configuration from an appsettings‑style JSON file, parses colors, and applies rotation before rendering the image.
 // Prompt: Generate a QR Code barcode and configure generation parameters through appsettings JSON file.
-// Tags: qr code, barcode generation, configuration, json settings, aspose.barcode, png output
+// Tags: qr code, barcode generation, json configuration, aspose.barcode, png output
 
 using System;
 using System.IO;
-using System.Text;
 using System.Text.Json;
-using System.Globalization;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Represents the configurable settings for QR code generation, loaded from appsettings.json.
-/// </summary>
-class Settings
-{
-    public string CodeText { get; set; } = "Hello, QR!";
-    public string ErrorLevel { get; set; } = "LevelM";
-    public float XDimension { get; set; } = 2f;
-    public string ForegroundColor { get; set; } = "#000000";
-    public string BackgroundColor { get; set; } = "#FFFFFF";
-    public string OutputPath { get; set; } = "qr.png";
-}
-
-/// <summary>
-/// Entry point for the QR code generation example.
+/// Entry point for the QR Code generation example.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a QR code using parameters defined in appsettings.json and saves it as a PNG file.
+    /// Represents configurable QR Code generation settings that can be stored in a JSON file.
+    /// </summary>
+    class QrSettings
+    {
+        public string CodeText { get; set; } = "Hello, Aspose!";
+        public string ErrorLevel { get; set; } = "LevelH";
+        public string Version { get; set; } = "Version05";
+        public float XDimension { get; set; } = 2f;
+        public float PaddingLeft { get; set; } = 5f;
+        public float PaddingTop { get; set; } = 5f;
+        public float PaddingRight { get; set; } = 5f;
+        public float PaddingBottom { get; set; } = 5f;
+        public string BarColor { get; set; } = "#000000";
+        public string BackColor { get; set; } = "#FFFFFF";
+        public float RotationAngle { get; set; } = 0f;
+    }
+
+    /// <summary>
+    /// Parses a hexadecimal color string (e.g., "#FF00AA") into an Aspose.Drawing.Color.
+    /// Returns Black if the input is null, empty, or malformed.
+    /// </summary>
+    /// <param name="hex">Hexadecimal color string.</param>
+    /// <returns>Corresponding Color instance.</returns>
+    static Color ParseColor(string hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex))
+            return Color.Black;
+
+        hex = hex.TrimStart('#');
+        if (hex.Length == 6)
+        {
+            int r = Convert.ToInt32(hex.Substring(0, 2), 16);
+            int g = Convert.ToInt32(hex.Substring(2, 2), 16);
+            int b = Convert.ToInt32(hex.Substring(4, 2), 16);
+            return Color.FromArgb(r, g, b);
+        }
+        return Color.Black;
+    }
+
+    /// <summary>
+    /// Main execution method: loads or creates configuration, generates the QR Code, and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Determine the base directory of the application.
-        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        string jsonPath = Path.Combine(baseDir, "appsettings.json");
+        // Determine the path for the temporary JSON configuration file.
+        string configPath = Path.Combine(Path.GetTempPath(), "qrsettings.json");
 
-        // Create a default appsettings.json if it does not exist.
-        if (!File.Exists(jsonPath))
+        // If the config file does not exist, create one with default settings.
+        if (!File.Exists(configPath))
         {
-            var defaultSettings = new Settings();
-            string defaultJson = JsonSerializer.Serialize(defaultSettings, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(jsonPath, defaultJson);
-            Console.WriteLine($"Created default appsettings.json at {jsonPath}");
+            var defaultSettings = new QrSettings();
+            string json = JsonSerializer.Serialize(defaultSettings, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(configPath, json);
+            Console.WriteLine($"Created default config at: {configPath}");
         }
 
-        // Load settings from the JSON file.
-        Settings settings;
+        // Load settings from the JSON file, falling back to defaults on error.
+        QrSettings settings;
         try
         {
-            string json = File.ReadAllText(jsonPath);
-            settings = JsonSerializer.Deserialize<Settings>(json) ?? new Settings();
+            string jsonContent = File.ReadAllText(configPath);
+            settings = JsonSerializer.Deserialize<QrSettings>(jsonContent) ?? new QrSettings();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to read settings: {ex.Message}");
-            settings = new Settings();
+            Console.WriteLine($"Failed to read config: {ex.Message}");
+            settings = new QrSettings();
         }
 
-        // Resolve the QR error correction level enum from the string value.
-        QRErrorLevel errorLevel = QRErrorLevel.LevelM;
-        if (!Enum.TryParse<QRErrorLevel>(settings.ErrorLevel, true, out errorLevel))
-        {
-            Console.WriteLine($"Invalid ErrorLevel '{settings.ErrorLevel}', using default LevelM.");
-        }
+        // Define the output image path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_code.png");
 
-        // Parse foreground and background colors from hex strings.
-        Color fgColor = ParseColor(settings.ForegroundColor, Color.Black);
-        Color bgColor = ParseColor(settings.BackgroundColor, Color.White);
-
-        // Ensure the output directory exists.
-        string outputFullPath = Path.Combine(baseDir, settings.OutputPath);
-        string outputDir = Path.GetDirectoryName(outputFullPath);
-        if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Create and configure the barcode generator.
+        // Initialize the barcode generator with QR encoding and the provided text.
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, settings.CodeText))
         {
-            // Set QR-specific error correction level.
-            generator.Parameters.Barcode.QR.ErrorLevel = errorLevel;
+            // Apply error correction level if the enum value parses successfully.
+            if (Enum.TryParse<QRErrorLevel>(settings.ErrorLevel, out var errLevel))
+                generator.Parameters.Barcode.QR.ErrorLevel = errLevel;
+
+            // Apply QR version if the enum value parses successfully.
+            if (Enum.TryParse<QRVersion>(settings.Version, out var qrVersion))
+                generator.Parameters.Barcode.QR.Version = qrVersion;
 
             // Set the module (dot) size.
             generator.Parameters.Barcode.XDimension.Point = settings.XDimension;
 
-            // Apply foreground and background colors.
-            generator.Parameters.Barcode.BarColor = fgColor;
-            generator.Parameters.BackColor = bgColor;
+            // Configure padding around the barcode.
+            generator.Parameters.Barcode.Padding.Left.Point = settings.PaddingLeft;
+            generator.Parameters.Barcode.Padding.Top.Point = settings.PaddingTop;
+            generator.Parameters.Barcode.Padding.Right.Point = settings.PaddingRight;
+            generator.Parameters.Barcode.Padding.Bottom.Point = settings.PaddingBottom;
 
-            // Save the generated QR code as a PNG image.
-            generator.Save(outputFullPath, BarCodeImageFormat.Png);
+            // Set foreground (bar) and background colors.
+            generator.Parameters.Barcode.BarColor = ParseColor(settings.BarColor);
+            generator.Parameters.BackColor = ParseColor(settings.BackColor);
+
+            // Apply rotation if needed.
+            generator.Parameters.RotationAngle = settings.RotationAngle;
+
+            // Render and save the QR Code as a PNG image.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"QR Code generated and saved to: {outputFullPath}");
-    }
-
-    /// <summary>
-    /// Parses a hex color string (e.g., "#FF0000") into an Aspose.Drawing.Color.
-    /// Returns the fallback color if parsing fails.
-    /// </summary>
-    /// <param name="hexString">Hexadecimal color string.</param>
-    /// <param name="fallback">Fallback color to use on error.</param>
-    /// <returns>Parsed Color or fallback.</returns>
-    static Color ParseColor(string hexString, Color fallback)
-    {
-        if (string.IsNullOrWhiteSpace(hexString))
-            return fallback;
-
-        // Remove leading '#' if present.
-        string hex = hexString.TrimStart('#');
-
-        // Assume fully opaque if only RGB is provided.
-        if (hex.Length == 6)
-            hex = "FF" + hex;
-
-        // Validate length (should be ARGB).
-        if (hex.Length != 8)
-            return fallback;
-
-        // Convert hex to integer and create Color.
-        if (int.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out int argb))
-        {
-            return Color.FromArgb(argb);
-        }
-
-        return fallback;
+        Console.WriteLine($"QR Code generated and saved to: {outputPath}");
     }
 }

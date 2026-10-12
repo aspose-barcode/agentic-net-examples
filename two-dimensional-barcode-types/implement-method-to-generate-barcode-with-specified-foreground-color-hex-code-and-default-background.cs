@@ -1,100 +1,72 @@
-// Title: Generate Code128 barcode with custom foreground color
-// Description: Demonstrates creating a Code128 barcode image where the bar (foreground) color is set using a hex string while keeping the default white background.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class. It shows setting bar color via the Parameters.Barcode.BarColor property, a common requirement for branding or visual integration. Developers often need to adjust colors, formats, and output options when generating barcodes programmatically.
+// Title: Generate Code128 Barcode with Custom Foreground Color
+// Description: Demonstrates how to create a Code128 barcode image using Aspose.BarCode, applying a user‑specified foreground color while keeping the default white background.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode appearance via the BarcodeGenerator class. It shows setting the BarColor property to a custom ARGB value derived from a hex string, a common task when integrating barcodes into branding‑aware applications. Developers often need to customize colors, sizes, and formats of generated barcodes for reports, labels, or UI elements.
 // Prompt: Implement method to generate barcode with specified foreground color hex code and default background.
-// Tags: barcode, code128, color, hex, generation, aspnet, aspose.barcode, png
+// Tags: barcode, code128, color, hex, generation, aspnet, aspose.barcode, png, image
 
 using System;
 using System.IO;
-using System.Globalization;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with a custom foreground color.
+/// Example program that generates a Code128 barcode with a custom foreground color.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode and saves it to a temporary PNG file.
+    /// Entry point of the application. Generates a barcode and saves it to a temporary PNG file.
     /// </summary>
     static void Main()
     {
-        // Define the data to encode and the desired bar color.
+        // Barcode data to encode
         string codeText = "1234567890";
-        string hexColor = "#FF0000"; // Red foreground
 
-        // Build a path in the system's temporary folder for the output image.
+        // Desired foreground color in hex notation (green)
+        string hexColor = "#00FF00";
+
+        // Output file path (temporary directory)
         string outputPath = Path.Combine(Path.GetTempPath(), "barcode.png");
 
-        try
-        {
-            // Generate the barcode image with the specified parameters.
-            GenerateBarcode(codeText, hexColor, outputPath);
-            Console.WriteLine($"Barcode saved to: {outputPath}");
-        }
-        catch (Exception ex)
-        {
-            // Output any errors that occur during generation.
-            Console.WriteLine($"Error: {ex.Message}");
-        }
+        // Generate the barcode image with the specified parameters
+        GenerateBarcode(codeText, hexColor, outputPath);
+
+        // Inform the user where the file was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 
-    /// <summary>
-    /// Creates a Code128 barcode image using the provided text and foreground color.
-    /// The background remains the default (white).
-    /// </summary>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="hexColor">Hexadecimal color string for the barcode bars (e.g., "#FF0000").</param>
-    /// <param name="outputPath">File path where the PNG image will be saved.</param>
     static void GenerateBarcode(string codeText, string hexColor, string outputPath)
     {
-        // Convert the hex color string to an Aspose.Drawing.Color instance.
-        Color barColor = ParseHexColor(hexColor);
+        // Validate input parameters
+        if (string.IsNullOrEmpty(codeText))
+            throw new ArgumentException("Code text must be provided.", nameof(codeText));
 
-        // Initialize the barcode generator with Code128 symbology.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        if (string.IsNullOrEmpty(hexColor))
+            throw new ArgumentException("Hex color must be provided.", nameof(hexColor));
+
+        // Remove leading '#' if present and ensure the string has exactly 6 hex digits
+        string cleaned = hexColor.TrimStart('#');
+        if (cleaned.Length != 6)
+            throw new ArgumentException("Hex color must be in RRGGBB format.", nameof(hexColor));
+
+        // Convert the hex string to an integer RGB value
+        int rgb = Convert.ToInt32(cleaned, 16);
+
+        // Combine with full opacity (alpha = 255) to create an ARGB value
+        int argb = unchecked((int)(0xFF000000 | rgb));
+
+        // Create a Color object from the ARGB value
+        Color barColor = Color.FromArgb(argb);
+
+        // Initialize the barcode generator for Code128 symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Apply the custom bar (foreground) color.
+            // Apply the custom foreground color; background remains default (white)
             generator.Parameters.Barcode.BarColor = barColor;
-            // Background remains default (white).
 
-            // Save the generated barcode as a PNG file.
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
-        }
-    }
-
-    /// <summary>
-    /// Parses a hex color string (e.g., "#RRGGBB" or "#AARRGGBB") into an Aspose.Drawing.Color.
-    /// </summary>
-    /// <param name="hex">Hexadecimal color string.</param>
-    /// <returns>Corresponding Color object.</returns>
-    /// <exception cref="ArgumentException">Thrown when the input format is invalid.</exception>
-    static Color ParseHexColor(string hex)
-    {
-        if (string.IsNullOrWhiteSpace(hex))
-            throw new ArgumentException("Hex color string is null or empty.");
-
-        // Remove leading '#' if present.
-        string clean = hex.TrimStart('#');
-
-        if (clean.Length == 6)
-        {
-            // Parse as RGB and prepend full opacity.
-            int rgb = int.Parse(clean, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-            int argb = unchecked((int)(0xFF000000 | rgb));
-            return Color.FromArgb(argb);
-        }
-        else if (clean.Length == 8)
-        {
-            // Parse as ARGB.
-            int argb = int.Parse(clean, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-            return Color.FromArgb(argb);
-        }
-        else
-        {
-            throw new ArgumentException("Hex color must be in format #RRGGBB or #AARRGGBB.");
         }
     }
 }

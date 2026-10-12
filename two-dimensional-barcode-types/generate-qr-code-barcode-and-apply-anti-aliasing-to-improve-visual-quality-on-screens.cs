@@ -1,44 +1,54 @@
 // Title: Generate QR Code with Anti-Aliasing
-// Description: Demonstrates creating a QR Code barcode and enabling anti‑aliasing to improve on‑screen visual quality.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation and image rendering options. It showcases the use of BarcodeGenerator, EncodeTypes, and rendering parameters such as UseAntiAlias and XDimension to produce high‑quality PNG images. Developers often need to generate QR codes for web links or app integration and require clear rendering for display on screens.
+// Description: Creates a QR Code barcode, enables anti‑aliasing for smoother on‑screen rendering, and saves it as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code barcodes. Typical use cases include encoding URLs or other data for mobile scanning and improving visual quality on displays by applying anti‑aliasing. Developers often need to adjust rendering parameters such as XDimension and anti‑alias settings to meet UI requirements.
 // Prompt: Generate QR Code barcode and apply anti‑aliasing to improve visual quality on screens.
-// Tags: qr code, anti-aliasing, barcode generation, png output, aspose.barcode, aspose.drawing
+// Tags: qr code, anti-aliasing, barcode generation, png, aspose.barcode, encode types, screen rendering
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code barcode with anti‑aliasing enabled and saves it as a PNG image.
+/// Demonstrates generating a QR Code barcode with anti‑aliasing enabled and saving it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the program. Creates the output folder, generates the QR code, and writes the file path to the console.
+    /// Entry point of the example. Creates output directory, configures the barcode generator,
+    /// enables anti‑aliasing, sets module size, and saves the resulting image.
     /// </summary>
     static void Main()
     {
-        // Determine and create the output directory
+        // Determine the output folder relative to the current working directory
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "qr_anti_alias.png");
 
-        // Initialize the barcode generator for a QR code with the desired data
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputDir))
         {
-            // Enable anti‑aliasing for smoother on‑screen rendering
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Full path for the generated QR Code image
+        string outputPath = Path.Combine(outputDir, "QrCode_AntiAlias.png");
+
+        // Text to encode in the QR Code (e.g., a URL)
+        string codeText = "https://www.example.com";
+
+        // Initialize the barcode generator for QR Code symbology
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        {
+            // Enable anti‑aliasing for smoother rendering on screens
             generator.Parameters.UseAntiAlias = true;
-            // Set the size of each QR module (pixel dimension)
+
+            // Optional: set the size of each QR module (pixel dimension)
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Save the generated barcode as a PNG file
+            // Save the QR Code image in PNG format
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the saved QR code image
-        Console.WriteLine($"QR code saved to: {outputPath}");
+        // Inform the user where the image was saved
+        Console.WriteLine($"QR Code with anti-aliasing saved to: {outputPath}");
     }
 }

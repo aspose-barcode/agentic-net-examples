@@ -1,63 +1,62 @@
-// Title: Generate QR Code barcode and save as PNG image
-// Description: Demonstrates how to create a QR Code using Aspose.BarCode, set resolution and error correction, and save the result as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and image export APIs. Developers commonly generate QR Code images for embedding in documents, web pages, or mobile apps, and need to control resolution and error correction levels. The snippet shows typical steps for creating, configuring, and perserving a barcode image.
+// Title: Generate QR Code and embed it into a Word document using Aspose.BarCode and Aspose.Words
+// Description: This example creates a QR Code barcode from a URL, converts it to a PNG image, and inserts the image into a Word document.
+// Category-Description: Demonstrates how to generate a barcode image with Aspose.BarCode, manipulate its dimensions, and embed the image into a Word file using Aspose.Words (Open XML SDK). The sample showcases the BarcodeGenerator, EncodeTypes, BarCodeImageFormat, Document, and DocumentBuilder classes—common tools for developers who need to add barcodes to Office documents for reporting, labeling, or automated document generation.
 // Prompt: Generate QR Code barcode and embed it into a Word document using Open XML SDK.
-// Tags: qr code, barcode generation, image output, aspose.barcode, openxml sdk, word document
+// Tags: qr code, barcode generation, image embedding, word document, aspose.barcode, aspose.words, openxml, png
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Words;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code barcode and saves it as a PNG image.
+/// Demonstrates generating a QR Code barcode and inserting it into a Word document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Generates a QR Code, converts it to PNG, and embeds it in a DOCX file.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
         // Text to encode in the QR Code
-        const string qrText = "https://www.example.com";
+        string qrText = "https://example.com";
 
-        // Desired image resolution (dpi)
-        const int resolution = 300;
+        // Desired image resolution (dots per inch)
+        int resolution = 300;
 
-        // Output file name for the generated PNG image
-        const string imagePath = "qr_code.png";
+        // Initialize the barcode generator for QR code with the specified text
+        var generator = new BarcodeGenerator(EncodeTypes.QR, qrText);
+        generator.Parameters.Resolution = resolution;
 
-        // ------------------------------------------------------------
-        // Generate QR Code barcode using Aspose.BarCode
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // Generate a bitmap to obtain the pixel dimensions of the QR Code
+        using (Bitmap bitmap = generator.GenerateBarCodeImage())
         {
-            // Set image resolution
-            generator.Parameters.Resolution = resolution;
-
-            // Optional: set high error correction level (Level H)
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-
-            // Create the barcode image as a Bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Save the barcode image to a memory stream in PNG format
+            using (var imageStream = new MemoryStream())
             {
-                // Save the Bitmap to a PNG file
-                using (var stream = new FileStream(imagePath, FileMode.Create, FileAccess.Write))
-                {
-                    bitmap.Save(stream, ImageFormat.Png);
-                }
+                generator.Save(imageStream, BarCodeImageFormat.Png);
+                byte[] imageBytes = imageStream.ToArray();
+
+                // Convert pixel dimensions to points (1 inch = 72 points) for Word insertion
+                double widthPoints = (bitmap.Width * 72.0) / resolution;
+                double heightPoints = (bitmap.Height * 72.0) / resolution;
+
+                // Create a new Word document and insert the barcode image
+                var doc = new Document();
+                var builder = new DocumentBuilder(doc);
+                builder.Write("QR Code:");
+                builder.InsertImage(imageBytes, widthPoints, heightPoints);
+                builder.Writeln();
+
+                // Define the output path and save the document as DOCX
+                string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "QrBarcodeWord.docx");
+                doc.Save(outputPath, SaveFormat.Docx);
+                Console.WriteLine($"Document saved to: {outputPath}");
             }
         }
-
-        // Inform the user where the image was saved
-        Console.WriteLine($"QR Code image saved to '{Path.GetFullPath(imagePath)}'.");
-
-        // ------------------------------------------------------------
-        // Note: Embedding the image into a Word document via Open XML SDK
-        // is not demonstrated here due to missing API documentation.
-        // ------------------------------------------------------------
-        Console.WriteLine("Embedding the barcode into a Word document via Open XML SDK is not implemented due to unavailable API documentation.");
     }
 }
