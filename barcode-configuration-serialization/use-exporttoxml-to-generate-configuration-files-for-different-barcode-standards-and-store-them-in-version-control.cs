@@ -1,8 +1,8 @@
-// Title: Export Barcode Configurations to XML for Multiple Symbologies
-// Description: Demonstrates how to generate barcode configuration XML files and sample PNG images for various barcode standards using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the ExportToXml API to persist barcode settings. It covers common configuration steps, symbology‑specific tweaks, and image generation, helping developers automate version‑controlled barcode definitions for QR, Code128, DataMatrix, PDF417, GS1 Composite, and Australia Post.
-// Prompt: Use ExportToXml to generate configuration files for different barcode standards and store them in version control.
-// Tags: barcode, export, xml, configuration, aspose.barcode, qrcode, code128, datamatrix, pdf417, gs1composite, australiapost
+// Title: Export barcode generation settings to XML for multiple symbologies
+// Description: Demonstrates how to generate QR, Code128, Pdf417, and DataMatrix barcodes, export their configuration to XML files, and save PNG images.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, ExportToXml, and image saving. Developers often need to persist barcode generation settings for version control, automated testing, or reuse across projects. The snippet illustrates typical workflows for creating configuration files and visual assets for various barcode standards.
+/// Prompt: Use ExportToXml to generate configuration files for different barcode standards and store them in version control.
+/// Tags: barcode, symbology, export, xml, configuration, aspose.barcode, generation, qr, code128, pdf417, datamatrix, png
 
 using System;
 using System.IO;
@@ -11,119 +11,64 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates exporting barcode generation settings to XML files for several symbologies.
+/// Demonstrates exporting barcode generation configurations to XML and saving barcode images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates output directory, generates XML configs and sample images for each barcode type.
+    /// Entry point that creates a temporary folder, generates barcodes, exports configs, and saves images.
     /// </summary>
     static void Main()
     {
-        // Prepare output folder for generated configuration files and sample images
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "GeneratedConfigs");
-        Directory.CreateDirectory(outputDir);
+        // Create a unique temporary directory to store generated XML and PNG files
+        string basePath = Path.Combine(Path.GetTempPath(), "BarcodeConfigs_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(basePath);
 
-        // QR Code configuration
-        GenerateBarcodeConfig(
-            outputDir,
-            EncodeTypes.QR,
-            "https://example.com",
-            "QR_Code");
+        // Generate and export configurations for various barcode symbologies
+        GenerateBarcode(basePath, "QR", EncodeTypes.QR, "Sample QR");
+        GenerateBarcode(basePath, "Code128", EncodeTypes.Code128, "Sample128");
+        GenerateBarcode(basePath, "Pdf417", EncodeTypes.Pdf417, "Sample Pdf417");
+        GenerateBarcode(basePath, "DataMatrix", EncodeTypes.DataMatrix, "Sample DM");
 
-        // Code128 configuration
-        GenerateBarcodeConfig(
-            outputDir,
-            EncodeTypes.Code128,
-            "1234567890",
-            "Code128");
-
-        // DataMatrix configuration
-        GenerateBarcodeConfig(
-            outputDir,
-            EncodeTypes.DataMatrix,
-            "DataMatrixTest",
-            "DataMatrix");
-
-        // PDF417 configuration
-        GenerateBarcodeConfig(
-            outputDir,
-            EncodeTypes.Pdf417,
-            "PDF417 Sample Text",
-            "PDF417");
-
-        // GS1 Composite Bar (linear|2D) configuration
-        GenerateBarcodeConfig(
-            outputDir,
-            EncodeTypes.GS1CompositeBar,
-            "(01)12345678901231|(21)ABC123",
-            "GS1CompositeBar");
-
-        // Australia Post configuration (symbology‑specific settings)
-        GenerateAustraliaPostConfig(
-            outputDir,
-            "1100000000",
-            "AustraliaPost");
-
-        // Inform the user where files have been written
-        Console.WriteLine("Barcode configuration files and sample images have been generated in:");
-        Console.WriteLine(outputDir);
+        Console.WriteLine("Barcode generation and export completed.");
     }
 
     /// <summary>
-    /// Generates an XML configuration file and a sample PNG image for a given barcode type.
+    /// Generates a barcode, exports its configuration to an XML file, and saves the barcode image as PNG.
     /// </summary>
-    /// <param name="folder">Target folder for the output files.</param>
-    /// <param name="encodeType">Barcode symbology to generate.</param>
-    /// <param name="codeText">Data to encode in the barcode.</param>
-    /// <param name="fileBaseName">Base name for the generated files (without extension).</param>
-    static void GenerateBarcodeConfig(string folder, BaseEncodeType encodeType, string codeText, string fileBaseName)
+    /// <param name="folder">The folder where XML and PNG files will be saved.</param>
+    /// <param name="name">Base name for the output files (without extension).</param>
+    /// <param name="encodeType">The barcode symbology to use.</param>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    static void GenerateBarcode(string folder, string name, BaseEncodeType encodeType, string codeText)
     {
-        string xmlPath = Path.Combine(folder, fileBaseName + ".xml");
-        string imgPath = Path.Combine(folder, fileBaseName + ".png");
+        // Determine file paths for XML configuration and PNG image
+        string xmlPath = Path.Combine(folder, name + ".xml");
+        string pngPath = Path.Combine(folder, name + ".png");
 
+        // Initialize the barcode generator with the specified symbology and text
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
             // Common visual settings
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
 
-            // Persist the current generation state to an XML file
+            // Symbology‑specific tweaks (optional)
+            if (encodeType == EncodeTypes.Pdf417)
+            {
+                generator.Parameters.Barcode.Pdf417.Columns = 4;
+            }
+
+            // Export the generator's configuration to an XML file
             generator.ExportToXml(xmlPath);
 
-            // Create a PNG image for quick visual verification
-            generator.Save(imgPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG image
+            generator.Save(pngPath, BarCodeImageFormat.Png);
         }
-    }
 
-    /// <summary>
-    /// Generates an XML configuration file and a sample PNG image for the Australia Post symbology,
-    /// applying its specific encoding table setting.
-    /// </summary>
-    /// <param name="folder">Target folder for the output files.</param>
-    /// <param name="codeText">Data to encode in the barcode.</param>
-    /// <param name="fileBaseName">Base name for the generated files (without extension).</param>
-    static void GenerateAustraliaPostConfig(string folder, string codeText, string fileBaseName)
-    {
-        string xmlPath = Path.Combine(folder, fileBaseName + ".xml");
-        string imgPath = Path.Combine(folder, fileBaseName + ".png");
-
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
-        {
-            // Australia Post specific setting: use the C table for encoding
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
-
-            // Common visual settings
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Persist the current generation state to an XML file
-            generator.ExportToXml(xmlPath);
-
-            // Create a PNG image for quick visual verification
-            generator.Save(imgPath, BarCodeImageFormat.Png);
-        }
+        // Output the locations of the generated files
+        Console.WriteLine($"{name} XML: {xmlPath}");
+        Console.WriteLine($"{name} PNG: {pngPath}");
     }
 }

@@ -1,77 +1,69 @@
-// Title: Serialize and Import a BarcodeGenerator with Multi‑Line Text
-// Description: Demonstrates how to generate a PDF417 barcode with multi‑line text, export its configuration to XML, import it back, and verify that line breaks are retained.
-// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It shows how to use BarcodeGenerator, configure visual parameters, export the generator state to XML with ExportToXml, and later recreate the generator using ImportFromXml. Developers often need to persist barcode settings, share them across services, or store them for later regeneration.
+// Title: Serialize BarcodeGenerator with Multi‑Line Text and Verify Line Break Preservation
+// Description: Demonstrates how to generate a PDF417 barcode containing multi‑line text, export the generator configuration to XML, import it back, and confirm that line breaks are retained.
+// Category-Description: This example belongs to the Aspose.BarCode serialization and configuration category. It shows how to use BarcodeGenerator, its Parameters, ExportToXml, and ImportFromXml methods to persist barcode settings. Typical use cases include saving barcode configurations for later reuse, sharing across services, or version‑controlling barcode definitions. Developers often need to serialize generators, modify XML, and ensure text formatting such as line breaks remains intact.
 // Prompt: Serialize a BarcodeGenerator with multi‑line text and verify line breaks are preserved after import.
-// Tags: pdf417, serialization, png, barcodegenerator, exporttoxml, importfromxml
+// Tags: pdf417, barcode, serialization, xml, multiline, codetext, aspnet, aspose.barcode, export, import
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a PDF417 barcode with multi‑line text,
-/// serializes the generator to XML, imports it back, and checks that
-/// line breaks are preserved in the CodeText property.
+/// Demonstrates serialization of a <see cref="BarcodeGenerator"/> with multi‑line text and verification of line‑break preservation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the barcode generation,
-    /// serialization, import, and verification steps.
+    /// Entry point that creates a barcode, exports to XML, re‑imports, and validates code text integrity.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary working folder to store generated files.
-        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workFolder);
+        // Create a unique temporary directory for output files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define file paths for XML state and PNG images.
-        string xmlPath = Path.Combine(workFolder, "generator.xml");
-        string originalImagePath = Path.Combine(workFolder, "original.png");
-        string importedImagePath = Path.Combine(workFolder, "imported.png");
+        // Define file paths for the XML configuration and PNG images
+        string xmlPath = Path.Combine(tempDir, "generator.xml");
+        string originalImagePath = Path.Combine(tempDir, "original.png");
+        string loadedImagePath = Path.Combine(tempDir, "loaded.png");
 
-        // Multi‑line text (using Windows line breaks) to be encoded in the barcode.
-        string multiLineText = "First line\r\nSecond line\r\nThird line";
+        // Multi‑line barcode text (line breaks are represented by '\n')
+        string multiLineText = "First line\nSecond line\nThird line";
 
-        // -----------------------------------------------------------------
-        // Create a barcode generator, configure visual parameters,
-        // save the original image, and export the generator state to XML.
-        // -----------------------------------------------------------------
+        // Generate barcode and export its state to XML
         using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, multiLineText))
         {
-            // Optional visual tweaks.
-            generator.Parameters.Barcode.XDimension.Pixels = 2;
-            generator.Parameters.Barcode.Pdf417.Rows = 12;
+            // Ensure line breaks are allowed (default is false, which allows wrapping)
+            generator.Parameters.Barcode.CodeTextParameters.NoWrap = false;
 
-            // Save the generated barcode as a PNG image.
+            // Save the original barcode image to PNG
             generator.Save(originalImagePath, BarCodeImageFormat.Png);
 
-            // Export the complete generator configuration to an XML file.
+            // Export the generator configuration to an XML file
             generator.ExportToXml(xmlPath);
         }
 
-        // -----------------------------------------------------------------
-        // Import the barcode generator from the previously saved XML,
-        // regenerate the image, and verify that the multi‑line text is unchanged.
-        // -----------------------------------------------------------------
-        using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
-        {
-            // Save the barcode generated from the imported configuration.
-            importedGenerator.Save(importedImagePath, BarCodeImageFormat.Png);
+        // Import barcode generator from the previously saved XML configuration
+        BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath);
 
-            // Retrieve the CodeText after import and compare with the original.
-            string importedCodeText = importedGenerator.CodeText;
-            bool isPreserved = multiLineText == importedCodeText;
+        // Save the barcode image generated from the imported configuration
+        importedGenerator.Save(loadedImagePath, BarCodeImageFormat.Png);
 
-            // Output verification results to the console.
-            Console.WriteLine("Original CodeText:");
-            Console.WriteLine(multiLineText);
-            Console.WriteLine("Imported CodeText:");
-            Console.WriteLine(importedCodeText);
-            Console.WriteLine("Line breaks preserved: " + (isPreserved ? "Yes" : "No"));
-        }
+        // Verify that the code text (including line breaks) is preserved after import
+        bool isPreserved = string.Equals(
+            importedGenerator.CodeText,
+            multiLineText,
+            StringComparison.Ordinal);
 
-        // Optional clean‑up of temporary files.
-        // Directory.Delete(workFolder, true);
+        // Output verification results and file locations
+        Console.WriteLine("Original CodeText:");
+        Console.WriteLine(multiLineText);
+        Console.WriteLine();
+        Console.WriteLine("Imported CodeText:");
+        Console.WriteLine(importedGenerator.CodeText);
+        Console.WriteLine();
+        Console.WriteLine("Line breaks preserved: " + isPreserved);
+        Console.WriteLine("Files written to: " + tempDir);
     }
 }

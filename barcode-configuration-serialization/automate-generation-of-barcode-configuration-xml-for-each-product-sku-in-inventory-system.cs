@@ -1,8 +1,8 @@
-// Title: Generate barcode XML configuration and PNG images for product SKUs
-// Description: Demonstrates how to create Code128 barcodes for a list of SKUs, export their configuration to XML, and save PNG images using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode configuration and export category, showcasing the BarcodeGenerator class for encoding, the ExportToXml method for persisting settings, and image saving via Save. Developers often need to automate barcode creation for inventory systems, export settings for later reuse, and generate visual assets for reporting or labeling.
+// Title: Generate Barcode Configuration XML for Product SKUs
+// Description: Demonstrates how to create Code128 barcode generators for a list of product SKUs and export each generator's configuration to an XML file.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showcasing the use of BarcodeGenerator, EncodeTypes, and generator Parameters to produce XML representations of barcode settings. Typical use cases include batch creation of barcode configurations for inventory systems, automated deployment pipelines, and integration with external services that consume barcode definition files. Developers often need to generate, store, and later apply these XML configurations to ensure consistent barcode rendering across applications.
 // Prompt: Automate generation of barcode configuration XML for each product SKU in an inventory system.
-// Tags: barcode symbology, barcode generation, xml export, png output, aspose.barcode, aspose.drawing
+// Tags: code128, xml-generation, barcodegenerator, encode-types, parameters, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,60 +12,53 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Program that generates barcode XML configurations and PNG images for a set of product SKUs.
+/// Example program that generates XML configuration files for Code128 barcodes,
+/// one file per product SKU in a sample inventory list.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a temporary output folder, generates Code128 barcodes for each SKU,
-    /// exports the generator settings to XML, saves PNG images, and demonstrates importing from XML.
+    /// Entry point of the application. Iterates over a list of SKUs,
+    /// creates a barcode generator for each, configures appearance settings,
+    /// and exports the generator state to an XML file.
     /// </summary>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define a list of product SKUs to process
-        List<string> skus = new List<string> { "SKU001", "SKU002", "SKU003", "SKU004", "SKU005" };
+        // Sample list of product SKUs to process
+        List<string> skus = new List<string>
+        {
+            "SKU00123",
+            "SKU00456",
+            "SKU00789",
+            "SKU01012",
+            "SKU01345"
+        };
 
-        // Create a unique temporary directory for output files
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeConfig_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
+        // Create a unique temporary output folder for the generated XML files
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeConfig_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        Console.WriteLine("Generating barcode XML configurations in: " + outputFolder);
 
-        // Iterate over each SKU, generate barcode, export XML, and save PNG image
+        // Process each SKU individually
         foreach (string sku in skus)
         {
-            // Build file paths for XML configuration and PNG image
-            string xmlPath = Path.Combine(outputDir, sku + ".xml");
-            string imgPath = Path.Combine(outputDir, sku + ".png");
-
-            // Initialize the barcode generator with Code128 symbology and the SKU value
+            // Initialize a barcode generator for Code128 using the SKU as the encoded text
             using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, sku))
             {
-                // Set visual parameters: module size and bar color
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                generator.Parameters.Barcode.BarColor = Color.Black;
+                // Configure visual appearance of the barcode
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;                     // Set module width
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;   // Set bar color
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;          // Set background color
 
-                // Export the generator configuration to an XML file
+                // Determine the file path for the XML configuration of the current SKU
+                string xmlPath = Path.Combine(outputFolder, sku + ".xml");
+
+                // Export the generator's configuration to an XML file
                 generator.ExportToXml(xmlPath);
-
-                // Save the rendered barcode as a PNG image
-                generator.Save(imgPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Exported XML for SKU '{sku}' to '{xmlPath}'");
             }
-
-            Console.WriteLine($"Generated XML and image for {sku} in {outputDir}");
         }
 
-        // Demonstrate importing a previously saved XML configuration and generating an image
-        if (skus.Count > 0)
-        {
-            string firstXml = Path.Combine(outputDir, skus[0] + ".xml");
-            string importedImg = Path.Combine(outputDir, skus[0] + "_imported.png");
-
-            // Load generator settings from XML and save a new PNG image
-            using (BarcodeGenerator importedGen = BarcodeGenerator.ImportFromXml(firstXml))
-            {
-                importedGen.Save(importedImg, BarCodeImageFormat.Png);
-            }
-
-            Console.WriteLine($"Imported XML and generated image for {skus[0]}");
-        }
+        Console.WriteLine("Barcode configuration XML generation completed.");
     }
 }

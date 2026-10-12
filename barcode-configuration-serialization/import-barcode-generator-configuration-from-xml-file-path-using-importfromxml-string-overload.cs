@@ -1,52 +1,45 @@
-// Title: Import barcode generator configuration from XML file
-// Description: Demonstrates exporting a barcode generator's settings to an XML file and then importing that configuration to generate a barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showing how to persist and reuse barcode generator settings via XML. It uses BarcodeGenerator, EncodeTypes, and ExportToXml/ImportFromXml methods. Typical use cases include saving generator presets, sharing configurations across applications, or automating batch barcode creation. Developers often need to export settings for version control or to apply consistent parameters in different environments.
-/// Prompt: Import barcode generator configuration from an XML file path using ImportFromXml(string) overload.
-/// Tags: barcode, configuration, xml, import, export, qrcode, aspnet, aspose.barcode, generation, png
+// Title: Import barcode generator configuration from XML and generate barcode image
+// Description: Demonstrates exporting a BarcodeGenerator's settings to an XML file, then importing that configuration to create a barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating how to persist and reuse barcode generator settings via XML. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, common for scenarios where barcode appearance must be standardized across applications or sessions. Developers often need to export settings for backup, sharing, or dynamic generation based on stored configurations.
+// Prompt: Import barcode generator configuration from an XML file path using ImportFromXml(string) overload.
+// Tags: code128, import, png, barcodegenerator, aspose.barcodes
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that exports a barcode generator configuration to XML,
-/// then imports the configuration to generate and save a barcode image.
+/// Demonstrates exporting a barcode generator configuration to XML and importing it to generate a barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs export, import, and image generation.
+    /// Entry point. Creates a temporary directory, exports generator settings to XML, imports them, and saves the barcode as PNG.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the example files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeGenImport_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Build a unique temporary folder for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeGenXmlDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define paths for the XML configuration and the output PNG image
-        string xmlPath = Path.Combine(tempFolder, "generator.xml");
-        string outputPath = Path.Combine(tempFolder, "generated.png");
+        // Define paths for the XML configuration and the resulting barcode image
+        string xmlPath = Path.Combine(tempDir, "generatorConfig.xml");
+        string outputPath = Path.Combine(tempDir, "generatedBarcode.png");
 
-        // Step 1: Create a barcode generator, configure it, and export its settings to XML
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample"))
+        // Create a barcode generator, customize a parameter, and export its configuration to XML
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set the X-dimension (module size) in pixels
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-
-            // Export the current configuration to the specified XML file
-            generator.ExportToXml(xmlPath);
+            generator.Parameters.Barcode.XDimension.Pixels = 2f; // Set X-dimension for better readability
+            generator.ExportToXml(xmlPath); // Persist the current settings
         }
 
-        // Step 2: Import the generator configuration from the previously saved XML file
+        // Import the previously saved configuration and generate the barcode image
         using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Generate the barcode image and save it as PNG
-            importedGenerator.Save(outputPath, BarCodeImageFormat.Png);
+            importedGenerator.Save(outputPath, BarCodeImageFormat.Png); // Save as PNG
         }
 
-        // Output the locations of the generated files for verification
-        Console.WriteLine($"XML configuration saved to: {xmlPath}");
-        Console.WriteLine($"Generated barcode image saved to: {outputPath}");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine("Barcode image saved to: " + outputPath);
     }
 }

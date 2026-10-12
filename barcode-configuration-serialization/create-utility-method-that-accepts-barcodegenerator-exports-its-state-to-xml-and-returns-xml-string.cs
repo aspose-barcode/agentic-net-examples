@@ -1,8 +1,8 @@
-// Title: Export BarcodeGenerator State to XML
-// Description: Demonstrates how to export the configuration of an Aspose.BarCode BarcodeGenerator to an XML string for persistence or debugging.
-// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It shows how to use the BarcodeGenerator class together with its ExportToXml method to capture the generator's current state. Typical use cases include saving barcode settings, transferring configurations between services, or troubleshooting. Developers working with barcode creation often need to serialize generator parameters, and this snippet illustrates the standard approach.
+// Title: Export BarcodeGenerator Settings to XML
+// Description: Demonstrates how to export the configuration of an Aspose.BarCode BarcodeGenerator to an XML string.
+// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category, showing how to use BarcodeGenerator, its Parameters, and the ExportToXml method to persist barcode settings. Developers often need to save or transfer barcode configurations for later reuse, debugging, or documentation, and this pattern illustrates the typical workflow for XML serialization of barcode objects.
 // Prompt: Create a utility method that accepts a BarcodeGenerator, exports its state to XML, and returns the XML string.
-// Tags: barcode symbology, export, xml, aspose.barcode, generation, utility
+// Tags: barcode symbology, export, xml, serialization, aspose.barcode, generation, utility method
 
 using System;
 using System.IO;
@@ -10,49 +10,47 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides a sample demonstrating how to export a BarcodeGenerator's state to an XML string.
+/// Demonstrates exporting a BarcodeGenerator's configuration to XML.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a BarcodeGenerator, optionally modifies its parameters,
-    /// exports its state to XML, and writes the result to the console.
+    /// Entry point. Creates a sample QR barcode generator, adjusts settings, and outputs its XML representation.
     /// </summary>
     static void Main()
     {
-        // Create a BarcodeGenerator for a QR code with sample text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
-        {
-            // Optionally adjust a parameter (e.g., X-dimension in pixels).
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+        // Initialize a BarcodeGenerator for QR code with sample text
+        BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText");
 
-            // Export the generator's current configuration to an XML string.
-            string xml = ExportGeneratorStateToXml(generator);
+        // Adjust a specific parameter (X dimension) to illustrate custom settings
+        generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Output the exported XML to the console.
-            Console.WriteLine("Exported XML:");
-            Console.WriteLine(xml);
-        }
+        // Export the generator's current state to an XML string using the utility method
+        string xml = ExportGeneratorToXml(generator);
+
+        // Display the resulting XML
+        Console.WriteLine("Exported XML:");
+        Console.WriteLine(xml);
     }
 
     /// <summary>
-    /// Exports the provided <see cref="BarcodeGenerator"/> state to an XML string.
+    /// Serializes the provided BarcodeGenerator into an XML string.
     /// </summary>
-    /// <param name="generator">The BarcodeGenerator instance whose state will be serialized.</param>
-    /// <returns>An XML string representing the generator's configuration.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="generator"/> is null.</exception>
-    static string ExportGeneratorStateToXml(BarcodeGenerator generator)
+    /// <param name="generator">The BarcodeGenerator instance to export.</param>
+    /// <returns>XML representation of the generator's configuration.</returns>
+    static string ExportGeneratorToXml(BarcodeGenerator generator)
     {
-        if (generator == null) throw new ArgumentNullException(nameof(generator));
-
-        // Use a memory stream to capture the XML output from ExportToXml.
-        using (var memoryStream = new MemoryStream())
+        // Use a memory stream to capture the XML output
+        using (MemoryStream ms = new MemoryStream())
         {
-            generator.ExportToXml(memoryStream);
-            memoryStream.Position = 0; // Reset stream position for reading.
+            // Write the generator's state to the stream in XML format
+            generator.ExportToXml(ms);
 
-            // Read the entire XML content from the memory stream.
-            using (var reader = new StreamReader(memoryStream))
+            // Reset stream position to the beginning for reading
+            ms.Position = 0;
+
+            // Read the entire XML content from the stream
+            using (StreamReader reader = new StreamReader(ms))
             {
                 return reader.ReadToEnd();
             }
