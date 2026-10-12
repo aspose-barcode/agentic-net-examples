@@ -1,12 +1,11 @@
-// Title: Save Barcode as TIFF with LZW Compression
+// Title: Save barcode as TIFF with LZW compression
 // Description: Demonstrates generating a Code128 barcode and saving it as a TIFF image using LZW compression to reduce file size.
-// Category-Description: This example belongs to the Aspose.BarCode image export category, showcasing how to generate barcodes with the BarcodeGenerator class, render them to a Bitmap, and persist the image using Aspose.Drawing.Imaging with specific encoder parameters. Typical use cases include creating high‑density barcode images for archival or printing where file size matters. Developers often need to select image formats and compression options to meet storage or transmission constraints.
+// Category-Description: This example belongs to the Aspose.BarCode image generation and export category. It shows how to use BarcodeGenerator, Bitmap, and System.Drawing.Imaging classes to create a barcode, select the TIFF encoder, and apply LZW compression. Developers often need to export barcodes to compressed image formats for storage or transmission, and this snippet illustrates the typical steps required.
 // Prompt: Save a barcode as a TIFF file with LZW compression enabled to reduce file size.
-// Tags: barcode, symbology, generation, tiff, lzw, compression, aspose.barcode, aspose.drawing
+// Tags: barcode, code128, tiff, lzw, compression, image generation, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
-using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
@@ -18,41 +17,51 @@ using Aspose.Drawing.Imaging;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary output folder, generates the barcode,
-    /// applies LZW compression, and writes the TIFF file to disk.
+    /// Entry point of the example. Creates the barcode, selects the TIFF codec,
+    /// configures LZW compression, and writes the image to a temporary file.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary output directory
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeTiffLzw_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "barcode_lzw.tiff");
+        // Define the output file path in the system's temporary directory.
+        string outputPath = Path.Combine(Path.GetTempPath(), "barcode_lzw.tiff");
 
-        // Generate a Code128 barcode with the specified value
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
+        // Initialize the barcode generator with Code128 symbology and sample data.
+        BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678");
+
+        // Generate the barcode image as a Bitmap.
+        using (Bitmap bitmap = generator.GenerateBarCodeImage())
         {
-            // Render the barcode to a bitmap image
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Locate the TIFF image encoder from the installed codecs.
+            ImageCodecInfo tiffCodec = null;
+            foreach (ImageCodecInfo codec in ImageCodecInfo.GetImageEncoders())
             {
-                // Locate the TIFF image codec required for saving
-                ImageCodecInfo tiffCodec = ImageCodecInfo.GetImageEncoders()
-                    .FirstOrDefault(c => c.FormatID == ImageFormat.Tiff.Guid);
-                if (tiffCodec == null)
+                if (codec.FormatID == ImageFormat.Tiff.Guid)
                 {
-                    Console.WriteLine("TIFF codec not found.");
-                    return;
+                    tiffCodec = codec;
+                    break;
                 }
+            }
 
-                // Configure encoder parameters to use LZW compression
-                using (EncoderParameters encParams = new EncoderParameters(1))
-                {
-                    encParams.Param[0] = new EncoderParameter(Encoder.Compression, (long)EncoderValue.CompressionLZW);
-                    // Save the bitmap as a TIFF file with the specified compression
-                    bitmap.Save(outputPath, tiffCodec, encParams);
-                }
+            // If the TIFF codec is not found, report and exit.
+            if (tiffCodec == null)
+            {
+                Console.WriteLine("TIFF codec not found.");
+                return;
+            }
+
+            // Set up encoder parameters to enable LZW compression.
+            using (EncoderParameters encoderParams = new EncoderParameters(1))
+            {
+                encoderParams.Param[0] = new EncoderParameter(
+                    Encoder.Compression,
+                    (long)EncoderValue.CompressionLZW);
+
+                // Save the bitmap to the specified path using the TIFF codec and compression settings.
+                bitmap.Save(outputPath, tiffCodec, encoderParams);
             }
         }
 
+        // Inform the user where the compressed barcode image was saved.
         Console.WriteLine($"Barcode saved with LZW compression to: {outputPath}");
     }
 }

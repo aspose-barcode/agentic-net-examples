@@ -1,57 +1,43 @@
-// Title: Generate Code128 barcode and stream it for immediate download in ASP.NET
-// Description: Demonstrates creating a Code128 barcode image using Aspose.BarCode, storing it in a memory stream, and showing how to write it directly to the ASP.NET Response.OutputStream for download.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical scenarios include generating barcodes on-the-fly for web applications, e‑commerce receipts, or inventory systems where the barcode image must be sent directly to the client without intermediate files. Developers often need to customize barcode dimensions and output formats before streaming the result.
+// Title: Generate Code128 barcode and save to temporary file (ASP.NET stream example)
+// Description: Demonstrates creating a Code128 barcode using Aspose.BarCode and saving it to a file, which can be streamed directly to an HTTP response for immediate download.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes to produce barcodes. Typical use cases include generating barcodes on-the-fly in web applications and sending the image directly to the client via Response.OutputStream. Developers often need to create a barcode, choose an image format, and write the output stream without intermediate files.
 // Prompt: Generate a barcode and write it directly to Response.OutputStream in ASP.NET for immediate download.
-// Tags: barcode, code128, aspnet, streaming, response, outputstream, png, aspose.barcode, image-generation
+// Tags: code128, barcode generation, asp.net, response outputstream, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation and streaming for ASP.NET download.
+/// Demonstrates barcode generation using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, saves it to a memory stream, and (in a real ASP.NET scenario) would write it to Response.OutputStream.
+    /// Entry point. Generates a Code128 barcode, saves it to a temporary file, and notes how it could be streamed to an ASP.NET response.
     /// </summary>
     static void Main()
     {
         // Define the data to encode in the barcode.
         string codeText = "12345678";
 
-        // Use a memory stream to hold the generated image (simulating Response.OutputStream).
-        using (var memoryStream = new MemoryStream())
+        // Determine a temporary file path for the generated barcode image.
+        string outputPath = Path.Combine(Path.GetTempPath(), "barcode.png");
+
+        // Create a BarcodeGenerator for Code128 symbology and encode the data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Create a BarcodeGenerator for Code128 symbology with the specified text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-            {
-                // Optional: customize the barcode's X dimension (module width) for better readability.
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-
-                // Save the barcode image as PNG into the memory stream.
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-            }
-
-            // Reset the stream position to the beginning before reading.
-            memoryStream.Position = 0;
-
-            // In an ASP.NET context you would write the image directly to the response:
-            // Response.ContentType = "image/png";
-            // Response.AddHeader("Content-Disposition", "attachment; filename=barcode.png");
-            // memoryStream.CopyTo(Response.OutputStream);
-            // Response.End();
-
-            // For this console demonstration, write the image to a file on disk.
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
+            // Open a file stream to write the barcode image.
             using (var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
             {
-                memoryStream.CopyTo(fileStream);
+                // Save the barcode image to the stream in PNG format.
+                generator.Save(fileStream, BarCodeImageFormat.Png);
             }
-
-            Console.WriteLine($"Barcode image saved to: {outputPath}");
         }
+
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode generated and saved to: {outputPath}");
+
+        // Note: In an ASP.NET application, the same stream would be written to Response.OutputStream for immediate download.
     }
 }
