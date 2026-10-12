@@ -1,44 +1,47 @@
 // Title: Generate Code128 barcode without human‑readable text
-// Description: Creates a Code128 barcode image, disables the display of the code text, and saves it as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce barcode images. Typical use cases include creating barcodes for product labeling, inventory tracking, and document automation where developers often need to hide the human‑readable code text for aesthetic or security reasons. The snippet serves as a reference for developers searching for barcode generation patterns in C#.
-// Prompt: Generate a barcode, disable ShowCodeText, and confirm output contains only the barcode pattern.
-// Tags: code128, barcode generation, hide codetext, png, aspose.barcode, barcodegenerator
+// Description: Demonstrates how to create a Code128 barcode image, disable the displayed code text, and save it as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce barcode graphics. Typical scenarios include creating barcodes for inventory, shipping labels, or product packaging where only the machine‑readable pattern is required. Developers often need to hide the human‑readable text to reduce visual clutter or meet design guidelines.
+/// Prompt: Generate a barcode, disable ShowCodeText, and confirm output contains only the barcode pattern.
+/// Tags: code128, barcode, generation, hidecodetext, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode image with the human‑readable text hidden.
+/// Demonstrates generating a Code128 barcode image with the human‑readable text disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, disables code text, saves PNG, and writes output path.
+    /// Entry point. Generates the barcode, saves it, and reports the result.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the output file.
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // Define the temporary output file path
+        string outputPath = Path.Combine(Path.GetTempPath(), "barcode.png");
 
-        // Define the full path for the generated PNG image.
-        string outputPath = Path.Combine(tempDir, "barcode.png");
-
-        // Initialize the barcode generator for Code128 with the desired data.
+        // Create a barcode generator for Code128 with the desired data
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Disable the human‑readable code text by setting its location to None.
+            // Disable the human‑readable code text (ShowCodeText equivalent)
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-            // Save the barcode image as PNG to the specified path.
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"Barcode generated at: {outputPath}");
-        Console.WriteLine("Human‑readable text disabled (CodeLocation.None).");
+        // Verify that the file was created and inform the user
+        if (File.Exists(outputPath))
+        {
+            Console.WriteLine($"Barcode image generated at: {outputPath}");
+            Console.WriteLine("ShowCodeText disabled – image contains only the barcode pattern.");
+        }
+        else
+        {
+            Console.WriteLine("Failed to generate barcode image.");
+        }
     }
 }

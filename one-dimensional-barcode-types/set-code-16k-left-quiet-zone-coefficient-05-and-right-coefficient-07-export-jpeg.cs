@@ -1,57 +1,60 @@
-// Title: Set Code 16K quiet zone coefficients and export JPEG
-// Description: Demonstrates how to configure left and right quiet zone coefficients for a Code 16K barcode using Aspose.BarCode and save the result as a JPEG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of the BarcodeGenerator class and its Parameters.Barcode.Code16K properties to adjust quiet zone settings. Typical use cases include customizing barcode margins for scanner compatibility or layout requirements. Developers often need to modify quiet zone coefficients before rendering barcodes to various image formats.
+// Title: Set Code 16K quiet zone coefficients and export as JPEG
+// Description: Demonstrates configuring left and right quiet zone coefficients for a Code 16K barcode and saving the image as a JPEG using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to customize barcode parameters such as quiet zone coefficients, which are common requirements when integrating barcodes into printed materials or digital assets. Developers often need to adjust these settings to meet scanner specifications or layout constraints.
 // Prompt: Set Code 16K left quiet zone coefficient 0.5 and right coefficient 0.7, export JPEG.
-// Tags: code16k, quietzone, barcode, generation, jpeg, aspose.barcode
+// Tags: code16k, quietzone, jpeg, barcode, generation, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates setting quiet zone coefficients for a Code 16K barcode and saving it as a JPEG.
+/// Generates a Code 16K barcode with custom quiet zone coefficients and saves it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode with specified quiet zone coefficients and saves it.
+    /// Entry point of the example. Configures quiet zone coefficients, validates them, generates the barcode, and writes the output file.
     /// </summary>
     static void Main()
     {
-        // Desired quiet zone coefficients (placeholders for invalid values)
-        int leftCoef = 0;
-        int rightCoef = 0;
+        // Desired quiet zone coefficients (as per task)
+        float leftCoef = 0.5f;
+        float rightCoef = 0.7f;
 
-        // The task requests 0.5 and 0.7, but the API requires integer values
-        // with minimums of 10 (left) and 1 (right). Detect invalid request.
-        double requestedLeft = 0.5;
-        double requestedRight = 0.7;
-
-        if (requestedLeft < 10 || requestedRight < 1)
+        // Validate against API constraints: QuietZoneLeftCoef >= 10, QuietZoneRightCoef >= 1
+        if (leftCoef < 10f || rightCoef < 1f)
         {
-            Console.WriteLine("Error: Code 16K quiet zone coefficients must be integers with left >= 10 and right >= 1.");
-            Console.WriteLine($"Requested values: left={requestedLeft}, right={requestedRight}");
+            Console.WriteLine("Error: Code 16K quiet zone coefficients must be integers with Left >= 10 and Right >= 1.");
+            Console.WriteLine($"Provided values: Left = {leftCoef}, Right = {rightCoef}");
             return;
         }
 
-        // Convert to int because the API expects integer coefficients
-        leftCoef = (int)requestedLeft;
-        rightCoef = (int)requestedRight;
+        // Convert to integer values (API expects int)
+        int leftCoefInt = (int)leftCoef;
+        int rightCoefInt = (int)rightCoef;
 
         // Prepare output directory and file path
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir);
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
         string outputPath = Path.Combine(outputDir, "Code16K_QuietZone.jpg");
 
-        // Generate the barcode with the specified quiet zone coefficients
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code16K, "Aspose.BarCode"))
+        // Generate the barcode using Aspose.BarCode
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, "Aspose.Barcode"))
         {
+            // Optional: set X-dimension (pixel size of the smallest bar)
             generator.Parameters.Barcode.XDimension.Pixels = 2;
-            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = leftCoef;
-            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = rightCoef;
 
-            // Export the barcode as a JPEG image
+            // Apply the quiet zone coefficients
+            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = leftCoefInt;
+            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = rightCoefInt;
+
+            // Save the generated barcode as a JPEG image
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 

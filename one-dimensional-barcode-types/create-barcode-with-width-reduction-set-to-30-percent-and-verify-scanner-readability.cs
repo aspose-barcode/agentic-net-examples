@@ -1,70 +1,69 @@
-// Title: Generate Code128 barcode with 30% bar width reduction and verify readability
-// Description: Demonstrates how to create a Code128 barcode with a 30 percent bar‑width reduction using Aspose.BarCode, save it as PNG, and confirm that a scanner can decode it.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows usage of BarcodeGenerator for customizing bar dimensions (XDimension and BarWidthReduction) and BarCodeReader for validating the generated image. Developers often need to adjust bar width for printing constraints while ensuring scanner compatibility, making this pattern common in packaging, inventory, and label‑printing solutions.
+// Title: Generate Code128 barcode with 30% width reduction and verify readability
+// Description: This example creates a Code128 barcode where the bar width is reduced by 30 percent, saves it as a PNG file, and then reads it back to confirm that scanners can still decode the symbol.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs. It uses BarcodeGenerator to customize bar dimensions (XDimension and BarWidthReduction) and BarCodeReader to validate the output. Typical for developers who need to fine‑tune barcode appearance while ensuring scan reliability, such as packaging, labeling, or inventory systems.
 // Prompt: Create a barcode with width reduction set to 30 percent and verify scanner readability.
-// Tags: code128, bar width reduction, barcode generation, barcode recognition, png, aspose.barcode
+// Tags: barcode, code128, width reduction, generation, recognition, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using System.Text;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation with bar‑width reduction and subsequent readability verification.
+/// Demonstrates creating a Code128 barcode with a 30 percent width reduction
+/// and then verifying that the barcode can be read by a scanner.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode with 30 % width reduction, saves it, and checks readability using BarCodeReader.
+    /// Entry point of the example. Generates the barcode, saves it, and validates readability.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary output directory
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-
-        // Define the full path for the generated barcode image
-        string barcodePath = Path.Combine(outputDir, "Code128_BarWidthReduction30.png");
-
-        // Generate a Code128 barcode with a 30% bar width reduction
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ASPOSE"))
+        // --------------------------------------------------------------------
+        // Prepare output directory
+        // --------------------------------------------------------------------
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        if (!Directory.Exists(outputDir))
         {
-            // Set the base module (X) size in pixels
-            generator.Parameters.Barcode.XDimension.Pixels = 10f;
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Apply a 30% reduction to the bar width (10 * 0.3 = 3 pixels)
-            generator.Parameters.Barcode.BarWidthReduction.Pixels = 3f;
+        // Define file path and barcode content
+        string barcodePath = Path.Combine(outputDir, "Code128_WidthReduction30.png");
+        string codeText = "ASPOSE";
 
-            // Save the barcode as a PNG image
+        // --------------------------------------------------------------------
+        // Generate barcode with 30% width reduction (XDimension = 10 px, reduction = 3 px)
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        {
+            generator.Parameters.Barcode.XDimension.Pixels = 10;               // Base module width
+            generator.Parameters.Barcode.BarWidthReduction.Pixels = 3;        // 30% of 10 px
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
         Console.WriteLine($"Barcode saved to: {barcodePath}");
 
-        // Verify that the generated file exists before attempting to read it
+        // --------------------------------------------------------------------
+        // Verify readability using BarCodeReader
+        // --------------------------------------------------------------------
         if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Generated barcode file not found.");
             return;
         }
 
-        // Set the expected decode type for the reader
-        BaseDecodeType decodeType = DecodeType.Code128;
-
-        // Use BarCodeReader to attempt decoding the saved image
-        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
             var results = reader.ReadBarCodes();
-
-            // If decoding succeeded, output each decoded text value
             if (results != null && results.Length > 0)
             {
                 foreach (var result in results)
                 {
-                    Console.WriteLine($"Decoded Text: {result.GetCodeText(Encoding.UTF8)}");
+                    Console.WriteLine($"Decoded Text: {result.CodeText}");
+                    Console.WriteLine($"Symbology: {result.CodeTypeName}");
                 }
             }
             else

@@ -1,8 +1,8 @@
 // Title: Generate Codablock‑F barcode with multiline data and save as BMP
 // Description: Demonstrates creating a Codablock‑F barcode containing multiple lines of text and exporting it to a BMP image file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.CodablockF. It shows how to configure barcode parameters such as X‑dimension and aspect ratio, handle multiline input, and save the result in BMP format—common tasks for developers needing high‑density 2‑D barcodes in desktop or server applications.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.CodablockF. It shows setting barcode parameters such as X‑dimension and aspect ratio, handling multiline input, and saving the result in BMP format—common tasks for developers needing high‑density 2‑D barcodes in desktop or web applications.
 // Prompt: Generate a Codablock‑F barcode with multiline data and export the image as a BMP file.
-// Tags: codablock-f, barcode generation, multiline data, bmp output, aspose.barcode, encode types
+// Tags: codablock-f, barcode generation, multiline data, bmp output, aspnet.barcode, barcodegenerator
 
 using System;
 using System.IO;
@@ -10,7 +10,7 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a Codablock‑F barcode with multiline data and saves it as a BMP image.
+/// Example program that creates a Codablock‑F barcode with multiline text and saves it as a BMP image.
 /// </summary>
 class Program
 {
@@ -19,26 +19,30 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Build output file path in the current directory
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "CodablockF_Multiline.bmp");
+        // Determine the output directory relative to the current working directory and ensure it exists.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
 
-        // Multiline data for the barcode; newline characters separate lines
-        string codeText = "First line of data\nSecond line of data\nThird line of data";
+        // Build the full file path for the BMP image to be saved.
+        string outputPath = Path.Combine(outputDir, "CodablockF_Multiline.bmp");
 
-        // Initialize the barcode generator with Codablock‑F symbology and the multiline text
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.CodablockF, codeText))
+        // Define the barcode data with multiple lines separated by newline characters.
+        string codeText = "Line1\nLine2\nLine3";
+
+        // Initialize the barcode generator for Codablock‑F symbology with the multiline data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.CodablockF, codeText))
         {
-            // Set the X dimension (module width) in pixels
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Set the X dimension (module width) in pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
 
-            // Adjust the aspect ratio for Codablock‑F to improve readability
+            // Adjust the aspect ratio specific to Codablock‑F to control barcode shape.
             generator.Parameters.Barcode.Codablock.AspectRatio = 15;
 
-            // Save the generated barcode as a BMP image
+            // Save the generated barcode as a BMP image to the specified path.
             generator.Save(outputPath, BarCodeImageFormat.Bmp);
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"Codablock-F barcode saved to: {outputPath}");
+        // Output the location of the saved barcode image.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

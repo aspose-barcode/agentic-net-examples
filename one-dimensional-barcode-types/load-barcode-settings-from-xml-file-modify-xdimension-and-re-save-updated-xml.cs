@@ -1,54 +1,59 @@
-// Title: Load and modify barcode settings via XML
-// Description: Demonstrates how to export barcode generator settings to XML, load them back, change the XDimension, and re‑export the updated configuration.
-// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating the use of BarcodeGenerator for persisting settings to XML and re‑importing them. Typical use cases include batch processing, configuration versioning, and dynamic adjustment of barcode parameters. Developers often work with BarcodeGenerator, EncodeTypes, and the Parameters.Barcode.XDimension property to fine‑tune barcode appearance.
+// Title: Load and Update Barcode Settings XML – Modify XDimension
+// Description: Demonstrates loading barcode generation settings from an XML file, changing the XDimension property, and saving the updated configuration back to XML.
+// Category-Description: This example belongs to the Aspose.BarCode generation suite, focusing on importing and exporting barcode settings via XML. It showcases the BarcodeGenerator class, its Parameters.Barcode.XDimension property, and the ImportFromXml/ExportToXml methods. Developers commonly use these APIs to persist configuration, adjust parameters programmatically, and integrate barcode settings into automated workflows.
 // Prompt: Load barcode settings from an XML file, modify XDimension, and re‑save the updated XML.
-// Tags: barcode, code128, xml, xdimension, configuration, aspnet.barcode, bargenerator
+// Tags: barcode, xml, xdimension, generation, export, import, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that shows how to export barcode settings to XML,
-/// import them back, modify the XDimension, and save the updated XML.
+/// Example program that loads barcode settings from an XML file, updates the XDimension,
+/// and writes the modified settings back to a new XML file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary folder, generates a barcode,
-    /// exports its settings to XML, re‑imports, modifies XDimension, and saves the updated XML.
+    /// Entry point of the application.
+    /// Accepts optional command‑line arguments:
+    /// 0 – input XML path (default: "barcodeSettings.xml")
+    /// 1 – output XML path (default: "barcodeSettingsUpdated.xml")
+    /// 2 – new XDimension value (default: 3.0)
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments.</param>
+    static void Main(string[] args)
     {
-        // Create a temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Resolve input, output, and new XDimension values from arguments or defaults.
+        string inputPath = args.Length > 0 ? args[0] : "barcodeSettings.xml";
+        string outputPath = args.Length > 1 ? args[1] : "barcodeSettingsUpdated.xml";
+        float newXDimension = args.Length > 2 ? float.Parse(args[2]) : 3f;
 
-        // Define file paths for the original and updated XML configurations
-        string originalXmlPath = Path.Combine(tempFolder, "original.xml");
-        string updatedXmlPath = Path.Combine(tempFolder, "updated.xml");
-
-        // Step 1: Create a barcode generator, set initial XDimension, and export to XML
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // If the input XML does not exist, create a sample barcode generator and export its settings.
+        if (!File.Exists(inputPath))
         {
-            // Set the initial XDimension (module width) in points
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            // Export the current generator settings to an XML file
-            generator.ExportToXml(originalXmlPath);
+            // Create a sample generator with Code128 symbology and a sample value.
+            using (BarcodeGenerator sampleGen = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+            {
+                // Set an initial XDimension value.
+                sampleGen.Parameters.Barcode.XDimension.Point = 2f;
+                // Export the generator's settings to the specified input XML file.
+                sampleGen.ExportToXml(inputPath);
+            }
         }
 
-        // Step 2: Import the generator from the XML, modify XDimension, and export again
-        using (var generator = BarcodeGenerator.ImportFromXml(originalXmlPath))
+        // Import the existing settings from the input XML file.
+        using (BarcodeGenerator gen = BarcodeGenerator.ImportFromXml(inputPath))
         {
-            // Change XDimension to a new value (e.g., double the width)
-            generator.Parameters.Barcode.XDimension.Point = 4f;
-            // Export the updated settings to a new XML file
-            generator.ExportToXml(updatedXmlPath);
+            // Update the XDimension to the new value provided by the user.
+            gen.Parameters.Barcode.XDimension.Point = newXDimension;
+            // Export the modified settings to the output XML file.
+            gen.ExportToXml(outputPath);
         }
 
-        // Output the locations of the generated XML files
-        Console.WriteLine("Original XML saved to: " + originalXmlPath);
-        Console.WriteLine("Updated XML saved to: " + updatedXmlPath);
+        // Inform the user about the performed operations.
+        Console.WriteLine($"Loaded settings from: {inputPath}");
+        Console.WriteLine($"Modified XDimension to: {newXDimension}");
+        Console.WriteLine($"Saved updated settings to: {outputPath}");
     }
 }

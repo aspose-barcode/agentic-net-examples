@@ -1,8 +1,8 @@
-// Title: Generate Codabar Barcode and Embed in Word Document
-// Description: This example creates a Codabar barcode with start symbol C and stop symbol D, renders it as a PNG image, and inserts it into a Word document.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation (BarcodeGenerator, EncodeTypes, CodabarSymbol) combined with Aspose.Words document creation (Document, DocumentBuilder). Typical use cases include adding barcodes to reports, invoices, or labels generated programmatically. Developers often need to customize barcode parameters, export images, and embed them into Office documents.
+// Title: Generate Codabar barcode with custom start/stop symbols and embed in Word document
+// Description: Demonstrates creating a Codabar barcode with start symbol C and stop symbol D, saving it as PNG, and inserting the image into a Word document.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters (resolution, X‑dimension, start/stop symbols) using BarcodeGenerator and EncodeTypes.Codabar, then embed the generated image into a document using Aspose.Words. Developers often need to produce printable barcodes and combine them with office documents for reports, invoices, or labels.
 // Prompt: Generate a Codabar barcode with start symbol C, stop symbol D, and embed the image in a Word document.
-// Tags: codabar, barcode generation, word document, aspose.barcode, aspose.words, image embedding, png
+// Tags: codabar, barcode, generation, image, word, aspose.barcode, aspose.words, png
 
 using System;
 using System.IO;
@@ -10,66 +10,68 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Words;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Codabar barcode with specific start/stop symbols
-/// and embedding the resulting image into a Word document using Aspose libraries.
+/// Example program that creates a Codabar barcode with specific start/stop symbols,
+/// saves it as an image, and embeds the image into a Word document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates output directory, generates the barcode,
-    /// converts it to PNG, inserts it into a Word file, and saves the document.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define and create the output directory
+        // Define output directory and ensure it exists
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
         Directory.CreateDirectory(outputDir);
+
+        // Paths for the barcode image and the resulting Word document
+        string barcodePath = Path.Combine(outputDir, "CodabarC_D.png");
         string wordPath = Path.Combine(outputDir, "CodabarDocument.docx");
 
-        // Initialize barcode generator for Codabar with data "12345"
+        // Initialize the barcode generator for Codabar with the data "12345"
         using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "12345"))
         {
-            // Set image resolution and X-dimension (pixel width of narrow bar)
-            generator.Parameters.Resolution = 300;
-            generator.Parameters.Barcode.XDimension.Pixels = 2;
+            // Configure barcode appearance
+            generator.Parameters.Resolution = 300f; // DPI for high‑quality image
+            generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.C; // Set start symbol
+            generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.D;  // Set stop symbol
+            generator.Parameters.Barcode.XDimension.Pixels = 2f; // Width of the smallest bar
 
-            // Configure start and stop symbols for Codabar
-            generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.C;
-            generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.D;
+            // Save the barcode as a PNG file
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
 
-            // Generate a bitmap to obtain the image dimensions
-            using (Aspose.Drawing.Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Generate the barcode image in memory
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                int imgWidth = bitmap.Width;
-                int imgHeight = bitmap.Height;
-
-                // Save the barcode image to a memory stream in PNG format
-                using (var imageStream = new MemoryStream())
+                using (var ms = new MemoryStream())
                 {
-                    generator.Save(imageStream, BarCodeImageFormat.Png);
-                    byte[] imageBytes = imageStream.ToArray();
+                    // Write the image to a memory stream (PNG format)
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    byte[] imageBytes = ms.ToArray();
 
-                    // Create a new Word document and a builder to insert content
+                    // Create a new Word document and insert the barcode image
                     var doc = new Document();
                     var builder = new DocumentBuilder(doc);
+                    builder.Writeln("Codabar barcode with start C and stop D:");
 
                     // Convert pixel dimensions to points (1 point = 1/72 inch)
-                    float widthPoints = (float)(imgWidth * 72.0 / generator.Parameters.Resolution);
-                    float heightPoints = (float)(imgHeight * 72.0 / generator.Parameters.Resolution);
+                    float widthPoints = (bitmap.Width * 72f) / generator.Parameters.Resolution;
+                    float heightPoints = (bitmap.Height * 72f) / generator.Parameters.Resolution;
 
-                    // Insert the barcode image into the document with calculated size
+                    // Insert the image using the calculated size
                     builder.InsertImage(imageBytes, widthPoints, heightPoints);
 
-                    // Save the Word document to the specified path
-                    doc.Save(wordPath);
+                    // Save the Word document
+                    doc.Save(wordPath, SaveFormat.Docx);
                 }
             }
         }
 
-        // Inform the user where the document was saved
-        Console.WriteLine("Word document with Codabar barcode created at:");
-        Console.WriteLine(wordPath);
+        // Inform the user where the files were saved
+        Console.WriteLine("Barcode image saved to: " + barcodePath);
+        Console.WriteLine("Word document saved to: " + wordPath);
     }
 }

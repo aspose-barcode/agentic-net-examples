@@ -1,8 +1,8 @@
-// Title: Generate high‑contrast Code128 barcode image with white background and black bars
-// Description: Demonstrates how to create a Code128 barcode with a white background and black foreground, suitable for high‑contrast scanning environments.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Developers often need to customize barcode colors and export them as image files for printing or display. The snippet illustrates typical steps: setting output paths, configuring colors, and saving the image, which are common tasks when integrating barcode generation into .NET applications.
+// Title: Generate High‑Contrast Code128 Barcode Image
+// Description: Demonstrates how to create a Code128 barcode with a white background and black bars, suitable for high‑contrast scanning environments.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to customize barcode appearance. Developers often need to adjust colors for readability on various media, and this snippet shows the typical steps for setting background and foreground colors before saving the image.
 // Prompt: Set barcode background to white, foreground to black, and generate image for high‑contrast scanning environments.
-// Tags: code128, color, png, generation, aspose.barcode
+// Tags: code128, barcode, color, high-contrast, image, png, generation, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,42 +11,30 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a high‑contrast Code128 barcode image.
+/// Provides an entry point that generates a high‑contrast barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode with white background and black bars,
-    /// then saves it as a PNG file in a temporary directory.
+    /// Creates a Code128 barcode with white background and black bars, then saves it as a PNG file.
     /// </summary>
-    /// <param name="args">Optional command‑line arguments; the first argument can specify the barcode text.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine a temporary output directory for the generated image.
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        if (!Directory.Exists(outputDir))
+        // Define the output file path in the current directory
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "high_contrast_barcode.png");
+
+        // Initialize the barcode generator with Code128 symbology and sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Use the first command‑line argument as the barcode text, or fall back to a default value.
-        string codeText = args.Length > 0 ? args[0] : "1234567890";
-
-        // Build the full file path for the PNG image.
-        string outputPath = Path.Combine(outputDir, "barcode.png");
-
-        // Create and configure the barcode generator.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-        {
-            // Set high‑contrast colors: white background and black bars.
+            // Set high‑contrast colors: white background and black bars
             generator.Parameters.BackColor = Color.White;
             generator.Parameters.Barcode.BarColor = Color.Black;
 
-            // Save the barcode image as a PNG file.
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the image was saved.
+        // Inform the user where the image was saved
         Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

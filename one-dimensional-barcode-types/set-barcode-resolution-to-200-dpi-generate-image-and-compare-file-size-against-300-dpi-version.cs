@@ -1,32 +1,32 @@
-// Title: Barcode resolution comparison between 200 DPI and 300 DPI
-// Description: Demonstrates how to set barcode image resolution using Aspose.BarCode, generate PNG images at 200 DPI and 300 DPI, and compare their file sizes.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to control image resolution. Developers often need to adjust DPI for printing quality or file size optimization, and this snippet shows typical steps for creating barcodes at different resolutions and evaluating the impact on output size.
+// Title: Compare barcode image file sizes at different DPI settings
+// Description: Demonstrates how to set barcode resolution to 200 DPI and 300 DPI, generate PNG images, and compare their file sizes.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Developers often need to control image resolution for printing or display quality, and comparing file sizes helps assess storage impact. The snippet shows typical steps: configure resolution, save images, and evaluate output size.
 // Prompt: Set barcode resolution to 200 DPI, generate image, and compare file size against 300 DPI version.
-// Tags: barcode, resolution, dpi, image generation, png, aspose.barcode, code128, file size comparison
+// Tags: barcode, resolution, dpi, image generation, file size comparison, code128, png, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates setting barcode resolution, generating PNG images at different DPI values,
-/// and comparing the resulting file sizes using Aspose.BarCode.
+/// Demonstrates generating Code128 barcodes at different resolutions and comparing the resulting file sizes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates temporary output folder, generates two barcodes
-    /// (200 DPI and 300 DPI), and prints a size comparison to the console.
+    /// Entry point. Creates temporary output folder, generates 200 DPI and 300 DPI barcode PNGs, and prints size comparison.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the generated barcode images
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeResolutionDemo_" + Guid.NewGuid().ToString("N"));
+        // Define a temporary directory to store generated barcode images
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeResolutionDemo");
         Directory.CreateDirectory(outputDir);
 
-        // Barcode data and target file paths
+        // Barcode data to encode
         string codeText = "1234567890";
+
+        // Paths for the two output files
         string file200 = Path.Combine(outputDir, "barcode_200dpi.png");
         string file300 = Path.Combine(outputDir, "barcode_300dpi.png");
 
@@ -44,7 +44,7 @@ class Program
             generator300.Save(file300, BarCodeImageFormat.Png); // Save as PNG
         }
 
-        // Retrieve file sizes for both images
+        // Retrieve file sizes for comparison
         long size200 = new FileInfo(file200).Length;
         long size300 = new FileInfo(file300).Length;
 
@@ -52,12 +52,12 @@ class Program
         Console.WriteLine($"200 DPI file size: {size200} bytes");
         Console.WriteLine($"300 DPI file size: {size300} bytes");
 
-        // Compare and report which file is larger
+        // Compare and report which image is larger
         if (size200 < size300)
-            Console.WriteLine("200 DPI file is smaller than 300 DPI file.");
+            Console.WriteLine("200 DPI image is smaller than 300 DPI image.");
         else if (size200 > size300)
-            Console.WriteLine("200 DPI file is larger than 300 DPI file.");
+            Console.WriteLine("200 DPI image is larger than 300 DPI image.");
         else
-            Console.WriteLine("Both files have the same size.");
+            Console.WriteLine("Both images have the same file size.");
     }
 }

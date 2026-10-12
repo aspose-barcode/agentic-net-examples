@@ -1,97 +1,109 @@
-// Title: Batch generate barcode images from XML configuration files
-// Description: Demonstrates importing barcode settings from XML files, generating PNG images, and logging any errors encountered during processing.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing the use of BarcodeGenerator.ImportFromXml and ExportToXml for bulk barcode creation. Developers often need to automate barcode generation from predefined configurations, handling multiple symbologies and output formats while capturing processing issues. The code illustrates typical patterns for directory traversal, image saving, and error logging using Aspose.BarCode classes.
+// Title: Batch processing of XML barcode configurations to generate images
+// Description: Demonstrates how to read barcode configuration XML files from a directory, generate corresponding barcode images, and log the processing results.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to import barcode settings from XML, generate images, and export configurations. It uses BarcodeGenerator.ImportFromXml, BarcodeGenerator.Save, and related parameter classes. Typical use cases include automated generation of multiple barcodes from predefined configurations, useful for inventory, shipping, or marketing workflows where developers need to process many barcode definitions efficiently.
 // Prompt: Batch process a directory of XML configuration files, generating corresponding barcode images and logging any errors encountered.
-// Tags: barcode symbology, batch processing, xml import, image generation, error logging, aspose.barcode, c#
+// Tags: barcode, batch processing, xml, generation, aspose.barcode, png, logging
 
 using System;
 using System.IO;
 using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides a console application that creates sample barcode XML configurations,
-/// imports them, generates PNG images, and logs any processing errors.
+/// Provides a console application that batch‑processes XML barcode configuration files,
+/// generates PNG images for each configuration, and records the operation in a log file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Executes the batch processing workflow.
+    /// Entry point of the application. Accepts an optional folder path argument; if omitted,
+    /// a temporary folder with sample XML configurations is created and processed.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; the first argument may specify the input folder.</param>
+    static void Main(string[] args)
     {
-        // Create dedicated temporary folders for XML configs and output images
-        string inputFolder = Path.Combine(Path.GetTempPath(), "BarcodesXml_" + Guid.NewGuid().ToString("N"));
-        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodesImg_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(inputFolder);
+        // Determine the input folder: use argument if valid, otherwise create a temporary folder with samples.
+        string inputFolder;
+        if (args.Length > 0 && Directory.Exists(args[0]))
+        {
+            inputFolder = args[0];
+        }
+        else
+        {
+            inputFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(inputFolder);
+            GenerateSampleXmlConfigs(inputFolder);
+        }
+
+        // Prepare the output folder for generated barcode images.
+        string outputFolder = Path.Combine(inputFolder, "Output");
         Directory.CreateDirectory(outputFolder);
 
-        // Generate sample barcode XML configuration files in the input folder
-        GenerateSampleXmlConfigs(inputFolder);
+        // Initialize the processing log.
+        string logPath = Path.Combine(inputFolder, "process_log.txt");
+        File.WriteAllText(logPath, $"Processing started at {DateTime.Now}{Environment.NewLine}");
 
-        // Retrieve all XML configuration files from the input folder
-        List<string> xmlFiles = new List<string>(Directory.GetFiles(inputFolder, "*.xml"));
+        // Collect all XML configuration files in the input folder.
+        List<string> xmlFiles = new List<string>();
+        foreach (string file in Directory.GetFiles(inputFolder, "*.xml"))
+        {
+            xmlFiles.Add(file);
+        }
 
-        // Process each XML configuration file: import, generate image, and handle errors
-        foreach (string xmlPath in xmlFiles)
+        // Process each XML file: import settings, generate image, and log the result.
+        foreach (string xmlFile in xmlFiles)
         {
             try
             {
-                // Import barcode settings from the XML file
-                using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
+                using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlFile))
                 {
-                    // Determine output image path (same name, PNG extension)
-                    string imageFileName = Path.GetFileNameWithoutExtension(xmlPath) + ".png";
-                    string imagePath = Path.Combine(outputFolder, imageFileName);
-
-                    // Save the generated barcode image as PNG
+                    string fileNameWithoutExt = Path.GetFileNameWithoutExtension(xmlFile);
+                    string imagePath = Path.Combine(outputFolder, fileNameWithoutExt + ".png");
                     generator.Save(imagePath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Generated barcode image: {imagePath}");
+                    File.AppendAllText(logPath, $"Generated: {imagePath}{Environment.NewLine}");
                 }
             }
             catch (Exception ex)
             {
-                // Log the error message to console and to an error log file
-                string message = $"Error processing '{xmlPath}': {ex.Message}";
-                Console.WriteLine(message);
-                string logPath = Path.Combine(outputFolder, "error.log");
-                File.AppendAllText(logPath, message + Environment.NewLine);
+                // Log any errors encountered while processing the current XML file.
+                File.AppendAllText(logPath, $"Error processing {xmlFile}: {ex.Message}{Environment.NewLine}");
             }
         }
 
-        Console.WriteLine("Batch processing completed.");
+        // Finalize the log with a completion timestamp.
+        File.AppendAllText(logPath, $"Processing completed at {DateTime.Now}{Environment.NewLine}");
+        Console.WriteLine($"Batch processing completed. See log at: {logPath}");
     }
 
     /// <summary>
-    /// Generates sample barcode configuration XML files for Code128, QR, and DataMatrix symbologies.
+    /// Generates a set of sample barcode configuration XML files in the specified folder.
+    /// These samples include Code128, QR, and DataMatrix barcodes.
     /// </summary>
-    /// <param name="folder">The directory where the XML files will be saved.</param>
+    /// <param name="folder">The folder where sample XML files will be saved.</param>
     static void GenerateSampleXmlConfigs(string folder)
     {
-        // Sample 1: Code128
-        string xml1 = Path.Combine(folder, "Code128.xml");
-        using (var gen = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Sample Code128 configuration.
+        using (BarcodeGenerator gen1 = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            gen.Parameters.Barcode.XDimension.Point = 2f;
-            gen.ExportToXml(xml1);
+            string path1 = Path.Combine(folder, "code128.xml");
+            gen1.ExportToXml(path1);
         }
 
-        // Sample 2: QR
-        string xml2 = Path.Combine(folder, "QR.xml");
-        using (var gen = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Sample QR configuration with error correction level M.
+        using (BarcodeGenerator gen2 = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            gen.Parameters.Barcode.XDimension.Point = 3f;
-            gen.ExportToXml(xml2);
+            gen2.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            string path2 = Path.Combine(folder, "qr.xml");
+            gen2.ExportToXml(path2);
         }
 
-        // Sample 3: DataMatrix
-        string xml3 = Path.Combine(folder, "DataMatrix.xml");
-        using (var gen = new BarcodeGenerator(EncodeTypes.DataMatrix, "DM12345"))
+        // Sample DataMatrix configuration with a specific version.
+        using (BarcodeGenerator gen3 = new BarcodeGenerator(EncodeTypes.DataMatrix, "DM12345"))
         {
-            gen.Parameters.Barcode.XDimension.Point = 2f;
-            gen.ExportToXml(xml3);
+            gen3.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_10x10;
+            string path3 = Path.Combine(folder, "datamatrix.xml");
+            gen3.ExportToXml(path3);
         }
     }
 }

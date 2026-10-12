@@ -1,53 +1,40 @@
-// Title: Set XDimension and YDimension for a Code128 barcode
-// Description: Demonstrates how to configure the XDimension (module width) to 0.4 mm and the image height (YDimension) to 25 mm for a Code128 barcode using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode dimensions with the BarcodeGenerator class. It covers setting module width via XDimension, adjusting image height through AutoSizeMode and ImageHeight, and saving the result in PNG format. Developers creating labels, packaging, or inventory tags often need precise size control to meet printing specifications.
+// Title: Generate Code128 barcode with custom X and Y dimensions
+// Description: Demonstrates how to set the X‑dimension (module width) to 0.4 mm and the Y‑dimension (image height) to 25 mm when generating a Code128 barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode size parameters via the BarcodeGenerator.Parameters properties. It covers key classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, which developers use to create barcodes with precise physical dimensions for labeling, packaging, and inventory applications.
 // Prompt: Set barcode XDimension to 0.4 mm and YDimension to 25 mm to meet specific label dimensions.
-// Tags: barcode, xdimension, ydimension, code128, generation, png, aspose.barcode
+// Tags: code128, xdimension, ydimension, barcode generation, aspose.barcode, image output, png
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode with custom XDimension and YDimension settings,
-/// then saves it as a PNG image to a temporary directory.
+/// Demonstrates setting XDimension and YDimension for a Code128 barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Configures barcode dimensions, colors, and saves the image.
+    /// Creates a barcode image with custom dimensions and saves it as PNG.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary output directory
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "barcode.png");
+        // Define the output file path
+        string outputPath = "barcode.png";
 
-        // Define the barcode content and symbology
-        string codeText = "Sample123";
-
-        // Initialize the barcode generator with Code128 symbology
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Initialize the barcode generator with Code128 symbology and sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set the module width (XDimension) to 0.4 mm
+            // Set module width (X dimension) to 0.4 mm
             generator.Parameters.Barcode.XDimension.Millimeters = 0.4f;
 
-            // Configure image height (YDimension) to 25 mm using interpolation auto-size mode
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            // Set overall image height (Y dimension) to 25 mm
             generator.Parameters.ImageHeight.Millimeters = 25f;
 
-            // Optional: define foreground (barcode) and background colors
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Save the generated barcode as a PNG file
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the generated barcode image
-        Console.WriteLine("Barcode generated at: " + outputPath);
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

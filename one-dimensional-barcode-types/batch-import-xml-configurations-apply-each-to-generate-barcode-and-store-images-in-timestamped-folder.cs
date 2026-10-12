@@ -1,8 +1,8 @@
-// Title: Batch generate barcodes from XML configurations
-// Description: Demonstrates importing multiple Aspose.BarCode XML configuration files, generating corresponding barcodes, and saving them as PNG images in a timestamped folder.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to work with BarcodeGenerator.ImportFromXml, export configurations, and batch process images. Developers often need to automate barcode creation from predefined settings, especially when handling large volumes or integrating with external configuration pipelines.
+// Title: Batch generate barcodes from XML configurations and save to timestamped folder
+// Description: The sample creates XML barcode configuration files, imports each configuration, generates the corresponding barcode, and stores the images in a folder named with the current timestamp.
+// Category-Description: This example belongs to the Aspose.BarCode generation and configuration category, demonstrating how to use BarcodeGenerator to export and import XML configuration files, apply them to create barcodes, and save images. Typical use cases include batch processing of barcode settings, dynamic generation based on stored configurations, and integration with external configuration management systems. Developers often need to serialize generator parameters, reuse them across environments, and automate image output.
 // Prompt: Batch import XML configurations, apply each to generate a barcode, and store images in a timestamped folder.
-// Tags: barcode, batch processing, xml, generation, png, aspose.barcode, generation, symbology
+// Tags: qr,code128,datamatrix,batch,xml,import,barcodegenerator,png
 
 using System;
 using System.IO;
@@ -10,94 +10,72 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates batch processing of barcode XML configurations:
-/// 1. Creates sample XML config files.
-/// 2. Imports each config, generates a barcode, and saves it as PNG.
-/// 3. Stores results in a timestamped output directory.
+/// Demonstrates batch creation of barcode images by exporting configurations to XML,
+/// importing them back, and saving the generated barcodes to a timestamped directory.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the batch import, generation, and saving workflow.
+    /// Entry point of the example. Executes the workflow of creating sample XML configurations,
+    /// importing each configuration, generating the barcode, and saving the image files.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder to hold generated XML configuration files.
+        // Step 1: Create a temporary folder to hold the XML configuration files.
         string configFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlConfigs_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(configFolder);
 
-        // Generate sample XML configurations for demonstration purposes.
-        CreateSampleXmlConfigs(configFolder);
+        // Step 2: Define sample barcode configurations and export each to an XML file.
+        var sampleConfigs = new List<(BaseEncodeType type, string text, string fileName, Color color)>
+        {
+            (EncodeTypes.QR, "Sample QR Code", "qr_config.xml", Color.Blue),
+            (EncodeTypes.Code128, "SampleCode128", "code128_config.xml", Color.Green),
+            (EncodeTypes.DataMatrix, "DM", "datamatrix_config.xml", Color.Red)
+        };
 
-        // Create a timestamped folder where barcode images will be saved.
+        foreach (var cfg in sampleConfigs)
+        {
+            string xmlPath = Path.Combine(configFolder, cfg.fileName);
+            using (var generator = new BarcodeGenerator(cfg.type, cfg.text))
+            {
+                // Apply custom visual settings.
+                generator.Parameters.Barcode.BarColor = cfg.color;
+                generator.Parameters.Barcode.XDimension.Pixels = 3f;
+
+                // Export the current generator settings to an XML file.
+                generator.ExportToXml(xmlPath);
+            }
+        }
+
+        // Step 3: Create a timestamped folder for the generated barcode images.
         string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + DateTime.Now.ToString("yyyyMMdd_HHmmss"));
         Directory.CreateDirectory(outputFolder);
 
-        // Retrieve all XML configuration files from the temporary folder.
+        // Step 4: Import each XML configuration, generate the barcode, and save the image as PNG.
         string[] xmlFiles = Directory.GetFiles(configFolder, "*.xml");
-
-        Console.WriteLine($"Found {xmlFiles.Length} XML configuration(s). Generating barcodes...");
-
-        // Process each XML file: import, generate barcode, and save as PNG.
-        foreach (string xmlPath in xmlFiles)
+        foreach (string xmlFile in xmlFiles)
         {
             try
             {
-                // Import barcode settings from the XML configuration.
-                using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath))
+                using (var generator = BarcodeGenerator.ImportFromXml(xmlFile))
                 {
-                    // Build the output image file name based on the XML file name.
-                    string fileName = Path.GetFileNameWithoutExtension(xmlPath) + ".png";
-                    string imagePath = Path.Combine(outputFolder, fileName);
+                    string imageFileName = Path.GetFileNameWithoutExtension(xmlFile) + ".png";
+                    string imagePath = Path.Combine(outputFolder, imageFileName);
 
-                    // Save the generated barcode image in PNG format.
+                    // Save the generated barcode image.
                     generator.Save(imagePath, BarCodeImageFormat.Png);
                     Console.WriteLine($"Generated barcode saved to: {imagePath}");
                 }
             }
             catch (Exception ex)
             {
-                // Log any errors encountered while processing a specific XML file.
-                Console.WriteLine($"Error processing '{xmlPath}': {ex.Message}");
+                // Log any errors encountered while processing a configuration file.
+                Console.WriteLine($"Failed to process '{xmlFile}': {ex.Message}");
             }
         }
 
-        Console.WriteLine("Batch processing completed.");
-    }
-
-    /// <summary>
-    /// Generates sample barcode XML configuration files for QR, Code128, and PDF417 symbologies.
-    /// Each configuration is saved to the specified folder.
-    /// </summary>
-    /// <param name="folderPath">The directory where XML files will be written.</param>
-    static void CreateSampleXmlConfigs(string folderPath)
-    {
-        // Define sample data: a tuple of EncodeTypes member and the corresponding code text.
-        var samples = new List<(BaseEncodeType encodeType, string codeText)>
-        {
-            (EncodeTypes.QR, "Sample QR Code"),
-            (EncodeTypes.Code128, "CODE12812345"),
-            (EncodeTypes.Pdf417, "PDF417 Sample Text")
-        };
-
-        int index = 1;
-        // Iterate over each sample, generate a barcode, and export its configuration to XML.
-        foreach (var (encodeType, codeText) in samples)
-        {
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
-            {
-                // Set a common property for demonstration (pixel size of X-dimension).
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-
-                // Determine the XML file path and export the configuration.
-                string xmlPath = Path.Combine(folderPath, $"config{index}.xml");
-                generator.ExportToXml(xmlPath);
-                Console.WriteLine($"Exported XML configuration: {xmlPath}");
-            }
-            index++;
-        }
+        Console.WriteLine("Batch barcode generation completed.");
     }
 }

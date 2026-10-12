@@ -1,79 +1,89 @@
-// Title: Generate ITF14 barcode and embed into PDF with quiet zone coefficient
-// Description: Demonstrates creating an ITF14 barcode, optionally setting a quiet zone coefficient, and embedding the barcode image into a PDF document.
-// Category-Description: This example belongs to the Aspose.BarCode generation and Aspose.Pdf embedding category. It shows how to use BarcodeGenerator (EncodeTypes.ITF14) to produce a barcode, configure barcode parameters such as X‑Dimension and quiet zone, and then insert the resulting image into a PDF using Aspose.Pdf Document, Page, and Image classes. Developers creating reports, invoices, or shipping labels often need to generate barcodes and place them directly into PDF files.
+// Title: Generate ITF14 barcode with quiet zone and embed into PDF
+// Description: Demonstrates creating an ITF14 barcode, configuring its quiet zone coefficient, and inserting the barcode image into an existing PDF report.
+// Category-Description: This example belongs to the Aspose.BarCode generation and Aspose.Pdf manipulation category. It shows how to use BarcodeGenerator (Aspose.BarCode.Generation) to produce a barcode image, adjust barcode parameters such as X‑dimension and quiet‑zone coefficient, and then embed the resulting image into a PDF document using Aspose.Pdf.Document. Typical use cases include adding machine‑readable identifiers to reports, invoices, or shipping documents where a PDF output is required.
 // Prompt: Generate ITF barcodes with quiet zone coefficient 0.2, embed into existing PDF report.
-// Tags: itf, barcode, pdf, embed, quietzone, aspose.barcode, aspose.pdf, csharp
+// Tags: itf, barcode, quietzone, pdf, aspose.barcode, aspose.pdf, generation, embedding
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Pdf;
-using Aspose.Pdf.Text;
 
 /// <summary>
-/// Example program that generates an ITF14 barcode and embeds it into a PDF report.
+/// Example program that creates an ITF14 barcode, configures its quiet zone,
+/// and embeds the barcode image into a PDF document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, applies quiet zone settings, and creates a PDF file containing the barcode image.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Sample data
-        string barcodeText = "12345678901231"; // 14 digits for ITF14
-        float quietZoneCoefficient = 0.2f; // Desired coefficient (invalid per API)
+        // Define the path to the PDF report.
+        string pdfPath = "Report.pdf";
 
-        // Validate quiet zone coefficient
-        if (quietZoneCoefficient < 10f)
+        // Load the existing PDF if it exists; otherwise create a new document with a single page.
+        Aspose.Pdf.Document pdfDoc;
+        if (File.Exists(pdfPath))
         {
-            Console.WriteLine("Quiet zone coefficient must be at least 10. Using default value.");
+            pdfDoc = new Aspose.Pdf.Document(pdfPath);
+        }
+        else
+        {
+            pdfDoc = new Aspose.Pdf.Document();
+            pdfDoc.Pages.Add();
         }
 
-        // Prepare output PDF path
-        string outputPdfPath = Path.Combine(Path.GetTempPath(), "ITFReport.pdf");
-
-        // Generate ITF barcode
-        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, barcodeText))
+        // Create an ITF14 barcode generator with the desired data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, "12345678901231"))
         {
-            // Set basic barcode parameters
+            // Set the module (X‑dimension) size in pixels.
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
-            generator.Parameters.Resolution = 300;
 
-            // Apply quiet zone coefficient only if valid
-            if (quietZoneCoefficient >= 10f)
-            {
-                generator.Parameters.Barcode.ITF.QuietZoneCoef = (int)quietZoneCoefficient;
-            }
+            // The QuietZoneCoef property expects an integer >= 10.
+            // The requested coefficient 0.2 is not valid, so we use the minimum allowed value.
+            int quietZoneCoef = 10;
+            generator.Parameters.Barcode.ITF.QuietZoneCoef = quietZoneCoef;
+            Console.WriteLine($"QuietZoneCoef set to minimum valid value: {quietZoneCoef}");
 
-            // Save barcode to memory stream
+            // Render the barcode to a memory stream in PNG format.
             using (var barcodeStream = new MemoryStream())
             {
                 generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                barcodeStream.Position = 0;
+                barcodeStream.Position = 0; // Reset stream position for reading.
 
-                // Create PDF and embed barcode image
-                using (var pdfDoc = new Document())
+                // Embed the barcode image into the PDF document.
+                using (pdfDoc)
                 {
-                    var page = pdfDoc.Pages.Add();
+                    // Ensure the PDF has at least one page.
+                    if (pdfDoc.Pages.Count == 0)
+                    {
+                        pdfDoc.Pages.Add();
+                    }
 
+                    // Get the first page of the PDF.
+                    var page = pdfDoc.Pages[1];
+
+                    // Create an Aspose.Pdf.Image object from the barcode stream.
                     var pdfImage = new Aspose.Pdf.Image
                     {
                         ImageStream = barcodeStream,
                         FixWidth = 200.0,
                         FixHeight = 100.0,
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        Margin = new MarginInfo { Top = 20 }
+                        HorizontalAlignment = Aspose.Pdf.HorizontalAlignment.Center,
+                        VerticalAlignment = Aspose.Pdf.VerticalAlignment.Center
                     };
 
+                    // Add the image to the page's paragraph collection.
                     page.Paragraphs.Add(pdfImage);
-                    pdfDoc.Save(outputPdfPath);
+
+                    // Save the updated PDF back to the original file path.
+                    pdfDoc.Save(pdfPath);
+                    Console.WriteLine($"Barcode embedded into PDF: {pdfPath}");
                 }
             }
         }
-
-        Console.WriteLine($"PDF with embedded ITF barcode saved to: {outputPdfPath}");
     }
 }

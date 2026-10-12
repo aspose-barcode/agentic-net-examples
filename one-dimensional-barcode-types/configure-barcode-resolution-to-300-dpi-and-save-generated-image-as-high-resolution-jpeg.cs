@@ -1,38 +1,36 @@
 // Title: Generate high‑resolution Code128 barcode and save as JPEG
 // Description: This example creates a Code128 barcode, sets the image resolution to 300 DPI, and saves it as a high‑resolution JPEG file.
-// Category-Description: Demonstrates Aspose.BarCode generation features, focusing on the BarcodeGenerator class, EncodeTypes enumeration, and BarCodeImageFormat options. Typical use cases include creating printable barcodes for labels, invoices, or product packaging where image quality and resolution are critical. Developers often need to control DPI settings and output formats to meet printing standards.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation with custom image resolution. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce barcodes suitable for printing or high‑quality display. Developers often need to adjust DPI for print media, create images in specific formats, and manage output paths, making this a common pattern in barcode imaging solutions.
 // Prompt: Configure barcode resolution to 300 DPI and save the generated image as a high‑resolution JPEG.
 // Tags: code128, barcode, resolution, jpeg, generation, aspose.barcode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a high‑resolution barcode image using Aspose.BarCode.
+/// Example program that generates a Code128 barcode with a 300 DPI resolution
+/// and saves it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the output directory, generates a Code128 barcode at 300 DPI,
-    /// saves it as a JPEG, and writes the output path to the console.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Determine the output directory path relative to the current working directory
+        // Define the output directory relative to the current working directory
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
 
-        // Ensure the output directory exists; create it if it does not
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Ensure the output directory exists
+        Directory.CreateDirectory(outputDir);
 
-        // Build the full file path for the resulting JPEG image
-        string outputPath = Path.Combine(outputDir, "barcode_highres.jpg");
+        // Build the full path for the resulting JPEG file
+        string outputPath = Path.Combine(outputDir, "barcode300dpi.jpg");
 
-        // Initialize the barcode generator with Code128 symbology and the data to encode
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Initialize the barcode generator with Code128 symbology and sample data
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
             // Set the image resolution to 300 DPI for high‑quality output
             generator.Parameters.Resolution = 300f;
@@ -41,7 +39,7 @@ class Program
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user where the barcode image has been saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Output the location of the saved barcode image
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

@@ -1,59 +1,50 @@
-// Title: Configure ITF14 barcode with thick frame and custom quiet zone, save as TIFF
-// Description: Demonstrates how to set a thick frame border and a quiet‑zone coefficient for an ITF14 barcode using Aspose.BarCode, then render the result to a TIFF image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and ITF14 parameters such as BorderType, BorderThickness, and QuietZoneCoef. Typical scenarios include creating high‑resolution ITF14 barcodes for packaging, where a prominent frame and precise quiet‑zone control are required. Developers often need to adjust these settings before saving the barcode in various image formats.
+// Title: ITF14 Barcode Generation with Thick Frame and TIFF Output
+// Description: Demonstrates configuring an ITF14 barcode with a thick frame border and saving it as a TIFF image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to customize ITF symbology parameters such as border style, thickness, and quiet‑zone coefficient. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, typical for developers needing precise barcode appearance for packaging or inventory systems.
 // Prompt: Configure ITF parameters with thick frame style and quiet zone coefficient 0.3, render TIFF.
-// Tags: itf14, barcode, generation, tiff, aspose.barcode
+// Tags: itf, barcode, generation, tiff, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that configures ITF14 barcode parameters (thick frame and quiet zone) and saves the image as TIFF.
+/// Generates an ITF14 barcode with a thick frame border and saves it as a TIFF image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates an ITF14 barcode with a thick frame and a quiet‑zone coefficient, then writes it to a TIFF file.
+    /// Entry point of the example. Creates the output folder, configures the barcode,
+    /// and writes the resulting TIFF file to disk.
     /// </summary>
     static void Main()
     {
-        // Prepare output directory in the temporary folder
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarCode_ITF_Output");
-        if (!Directory.Exists(outputDir))
+        // Prepare output directory in the system temporary folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "ITFBarcodeExample");
+        Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "ITF14_ThickFrame.tiff");
+
+        // Create ITF14 barcode generator with a sample 14‑digit code
+        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, "12345678901231"))
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // ITF14 requires exactly 14 digits (the last digit is a checksum)
-        string codeText = "12345678901231";
-
-        // Desired parameters (as requested)
-        float requestedQuietZoneCoef = 0.3f; // will be adjusted to meet API constraints
-        float borderThicknessPixels = 15f;   // thick frame thickness
-
-        // Create a barcode generator for ITF14
-        using (var generator = new BarcodeGenerator(EncodeTypes.ITF14, codeText))
-        {
-            // Set the border style to a frame and apply the thick border thickness
+            // Set the border style to a full frame around the barcode
             generator.Parameters.Barcode.ITF.BorderType = ITF14BorderType.Frame;
-            generator.Parameters.Barcode.ITF.BorderThickness.Pixels = borderThicknessPixels;
 
-            // QuietZoneCoef must be an integer with a minimum value of 10; adjust if necessary
-            int quietZoneCoef = (int)requestedQuietZoneCoef;
-            if (quietZoneCoef < 10)
-            {
-                Console.WriteLine($"Requested QuietZoneCoef {requestedQuietZoneCoef} is below the minimum. Using default value 10.");
-                quietZoneCoef = 10;
-            }
-            generator.Parameters.Barcode.ITF.QuietZoneCoef = quietZoneCoef;
+            // Define a thick border (5 pixels) for better visual emphasis
+            generator.Parameters.Barcode.ITF.BorderThickness.Pixels = 5;
+
+            // Quiet zone coefficient: API requires an integer (minimum 10). 
+            // The requested 0.3 is not supported; using the minimum valid value.
+            generator.Parameters.Barcode.ITF.QuietZoneCoef = 10;
 
             // Save the generated barcode as a TIFF image
-            string outPath = Path.Combine(outputDir, "ITF14_ThickFrame_QuietZone.tiff");
-            generator.Save(outPath, BarCodeImageFormat.Tiff);
-            Console.WriteLine($"Barcode saved to: {outPath}");
+            generator.Save(outputPath, BarCodeImageFormat.Tiff);
         }
+
+        // Inform the user where the file was saved
+        Console.WriteLine($"ITF barcode saved to: {outputPath}");
     }
 }
