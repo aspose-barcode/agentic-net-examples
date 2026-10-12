@@ -1,129 +1,128 @@
-// Title: Parallel Barcode Scanning with CPU Utilization Measurement
-// Description: Demonstrates how to generate barcode images, read them in parallel, and calculate CPU core utilization during processing.
-// Category-Description: This example belongs to the Aspose.BarCode performance and multithreading category. It showcases the use of BarcodeGenerator for image creation, BarCodeReader for recognition, and ProcessorSettings to enable multi‑core processing. Developers often need to benchmark barcode scanning workloads, tune thread pools, and monitor CPU usage when handling large batches of images.
+// Title: Measure CPU utilization while scanning barcode images in parallel
+// Description: Demonstrates how to generate sample barcode images, configure Aspose.BarCode to use all CPU cores, and measure CPU core utilization during parallel scanning of a batch of images.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition and performance tuning category. It shows how to use BarCodeReader.ProcessorSettings to enable multi‑core processing, set thread limits, and evaluate processing speed. Developers working with large volumes of barcodes can use these APIs to optimize throughput and monitor resource usage.
 // Prompt: Measure CPU core utilization while scanning a large batch of 10,000 barcode images in parallel.
-// Tags: code128, generation, recognition, parallel, cpu-utilization, aspose.barcode, aspose.barcode.generation, aspose.barcode.recognition
+// Tags: barcode, code128, cpu utilization, multithreading, performance, aspose.barcode, barcodereader, generation, recognition
 
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a set of barcode images, reads them in parallel,
-/// and reports CPU core utilization for the operation.
+/// Example program that generates a set of barcode images, processes them using
+/// Aspose.BarCode's multi‑core capabilities, and reports CPU utilization metrics.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the application. Generates sample barcodes, configures
+    /// multi‑core processing, measures CPU and wall‑clock time, and cleans up.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // Create a unique temporary folder for generated barcode images.
+        // Create a dedicated temporary folder for generated barcode images
         // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
         // --------------------------------------------------------------------
-        // Generate a small sample set of barcode images (adjustable for testing).
+        // Generate a small sample set of barcode images (adjustable for testing)
         // --------------------------------------------------------------------
-        List<string> files = new List<string>();
+        List<string> barcodeFiles = new List<string>();
         int sampleCount = 10; // safe sample size for demonstration
         for (int i = 0; i < sampleCount; i++)
         {
             string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
             string codeText = $"CODE{i:D4}";
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
+                // Optional: set basic visual parameters
+                generator.Parameters.Barcode.XDimension.Point = 2f;
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            files.Add(filePath);
+            barcodeFiles.Add(filePath);
         }
 
         // --------------------------------------------------------------------
-        // Configure the ThreadPool to provide enough threads for parallel work.
-        // --------------------------------------------------------------------
-        ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
-        int desiredThreads = Math.Max(Environment.ProcessorCount * 4, workerThreads);
-        ThreadPool.SetMaxThreads(desiredThreads, completionPortThreads);
-        ThreadPool.GetMinThreads(out workerThreads, out completionPortThreads);
-        ThreadPool.SetMinThreads(desiredThreads, completionPortThreads);
-
-        // --------------------------------------------------------------------
-        // Enable Aspose.BarCode multithreaded processing and set additional threads.
+        // Configure Aspose.BarCode to utilize all processor cores and set thread limits
         // --------------------------------------------------------------------
         BarCodeReader.ProcessorSettings.UseAllCores = true;
         BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
 
         // --------------------------------------------------------------------
-        // Capture initial CPU time and start a stopwatch for elapsed time measurement.
+        // Capture initial CPU time and start a wall‑clock timer
         // --------------------------------------------------------------------
-        Process proc = Process.GetCurrentProcess();
-        TimeSpan cpuStart = proc.TotalProcessorTime;
-        Stopwatch sw = Stopwatch.StartNew();
+        Process currentProcess = Process.GetCurrentProcess();
+        TimeSpan cpuStart = currentProcess.TotalProcessorTime;
+        Stopwatch watch = Stopwatch.StartNew();
 
-        int totalBarcodesFound = 0;
+        int totalFound = 0;
+        BaseDecodeType decodeType = DecodeType.Code128;
 
         // --------------------------------------------------------------------
-        // Perform parallel barcode reading across all generated files.
+        // Process each generated barcode image and count detected barcodes
         // --------------------------------------------------------------------
-        ParallelOptions po = new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
-        Parallel.ForEach(files, po, file =>
+        foreach (string file in barcodeFiles)
         {
             if (!File.Exists(file))
-                return;
+            {
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
 
             try
             {
-                using (BarCodeReader reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+                using (var reader = new BarCodeReader(file, decodeType))
                 {
-                    BarCodeResult[] results = reader.ReadBarCodes();
-                    Interlocked.Add(ref totalBarcodesFound, results.Length);
+                    reader.ReadBarCodes();
+                    totalFound += reader.FoundCount;
                 }
             }
-            catch (ArgumentException)
+            catch (ArgumentException ex)
             {
-                // Skip files that cannot be loaded as images.
+                Console.WriteLine($"Skipping file due to load error: {ex.Message}");
             }
-        });
+        }
 
         // --------------------------------------------------------------------
-        // Stop timing and calculate CPU usage statistics.
+        // Stop timers and calculate CPU utilization metrics
         // --------------------------------------------------------------------
-        sw.Stop();
-        TimeSpan cpuEnd = proc.TotalProcessorTime;
-
-        double cpuMs = (cpuEnd - cpuStart).TotalMilliseconds;
-        double elapsedMs = sw.Elapsed.TotalMilliseconds;
+        watch.Stop();
+        TimeSpan cpuEnd = currentProcess.TotalProcessorTime;
+        TimeSpan cpuUsed = cpuEnd - cpuStart;
+        double elapsedMs = watch.Elapsed.TotalMilliseconds;
+        double cpuMs = cpuUsed.TotalMilliseconds;
         double utilization = (cpuMs / (elapsedMs * Environment.ProcessorCount)) * 100.0;
 
         // --------------------------------------------------------------------
-        // Output results to the console.
+        // Output results
         // --------------------------------------------------------------------
-        Console.WriteLine($"Processed {files.Count} barcode images.");
-        Console.WriteLine($"Total barcodes found: {totalBarcodesFound}");
+        Console.WriteLine($"Processed {barcodeFiles.Count} barcode images.");
+        Console.WriteLine($"Total barcodes found: {totalFound}");
         Console.WriteLine($"Elapsed time: {elapsedMs:F2} ms");
         Console.WriteLine($"CPU time used: {cpuMs:F2} ms");
-        Console.WriteLine($"Average CPU core utilization: {utilization:F2}%");
+        Console.WriteLine($"Approximate CPU utilization per core: {utilization:F2}%");
 
         // --------------------------------------------------------------------
-        // Clean up temporary files and folder.
+        // Clean up temporary files and directory
         // --------------------------------------------------------------------
         try
         {
+            foreach (string file in barcodeFiles)
+            {
+                if (File.Exists(file))
+                    File.Delete(file);
+            }
             Directory.Delete(tempFolder, true);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore cleanup errors.
+            Console.WriteLine($"Cleanup error: {ex.Message}");
         }
     }
 }

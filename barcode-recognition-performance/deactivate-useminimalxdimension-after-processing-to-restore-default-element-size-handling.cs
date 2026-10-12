@@ -1,79 +1,81 @@
-// Title: Demonstrate toggling UseMinimalXDimension in barcode reading
-// Description: Generates a Code128 barcode, reads it with UseMinimalXDimension enabled, then disables it to show default element size handling.
-// Category-Description: This example belongs to the Aspose.BarCode reading operations category. It showcases the use of BarCodeReader, QualitySettings, and XDimensionMode to control barcode element sizing during recognition. Developers often need to adjust XDimension for minimal size detection or revert to normal handling when processing multiple scans.
+// Title: Deactivate UseMinimalXDimension after barcode processing
+// Description: Demonstrates generating a Code128 barcode, reading it with minimal X-dimension mode, then disabling that mode to restore default element size handling.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases how to configure XDimension settings using the QualitySettings API, a common requirement when precise barcode sizing is needed for scanning devices. Developers often generate barcodes, adjust XDimension for minimal width, and later revert to normal handling for subsequent reads.
 // Prompt: Deactivate UseMinimalXDimension after processing to restore default element size handling.
-// Tags: barcode symbology, reading, xdimension, minimalxdimension, aspose.barcode, png, code128
+// Tags: barcode, code128, generation, recognition, xdimension, minimalxdimension, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that demonstrates how to enable and then deactivate the
-/// UseMinimalXDimension mode when reading a barcode with Aspose.BarCode.
+/// Example program that generates a Code128 barcode, reads it with minimal X-dimension handling,
+/// then deactivates that mode to use the default X-dimension processing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode image, reads it twice
-    /// (first with UseMinimalXDimension enabled, then with normal settings),
-    /// and outputs the results to the console.
+    /// Entry point of the example. Performs barcode generation, two-stage reading, and cleanup.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary file path for the generated barcode image.
-        string tempPath = Path.Combine(Path.GetTempPath(), "tempBarcode.png");
+        // Prepare a temporary folder and file path for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "code128.png");
 
-        // Generate a simple Code128 barcode and save it as a PNG file.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Generate a Code128 barcode with a specific X-dimension
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "AsposeDemo"))
         {
-            generator.Save(tempPath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully.
-        if (!File.Exists(tempPath))
+        // Verify that the barcode image was created successfully
+        if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Open the barcode image for reading.
-        using (BarCodeReader reader = new BarCodeReader(tempPath, DecodeType.Code128))
+        // First read: enable UseMinimalXDimension to allow smaller element sizes
+        BaseDecodeType decodeType = DecodeType.Code128;
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
         {
-            // Activate UseMinimalXDimension mode to allow detection of very small bars.
             reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
             reader.QualitySettings.MinimalXDimension = 1f;
 
-            // Perform the first read with UseMinimalXDimension enabled.
-            BarCodeResult[] firstResults = reader.ReadBarCodes();
-            Console.WriteLine($"First read (UseMinimalXDimension) count: {firstResults.Length}");
-            foreach (BarCodeResult result in firstResults)
+            BarCodeResult[] results = reader.ReadBarCodes();
+            Console.WriteLine($"Read with UseMinimalXDimension: {results.Length} barcode(s) found.");
+            foreach (var result in results)
             {
                 Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
 
-            // Deactivate UseMinimalXDimension by restoring the default (Normal) mode.
+            // Deactivate UseMinimalXDimension to restore default X-dimension handling
             reader.QualitySettings.XDimension = XDimensionMode.Normal;
 
-            // Perform the second read with normal XDimension handling.
-            BarCodeResult[] secondResults = reader.ReadBarCodes();
-            Console.WriteLine($"Second read (Normal) count: {secondResults.Length}");
-            foreach (BarCodeResult result in secondResults)
+            // Second read: use default X-dimension settings
+            BarCodeResult[] defaultResults = reader.ReadBarCodes();
+            Console.WriteLine($"Read after deactivating UseMinimalXDimension: {defaultResults.Length} barcode(s) found.");
+            foreach (var result in defaultResults)
             {
                 Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Clean up the temporary barcode image file.
+        // Clean up temporary files and directory
         try
         {
-            File.Delete(tempPath);
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignore any cleanup errors.
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

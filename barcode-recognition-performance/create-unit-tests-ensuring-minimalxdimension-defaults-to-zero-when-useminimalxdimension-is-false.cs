@@ -1,80 +1,75 @@
-// Title: MinimalXDimension Default Behavior Demo
-// Description: Demonstrates that MinimalXDimension defaults to zero when UseMinimalXDimension is not enabled and shows how to set a custom value.
-// Category-Description: This example belongs to the Aspose.BarCode quality settings category, illustrating the use of BarCodeReader.QualitySettings to control X‑dimension handling. Developers working with barcode generation and recognition often need to verify default settings or customize dimensions for scanning accuracy. The snippet showcases key classes such as BarcodeGenerator, BarCodeReader, and XDimensionMode, typical for unit‑test scenarios and CI pipelines.
+// Title: Verify MinimalXDimension defaults to zero when UseMinimalXDimension is disabled
+// Description: Demonstrates generating a Code128 barcode image and checking that the reader's QualitySettings report a MinimalXDimension of zero when the UseMinimalXDimension mode is not enabled.
+// Category-Description: This example belongs to the Aspose.BarCode quality settings category, illustrating how to use the BarCodeReader.QualitySettings properties such as XDimension and MinimalXDimension. Developers often need to validate default settings for barcode decoding, especially when customizing image quality or dimension handling. The sample shows typical usage of BarcodeGenerator, BarCodeReader, and related enums for Code128 barcodes.
 // Prompt: Create unit tests ensuring MinimalXDimension defaults to zero when UseMinimalXDimension is false.
-// Tags: barcode, minimalxdimension, code128, qualitysettings, aspose.barcode, generation, recognition, unit-test
+// Tags: code128, barcode generation, barcode recognition, minimalxdimension, qualitysettings, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates default and custom MinimalXDimension behavior using Aspose.BarCode.
+/// Example program that generates a Code128 barcode and verifies that
+/// MinimalXDimension defaults to zero when UseMinimalXDimension is not enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates a barcode, checks default MinimalXDimension, sets a custom value, and cleans up.
+    /// Entry point of the example. Generates a temporary barcode image,
+    /// reads it, checks the quality settings, outputs the test result,
+    /// and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for test artifacts
+        // Create a temporary folder for test files
         string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define the full path for the generated barcode image
-        string barcodePath = Path.Combine(tempFolder, "code128.png");
+        // Path for the generated barcode image
+        string barcodePath = Path.Combine(tempFolder, "test.png");
 
-        // Generate a simple Code128 barcode image and save it as PNG
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // Generate a simple Code128 barcode image
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
+            // No special settings needed for this test
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that MinimalXDimension defaults to zero when UseMinimalXDimension is not set
-        bool defaultMinimalXDimensionIsZero;
-        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // Perform the test: MinimalXDimension should be zero when UseMinimalXDimension is not enabled
+        bool testPassed = false;
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            // No explicit XDimension mode set; should be default (Auto/Normal)
-            defaultMinimalXDimensionIsZero = reader.QualitySettings.MinimalXDimension == 0f;
-            Console.WriteLine($"Default MinimalXDimension is zero: {defaultMinimalXDimensionIsZero}");
+            // Determine whether the XDimension mode is set to UseMinimalXDimension
+            bool isUseMinimal = reader.QualitySettings.XDimension == XDimensionMode.UseMinimalXDimension;
+
+            // Retrieve the MinimalXDimension value
+            float minimalX = reader.QualitySettings.MinimalXDimension;
+
+            // Validate that the mode is not UseMinimalXDimension and the value is effectively zero
+            if (!isUseMinimal && Math.Abs(minimalX) < 0.0001f)
+            {
+                testPassed = true;
+            }
         }
 
-        // Additional check: enable UseMinimalXDimension mode and assign a non‑zero MinimalXDimension
-        bool customMinimalXDimensionWorks;
-        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
-        {
-            // Switch to minimal X dimension mode
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            // Set a custom minimal X dimension value
-            reader.QualitySettings.MinimalXDimension = 2f;
-            customMinimalXDimensionWorks = reader.QualitySettings.MinimalXDimension == 2f;
-            Console.WriteLine($"Custom MinimalXDimension after enabling UseMinimalXDimension: {customMinimalXDimensionWorks}");
-        }
+        // Output the test result
+        Console.WriteLine(testPassed
+            ? "Test Passed: MinimalXDimension defaults to zero when UseMinimalXDimension is false."
+            : "Test Failed: Unexpected MinimalXDimension value.");
 
         // Clean up temporary files and directories
         try
         {
             if (File.Exists(barcodePath))
                 File.Delete(barcodePath);
-            Directory.Delete(tempFolder, true);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect test outcome
-        }
-
-        // Summarize test results
-        if (defaultMinimalXDimensionIsZero && customMinimalXDimensionWorks)
-        {
-            Console.WriteLine("All MinimalXDimension tests passed.");
-        }
-        else
-        {
-            Console.WriteLine("MinimalXDimension tests failed.");
+            // Ignored - cleanup failure should not affect test result
         }
     }
 }

@@ -1,73 +1,84 @@
-// Title: Demonstrate QualitySettings.AllowIncorrectBarcodes with QR Code Generation and Recognition
-// Description: Shows how to generate a QR barcode, then read it twice—once with AllowIncorrectBarcodes disabled and once enabled—to illustrate capturing potentially unreadable barcodes during debugging.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It demonstrates using BarcodeGenerator to create a QR code and BarCodeReader with QualitySettings to control the AllowIncorrectBarcodes flag. Developers working with barcode validation, debugging, or error‑tolerant scanning can use these APIs to decide whether to accept imperfect barcodes.
-// Prompt: Enable QualitySettings.AllowIncorrectBarcodes to capture potentially unreadable barcodes during debugging sessions.
-// Tags: qr,barcode,allowincorrectbarcodes,debugging,qualitysettings,aspnet,aspose.barcode,generation,recognition
-
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Demonstrates enabling and disabling QualitySettings.AllowIncorrectBarcodes while reading a QR barcode.
-/// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point of the demo. Generates a QR code, reads it with different AllowIncorrectBarcodes settings,
-    /// and cleans up temporary files.
-    /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the demo
+        // Create a unique temporary folder
         string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
-        string imagePath = Path.Combine(tempDir, "qr.png");
 
-        // Generate a simple QR barcode image
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
+        string originalPath = Path.Combine(tempDir, "original.png");
+        string corruptedPath = Path.Combine(tempDir, "corrupted.png");
+
+        // Generate a simple Code128 barcode
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(originalPath, BarCodeImageFormat.Png);
         }
 
-        // Read the barcode with AllowIncorrectBarcodes disabled
-        Console.WriteLine("AllowIncorrectBarcodes: false");
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Corrupt the barcode image by drawing a diagonal line
+        using (var bitmap = new Bitmap(originalPath))
         {
-            // Disable acceptance of potentially incorrect barcodes
+            using (var graphics = Graphics.FromImage(bitmap))
+            {
+                using (var pen = new Pen(Color.Black, 5f))
+                {
+                    graphics.DrawLine(pen, 0, 0, bitmap.Width, bitmap.Height);
+                }
+            }
+            bitmap.Save(corruptedPath, ImageFormat.Png);
+        }
+
+        // Verify that the corrupted image exists
+        if (!File.Exists(corruptedPath))
+        {
+            Console.WriteLine("Corrupted image not found. Exiting.");
+            return;
+        }
+
+        // Read with AllowIncorrectBarcodes = false
+        using (var reader = new BarCodeReader(corruptedPath, DecodeType.Code128))
+        {
+            reader.QualitySettings = QualitySettings.MaxQuality;
             reader.QualitySettings.AllowIncorrectBarcodes = false;
-            BarCodeResult[] results = reader.ReadBarCodes();
-            Console.WriteLine($"Barcodes read: {results.Length}");
-            foreach (BarCodeResult result in reader.FoundBarCodes)
+            var results = reader.ReadBarCodes();
+            Console.WriteLine($"AllowIncorrectBarcodes false: {results.Length} barcode(s) read");
+            foreach (var result in results)
             {
-                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText} (Confidence: {result.Confidence})");
             }
         }
 
-        // Read the barcode with AllowIncorrectBarcodes enabled
-        Console.WriteLine("AllowIncorrectBarcodes: true");
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Read with AllowIncorrectBarcodes = true
+        using (var reader = new BarCodeReader(corruptedPath, DecodeType.Code128))
         {
-            // Enable acceptance of potentially incorrect barcodes
+            reader.QualitySettings = QualitySettings.MaxQuality;
             reader.QualitySettings.AllowIncorrectBarcodes = true;
-            BarCodeResult[] results = reader.ReadBarCodes();
-            Console.WriteLine($"Barcodes read: {results.Length}");
-            foreach (BarCodeResult result in reader.FoundBarCodes)
+            var results = reader.ReadBarCodes();
+            Console.WriteLine($"AllowIncorrectBarcodes true: {results.Length} barcode(s) read");
+            foreach (var result in results)
             {
-                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText} (Confidence: {result.Confidence})");
             }
         }
 
-        // Cleanup temporary files
+        // Cleanup temporary files (optional)
         try
         {
-            Directory.Delete(tempDir, true);
+            File.Delete(originalPath);
+            File.Delete(corruptedPath);
+            Directory.Delete(tempDir);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect demo execution
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

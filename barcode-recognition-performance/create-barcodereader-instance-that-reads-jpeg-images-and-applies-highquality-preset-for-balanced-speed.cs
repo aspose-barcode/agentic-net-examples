@@ -1,8 +1,8 @@
-// Title: Read JPEG Barcode with HighQuality Preset
-// Description: Demonstrates creating a Code128 barcode image in JPEG format and reading it using BarCodeReader with the HighQuality quality setting for balanced speed and accuracy.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader with QualitySettings to decode them. Typical scenarios include generating barcodes for product labeling and scanning them in high‑quality mode for reliable detection. Developers often work with these core API classes to integrate barcode workflows into .NET applications.
+// Title: Read JPEG barcode with HighQuality preset using Aspose.BarCode
+// Description: Demonstrates generating a Code128 barcode, saving it as a JPEG, and reading it back with the HighQuality quality preset for balanced speed and accuracy.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes, BarCodeReader to decode them, and QualitySettings to control decoding performance. Typical scenarios include scanning barcodes from image files in desktop or web applications where developers need a reliable trade‑off between speed and precision.
 // Prompt: Create a BarCodeReader instance that reads JPEG images and applies HighQuality preset for balanced speed.
-// Tags: barcode, code128, jpeg, highquality, generation, recognition, aspose.barcode, barcodereader, barcodegenerator
+// Tags: barcode, code128, jpeg, highquality, qualitysettings, barcodereader, barcodegenerator, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,22 +11,23 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates barcode generation and reading using Aspose.BarCode.
+/// Sample program that generates a Code128 barcode, saves it as a JPEG,
+/// and reads it back using the HighQuality preset for balanced speed.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode JPEG, reads it with HighQuality preset, and outputs results.
+    /// Entry point of the application.
     /// </summary>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a temporary folder for the sample image
+        // Create a unique temporary folder to store the generated image
         string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
         string imagePath = Path.Combine(tempDir, "sample.jpg");
 
         // Generate a Code128 barcode and save it as a JPEG file
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
             generator.Save(imagePath, BarCodeImageFormat.Jpeg);
         }
@@ -38,23 +39,32 @@ class Program
             return;
         }
 
-        // Read the JPEG image using BarCodeReader with the HighQuality preset
+        // Read the barcode from the JPEG image using the HighQuality preset
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            reader.QualitySettings = QualitySettings.HighQuality; // Balanced speed and accuracy
-            BarCodeResult[] results = reader.ReadBarCodes();
+            // Apply the HighQuality setting for a balanced speed/accuracy trade‑off
+            reader.QualitySettings = QualitySettings.HighQuality;
 
-            // Output the number of barcodes detected
+            // Decode all barcodes found in the image
+            BarCodeResult[] results = reader.ReadBarCodes();
             Console.WriteLine($"Barcodes read: {results.Length}");
 
-            // Iterate through each result and display its type and decoded text
+            // Output each decoded barcode's type and text
             foreach (var result in results)
             {
                 Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Cleanup temporary files (optional)
-        // Directory.Delete(tempDir, true);
+        // Clean up temporary files and directory
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempDir, true);
+        }
+        catch
+        {
+            // Ignored – cleanup failures are non‑critical for this demo
+        }
     }
 }

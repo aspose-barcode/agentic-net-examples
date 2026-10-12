@@ -1,26 +1,24 @@
 // Title: Compare recognition speed of 1D vs 2D barcodes
-// Description: Demonstrates measuring the time required to recognize 1‑dimensional (Code128) and 2‑dimensional (QR) barcodes using Aspose.BarCode with identical quality settings.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition performance category. It shows how to generate barcodes with BarcodeGenerator, configure BarCodeReader QualitySettings, and benchmark recognition using Stopwatch. Developers working on high‑throughput scanning, batch processing, or performance tuning can use these patterns to compare different symbologies and optimize settings.
+// Description: Demonstrates measuring and comparing the recognition performance of Code128 (1D) and QR (2D) barcodes using identical QualitySettings.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition performance category. It shows how to generate barcodes with BarcodeGenerator, configure QualitySettings for high‑performance scanning, and use BarCodeReader to read barcodes while timing the operation. Developers often need to benchmark different symbologies to choose the optimal barcode type for fast scanning in high‑throughput applications.
 // Prompt: Compare recognition speed of 1D barcodes versus 2D barcodes under identical QualitySettings.
-// Tags: barcode, recognition, performance, 1d, 2d, code128, qr, qualitysettings, aspose.barcode, csharp
+// Tags: barcode, recognition, performance, 1d, 2d, code128, qr, qualitysettings, aspose.barcode
 
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates sample 1D (Code128) and 2D (QR) barcodes, then benchmarks
-/// the recognition speed of each using identical QualitySettings.
+/// Demonstrates measuring and comparing recognition speed of 1D (Code128) and 2D (QR) barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates temporary barcode images,
-    /// measures recognition time for 1D and 2D symbologies, outputs the results,
-    /// and cleans up the temporary files.
+    /// Entry point. Generates sample barcodes, measures recognition time with high‑performance QualitySettings, and outputs average timings.
     /// </summary>
     static void Main()
     {
@@ -28,97 +26,96 @@ class Program
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSpeedTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Sample data to encode in each barcode
-        string codeText = "1234567890";
-        int sampleCount = 5; // Number of barcode images per symbology
+        // Sample data for 1D and 2D barcodes
+        string[] oneDTexts = { "1234567890", "ABCDEFGHIJ", "9876543210", "CODE128TEST", "0011223344" };
+        string[] twoDTexts = { "HelloWorld", "https://example.com", "Aspose.BarCode", "12345ABCDE", "QRTestData" };
 
-        // ------------------------------------------------------------
-        // Generate 1D barcodes (Code128) and store file paths
-        // ------------------------------------------------------------
-        var oneDFiles = new string[sampleCount];
-        for (int i = 0; i < sampleCount; i++)
+        // -------------------- Generate 1D barcodes (Code128) --------------------
+        var oneDFiles = new string[oneDTexts.Length];
+        for (int i = 0; i < oneDTexts.Length; i++)
         {
             string filePath = Path.Combine(tempFolder, $"code128_{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, oneDTexts[i]))
             {
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
             oneDFiles[i] = filePath;
         }
 
-        // ------------------------------------------------------------
-        // Generate 2D barcodes (QR) and store file paths
-        // ------------------------------------------------------------
-        var twoDFiles = new string[sampleCount];
-        for (int i = 0; i < sampleCount; i++)
+        // -------------------- Generate 2D barcodes (QR) --------------------
+        var twoDFiles = new string[twoDTexts.Length];
+        for (int i = 0; i < twoDTexts.Length; i++)
         {
             string filePath = Path.Combine(tempFolder, $"qr_{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, twoDTexts[i]))
             {
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
             twoDFiles[i] = filePath;
         }
 
-        // ------------------------------------------------------------
-        // Benchmark 1D barcode recognition
-        // ------------------------------------------------------------
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
+        // Use the same quality preset for both recognition tests
+        QualitySettings preset = QualitySettings.HighPerformance;
 
-        foreach (var file in oneDFiles)
+        // -------------------- Measure recognition speed for 1D barcodes --------------------
+        long oneDTotalTicks = 0;
+        int oneDRecognized = 0;
+        foreach (string file in oneDFiles)
         {
-            if (!File.Exists(file))
-                continue;
+            if (!File.Exists(file)) continue;
 
             using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
             {
-                // Use the same high‑performance quality setting for a fair comparison
-                reader.QualitySettings = QualitySettings.HighPerformance;
+                reader.QualitySettings = preset;
+                Stopwatch sw = Stopwatch.StartNew();
                 var results = reader.ReadBarCodes();
-                // Results can be processed here if needed
+                sw.Stop();
+
+                oneDTotalTicks += sw.ElapsedTicks;
+                if (results != null && results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
+                {
+                    oneDRecognized++;
+                }
             }
         }
 
-        stopwatch.Stop();
-        long oneDTimeMs = stopwatch.ElapsedMilliseconds;
-
-        // ------------------------------------------------------------
-        // Benchmark 2D barcode recognition
-        // ------------------------------------------------------------
-        stopwatch.Restart();
-
-        foreach (var file in twoDFiles)
+        // -------------------- Measure recognition speed for 2D barcodes --------------------
+        long twoDTotalTicks = 0;
+        int twoDRecognized = 0;
+        foreach (string file in twoDFiles)
         {
-            if (!File.Exists(file))
-                continue;
+            if (!File.Exists(file)) continue;
 
             using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
             {
-                // Apply identical quality settings as used for 1D barcodes
-                reader.QualitySettings = QualitySettings.HighPerformance;
+                reader.QualitySettings = preset;
+                Stopwatch sw = Stopwatch.StartNew();
                 var results = reader.ReadBarCodes();
-                // Results can be processed here if needed
+                sw.Stop();
+
+                twoDTotalTicks += sw.ElapsedTicks;
+                if (results != null && results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
+                {
+                    twoDRecognized++;
+                }
             }
         }
 
-        stopwatch.Stop();
-        long twoDTimeMs = stopwatch.ElapsedMilliseconds;
+        // -------------------- Output average recognition times --------------------
+        double oneDAverageMs = (oneDTotalTicks * 1000.0) / Stopwatch.Frequency / oneDFiles.Length;
+        double twoDAverageMs = (twoDTotalTicks * 1000.0) / Stopwatch.Frequency / twoDFiles.Length;
 
-        // Output the measured recognition times
-        Console.WriteLine($"1D barcode recognition time (ms) for {sampleCount} samples: {oneDTimeMs}");
-        Console.WriteLine($"2D barcode recognition time (ms) for {sampleCount} samples: {twoDTimeMs}");
+        Console.WriteLine($"1D Barcodes (Code128) - Recognized: {oneDRecognized}/{oneDFiles.Length}, Avg. time: {oneDAverageMs:F3} ms");
+        Console.WriteLine($"2D Barcodes (QR)      - Recognized: {twoDRecognized}/{twoDFiles.Length}, Avg. time: {twoDAverageMs:F3} ms");
 
-        // ------------------------------------------------------------
-        // Cleanup temporary files and folder
-        // ------------------------------------------------------------
+        // -------------------- Clean up temporary files --------------------
         try
         {
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignoring any cleanup errors (e.g., files in use)
+            // Ignore cleanup errors
         }
     }
 }

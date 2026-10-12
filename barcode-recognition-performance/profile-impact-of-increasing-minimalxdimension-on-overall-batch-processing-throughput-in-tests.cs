@@ -1,99 +1,94 @@
-// Title: Profile MinimalXDimension Impact on Barcode Batch Processing Throughput
-// Description: Demonstrates how varying the MinimalXDimension setting affects the time required to read a batch of Code128 barcodes using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing and performance profiling category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader with QualitySettings for decoding, and Stopwatch for measuring throughput. Developers often need to evaluate how quality parameters like MinimalXDimension influence processing speed in large‑scale scanning scenarios.
+// Title: Batch barcode reading performance profiling with varying MinimalXDimension
+// Description: Demonstrates how to generate a set of Code128 barcode images, then measures read throughput while adjusting the MinimalXDimension setting.
+// Category-Description: This example belongs to the Aspose.BarCode performance tuning collection, illustrating the use of BarCodeReader's QualitySettings (XDimensionMode and MinimalXDimension) to optimize batch processing. It shows typical scenarios where developers need to balance read speed and accuracy for large image sets, using classes like BarcodeGenerator, BarCodeReader, and related enums. Ideal for performance testing and CI pipelines.
 // Prompt: Profile the impact of increasing MinimalXDimension on overall batch processing throughput in tests.
-// Tags: barcode, code128, performance, batch, minimalxdimension, aspose.barcode, csharp
+// Tags: code128, barcode reading, performance profiling, png, barcodereader, barcodegenerator, xdimensionmode
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that profiles how different MinimalXDimension values affect
-/// the throughput of reading a batch of Code128 barcode images using Aspose.BarCode.
+/// Demonstrates batch generation and reading of Code128 barcodes while profiling the effect of MinimalXDimension on throughput.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates sample barcodes, reads them with
-    /// varying MinimalXDimension settings, measures processing time, and reports throughput.
+    /// Entry point. Generates sample barcodes, reads them with varying MinimalXDimension values, and reports processing time and throughput.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary folder for the batch
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary folder for the batch
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // Generate sample barcode images
-        List<string> barcodeFiles = new List<string>();
-        for (int i = 0; i < 5; i++)
+        // Generate sample barcode images (Code128, PNG format)
+        List<string> files = new List<string>();
+        for (int i = 1; i <= 5; i++)
         {
-            string codeText = "Sample" + i;
-            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            string codeText = "Test" + i;
+            string filePath = Path.Combine(batchFolder, $"code{i}.png");
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            barcodeFiles.Add(filePath);
+            files.Add(filePath);
         }
 
-        // Define MinimalXDimension values to test
+        // Define MinimalXDimension values to test (in points)
         float[] minimalValues = new float[] { 1f, 2f, 3f, 4f, 5f };
 
-        Console.WriteLine("Profiling MinimalXDimension impact on batch processing throughput:");
+        // Iterate over each MinimalXDimension setting and measure read performance
         foreach (float minimal in minimalValues)
         {
-            // Start timing for the current MinimalXDimension setting
-            Stopwatch sw = Stopwatch.StartNew();
-            int totalRead = 0;
+            Stopwatch sw = Stopwatch.StartNew(); // Start timing for this setting
+            int totalRead = 0; // Counter for total barcodes successfully read
 
-            // Process each generated barcode file
-            foreach (string file in barcodeFiles)
+            // Read each generated image with the current MinimalXDimension
+            foreach (string file in files)
             {
                 if (!File.Exists(file))
-                {
-                    Console.WriteLine($"File not found: {file}");
-                    continue;
-                }
+                    continue; // Skip missing files (should not happen)
 
-                try
+                using (var reader = new BarCodeReader(file, DecodeType.Code128))
                 {
-                    using (var reader = new BarCodeReader(file, DecodeType.Code128))
+                    // Configure quality settings to use MinimalXDimension
+                    reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+                    reader.QualitySettings.MinimalXDimension = minimal;
+
+                    try
                     {
-                        // Apply quality settings: use MinimalXDimension mode and set the current value
-                        reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-                        reader.QualitySettings.MinimalXDimension = minimal;
-
-                        // Read all barcodes in the image
                         BarCodeResult[] results = reader.ReadBarCodes();
                         totalRead += results.Length;
                     }
-                }
-                catch (ArgumentException ex)
-                {
-                    Console.WriteLine($"Failed to read {Path.GetFileName(file)}: {ex.Message}");
+                    catch (ArgumentException ex)
+                    {
+                        // Log any read errors without stopping the batch
+                        Console.WriteLine($"Failed to read {Path.GetFileName(file)}: {ex.Message}");
+                    }
                 }
             }
 
-            // Stop timing and calculate throughput
-            sw.Stop();
+            sw.Stop(); // Stop timing for this setting
             double seconds = sw.Elapsed.TotalSeconds;
-            double throughput = barcodeFiles.Count / seconds;
+            double throughput = files.Count / seconds; // Images processed per second
+
+            // Output performance metrics for the current MinimalXDimension
             Console.WriteLine($"MinimalXDimension={minimal} => Time={seconds:F3}s, Throughput={throughput:F2} images/sec, TotalRead={totalRead}");
         }
 
-        // Clean up temporary folder
+        // Cleanup temporary folder and generated files
         try
         {
-            Directory.Delete(tempFolder, true);
+            Directory.Delete(batchFolder, true);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignore cleanup errors (e.g., files in use)
         }
     }
 }

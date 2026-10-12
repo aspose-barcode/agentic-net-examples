@@ -1,111 +1,110 @@
-// Title: Barcode Generation and Recognition with Quality Presets Evaluation
-// Description: Demonstrates generating several barcode symbologies, saving them as PNG images, and measuring the decoding success rate using different quality preset settings.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and QualitySettings presets to control recognition performance. Developers often need to balance speed and accuracy when processing mixed‑type barcode datasets; this snippet illustrates how to evaluate those trade‑offs across common symbologies.
+// Title: Barcode decoding success rate across quality presets
+// Description: Demonstrates generating a mixed set of barcode images and measuring the percentage of barcodes successfully decoded using each Aspose.BarCode quality preset.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and QualitySettings to control recognition performance. Developers often need to evaluate how different quality presets affect decoding success across various symbologies, especially when processing large mixed‑type datasets.
 // Prompt: Record the percentage of barcodes successfully decoded under each preset across a mixed‑type dataset.
-// Tags: barcode, generation, recognition, qualitysettings, png, aspose.barcode, symbology, decode, preset
+// Tags: barcode, symbology, generation, recognition, qualitysettings, aspose.barcode, png
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Generates a set of barcode images of various symbologies, then evaluates
-/// the decoding success rate using different Aspose.BarCode quality presets.
+/// Generates a set of barcode images of different symbologies, then evaluates decoding success
+/// percentages using various Aspose.BarCode quality presets.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates temporary barcode files, runs
-    /// recognition with several presets, reports success percentages, and
-    /// cleans up the temporary data.
+    /// Entry point of the example. Creates temporary barcode images, runs recognition with
+    /// multiple quality settings, reports success rates, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a dedicated temporary folder for generated barcode images
+        string folder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
 
-        // List to hold generated file paths
-        List<string> barcodeFiles = new List<string>();
-
-        // Define sample barcodes (symbology and code text)
-        var samples = new List<(BaseEncodeType type, string text)>
+        // Define a mixed set of barcode types, their encoded texts, and friendly names
+        var symbologies = new List<(BaseEncodeType encode, string text, string name)>
         {
-            (EncodeTypes.Code128, "Sample123"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.DataMatrix, "DM12345"),
-            (EncodeTypes.Aztec, "AztecDemo"),
-            (EncodeTypes.Pdf417, "PDF417Sample")
+            (EncodeTypes.Code128, "Code128Test", "Code128"),
+            (EncodeTypes.QR, "QRTest123", "QR"),
+            (EncodeTypes.DataMatrix, "DMTest", "DataMatrix"),
+            (EncodeTypes.Aztec, "AztecTest", "Aztec"),
+            (EncodeTypes.Pdf417, "Pdf417Test", "Pdf417")
         };
+
+        var filePaths = new List<string>();
 
         // Generate barcode images and store their file paths
-        foreach (var (type, text) in samples)
+        foreach (var (encode, text, name) in symbologies)
         {
-            string filePath = Path.Combine(tempFolder, $"{type}_{Guid.NewGuid().ToString("N")}.png");
-            using (var generator = new BarcodeGenerator(type, text))
+            string filePath = Path.Combine(folder, $"{name}.png");
+            using (var generator = new BarcodeGenerator(encode, text))
             {
-                // Set a modest X‑dimension for better readability
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            barcodeFiles.Add(filePath);
+            filePaths.Add(filePath);
         }
 
-        // Define recognition presets to be tested
-        var presets = new List<(string name, QualitySettings settings)>
+        // Define recognition quality presets to be evaluated
+        var presets = new List<(QualitySettings preset, string name)>
         {
-            ("HighPerformance", QualitySettings.HighPerformance),
-            ("NormalQuality", QualitySettings.NormalQuality),
-            ("HighQuality", QualitySettings.HighQuality),
-            ("MaxQuality", QualitySettings.MaxQuality)
+            (QualitySettings.HighPerformance, "HighPerformance"),
+            (QualitySettings.NormalQuality, "NormalQuality"),
+            (QualitySettings.HighQuality, "HighQuality"),
+            (QualitySettings.MaxQuality, "MaxQuality")
         };
 
-        // Evaluate each preset against the generated barcode set
-        foreach (var (presetName, presetSettings) in presets)
+        int total = filePaths.Count;
+
+        // Evaluate each preset by attempting to decode all generated barcodes
+        foreach (var (preset, name) in presets)
         {
             int successCount = 0;
-
-            foreach (string file in barcodeFiles)
+            foreach (string file in filePaths)
             {
                 if (!File.Exists(file))
-                {
-                    Console.WriteLine($"File not found: {file}");
                     continue;
-                }
 
-                // Initialize the reader with all supported decode types
                 using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
                 {
-                    // Apply the current quality preset
-                    reader.QualitySettings = presetSettings;
-
-                    // Attempt to read barcodes from the image
+                    // Apply the current quality setting
+                    reader.QualitySettings = preset;
                     BarCodeResult[] results = reader.ReadBarCodes();
 
-                    // Count as success if at least one barcode is decoded
-                    if (results != null && results.Length > 0)
+                    // Determine if at least one barcode was successfully decoded
+                    bool success = false;
+                    foreach (var result in results)
                     {
-                        successCount++;
+                        if (!string.IsNullOrEmpty(result.CodeText))
+                        {
+                            success = true;
+                            break;
+                        }
                     }
+
+                    if (success)
+                        successCount++;
                 }
             }
 
-            // Calculate and display the success percentage for the preset
-            double percentage = (double)successCount / barcodeFiles.Count * 100.0;
-            Console.WriteLine($"{presetName}: {percentage:F2}% ({successCount}/{barcodeFiles.Count}) successfully decoded.");
+            // Calculate and display the success percentage for the current preset
+            double percent = (double)successCount / total * 100.0;
+            Console.WriteLine($"{name}: {percent:F2}% success ({successCount}/{total})");
         }
 
-        // Clean up temporary files and folder
+        // Cleanup temporary files and folder
         try
         {
-            Directory.Delete(tempFolder, true);
+            Directory.Delete(folder, true);
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Failed to delete temporary folder: {ex.Message}");
+            // Ignore any cleanup errors
         }
     }
 }

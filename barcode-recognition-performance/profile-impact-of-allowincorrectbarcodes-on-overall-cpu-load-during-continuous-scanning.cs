@@ -1,126 +1,138 @@
-// Title: Impact of AllowIncorrectBarcodes on CPU Load During Repeated Scanning
-// Description: Demonstrates how toggling the AllowIncorrectBarcodes setting affects processing time when reading both valid and corrupted QR codes.
-// Category-Description: This example belongs to the Aspose.BarCode scanning and quality settings category. It showcases the BarCodeReader class with its QualitySettings, illustrating typical use cases such as performance profiling and error tolerance configuration for developers working with continuous barcode scanning.
+// Title: Profiling CPU impact of AllowIncorrectBarcodes during barcode scanning
+// Description: Demonstrates how to measure the performance difference when the AllowIncorrectBarcodes setting is toggled while scanning multiple barcode types.
+// Category-Description: This example belongs to the Aspose.BarCode scanning and performance profiling category. It showcases the use of BarCodeReader with QualitySettings, BarcodeGenerator for creating sample images, and Stopwatch for timing. Developers often need to evaluate how configuration options affect CPU load in high‑throughput scanning scenarios, making this a useful reference for performance testing.
 // Prompt: Profile the impact of AllowIncorrectBarcodes on overall CPU load during continuous scanning.
-// Tags: qr, barcode, scanning, performance, allowincorrectbarcodes, qualitysettings, aspose.barcode, c#
+// Tags: barcode, scanning, performance, allowincorrectbarcodes, aspose.barcode, csharp, profiling
 
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates performance measurement of the <c>AllowIncorrectBarcodes</c> quality setting
-/// while repeatedly scanning correct and corrupted QR code images.
+/// Demonstrates profiling the CPU impact of the AllowIncorrectBarcodes setting during continuous barcode scanning.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates test images, measures read times with different
-    /// <c>AllowIncorrectBarcodes</c> settings, and outputs the results.
+    /// Generates sample barcodes, profiles scanning with different AllowIncorrectBarcodes settings, and outputs timing results.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary working folder for generated images
-        // --------------------------------------------------------------------
-        string workFolder = Path.Combine(Path.GetTempPath(), "AllowIncorrectBarcodesDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workFolder);
+        // Create a temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeProfile_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Paths for the correct and corrupted QR code images
-        string correctPath = Path.Combine(workFolder, "correct.png");
-        string corruptedPath = Path.Combine(workFolder, "corrupted.png");
+        // Generate a set of sample barcode files (Code128, QR, DataMatrix, Aztec, Pdf417)
+        var barcodeFiles = GenerateSampleBarcodes(tempFolder);
 
-        // --------------------------------------------------------------------
-        // Generate a correct QR code image
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Number of scan repetitions for each configuration
+        const int repetitions = 100;
+
+        // Profile scanning with AllowIncorrectBarcodes set to false
+        double timeFalse = ProfileScanning(barcodeFiles, false, repetitions);
+        Console.WriteLine($"AllowIncorrectBarcodes = false, total time (ms): {timeFalse:F2}, avg per scan (ms): {timeFalse / (barcodeFiles.Count * repetitions):F4}");
+
+        // Profile scanning with AllowIncorrectBarcodes set to true
+        double timeTrue = ProfileScanning(barcodeFiles, true, repetitions);
+        Console.WriteLine($"AllowIncorrectBarcodes = true,  total time (ms): {timeTrue:F2}, avg per scan (ms): {timeTrue / (barcodeFiles.Count * repetitions):F4}");
+
+        // Clean up generated barcode files and temporary folder
+        foreach (var file in barcodeFiles)
         {
-            generator.Save(correctPath, BarCodeImageFormat.Png);
+            try { File.Delete(file); } catch { }
         }
-
-        // --------------------------------------------------------------------
-        // Corrupt the QR code by drawing a black line across the image
-        // --------------------------------------------------------------------
-        File.Copy(correctPath, corruptedPath, true);
-        using (var bitmap = new Bitmap(corruptedPath))
-        {
-            using (var graphics = Graphics.FromImage(bitmap))
-            {
-                using (var pen = new Pen(Color.Black, 5f))
-                {
-                    graphics.DrawLine(pen, 0, 0, bitmap.Width, bitmap.Height);
-                }
-            }
-            bitmap.Save(corruptedPath, ImageFormat.Png);
-        }
-
-        // --------------------------------------------------------------------
-        // Verify that both images were created successfully
-        // --------------------------------------------------------------------
-        if (!File.Exists(correctPath) || !File.Exists(corruptedPath))
-        {
-            Console.WriteLine("Failed to create test images.");
-            return;
-        }
-
-        // --------------------------------------------------------------------
-        // Measure reading time with AllowIncorrectBarcodes set to false and true
-        // --------------------------------------------------------------------
-        const int iterations = 20;
-        long elapsedFalse = MeasureReading(correctPath, corruptedPath, false, iterations);
-        long elapsedTrue = MeasureReading(correctPath, corruptedPath, true, iterations);
-
-        // Output the measured times
-        Console.WriteLine($"AllowIncorrectBarcodes = false, total time: {elapsedFalse} ms");
-        Console.WriteLine($"AllowIncorrectBarcodes = true,  total time: {elapsedTrue} ms");
-
-        // --------------------------------------------------------------------
-        // Clean up temporary files and folder
-        // --------------------------------------------------------------------
-        try { Directory.Delete(workFolder, true); } catch { }
+        try { Directory.Delete(tempFolder, true); } catch { }
     }
 
     /// <summary>
-    /// Measures the total time required to read both the correct and corrupted QR code images
-    /// for a given number of iterations, using the specified <c>AllowIncorrectBarcodes</c> setting.
+    /// Generates sample barcode images of various symbologies and returns their file paths.
     /// </summary>
-    /// <param name="correctPath">Path to the valid QR code image.</param>
-    /// <param name="corruptedPath">Path to the corrupted QR code image.</param>
-    /// <param name="allowIncorrect">Value to assign to <c>QualitySettings.AllowIncorrectBarcodes</c>.</param>
-    /// <param name="iterations">Number of read cycles to perform.</param>
-    /// <returns>Total elapsed time in milliseconds.</returns>
-    static long MeasureReading(string correctPath, string corruptedPath, bool allowIncorrect, int iterations)
+    /// <param name="folder">The folder where barcode images will be saved.</param>
+    /// <returns>List of file paths for the generated barcode images.</returns>
+    static System.Collections.Generic.List<string> GenerateSampleBarcodes(string folder)
     {
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
+        var files = new System.Collections.Generic.List<string>();
 
-        for (int i = 0; i < iterations; i++)
+        // Code128 barcode
+        string path1 = Path.Combine(folder, "code128.png");
+        using (var gen = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
         {
-            // ----------------------------------------------------------------
-            // Read the correct image
-            // ----------------------------------------------------------------
-            using (var reader = new BarCodeReader(correctPath, DecodeType.QR))
-            {
-                reader.QualitySettings.AllowIncorrectBarcodes = allowIncorrect;
-                reader.ReadBarCodes();
-            }
+            gen.Save(path1, BarCodeImageFormat.Png);
+        }
+        files.Add(path1);
 
-            // ----------------------------------------------------------------
-            // Read the corrupted image
-            // ----------------------------------------------------------------
-            using (var reader = new BarCodeReader(corruptedPath, DecodeType.QR))
+        // QR code
+        string path2 = Path.Combine(folder, "qr.png");
+        using (var gen = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        {
+            gen.Save(path2, BarCodeImageFormat.Png);
+        }
+        files.Add(path2);
+
+        // DataMatrix barcode
+        string path3 = Path.Combine(folder, "datamatrix.png");
+        using (var gen = new BarcodeGenerator(EncodeTypes.DataMatrix, "DM12345"))
+        {
+            gen.Save(path3, BarCodeImageFormat.Png);
+        }
+        files.Add(path3);
+
+        // Aztec barcode
+        string path4 = Path.Combine(folder, "aztec.png");
+        using (var gen = new BarcodeGenerator(EncodeTypes.Aztec, "AZTEC"))
+        {
+            gen.Save(path4, BarCodeImageFormat.Png);
+        }
+        files.Add(path4);
+
+        // Pdf417 barcode
+        string path5 = Path.Combine(folder, "pdf417.png");
+        using (var gen = new BarcodeGenerator(EncodeTypes.Pdf417, "PDF417DATA"))
+        {
+            gen.Save(path5, BarCodeImageFormat.Png);
+        }
+        files.Add(path5);
+
+        return files;
+    }
+
+    /// <summary>
+    /// Profiles the time required to scan a collection of barcode images repeatedly, with a specified AllowIncorrectBarcodes setting.
+    /// </summary>
+    /// <param name="files">List of barcode image file paths to scan.</param>
+    /// <param name="allowIncorrect">Whether to allow incorrect barcodes during scanning.</param>
+    /// <param name="repetitions">Number of times each file is scanned.</param>
+    /// <returns>Total elapsed time in milliseconds for the entire profiling run.</returns>
+    static double ProfileScanning(System.Collections.Generic.List<string> files, bool allowIncorrect, int repetitions)
+    {
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        // Perform the scanning loop
+        for (int i = 0; i < repetitions; i++)
+        {
+            foreach (var file in files)
             {
-                reader.QualitySettings.AllowIncorrectBarcodes = allowIncorrect;
-                reader.ReadBarCodes();
+                if (!File.Exists(file))
+                    continue;
+
+                // Initialize a reader for the current barcode image
+                using (var reader = new BarCodeReader(file))
+                {
+                    // Apply the AllowIncorrectBarcodes setting for this run
+                    reader.QualitySettings.AllowIncorrectBarcodes = allowIncorrect;
+
+                    // ReadBarCodes returns an array; results are ignored as we only measure performance
+                    var results = reader.ReadBarCodes();
+                }
             }
         }
 
-        sw.Stop();
-        return sw.ElapsedMilliseconds;
+        stopwatch.Stop();
+        return stopwatch.Elapsed.TotalMilliseconds;
     }
 }

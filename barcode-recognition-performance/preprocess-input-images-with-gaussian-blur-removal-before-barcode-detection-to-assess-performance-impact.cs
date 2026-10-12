@@ -1,107 +1,96 @@
-// Title: Gaussian Blur Removal Impact on Barcode Detection
-// Description: Demonstrates how applying Gaussian blur removal (deconvolution) affects barcode recognition speed and accuracy.
-// Category-Description: This example belongs to the Aspose.BarCode image preprocessing category, showcasing the use of BarCodeReader.QualitySettings.Deconvolution to mitigate blur before detection. Developers often need to compare baseline detection with enhanced preprocessing to optimize performance for blurred images.
+// Title: Barcode detection performance comparison with Gaussian blur removal
+// Description: Demonstrates generating a QR barcode image and measuring detection time with and without applying deconvolution (Gaussian blur removal) to assess its impact on recognition speed.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and QualitySettings.Deconvolution to improve image quality before detection. Typical scenarios include preprocessing scanned images to enhance barcode readability and evaluating performance trade‑offs in automated scanning systems.
 // Prompt: Preprocess input images with Gaussian blur removal before barcode detection to assess performance impact.
-// Tags: barcode, gaussian blur, deconvolution, performance, preprocessing, aspose.barcode, code128, detection
+// Tags: barcode, qr, detection, deconvolution, gaussian blur, performance, aspose.barcode, generation, recognition
 
 using System;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode, then reads it twice: once without any preprocessing
-/// and once with Gaussian blur removal (deconvolution). The execution times and
-/// decoded texts are printed for comparison.
+/// Generates a QR barcode, then reads it twice: once without preprocessing and once with Gaussian blur removal (deconvolution),
+/// printing detection results and timing information for each approach.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, detection with and
-    /// without deconvolution, and outputs the results.
+    /// Entry point of the example. Executes barcode generation, detection, timing, and cleanup.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Create a unique temporary folder to store the generated barcode image.
-        // --------------------------------------------------------------------
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string barcodePath = Path.Combine(tempDir, "barcode.png");
+        // Create a unique temporary folder for generated files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "barcode.png");
 
-        // ---------------------------------------------------------------
-        // Generate a simple Code128 barcode image and save it as PNG.
-        // ---------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Generate a sample QR barcode image and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // ---------------------------------------------------------------
-        // Read the barcode without any deconvolution (baseline measurement).
-        // ---------------------------------------------------------------
-        long timeWithout;
-        string resultWithout;
-        var sw = new Stopwatch();
-        sw.Start();
+        // Verify that the barcode image was created successfully
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // Detection without any preprocessing
+        // ------------------------------------------------------------
+        Stopwatch swNoPre = new Stopwatch();
+        swNoPre.Start();
 
         using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            resultWithout = null;
-            foreach (var res in reader.ReadBarCodes())
+            // Read all barcodes found in the image
+            foreach (var result in reader.ReadBarCodes())
             {
-                resultWithout = res.CodeText;
-                break; // Stop after the first successful read.
+                Console.WriteLine($"[NoPre] Detected: {result.CodeText} Type: {result.CodeTypeName}");
             }
         }
 
-        sw.Stop();
-        timeWithout = sw.ElapsedMilliseconds;
+        swNoPre.Stop();
+        Console.WriteLine($"Detection time without preprocessing: {swNoPre.ElapsedMilliseconds} ms");
 
-        // ---------------------------------------------------------------
-        // Read the barcode with Gaussian blur removal (Deconvolution mode set to Normal).
-        // ---------------------------------------------------------------
-        long timeWith;
-        string resultWith;
-        sw.Restart();
+        // ------------------------------------------------------------
+        // Detection with Gaussian blur removal (Deconvolution)
+        // ------------------------------------------------------------
+        Stopwatch swDeconv = new Stopwatch();
+        swDeconv.Start();
 
         using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            // Enable deconvolution to mitigate blur before detection.
+            // Enable deconvolution (blur removal) before reading
             reader.QualitySettings.Deconvolution = DeconvolutionMode.Normal;
 
-            resultWith = null;
-            foreach (var res in reader.ReadBarCodes())
+            // Read all barcodes after applying deconvolution
+            foreach (var result in reader.ReadBarCodes())
             {
-                resultWith = res.CodeText;
-                break; // Stop after the first successful read.
+                Console.WriteLine($"[Deconv] Detected: {result.CodeText} Type: {result.CodeTypeName}");
             }
         }
 
-        sw.Stop();
-        timeWith = sw.ElapsedMilliseconds;
+        swDeconv.Stop();
+        Console.WriteLine($"Detection time with deconvolution: {swDeconv.ElapsedMilliseconds} ms");
 
-        // ---------------------------------------------------------------
-        // Output the comparison results to the console.
-        // ---------------------------------------------------------------
-        Console.WriteLine($"Without deconvolution: Text = '{resultWithout ?? "null"}', Time = {timeWithout} ms");
-        Console.WriteLine($"With deconvolution (Normal): Text = '{resultWith ?? "null"}', Time = {timeWith} ms");
-
-        // ---------------------------------------------------------------
-        // Clean up temporary files and directory.
-        // ---------------------------------------------------------------
+        // ------------------------------------------------------------
+        // Cleanup temporary files and directories
+        // ------------------------------------------------------------
         try
         {
-            if (File.Exists(barcodePath))
-                File.Delete(barcodePath);
-            if (Directory.Exists(tempDir))
-                Directory.Delete(tempDir, true);
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program exit.
+            // Ignored – cleanup failures should not affect program outcome
         }
     }
 }

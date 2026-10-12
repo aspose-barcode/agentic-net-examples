@@ -1,82 +1,59 @@
-// Title: Demonstrate MinimalXDimension effect on sub‑pixel Code128 barcode detection
-// Description: This example generates a Code128 barcode with a sub‑pixel XDimension of 0.5 point, saves it as PNG, and compares detection results using normal and minimal XDimension modes.
-// Category-Description: Shows how to work with Aspose.BarCode generation and recognition APIs to control XDimension settings. It covers BarcodeGenerator for creating barcodes, BarCodeReader with QualitySettings for adjusting XDimensionMode, and typical use cases such as fine‑tuning detection of low‑resolution or sub‑pixel barcodes. Developers often need to experiment with MinimalXDimension to improve read accuracy on small or compressed images.
+// Title: Demonstrate MinimalXDimension effect on barcode detection
+// Description: Shows how setting MinimalXDimension to 0.5 pixels influences detection of sub‑pixel Code128 barcodes. Generates a barcode with sub‑pixel module size and compares default vs minimal X dimension recognition counts.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It illustrates using BarcodeGenerator to create a barcode with a custom XDimension and BarCodeReader with QualitySettings to adjust XDimension detection. Developers working with low‑resolution or sub‑pixel barcodes often need to tweak MinimalXDimension to improve read accuracy. The snippet highlights key classes such as BarcodeGenerator, BarCodeReader, and QualitySettings for practical use cases like testing scanner sensitivity.
 // Prompt: Test the effect of setting MinimalXDimension to 0.5 pixels on detection of sub‑pixel barcode elements.
-// Tags: code128, xdimension, minimalxdimension, barcode-generation, barcode-recognition, png, aspose.barcode
+// Tags: code128, minimalxdimension, subpixel, barcode generation, barcode recognition, qualitysettings, aspnet, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates a sub‑pixel Code128 barcode and evaluates detection using different XDimension settings.
+/// Program demonstrating the impact of MinimalXDimension on barcode detection.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode image, reads it with normal and minimal XDimension modes,
-    /// and outputs the detection counts.
+    /// Entry point. Generates a sub‑pixel Code128 barcode, reads it with default settings,
+    /// then reads it with MinimalXDimension set to 0.5 px, and prints detection counts.
     /// </summary>
-    static void Main()
+    static void Main(string[] args)
     {
-        // Create a unique temporary folder for the generated image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a temporary folder for the barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "barcode.png");
 
-        // Define the full path for the barcode PNG file
-        string barcodePath = Path.Combine(tempFolder, "subpixel_code128.png");
-
-        // Generate a Code128 barcode with a sub‑pixel XDimension (0.5 point)
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "SUBPIXEL"))
+        // Generate a Code128 barcode with a very small XDimension (sub‑pixel)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
         {
-            // Set XDimension to 0.5 point (sub‑pixel)
-            generator.Parameters.Barcode.XDimension.Point = 0.5f;
-
-            // Reduce padding to keep the image compact
-            generator.Parameters.Barcode.Padding.Left.Point = 2f;
-            generator.Parameters.Barcode.Padding.Top.Point = 2f;
-            generator.Parameters.Barcode.Padding.Right.Point = 2f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 2f;
-
-            // Save the barcode image as PNG
+            generator.Parameters.Barcode.XDimension.Point = 0.5f; // sub‑pixel module size
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image was created successfully
-        if (!File.Exists(barcodePath))
+        // Read the barcode with default recognition settings
+        int defaultCount = 0;
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            Console.WriteLine("Failed to generate barcode image.");
-            return;
+            var results = reader.ReadBarCodes();
+            defaultCount = results.Length;
         }
 
-        // -----------------------------------------------------------------
-        // Read the barcode using the default XDimension mode (Normal)
-        // -----------------------------------------------------------------
-        int countNormal = 0;
-        using (var readerNormal = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // Read the barcode using MinimalXDimension = 0.5 pixels
+        int minimalCount = 0;
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            readerNormal.QualitySettings.XDimension = XDimensionMode.Normal;
-            BarCodeResult[] results = readerNormal.ReadBarCodes();
-            countNormal = results.Length;
-            Console.WriteLine($"Normal XDimension mode detected {countNormal} barcode(s).");
+            // Enable use of MinimalXDimension and set it to 0.5 px
+            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+            reader.QualitySettings.MinimalXDimension = 0.5f;
+            var results = reader.ReadBarCodes();
+            minimalCount = results.Length;
         }
 
-        // -----------------------------------------------------------------
-        // Read the barcode using UseMinimalXDimension mode with MinimalXDimension = 0.5 point
-        // -----------------------------------------------------------------
-        int countMinimal = 0;
-        using (var readerMinimal = new BarCodeReader(barcodePath, DecodeType.Code128))
-        {
-            readerMinimal.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            readerMinimal.QualitySettings.MinimalXDimension = 0.5f;
-            BarCodeResult[] results = readerMinimal.ReadBarCodes();
-            countMinimal = results.Length;
-            Console.WriteLine($"UseMinimalXDimension mode (0.5pt) detected {countMinimal} barcode(s).");
-        }
-
-        // Output a simple summary
-        Console.WriteLine("Test completed.");
+        // Output the detection results for comparison
+        Console.WriteLine($"Default detection count: {defaultCount}");
+        Console.WriteLine($"UseMinimalXDimension (0.5 px) detection count: {minimalCount}");
     }
 }

@@ -1,100 +1,138 @@
-// Title: Region-of-Interest Barcode Scanning Demo
-// Description: Demonstrates scanning a barcode image using Aspose.BarCode with and without a region-of-interest to compare performance.
-// Category-Description: This example belongs to the Aspose.BarCode image recognition category, illustrating how to use BarCodeReader with a full image and a specified Rectangle to limit the scan area. Developers often need to improve processing speed by focusing on a central region where barcodes are expected, using classes such as BarcodeGenerator, BarCodeReader, BarCodeResult, and System.Drawing.Rectangle.
-// Prompt: Implement region‑of‑interest scanning to limit analysis to a central rectangle and measure time savings.
-// Tags: barcode, region of interest, performance, qrcode, aspose.barcode, generation, recognition, csharp
+// Title: Region‑of‑Interest Barcode Scanning Benchmark
+// Description: Demonstrates scanning a barcode within a defined central rectangle to reduce processing time compared to scanning the full image.
+// Category-Description: Shows Aspose.BarCode barcode recognition using BarCodeReader with and without a region‑of‑interest. Typical use cases include speeding up scanning in large images or video frames by limiting analysis to a specific area. Developers often work with BarcodeGenerator, BarCodeReader, DecodeType, and Rectangle to generate, embed, and detect barcodes efficiently.
+/// Prompt: Implement region‑of‑interest scanning to limit analysis to a central rectangle and measure time savings.
+/// Tags: barcode, region of interest, scanning, performance, aspose.barcode, qr, decode, benchmark
 
 using System;
 using System.IO;
 using System.Diagnostics;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Shows how to generate a QR code, then read it using full‑image scanning
-/// and region‑of‑interest scanning, measuring the time difference.
+/// Demonstrates how to generate a QR code, embed it in a larger image,
+/// and compare full‑image barcode scanning with region‑of‑interest scanning
+/// using Aspose.BarCode. The example measures the time saved by limiting the
+/// analysis area to a central rectangle.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates a QR code, scans it twice (full image
-    /// and central region), prints timing results, and cleans up temporary files.
+    /// Entry point of the demo. Generates a QR code, creates a composite image,
+    /// runs two scanning benchmarks (full image vs. ROI), outputs the results,
+    /// and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the sample image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeRegionDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "barcode.png");
+        // Create a temporary working directory for generated files
+        string workDir = Path.Combine(Path.GetTempPath(), "RegionOfInterestDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // Generate a sample QR code image and save it as PNG
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // Paths for the individual barcode image and the combined canvas image
+        string barcodeFile = Path.Combine(workDir, "barcode.png");
+        string combinedFile = Path.Combine(workDir, "combined.png");
+
+        // ------------------------------------------------------------
+        // Generate a QR barcode and save it to a PNG file
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // Load the generated image into a bitmap for recognition
-        using (Bitmap bmp = new Bitmap(imagePath))
-        {
-            // -------------------------------------------------
-            // Full‑image scan (baseline)
-            // -------------------------------------------------
-            int fullCount = 0;
-            Stopwatch swFull = Stopwatch.StartNew();
-
-            using (BarCodeReader readerFull = new BarCodeReader(bmp, DecodeType.AllSupportedTypes))
+            using (var ms = new MemoryStream())
             {
-                foreach (BarCodeResult result in readerFull.ReadBarCodes())
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0;
+                using (var barcodeBmp = new Bitmap(ms))
                 {
-                    fullCount++;
+                    // Save the barcode image for later composition
+                    barcodeBmp.Save(barcodeFile, ImageFormat.Png);
                 }
             }
+        }
 
-            swFull.Stop();
+        // ------------------------------------------------------------
+        // Create a larger canvas and draw the barcode at its center
+        // ------------------------------------------------------------
+        const int canvasWidth = 800;
+        const int canvasHeight = 600;
+        using (var canvas = new Bitmap(canvasWidth, canvasHeight))
+        {
+            using (var graphics = Graphics.FromImage(canvas))
+            {
+                graphics.Clear(Color.White);
+                using (var barcodeBmp = new Bitmap(barcodeFile))
+                {
+                    int x = (canvasWidth - barcodeBmp.Width) / 2;
+                    int y = (canvasHeight - barcodeBmp.Height) / 2;
+                    graphics.DrawImage(barcodeBmp, x, y, barcodeBmp.Width, barcodeBmp.Height);
+                }
+            }
+            canvas.Save(combinedFile, ImageFormat.Png);
+        }
 
-            // -------------------------------------------------
-            // Define a central region (half the width and height)
-            // -------------------------------------------------
-            int regionWidth = bmp.Width / 2;
-            int regionHeight = bmp.Height / 2;
-            int regionX = (bmp.Width - regionWidth) / 2;
-            int regionY = (bmp.Height - regionHeight) / 2;
-            Rectangle region = new Rectangle(regionX, regionY, regionWidth, regionHeight);
+        // ------------------------------------------------------------
+        // Define a central rectangle (region of interest) that is half the canvas size
+        // ------------------------------------------------------------
+        int regionWidth = canvasWidth / 2;
+        int regionHeight = canvasHeight / 2;
+        int regionX = (canvasWidth - regionWidth) / 2;
+        int regionY = (canvasHeight - regionHeight) / 2;
+        Rectangle centralRect = new Rectangle(regionX, regionY, regionWidth, regionHeight);
 
-            // -------------------------------------------------
-            // Region‑limited scan (focus on central rectangle)
-            // -------------------------------------------------
-            int regionCount = 0;
-            Stopwatch swRegion = Stopwatch.StartNew();
+        // ------------------------------------------------------------
+        // Benchmark scanning the full image
+        // ------------------------------------------------------------
+        Stopwatch swFull = new Stopwatch();
+        int fullCount = 0;
+        swFull.Start();
+        using (var readerFull = new BarCodeReader(combinedFile, DecodeType.AllSupportedTypes))
+        {
+            foreach (BarCodeResult result in readerFull.ReadBarCodes())
+            {
+                fullCount++;
+            }
+        }
+        swFull.Stop();
 
-            using (BarCodeReader readerRegion = new BarCodeReader(bmp, region, DecodeType.AllSupportedTypes))
+        // ------------------------------------------------------------
+        // Benchmark scanning only the defined region of interest
+        // ------------------------------------------------------------
+        Stopwatch swRegion = new Stopwatch();
+        int regionCount = 0;
+        using (var bmp = new Bitmap(combinedFile))
+        {
+            swRegion.Start();
+            using (var readerRegion = new BarCodeReader(bmp, centralRect, DecodeType.AllSupportedTypes))
             {
                 foreach (BarCodeResult result in readerRegion.ReadBarCodes())
                 {
                     regionCount++;
                 }
             }
-
             swRegion.Stop();
-
-            // Output timing and detection results
-            Console.WriteLine($"Full scan: {swFull.ElapsedMilliseconds} ms, barcodes found: {fullCount}");
-            Console.WriteLine($"Region scan: {swRegion.ElapsedMilliseconds} ms, barcodes found: {regionCount}");
         }
 
-        // Cleanup temporary files and folder
+        // ------------------------------------------------------------
+        // Output benchmark results
+        // ------------------------------------------------------------
+        Console.WriteLine($"Full image scan:   Time = {swFull.ElapsedMilliseconds} ms, Barcodes detected = {fullCount}");
+        Console.WriteLine($"Region scan:       Time = {swRegion.ElapsedMilliseconds} ms, Barcodes detected = {regionCount}");
+        Console.WriteLine($"Time saved by ROI: {swFull.ElapsedMilliseconds - swRegion.ElapsedMilliseconds} ms");
+
+        // ------------------------------------------------------------
+        // Clean up temporary files and directory
+        // ------------------------------------------------------------
         try
         {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder, true);
+            File.Delete(barcodeFile);
+            File.Delete(combinedFile);
+            Directory.Delete(workDir, true);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect program outcome
+            // Ignored – cleanup failures should not affect program exit
         }
     }
 }

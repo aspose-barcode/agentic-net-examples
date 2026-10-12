@@ -1,68 +1,92 @@
-// Title: Retrieve barcode confidence after allowing incorrect barcodes
-// Description: Demonstrates how to generate a QR code, read it with Aspose.BarCode while permitting incorrect barcodes, and obtain the detection confidence value.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader, QualitySettings, and BarCodeResult to evaluate detection reliability. Developers often need to assess confidence scores when scanning imperfect or partially damaged barcodes, especially in quality‑control or inventory systems.
+// Title: Retrieve Barcode Confidence with AllowIncorrectBarcodes Setting
+// Description: Demonstrates how to read a Code128 barcode and obtain the Confidence value while toggling the AllowIncorrectBarcodes quality setting.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader, QualitySettings, and BarCodeResult. Developers often need to assess detection reliability, especially when allowing imperfect barcodes, by examining the Confidence metric returned after decoding.
 // Prompt: Retrieve BarCodeResult.Confidence after allowing incorrect barcodes to assess detection reliability.
-// Tags: qr, barcode, confidence, allowincorrectbarcodes, aspnet, aspnetcore, aspose.barcode, barcode-recognition
+// Tags: barcode symbology, reading, confidence, allowincorrectbarcodes, aspose.barcode, code128, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR barcode, reading it with incorrect barcode allowance, and retrieving confidence scores.
+/// Example program that generates a Code128 barcode, reads it twice with different
+/// AllowIncorrectBarcodes settings, and outputs the detection confidence for each read.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a temporary QR barcode image, reads it with confidence values, and cleans up resources.
+    /// Entry point of the application.
+    /// Generates a barcode, reads it with AllowIncorrectBarcodes set to false and true,
+    /// prints the type, text, and confidence of each detected barcode, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for demo files
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // ------------------------------------------------------------
+        // Prepare a temporary folder and file path for the barcode image
+        // ------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Define the full path for the barcode image
-        string barcodePath = Path.Combine(tempDir, "barcode.png");
-
-        // Generate a QR barcode image
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample123"))
+        // ------------------------------------------------------------
+        // Generate a simple Code128 barcode and save it as PNG
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
         {
-            // Save the generated barcode as a PNG file
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Read the barcode while allowing incorrect barcodes and retrieve confidence values
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        // ------------------------------------------------------------
+        // Read the barcode with AllowIncorrectBarcodes set to false
+        // ------------------------------------------------------------
+        Console.WriteLine("Reading with AllowIncorrectBarcodes = false");
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            // Enable the setting that permits detection of potentially incorrect barcodes
-            reader.QualitySettings.AllowIncorrectBarcodes = true;
+            // Disallow detection of barcodes that do not meet strict quality criteria
+            reader.QualitySettings.AllowIncorrectBarcodes = false;
 
-            // Perform the read operation and obtain all results
+            // Perform the read operation
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Output the number of barcodes detected
-            Console.WriteLine($"Barcodes read: {results.Length}");
-
-            // Iterate through each result and display its details
+            // Output each result's type, text, and confidence
             foreach (BarCodeResult result in results)
             {
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"Confidence: {result.Confidence}");
+                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}, Confidence: {result.Confidence}");
             }
         }
 
-        // Cleanup temporary files and directories
+        // ------------------------------------------------------------
+        // Read the same barcode with AllowIncorrectBarcodes set to true
+        // ------------------------------------------------------------
+        Console.WriteLine("Reading with AllowIncorrectBarcodes = true");
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        {
+            // Permit detection of barcodes that may have minor quality issues
+            reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+            // Perform the read operation
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Output each result's type, text, and confidence
+            foreach (BarCodeResult result in results)
+            {
+                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}, Confidence: {result.Confidence}");
+            }
+        }
+
+        // ------------------------------------------------------------
+        // Clean up temporary files and directories
+        // ------------------------------------------------------------
         try
         {
             if (File.Exists(barcodePath))
                 File.Delete(barcodePath);
 
-            if (Directory.Exists(tempDir))
-                Directory.Delete(tempDir, true);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
         }
         catch
         {
