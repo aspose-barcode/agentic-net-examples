@@ -1,8 +1,8 @@
-// Title: Generate Code 128 barcode with checksum, custom margins, and TIFF output
-// Description: Demonstrates enabling the checksum for a Code 128 barcode, applying uniform custom margins, and saving the result as a lossless TIFF image using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters such as checksum, padding, and image format. It uses the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, which are commonly employed by developers to create printable barcodes with precise layout requirements for packaging, shipping, and inventory systems.
+// Title: Generate Code 128 barcode with checksum, custom margins, and TIFF lossless output
+// Description: Demonstrates enabling checksum for a Code 128 barcode, applying custom padding, and saving the result as a losslessly compressed TIFF image.
+// Category-Description: This example belongs to the Aspose.BarCode generation series, illustrating how to configure barcode parameters such as checksum and padding using the BarcodeGenerator class. Typical use cases include creating high‑quality barcodes for printing or archival where precise layout and data integrity are required. Developers often need to adjust margins and select appropriate image formats for downstream processing.
 // Prompt: Enable checksum for Code 128, set custom margin, and save the barcode as TIFF with lossless compression.
-// Tags: code128, checksum, margin, tiff, lossless, aspose.barcode, barcode-generation
+// Tags: code128, checksum, margin, tiff, lossless, aspose.barcode, barcodegenerator
 
 using System;
 using System.IO;
@@ -12,39 +12,39 @@ using Aspose.Drawing;
 
 /// <summary>
 /// Example program that creates a Code 128 barcode with checksum enabled,
-/// applies custom margins, and saves it as a lossless TIFF image.
+/// applies custom padding, and saves it as a losslessly compressed TIFF file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and writes the output path to the console.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the output file
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeExample_" + Guid.NewGuid().ToString("N"));
+        // Define and create a temporary output directory for the generated barcode image.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
         Directory.CreateDirectory(outputDir);
 
-        // Define the full path for the resulting TIFF file
-        string outputPath = Path.Combine(outputDir, "Code128_Checksum_Margin.tiff");
+        // Build the full file path for the TIFF output.
+        string filePath = Path.Combine(outputDir, "code128.tiff");
 
-        // Initialize the barcode generator for Code 128 with the desired data
+        // Initialize the barcode generator with Code 128 symbology and the desired data.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Enable checksum (required for Code 128 to ensure data integrity)
+            // Enable checksum calculation for the barcode.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Set uniform custom margins of 10 points on all sides
+            // Set custom padding (margin) on all sides in points.
             generator.Parameters.Barcode.Padding.Left.Point = 10f;
             generator.Parameters.Barcode.Padding.Top.Point = 10f;
             generator.Parameters.Barcode.Padding.Right.Point = 10f;
             generator.Parameters.Barcode.Padding.Bottom.Point = 10f;
 
-            // Save the barcode as a lossless TIFF image
-            generator.Save(outputPath, BarCodeImageFormat.Tiff);
+            // Save the barcode image as a TIFF file with lossless compression.
+            generator.Save(filePath, BarCodeImageFormat.Tiff);
         }
 
-        // Output the location of the saved barcode image
-        Console.WriteLine("Barcode saved to: " + outputPath);
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to: {filePath}");
     }
 }

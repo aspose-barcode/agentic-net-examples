@@ -1,11 +1,12 @@
-// Title: Generate Code 39 Barcodes with Optional Checksum
-// Description: Demonstrates creating Code 39 barcodes using Aspose.BarCode and saving them as PNG images, showing both checksum disabled and enabled scenarios.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.Code39FullASCII. Developers commonly need to generate barcodes for inventory, shipping, or tracking, and may require toggling checksum validation. The snippet shows setting the IsChecksumEnabled property, saving images, and handling output directories—typical steps in barcode creation workflows.
+// Title: Generate Code 39 barcodes with optional checksum
+// Description: Demonstrates how to create Code 39 barcodes using Aspose.BarCode, showing both checksum disabled and enabled.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and checksum settings. Developers often need to generate Code 39 barcodes for inventory or tracking systems, and may require toggling the checksum for validation purposes. The snippet shows typical steps: initializing the generator, configuring checksum, and saving to PNG.
 // Prompt: Produce a sample project demonstrating generation of Code 39 barcodes with optional checksum both enabled and disabled.
-// Tags: code39, barcode, generation, checksum, png, aspose.barcode, csharp
+// Tags: code39, barcode, checksum, generation, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
@@ -14,48 +15,34 @@ using Aspose.BarCode.Generation;
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates an output folder, generates two barcodes (checksum disabled and enabled), and saves them as PNG files.
+    /// Entry point that creates output directory, generates two barcode images (checksum disabled/enabled), and writes their paths to the console.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the output directory relative to the current working folder.
-        string outputDir = Path.Combine(Environment.CurrentDirectory, "Barcodes");
+        // Define and create the output folder for generated images
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
         Directory.CreateDirectory(outputDir);
 
-        // Text to encode in the barcode.
-        string codeText = "CODE39";
+        // Paths for the two barcode images
+        string noChecksumPath = Path.Combine(outputDir, "Code39_NoChecksum.png");
+        string checksumPath = Path.Combine(outputDir, "Code39_WithChecksum.png");
 
-        // ------------------------------------------------------------
-        // Generate barcode without checksum.
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+        // Generate barcode without checksum
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "CODE39"))
         {
-            // Disable checksum calculation.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
-
-            // Build the full file path for the image.
-            string filePath = Path.Combine(outputDir, "Code39_NoChecksum.png");
-
-            // Save the barcode image as PNG.
-            generator.Save(filePath, BarCodeImageFormat.Png);
-            Console.WriteLine($"Saved barcode without checksum: {filePath}");
+            generator.Save(noChecksumPath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Generate barcode with checksum.
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, codeText))
+        // Generate barcode with checksum
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, "CODE39"))
         {
-            // Enable checksum calculation.
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-
-            // Build the full file path for the image.
-            string filePath = Path.Combine(outputDir, "Code39_WithChecksum.png");
-
-            // Save the barcode image as PNG.
-            generator.Save(filePath, BarCodeImageFormat.Png);
-            Console.WriteLine($"Saved barcode with checksum: {filePath}");
+            generator.Save(checksumPath, BarCodeImageFormat.Png);
         }
+
+        // Output the locations of the generated files
+        Console.WriteLine($"Generated barcode without checksum: {noChecksumPath}");
+        Console.WriteLine($"Generated barcode with checksum: {checksumPath}");
     }
 }

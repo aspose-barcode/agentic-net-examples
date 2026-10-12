@@ -1,75 +1,67 @@
 // Title: Benchmark Code 39 barcode generation with and without checksum
 // Description: Demonstrates measuring the time required to generate Code 39 barcodes when the checksum is enabled versus disabled.
-// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category. It showcases the use of BarcodeGenerator, EncodeTypes, and barcode parameters such as IsChecksumEnabled. Developers often need to compare generation speed for different settings to optimize batch processing or real‑time rendering scenarios.
+// Category-Description: This example belongs to the Aspose.BarCode performance testing category, showcasing how to use BarcodeGenerator, EncodeTypes, and generation parameters to evaluate runtime. Typical use cases include assessing the impact of checksum settings on processing speed for bulk barcode creation. Developers often need such benchmarks to choose optimal settings for high‑throughput applications.
 // Prompt: Write a performance benchmark measuring barcode generation time with checksum enabled versus disabled for Code 39.
-// Tags: barcode, code39, checksum, performance, benchmark, aspose.barcode, generation, png
+// Tags: code39, checksum, performance, benchmark, png, aspose.barcode, generation
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains the entry point and benchmark logic for measuring Code 39 barcode generation performance with checksum variations.
+/// Provides a simple performance benchmark for generating Code 39 barcodes with checksum enabled and disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Executes benchmarks for checksum enabled and disabled scenarios.
+    /// Entry point. Executes the benchmark and outputs elapsed times for both checksum settings.
     /// </summary>
     static void Main()
     {
-        // Run benchmark with checksum enabled
-        BenchmarkChecksum(true);
-        // Run benchmark with checksum disabled
-        BenchmarkChecksum(false);
+        // Sample texts to encode as Code 39 barcodes
+        string[] sampleTexts = { "CODE39A", "CODE39B", "CODE39C", "CODE39D", "CODE39E" };
+
+        // Measure time with checksum enabled
+        TimeSpan enabledDuration = Benchmark(sampleTexts, true);
+        // Measure time with checksum disabled
+        TimeSpan disabledDuration = Benchmark(sampleTexts, false);
+
+        // Output the benchmark results
+        Console.WriteLine($"Checksum Enabled total time: {enabledDuration.TotalMilliseconds} ms");
+        Console.WriteLine($"Checksum Disabled total time: {disabledDuration.TotalMilliseconds} ms");
     }
 
     /// <summary>
-    /// Generates a set of Code 39 barcodes and measures the elapsed time.
+    /// Runs a benchmark that generates barcodes for the provided texts using the specified checksum setting.
     /// </summary>
-    /// <param name="enableChecksum">True to enable checksum, false to disable.</param>
-    static void BenchmarkChecksum(bool enableChecksum)
+    /// <param name="texts">Array of strings to encode.</param>
+    /// <param name="enableChecksum">True to enable checksum; false to disable.</param>
+    /// <returns>The elapsed time for the entire operation.</returns>
+    static TimeSpan Benchmark(string[] texts, bool enableChecksum)
     {
-        // Prepare sample texts for barcode generation
-        var sampleTexts = new List<string>();
-        for (int i = 0; i < 5; i++)
-        {
-            sampleTexts.Add($"CODE{i}");
-        }
-
         // Start timing
-        var stopwatch = Stopwatch.StartNew();
+        Stopwatch sw = Stopwatch.StartNew();
 
-        // Generate barcodes for each sample text
-        foreach (var text in sampleTexts)
+        foreach (string txt in texts)
         {
-            // Initialize generator with Code39FullASCII symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, text))
+            // Create a barcode generator for Code 39 Full ASCII
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39FullASCII, txt))
             {
-                // Set checksum option based on the method argument
+                // Set checksum option based on the benchmark parameter
                 generator.Parameters.Barcode.IsChecksumEnabled = enableChecksum ? EnableChecksum.Yes : EnableChecksum.No;
 
-                // Generate barcode image
-                using (var bitmap = generator.GenerateBarCodeImage())
+                // Save the generated barcode to a memory stream in PNG format
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    // Save image to memory stream in PNG format (no file I/O)
-                    using (var ms = new MemoryStream())
-                    {
-                        bitmap.Save(ms, ImageFormat.Png);
-                    }
+                    generator.Save(ms, BarCodeImageFormat.Png);
                 }
             }
         }
 
-        // Stop timing
-        stopwatch.Stop();
-
-        // Output elapsed time
-        Console.WriteLine($"Checksum {(enableChecksum ? "Enabled" : "Disabled")} generation time: {stopwatch.ElapsedMilliseconds} ms");
+        // Stop timing and return the elapsed duration
+        sw.Stop();
+        return sw.Elapsed;
     }
 }

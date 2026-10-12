@@ -1,135 +1,134 @@
-// Title: Barcode generation with configurable checksum settings per symbology
-// Description: Demonstrates loading checksum preferences from a simple config file and applying them while generating barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode configuration category, illustrating how to use Aspose.BarCode.Generation.BarcodeGenerator together with EncodeTypes and EnableChecksum to customize barcode creation. Developers often need to store default settings such as checksum enablement per symbology in external files for consistent generation across applications. The snippet shows reading a text file, parsing enum values, and applying them during barcode initialization.
+// Title: Load checksum settings from JSON and generate barcodes per symbology
+// Description: Demonstrates reading a JSON configuration file that defines default checksum settings for various barcode symbologies, then creates sample barcodes using Aspose.BarCode with those settings.
+// Category-Description: This example belongs to the Aspose.BarCode configuration and generation category, illustrating how to use EncodeTypes, BarcodeGenerator, and the IsChecksumEnabled property. Developers often need to apply consistent checksum rules across multiple symbologies, and loading such rules from external files (e.g., JSON) simplifies maintenance and deployment. The pattern shown is common for batch barcode creation, automated reporting, and integration pipelines.
 // Prompt: Create a configuration file storing default checksum settings per symbology and load it during barcode initialization.
-// Tags: barcode, checksum, symbology, configuration, aspnet, aspose.barcode, generation, png
+// Tags: barcode, symbology, checksum, json, configuration, aspose.barcode, generation, encode types
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates loading checksum configuration and generating sample barcodes for selected symbologies.
+/// Demonstrates loading checksum configuration from a JSON file and generating sample barcodes for each symbology.
 /// </summary>
 class Program
 {
+    private const string ConfigFileName = "checksumConfig.json";
+
     /// <summary>
-    /// Entry point. Creates a temporary config, loads settings, generates barcodes, and saves them as PNG files.
+    /// Entry point. Ensures configuration exists, loads it, and generates barcodes with the specified checksum settings.
     /// </summary>
     static void Main()
     {
-        // Define a temporary path for the configuration file
-        string configPath = Path.Combine(Path.GetTempPath(), "checksumConfig.txt");
-        CreateDefaultConfig(configPath);
+        // Build the full path to the configuration file in the temporary folder.
+        string configPath = Path.Combine(Path.GetTempPath(), ConfigFileName);
 
-        // Load checksum settings from the configuration file
-        var checksumSettings = LoadConfig(configPath);
+        // Create a default configuration file if one does not already exist.
+        EnsureConfigExists(configPath);
 
-        // Create a unique output directory for generated barcode images
-        string outputDir = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
+        // Load the checksum settings from the JSON configuration.
+        var config = LoadConfig(configPath);
 
-        // List of symbology names to demonstrate
-        var symbologies = new List<string> { "Code39Extended", "Code128", "Codabar" };
-
-        // Iterate over each symbology, generate a barcode, and apply checksum settings if defined
-        foreach (var symName in symbologies)
+        // Iterate over each symbology defined in the configuration.
+        foreach (var kvp in config)
         {
-            // Resolve the EncodeType enum value from the symbology name
+            string symName = kvp.Key;
+            EnableChecksum checksumSetting = kvp.Value;
+
+            // Resolve the EncodeTypes field name to a BaseEncodeType instance.
             BaseEncodeType encodeType = ResolveEncodeType(symName);
             if (encodeType == null)
             {
-                Console.WriteLine($"Symbology '{symName}' not found.");
+                Console.WriteLine($"Symbology '{symName}' not recognized.");
                 continue;
             }
 
-            // Get sample code text appropriate for the current symbology
+            // Get a sample code text appropriate for the current symbology.
             string codeText = GetSampleCodeText(symName);
 
-            // Initialize the barcode generator with the resolved type and sample text
+            // Define the output image path for the generated barcode.
+            string outputPath = Path.Combine(Path.GetTempPath(), $"{symName}.png");
+
+            // Generate the barcode with the configured checksum setting.
             using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Apply checksum setting from the configuration if present
-                if (checksumSettings.TryGetValue(symName, out EnableChecksum checksumMode))
-                {
-                    generator.Parameters.Barcode.IsChecksumEnabled = checksumMode;
-                }
-
-                // Save the generated barcode as a PNG file
-                string outPath = Path.Combine(outputDir, $"{symName}.png");
-                generator.Save(outPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Generated {symName} barcode at: {outPath}");
+                generator.Parameters.Barcode.IsChecksumEnabled = checksumSetting;
+                generator.Save(outputPath, BarCodeImageFormat.Png);
             }
+
+            Console.WriteLine($"Generated {symName} barcode with checksum setting {checksumSetting} at {outputPath}");
         }
-
-        Console.WriteLine("Processing completed.");
     }
 
-    // Creates a simple text configuration file with default checksum settings
-    static void CreateDefaultConfig(string path)
+    /// <summary>
+    /// Creates a default JSON configuration file containing checksum settings if it does not already exist.
+    /// </summary>
+    /// <param name="path">Full path to the configuration file.</param>
+    static void EnsureConfigExists(string path)
     {
-        var lines = new List<string>
+        if (File.Exists(path))
+            return;
+
+        var defaultConfig = new Dictionary<string, EnableChecksum>
         {
-            "Code39Extended=No",
-            "Code128=Yes",
-            "Codabar=Default"
+            { "Code39Extended", EnableChecksum.No },
+            { "Code128", EnableChecksum.Yes },
+            { "Codabar", EnableChecksum.Default }
         };
-        File.WriteAllLines(path, lines);
+
+        string json = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(path, json);
     }
 
-    // Loads checksum settings from the configuration file into a dictionary
+    /// <summary>
+    /// Loads the checksum configuration from a JSON file.
+    /// </summary>
+    /// <param name="path">Full path to the configuration file.</param>
+    /// <returns>Dictionary mapping symbology names to their checksum settings.</returns>
     static Dictionary<string, EnableChecksum> LoadConfig(string path)
     {
-        var dict = new Dictionary<string, EnableChecksum>(StringComparer.OrdinalIgnoreCase);
-        if (!File.Exists(path))
+        try
         {
-            Console.WriteLine($"Config file not found: {path}");
-            return dict;
+            string json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<Dictionary<string, EnableChecksum>>(json);
         }
-
-        foreach (var line in File.ReadAllLines(path))
+        catch (Exception ex)
         {
-            if (string.IsNullOrWhiteSpace(line) || !line.Contains("="))
-                continue;
-
-            var parts = line.Split(new[] { '=' }, 2);
-            string sym = parts[0].Trim();
-            string val = parts[1].Trim();
-
-            try
-            {
-                var mode = (EnableChecksum)Enum.Parse(typeof(EnableChecksum), val, true);
-                dict[sym] = mode;
-            }
-            catch
-            {
-                Console.WriteLine($"Invalid checksum value '{val}' for symbology '{sym}'.");
-            }
+            Console.WriteLine($"Failed to load config: {ex.Message}");
+            return new Dictionary<string, EnableChecksum>();
         }
-        return dict;
     }
 
-    // Resolves a symbology name to its corresponding BaseEncodeType using reflection
-    static BaseEncodeType ResolveEncodeType(string symbologyName)
+    /// <summary>
+    /// Resolves a symbology name to its corresponding <see cref="BaseEncodeType"/> using reflection.
+    /// </summary>
+    /// <param name="symName">The name of the symbology (matches a field in <see cref="EncodeTypes"/>).</param>
+    /// <returns>The resolved <see cref="BaseEncodeType"/>, or null if not found.</returns>
+    static BaseEncodeType ResolveEncodeType(string symName)
     {
-        var field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
+        FieldInfo field = typeof(EncodeTypes).GetField(symName, BindingFlags.Public | BindingFlags.Static);
         if (field == null)
             return null;
         return (BaseEncodeType)field.GetValue(null);
     }
 
-    // Provides sample code text for each supported symbology
-    static string GetSampleCodeText(string symbologyName)
+    /// <summary>
+    /// Provides sample code text for a given symbology.
+    /// </summary>
+    /// <param name="symName">The symbology name.</param>
+    /// <returns>Sample text suitable for the specified symbology.</returns>
+    static string GetSampleCodeText(string symName)
     {
-        return symbologyName switch
+        return symName switch
         {
             "Code39Extended" => "CODE39",
             "Code128" => "CODE128",
             "Codabar" => "-12345-",
-            _ => "Sample"
+            _ => "SAMPLE"
         };
     }
 }
