@@ -1,60 +1,46 @@
 // Title: Generate HIBC Aztec LIC barcode using Aspose.BarCode
-// Description: Demonstrates how to create a HIBC Aztec LIC barcode image with primary data using Aspose.BarCode. The example saves the barcode as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as HIBC Aztec LIC. It showcases the use of ComplexBarcodeGenerator, HIBCLICPrimaryDataCodetext, and related parameter settings to customize appearance. Developers working with healthcare or logistics labeling often need to generate HIBC barcodes with specific data fields, and this snippet provides a quick reference for those scenarios.
+// Description: Demonstrates how to set the barcode type to Aztec and generate a HIBC Aztec LIC barcode with primary data, saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, illustrating the use of HIBCLICPrimaryDataCodetext, ComplexBarcodeGenerator, and EncodeTypes to create HIBC Aztec LIC barcodes. Developers commonly need to generate HIBC-compliant barcodes for healthcare labeling, requiring specific symbology and data fields. The snippet shows typical steps: configuring barcode type, populating primary data, and saving the image.
 // Prompt: Set the BarcodeType property to Aztec before assigning a HIBCLICPrimaryDataCodetext for generation.
-// Tags: barcode, aztec, hibc, lic, generation, png, complexbarcodegenerator, hibclicprimarydatacodetext
+// Tags: aztec, hibc, lic, barcode, generation, png, aspose.barcode, complexbarcode
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a HIBC Aztec LIC barcode and saves it as a PNG image.
+/// Example program that generates a HIBC Aztec LIC barcode using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates the barcode and writes the output file path to the console.
+    /// Entry point. Creates primary data, sets barcode type to Aztec, generates the barcode, and saves it as PNG.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory and ensure it exists.
-        string outputDir = Path.Combine(Path.GetTempPath(), "HIBC_Aztec_Output");
-        Directory.CreateDirectory(outputDir);
+        // Initialize primary data codetext for HIBC Aztec LIC barcode
+        var primaryCodetext = new HIBCLICPrimaryDataCodetext();
 
-        // Full path for the generated PNG file.
-        string outputPath = Path.Combine(outputDir, "HIBC_Aztec.png");
+        // Set the barcode symbology to Aztec (HIBC Aztec LIC)
+        primaryCodetext.BarcodeType = EncodeTypes.HIBCAztecLIC;
 
-        // Create primary data for the HIBC Aztec LIC barcode.
-        var primaryCodetext = new HIBCLICPrimaryDataCodetext
+        // Populate the required primary data fields
+        primaryCodetext.Data = new PrimaryData
         {
-            // Set the barcode symbology to HIBC Aztec LIC (Aztec type).
-            BarcodeType = EncodeTypes.HIBCAztecLIC,
-            // Populate required data fields.
-            Data = new PrimaryData
-            {
-                ProductOrCatalogNumber = "12345",
-                LabelerIdentificationCode = "A999",
-                UnitOfMeasureID = 1
-            }
+            LabelerIdentificationCode = "A999",   // Identifier of the labeler
+            ProductOrCatalogNumber = "12345",     // Product or catalog number
+            UnitOfMeasureID = 1                   // Unit of measure identifier
         };
 
-        // Initialize the complex barcode generator with the primary codetext.
+        // Generate the barcode using the complex barcode generator
         using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
         {
-            // Configure visual appearance of the barcode.
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;               // Set module size.
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black; // Set bar color.
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;        // Set background color.
-
-            // Save the generated barcode as a PNG image.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG file
+            generator.Save("hibc_aztec.png", BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"Barcode generated at: {outputPath}");
+        // Inform the user that the barcode has been created
+        Console.WriteLine("HIBC Aztec barcode generated: hibc_aztec.png");
     }
 }

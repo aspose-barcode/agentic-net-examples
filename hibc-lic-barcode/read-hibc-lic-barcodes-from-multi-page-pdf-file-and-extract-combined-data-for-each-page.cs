@@ -1,85 +1,90 @@
 // Title: Read HIBC LIC barcodes from a multi‑page PDF and extract combined data per page
-// Description: Demonstrates how to load a PDF, convert each page to an image, and decode HIBC LIC barcodes, outputting the combined primary and secondary data for each page.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showing how to use Aspose.Pdf to render PDF pages to images and Aspose.BarCode.BarCodeRecognition to read HIBC LIC (Health Industry Bar Code) complex barcodes. Typical use cases include processing medical or pharmaceutical documents where each page may contain a HIBC LIC label, and developers often need to extract product, lot, expiry, and other data programmatically. The sample uses Document, PdfConverter, BarCodeReader, DecodeType, ComplexCodetextReader, and HIBCLICCombinedCodetext classes.
+// Description: Demonstrates how to load a multi‑page PDF, render each page to an image, and use Aspose.BarCode to recognize HIBC LIC barcodes, then decode the combined data fields.
+// Category-Description: This example belongs to the Aspose.BarCode for .NET barcode recognition category, focusing on reading complex HIBC LIC (Health Industry Bar Code – License) symbology from raster images. It showcases the use of Document (Aspose.Pdf), PngDevice, BarCodeReader, DecodeType, and ComplexCodetextReader to extract detailed product information. Developers working with pharmaceutical or medical labeling often need to batch‑process PDFs and retrieve structured data from HIBC LIC barcodes.
 // Prompt: Read HIBC LIC barcodes from a multi‑page PDF file and extract combined data for each page.
-// Tags: hibc, lic, barcode, pdf, recognition, aspnet, aspnetcore, aspose.barcode, aspose.pdf, complexcodetext, decode
+// Tags: hibc lic, barcode recognition, pdf processing, aspnet, aspose.pdf, aspose.barcode, c#, .net
 
 using System;
 using System.IO;
+using Aspose.Pdf;
+using Aspose.Pdf.Devices;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Pdf.Facades;
 
 /// <summary>
-/// Demonstrates reading HIBC LIC barcodes from each page of a PDF and printing combined data.
+/// Example program that reads HIBC LIC barcodes from each page of a PDF,
+/// decodes the combined data, and writes the extracted fields to the console.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Accepts optional PDF path argument, processes each page, and writes barcode data to console.
+    /// Entry point of the application.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument may be the PDF file path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine PDF file path: use first argument if provided, otherwise default to "sample.pdf"
-        string pdfPath = args.Length > 0 ? args[0] : "sample.pdf";
+        // Define the path to the multi‑page PDF file located in the current directory.
+        string pdfPath = Path.Combine(Directory.GetCurrentDirectory(), "sample.pdf");
 
-        // Verify that the file exists before proceeding
+        // Verify that the PDF file exists before attempting to process it.
         if (!File.Exists(pdfPath))
         {
             Console.WriteLine($"File not found: {pdfPath}");
             return;
         }
 
-        // Load the PDF document using Aspose.Pdf
-        using (var pdfDocument = new Aspose.Pdf.Document(pdfPath))
+        // Load the PDF document using Aspose.Pdf.
+        using (Document pdfDocument = new Document(pdfPath))
         {
-            // Initialize a PdfConverter to render pages as images
-            using (var pdfConverter = new PdfConverter(pdfDocument))
+            int pageCount = pdfDocument.Pages.Count;
+            Console.WriteLine($"Processing {pageCount} page(s) from PDF.");
+
+            // Iterate through each page in the PDF.
+            for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
             {
-                // Enable barcode optimization for better image quality
-                pdfConverter.RenderingOptions.BarcodeOptimization = true;
+                Console.WriteLine($"\n--- Page {pageNumber} ---");
 
-                int pageCount = pdfDocument.Pages.Count;
-
-                // Iterate through each page in the PDF
-                for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
+                // Render the current PDF page to a PNG image stored in a memory stream.
+                using (MemoryStream imageStream = new MemoryStream())
                 {
-                    // Configure the converter to process a single page
-                    pdfConverter.StartPage = pageNumber;
-                    pdfConverter.EndPage = pageNumber;
-                    pdfConverter.DoConvert();
+                    // Set rendering resolution to 300 DPI for good barcode readability.
+                    Resolution resolution = new Resolution(300);
+                    PngDevice pngDevice = new PngDevice(resolution);
+                    pngDevice.Process(pdfDocument.Pages[pageNumber], imageStream);
+                    imageStream.Position = 0; // Reset stream position for reading.
 
-                    // Store the rendered page image in a memory stream
-                    using (var pageImageStream = new MemoryStream())
+                    // Initialize the barcode reader to detect HIBC LIC QR codes in the image.
+                    using (BarCodeReader reader = new BarCodeReader(imageStream, DecodeType.HIBCQRLIC))
                     {
-                        pdfConverter.GetNextImage(pageImageStream);
-                        pageImageStream.Position = 0; // Reset stream position for reading
+                        BarCodeResult[] results = reader.ReadBarCodes();
 
-                        // Create a BarCodeReader for HIBC QR LIC type using the page image
-                        using (var reader = new BarCodeReader(pageImageStream, DecodeType.HIBCQRLIC))
+                        // If no barcodes are found, report and continue to the next page.
+                        if (results.Length == 0)
                         {
-                            // Read all barcodes found on the page
-                            foreach (var result in reader.ReadBarCodes())
-                            {
-                                // Attempt to decode the complex HIBCLIC codetext
-                                var complexCodetext = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
-                                if (complexCodetext is HIBCLICCombinedCodetext combined)
-                                {
-                                    // Output primary data fields
-                                    Console.WriteLine($"Page {pageNumber}:");
-                                    Console.WriteLine($"  Product or catalog number: {combined.PrimaryData.ProductOrCatalogNumber}");
-                                    Console.WriteLine($"  Labeler identification code: {combined.PrimaryData.LabelerIdentificationCode}");
-                                    Console.WriteLine($"  Unit of measure ID: {combined.PrimaryData.UnitOfMeasureID}");
+                            Console.WriteLine("No HIBC LIC barcode detected on this page.");
+                            continue;
+                        }
 
-                                    // Output secondary and additional data fields
-                                    var secondary = combined.SecondaryAndAdditionalData;
-                                    Console.WriteLine($"  Expiry date: {secondary.ExpiryDate}");
-                                    Console.WriteLine($"  Quantity: {secondary.Quantity}");
-                                    Console.WriteLine($"  Lot number: {secondary.LotNumber}");
-                                    Console.WriteLine($"  Serial number: {secondary.SerialNumber}");
-                                    Console.WriteLine($"  Date of manufacture: {secondary.DateOfManufacture}");
-                                }
+                        // Process each detected barcode.
+                        foreach (BarCodeResult result in results)
+                        {
+                            // Attempt to decode the complex HIBC LIC codetext.
+                            HIBCLICComplexCodetext complex = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
+                            if (complex is HIBCLICCombinedCodetext combined)
+                            {
+                                // Output the combined data fields extracted from the barcode.
+                                Console.WriteLine($"Product or catalog number: {combined.PrimaryData.ProductOrCatalogNumber}");
+                                Console.WriteLine($"Labeler identification code: {combined.PrimaryData.LabelerIdentificationCode}");
+                                Console.WriteLine($"Unit of measure ID: {combined.PrimaryData.UnitOfMeasureID}");
+                                Console.WriteLine($"Expiry date: {combined.SecondaryAndAdditionalData.ExpiryDate}");
+                                Console.WriteLine($"Quantity: {combined.SecondaryAndAdditionalData.Quantity}");
+                                Console.WriteLine($"Lot number: {combined.SecondaryAndAdditionalData.LotNumber}");
+                                Console.WriteLine($"Serial number: {combined.SecondaryAndAdditionalData.SerialNumber}");
+                                Console.WriteLine($"Date of manufacture: {combined.SecondaryAndAdditionalData.DateOfManufacture}");
+                            }
+                            else
+                            {
+                                // Barcode was recognized but does not contain combined HIBC LIC data.
+                                Console.WriteLine("Barcode detected but not a combined HIBC LIC type.");
                             }
                         }
                     }
