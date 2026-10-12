@@ -1,12 +1,11 @@
 // Title: Generate MaxiCode Mode 2 barcode with structured secondary message
 // Description: Demonstrates creating a MaxiCode Mode 2 barcode and populating its structured secondary message using address components.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on MaxiCode symbology. It showcases the use of MaxiCodeCodetextMode2, MaxiCodeStructuredSecondMessage, and ComplexBarcodeGenerator classes to encode postal information and a structured secondary message. Developers working with shipping, logistics, or retail labeling often need to generate MaxiCode barcodes with detailed address data, and this snippet provides a clear pattern for doing so.
+// Category-Description: This example belongs to the Aspose.BarCode ComplexBarcode category, showcasing how to work with MaxiCode symbology. It uses the MaxiCodeCodetextMode2 and MaxiCodeStructuredSecondMessage classes to set postal information, service category, and a structured secondary message. Developers often need to generate shipping labels or tracking barcodes that include detailed address data, and this snippet illustrates the typical workflow for such use cases.
 // Prompt: Create a helper method that builds MaxiCode structured secondary messages from address components.
-// Tags: maxicode, barcode, complexbarcode, structuredmessage, aspose.barcode, c#
+// Tags: maxicode, barcode, structured secondary message, aspose.barcode, complexbarcode, codetext, c#
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
@@ -15,67 +14,58 @@ using Aspose.BarCode.ComplexBarcode;
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode and saves it to a temporary folder.
+    /// Entry point of the example. Creates output directory, builds the secondary message,
+    /// configures the MaxiCode codetext, generates the barcode image, and writes the file path to the console.
     /// </summary>
     static void Main()
     {
-        // Prepare output directory in the system's temporary folder
-        string outputDir = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo");
+        // Prepare the output directory for the generated barcode image.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
         Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "MaxiCodeMode2Structured.png");
+        string filePath = Path.Combine(outputDir, "MaxiCodeMode2Structured.png");
 
-        // Create MaxiCode codetext for Mode 2 with postal data and a structured secondary message
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        // Build a structured secondary message from address lines and a year value.
+        MaxiCodeStructuredSecondMessage secondMessage = BuildStructuredSecondMessage(
+            new string[] { "634 ALPHA DRIVE", "PITTSBURGH", "PA" }, 99);
+
+        // Configure the MaxiCode codetext with postal code, country code, service category, and the secondary message.
+        var codetext = new MaxiCodeCodetextMode2
         {
             PostalCode = "524032140",
             CountryCode = 56,
             ServiceCategory = 999,
-            SecondMessage = BuildStructuredSecondMessage(
-                "634 ALPHA DRIVE",
-                "PITTSBURGH",
-                "PA",
-                99)
+            SecondMessage = secondMessage
         };
 
-        // Generate the barcode image and save it to the specified path
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        // Generate the barcode using the configured codetext and save it to a PNG file.
+        using (var generator = new ComplexBarcodeGenerator(codetext))
         {
-            generator.Save(outputPath);
+            generator.Save(filePath);
         }
 
-        Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to {filePath}");
     }
 
     /// <summary>
-    /// Builds a MaxiCode structured secondary message from address components.
+    /// Helper method that creates a <see cref="MaxiCodeStructuredSecondMessage"/> from an array of address lines
+    /// and a year value. Each line is added to the message, and the year property is set.
     /// </summary>
-    /// <param name="addressLine1">First line of the address.</param>
-    /// <param name="addressLine2">Second line of the address.</param>
-    /// <param name="cityState">City and state combined.</param>
-    /// <param name="year">Two‑digit year (0‑99).</param>
+    /// <param name="lines">Array of address components (e.g., street, city, state).</param>
+    /// <param name="year">Two‑digit year to include in the structured message.</param>
     /// <returns>A populated <see cref="MaxiCodeStructuredSecondMessage"/> instance.</returns>
-    static MaxiCodeStructuredSecondMessage BuildStructuredSecondMessage(
-        string addressLine1,
-        string addressLine2,
-        string cityState,
-        int year)
+    static MaxiCodeStructuredSecondMessage BuildStructuredSecondMessage(string[] lines, int year)
     {
-        // Validate input parameters
-        if (string.IsNullOrEmpty(addressLine1))
-            throw new ArgumentException("Address line 1 cannot be null or empty.", nameof(addressLine1));
-        if (string.IsNullOrEmpty(addressLine2))
-            throw new ArgumentException("Address line 2 cannot be null or empty.", nameof(addressLine2));
-        if (string.IsNullOrEmpty(cityState))
-            throw new ArgumentException("City/State cannot be null or empty.", nameof(cityState));
-        if (year < 0 || year > 99)
-            throw new ArgumentOutOfRangeException(nameof(year), "Year must be between 0 and 99.");
+        var message = new MaxiCodeStructuredSecondMessage();
 
-        // Populate the structured second message with address components
-        var secondMessage = new MaxiCodeStructuredSecondMessage();
-        secondMessage.Add(addressLine1);
-        secondMessage.Add(addressLine2);
-        secondMessage.Add(cityState);
-        secondMessage.Year = year;
-        return secondMessage;
+        // Add each address line to the structured message.
+        foreach (var line in lines)
+        {
+            message.Add(line);
+        }
+
+        // Set the year component of the structured message.
+        message.Year = year;
+        return message;
     }
 }

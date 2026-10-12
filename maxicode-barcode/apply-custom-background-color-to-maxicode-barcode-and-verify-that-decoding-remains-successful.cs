@@ -1,8 +1,8 @@
-// Title: Custom Background Color for MaxiCode Barcode with Decoding Verification
-// Description: Demonstrates how to generate a MaxiCode barcode with a custom background color and then decode it to ensure the barcode remains readable.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to customize barcode appearance using BarcodeGenerator and verify readability with BarCodeReader. It highlights key API classes such as BarcodeGenerator, BarCodeReader, and ComplexCodetextReader, which developers commonly use for creating, styling, and decoding complex symbologies like MaxiCode in .NET applications.
+// Title: Apply custom background color to a MaxiCode barcode and verify decoding
+// Description: Demonstrates how to generate a MaxiCode barcode with a custom background color, save it as PNG, and confirm that the barcode can be decoded correctly.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating MaxiCode symbols, setting visual parameters such as BackColor, and employing BarCodeReader with DecodeType.MaxiCode to read complex codetext. Developers working with high‑density 2‑D barcodes can use these APIs to customize appearance while ensuring scan reliability.
 // Prompt: Apply a custom background color to a MaxiCode barcode and verify that decoding remains successful.
-// Tags: maxicode, barcode generation, barcode decoding, background color, aspose.barcode, c#
+// Tags: maxicode, background color, barcode generation, barcode decoding, aspose.barcode, png, complexcodetext
 
 using System;
 using System.IO;
@@ -13,78 +13,55 @@ using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode with a custom background color and verifying successful decoding.
+/// Demonstrates generating a MaxiCode barcode with a custom background color,
+/// saving it to a PNG file, and decoding it to verify successful reading.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a temporary directory, generates the barcode image, and decodes it to confirm readability.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the demo files
-        string tempDir = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // Define the output file path in the temporary directory.
+        string outputPath = Path.Combine(Path.GetTempPath(), "maxicode.png");
 
-        // Define the output image path and the text to encode
-        string imagePath = Path.Combine(tempDir, "maxicode.png");
-        string codeText = "Sample MaxiCode";
-
-        // Generate MaxiCode barcode with a custom background color
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
+        // Generate a MaxiCode barcode with a custom background color.
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode"))
         {
-            // Set background to LightBlue and barcode bars to Black
-            generator.Parameters.BackColor = Color.LightBlue;
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Save the generated barcode as a PNG image
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            // Set the background color to LightBlue.
+            generator.Parameters.BackColor = Aspose.Drawing.Color.LightBlue;
+            // Save the barcode image as PNG.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Barcode saved to: {imagePath}");
-
-        // Verify that the image file was created successfully
-        if (!File.Exists(imagePath))
+        // Verify that the image file was created successfully.
+        if (!File.Exists(outputPath))
         {
             Console.WriteLine("Failed to generate barcode image.");
             return;
         }
 
-        // Decode the generated barcode using the MaxiCode decoder
-        using (var reader = new BarCodeReader(imagePath, DecodeType.MaxiCode))
+        // Decode the generated barcode and verify decoding.
+        bool decodeSuccess = false;
+        using (var reader = new BarCodeReader(outputPath, DecodeType.MaxiCode))
         {
-            var results = reader.ReadBarCodes();
-
-            // Determine if decoding succeeded and the code text is not empty
-            bool success = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
-            Console.WriteLine($"Decoding success: {success}");
-
-            if (success)
+            // Read all barcodes found in the image.
+            BarCodeResult[] results = reader.ReadBarCodes();
+            foreach (var result in results)
             {
-                // Iterate through all decoded results
-                foreach (var result in results)
+                // Attempt to decode complex MaxiCode codetext.
+                var complexCodetext = ComplexCodetextReader.TryDecodeMaxiCode(result.Extended.MaxiCode.Mode, result.CodeText);
+                if (complexCodetext != null)
                 {
+                    decodeSuccess = true;
+                    Console.WriteLine($"Decoded complex codetext type: {complexCodetext.GetType().Name}");
                     Console.WriteLine($"CodeText: {result.CodeText}");
-
-                    try
-                    {
-                        // Retrieve MaxiCode mode from extended information
-                        var mode = result.Extended.MaxiCode.Mode;
-
-                        // Attempt to decode complex codetext using the appropriate mode
-                        var complex = ComplexCodetextReader.TryDecodeMaxiCode(mode, result.CodeText);
-                        if (complex != null)
-                        {
-                            Console.WriteLine($"Complex codetext type: {complex.GetType().Name}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log any errors that occur during complex decoding
-                        Console.WriteLine($"Complex decode error: {ex.Message}");
-                    }
                 }
             }
         }
+
+        // Output the overall decoding result.
+        Console.WriteLine($"Decoding {(decodeSuccess ? "succeeded" : "failed")}.");
     }
 }

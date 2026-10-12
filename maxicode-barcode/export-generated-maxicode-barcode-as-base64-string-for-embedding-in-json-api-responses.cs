@@ -1,46 +1,48 @@
 // Title: Export MaxiCode barcode as Base64 string
-// Description: Generates a MaxiCode barcode, encodes it to PNG, and returns the image as a Base64 string suitable for embedding in JSON responses.
-// Category-Description: This example belongs to the Aspose.BarCode generation and image export category. It demonstrates how to use the BarcodeGenerator class with EncodeTypes.MaxiCode, configure barcode parameters, save the barcode to a memory stream in PNG format, and convert the resulting byte array to a Base64 string. Developers often need to embed barcode images directly in JSON payloads for web APIs, mobile apps, or other client‑side integrations, making this pattern a common requirement.
+// Description: Demonstrates generating a MaxiCode barcode, converting it to PNG, and encoding the image as a Base64 string for inclusion in JSON responses.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use BarcodeGenerator with EncodeTypes.MaxiCode, configure barcode parameters such as XDimension and MaxiCode mode, and output the result in a web‑friendly format. Developers creating APIs, mobile apps, or web services often need to embed barcode images directly in JSON payloads, and this pattern illustrates the typical workflow using Aspose.BarCode classes like BarcodeGenerator, BarCodeImageFormat, and related parameter objects.
 // Prompt: Export a generated MaxiCode barcode as a base64 string for embedding in JSON API responses.
-// Tags: maxicode, barcode generation, base64, json, aspose.barcode, image export, png
+// Tags: maxicode, barcode generation, base64, json, aspose.barcode, image encoding, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode and converting it to a Base64 string.
+/// Generates a MaxiCode barcode, encodes the PNG image to Base64, and writes the string to the console.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, saves it to a memory stream, and writes the Base64 string to the console.
+    /// Entry point of the example. Creates a MaxiCode barcode, saves it to a memory stream,
+    /// converts the image bytes to a Base64 string, and outputs the result.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the MaxiCode barcode (arbitrary text mode)
+        // Define the text to encode in the MaxiCode barcode (Mode 4 supports arbitrary text)
         string codetext = "Sample MaxiCode";
 
-        // Initialize the barcode generator for MaxiCode with the specified codetext
+        // Initialize the barcode generator with MaxiCode symbology and the provided text
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codetext))
         {
-            // Configure MaxiCode mode to Mode4 (arbitrary text mode)
-            generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode4;
-
-            // Set the module size (pixel dimension) for the barcode
+            // Configure the size of each module (pixel) in the barcode
             generator.Parameters.Barcode.XDimension.Pixels = 15f;
+
+            // Set the MaxiCode mode to 4, which allows encoding of arbitrary text
+            generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode4;
 
             // Create a memory stream to hold the generated PNG image
             using (MemoryStream ms = new MemoryStream())
             {
-                // Save the barcode image to the memory stream in PNG format
+                // Save the barcode image into the memory stream in PNG format
                 generator.Save(ms, BarCodeImageFormat.Png);
 
                 // Convert the image bytes from the memory stream to a Base64 string
                 string base64 = Convert.ToBase64String(ms.ToArray());
 
-                // Output the Base64 string (e.g., to be included in a JSON API response)
+                // Write the Base64 string to the console (suitable for embedding in JSON)
                 Console.WriteLine(base64);
             }
         }

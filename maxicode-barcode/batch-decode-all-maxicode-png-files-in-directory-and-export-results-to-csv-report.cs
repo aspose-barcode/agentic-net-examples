@@ -1,84 +1,82 @@
-// Title: Batch decode MaxiCode PNG files and generate CSV report
-// Description: This example generates sample MaxiCode barcodes, decodes them in bulk, and writes the results to a CSV file. It demonstrates how to use Aspose.BarCode for batch processing and reporting.
-// Category-Description: Shows batch barcode recognition using Aspose.BarCode's BarCodeReader for MaxiCode symbology, combined with barcode generation via BarcodeGenerator. Typical use cases include automated scanning of multiple images and exporting results for analysis or integration. Developers often need to process directories of images, handle errors gracefully, and produce structured reports such as CSV.
+// Title: Batch decode MaxiCode PNG files and export results to CSV
+// Description: Demonstrates generating sample MaxiCode barcodes, decoding them from PNG images, and writing the decoded text to a CSV report.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating MaxiCode symbols, BarCodeReader for batch decoding, and standard .NET I/O for exporting results. Developers often need to process multiple barcode images automatically and produce structured reports, such as CSV files, for downstream analysis or integration.
 // Prompt: Batch decode all MaxiCode PNG files in a directory and export the results to a CSV report.
-// Tags: maxicode, batch, decode, csv, report, barcodereader, barcodegenerator, aspose.barcode
+// Tags: maxicode, batch, decode, csv, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
+using System.Text;
 using System.Collections.Generic;
-using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates batch decoding of MaxiCode PNG files and exporting results to a CSV report.
+/// Example program that creates sample MaxiCode PNG files, decodes them, and writes a CSV report.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates sample barcodes, decodes them, and writes a CSV report.
+    /// Entry point. Generates sample barcodes, reads them, and produces a CSV summary.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated files and the report
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchMaxiCode_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for generated files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate sample MaxiCode PNG files
+        // Generate sample MaxiCode PNG files and collect their paths
         List<string> barcodeFiles = new List<string>();
-        for (int i = 1; i <= 5; i++)
+        for (int i = 1; i <= 3; i++)
         {
             string filePath = Path.Combine(tempFolder, $"maxicode_{i}.png");
-            string codeText = $"Sample{i}";
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, $"Sample{i}"))
             {
+                // Set image resolution (pixels per module)
+                generator.Parameters.Barcode.XDimension.Pixels = 5f;
+                // Save the barcode as a PNG image
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
             barcodeFiles.Add(filePath);
         }
 
-        // Prepare CSV header row
-        List<string[]> csvRows = new List<string[]>();
-        csvRows.Add(new[] { "FileName", "CodeText" });
-
-        // Decode each generated file and collect results
-        foreach (string file in barcodeFiles)
+        // Prepare the CSV report file
+        string csvPath = Path.Combine(tempFolder, "MaxiCodeReport.csv");
+        using (StreamWriter writer = new StreamWriter(csvPath, false, Encoding.UTF8))
         {
-            if (!File.Exists(file))
-            {
-                Console.WriteLine($"File not found: {file}");
-                continue;
-            }
+            // Write CSV header
+            writer.WriteLine("FileName,CodeText");
 
-            try
+            // Iterate over each generated barcode image
+            foreach (string file in barcodeFiles)
             {
-                using (BarCodeReader reader = new BarCodeReader(file, DecodeType.MaxiCode))
+                try
                 {
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    // Initialize a reader for MaxiCode symbology
+                    using (BarCodeReader reader = new BarCodeReader(file, DecodeType.MaxiCode))
                     {
-                        csvRows.Add(new[] { Path.GetFileName(file), result.CodeText });
+                        // Read all barcodes found in the image
+                        BarCodeResult[] results = reader.ReadBarCodes();
+                        foreach (BarCodeResult result in results)
+                        {
+                            // Write file name and decoded text as a CSV line
+                            string line = $"{Path.GetFileName(file)},{result.CodeText}";
+                            writer.WriteLine(line);
+                        }
                     }
                 }
-            }
-            catch (ArgumentException ex)
-            {
-                Console.WriteLine($"Skipping file {Path.GetFileName(file)}: {ex.Message}");
-            }
-        }
-
-        // Write collected data to a CSV report file
-        string reportPath = Path.Combine(tempFolder, "report.csv");
-        using (StreamWriter writer = new StreamWriter(reportPath))
-        {
-            foreach (string[] row in csvRows)
-            {
-                string line = string.Join(",", row.Select(v => $"\"{v.Replace("\"", "\"\"")}\""));
-                writer.WriteLine(line);
+                catch (ArgumentException ex)
+                {
+                    // Log files that cannot be processed (e.g., unsupported format)
+                    Console.WriteLine($"Skipping file {Path.GetFileName(file)}: {ex.Message}");
+                }
             }
         }
 
-        Console.WriteLine($"CSV report generated at: {reportPath}");
+        // Inform the user where the report was generated
+        Console.WriteLine($"CSV report generated at: {csvPath}");
     }
 }

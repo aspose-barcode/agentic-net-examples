@@ -1,57 +1,49 @@
 // Title: Generate MaxiCode Mode 2 barcode with unstructured secondary message
-// Description: Demonstrates creating a MaxiCode Mode 2 barcode that includes an unstructured secondary message and saving it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and related parameter settings to customize barcode appearance. Developers working with shipping, logistics, or inventory systems often need to generate MaxiCode symbols with specific data fields and visual options.
+// Description: Creates a MaxiCode Mode 2 barcode containing postal information and a free‑text secondary message, then saves it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It demonstrates how to use the ComplexBarcodeGenerator with MaxiCodeCodetextMode2, a key class for creating MaxiCode symbols. Typical use cases include shipping labels and logistics where MaxiCode Mode 2 encodes address data plus an optional unstructured message. Developers often need to combine structured fields (postal code, country, service category) with free‑text secondary data and export the result to common image formats.
 // Prompt: Generate a MaxiCode Mode 2 barcode with an unstructured secondary message and save it as PNG.
-// Tags: maxicode, mode2, secondary message, png, barcode generation, aspose.barcode, complexbarcodegenerator
+// Tags: maxicode, mode2, secondary message, unstructured, png, aspose.barcode, complexbarcode, barcode generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode Mode 2 barcode with an unstructured secondary message and saving it as a PNG file.
+/// Demonstrates generating a MaxiCode Mode 2 barcode with an unstructured secondary message and saving it as PNG.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, configures visual parameters, and writes the image to disk.
+    /// Entry point. Builds the codetext, generates the barcode, and writes the output file path to console.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the current working directory
+        // Determine the full path for the output PNG file in the current directory.
         string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeMode2Unstructured.png");
 
-        // Build the MaxiCode codetext for Mode 2, including postal code, country code, service category, and an unstructured secondary message
+        // Create MaxiCode Mode 2 codetext with structured fields and an unstructured secondary message.
         MaxiCodeCodetextMode2 codetext = new MaxiCodeCodetextMode2
         {
-            PostalCode = "524032140",
-            CountryCode = 56,
-            ServiceCategory = 999,
+            PostalCode = "524032140",          // 9‑digit postal code
+            CountryCode = 56,                  // Numeric ISO country code
+            ServiceCategory = 999,             // Service category identifier
             SecondMessage = new MaxiCodeStandardSecondMessage
             {
-                Message = "Unstructured secondary message"
+                Message = "Free text message" // Unstructured free‑text secondary message
             }
         };
 
-        // Initialize the complex barcode generator with the prepared codetext
+        // Initialize the complex barcode generator with the prepared codetext.
         using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(codetext))
         {
-            // Set the MaxiCode mode to Mode 2
-            generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode2;
-
-            // Optional visual customizations
-            generator.Parameters.Barcode.XDimension.Pixels = 15f;               // Size of a single module in pixels
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black; // Barcode bar color
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;       // Background color
-
-            // Save the generated barcode as a PNG image
+            // Save the generated barcode image as PNG to the specified path.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"MaxiCode Mode 2 barcode saved to: {outputPath}");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"MaxiCode Mode 2 barcode saved to: {outputPath}");
     }
 }
