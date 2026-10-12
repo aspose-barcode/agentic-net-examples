@@ -1,93 +1,104 @@
-// Title: Barcode State Export/Import Demo
-// Description: Demonstrates generating a barcode, exporting the BarCodeReader state to XML, importing that state later, setting the image, and reading detected barcode values.
-// Category-Description: This example belongs to the Aspose.BarCode state management category, showcasing how to persist and restore a BarCodeReader's configuration using XML. It utilizes key API classes such as BarcodeGenerator, BarCodeReader, and related settings (BarcodeSettings, QualitySettings). Typical use cases include saving recognition configurations for later reuse, batch processing, or sharing settings across applications. Developers often need to export/import reader state to maintain consistent detection parameters without reconfiguring each run.
-/// Prompt: Develop a utility that loads an XML state file, sets the corresponding image, and outputs detected barcode values.
-/// Tags: barcode symbology, export, import, xml, state, recognition, generation, aspose.barcode
+// Title: Load BarCodeReader state from XML and read barcodes
+// Description: Demonstrates loading a previously exported BarCodeReader configuration from an XML file, assigning the barcode image, and extracting barcode values.
+// Category-Description: This example belongs to the Aspose.BarCode state management category, showcasing how to export a BarCodeReader's settings to XML, import them later, and reuse the configuration for barcode recognition. It uses key API classes such as BarcodeGenerator, BarCodeReader, and related settings objects. Typical use cases include persisting reader configurations across sessions, sharing settings between applications, or debugging complex recognition setups. Developers often need to serialize/deserialize reader state to streamline deployment and maintain consistent decoding behavior.
+// Prompt: Develop a utility that loads an XML state file, sets the corresponding image, and outputs detected barcode values.
+// Tags: barcode, symbology, generation, recognition, xml, state, import, export, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates loading a barcode recognition state from XML, assigning an image, and reading barcodes.
+/// Example program that generates a barcode, exports the reader state to XML,
+/// imports the state back, assigns the image, and reads the barcode values.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates a barcode, exports reader state, imports it, and reads barcodes.
+    /// Entry point of the example. Executes the full workflow from image creation
+    /// to state import and barcode extraction.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated files
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeStateDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // ------------------------------------------------------------
+        // Prepare a temporary working folder for generated files
+        // ------------------------------------------------------------
+        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeStateDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
 
-        // Define paths for the barcode image and the exported XML state
-        string imagePath = Path.Combine(tempDir, "barcode.png");
-        string xmlPath = Path.Combine(tempDir, "readerState.xml");
+        string imagePath = Path.Combine(workFolder, "sample.png");
+        string xmlPath = Path.Combine(workFolder, "readerState.xml");
 
-        // -------------------------------------------------
-        // Generate a sample QR code image
-        // -------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        // ------------------------------------------------------------
+        // Step 1: Generate a sample barcode image (Code128)
+        // ------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
         {
-            // Set the X-dimension (module size) for better readability
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            // Adjust X-dimension for better visual quality
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // -------------------------------------------------
-        // Create a BarCodeReader, configure its settings, and export its state to XML
-        // -------------------------------------------------
+        // ------------------------------------------------------------
+        // Step 2: Create a BarCodeReader, configure settings, and export its state to XML
+        // ------------------------------------------------------------
         using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Example configuration: strip FNC characters and use high-performance quality settings
+            // Example configuration – can be customized as needed
             reader.BarcodeSettings.StripFNC = true;
-            reader.QualitySettings = QualitySettings.HighPerformance;
             reader.QualitySettings.XDimension = XDimensionMode.Small;
 
-            // Export the current recognition state to an XML file
+            // Export the configured state (the image reference itself is NOT saved)
             reader.ExportToXml(xmlPath);
-
-            // Optional initial read to demonstrate detection before import
-            BarCodeResult[] initialResults = reader.ReadBarCodes();
-            foreach (BarCodeResult result in initialResults)
-            {
-                Console.WriteLine($"[Initial] Detected: {result.CodeTypeName} - {result.CodeText}");
-            }
         }
 
-        // -------------------------------------------------
-        // Import the saved state, assign the barcode image, and read barcodes again
-        // -------------------------------------------------
+        // ------------------------------------------------------------
+        // Step 3: Verify that the exported files exist before proceeding
+        // ------------------------------------------------------------
+        if (!File.Exists(xmlPath))
+        {
+            Console.WriteLine($"State file not found: {xmlPath}");
+            return;
+        }
+
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine($"Barcode image not found: {imagePath}");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // Step 4: Import the reader state from XML, assign the image, and read barcodes
+        // ------------------------------------------------------------
         using (BarCodeReader importedReader = BarCodeReader.ImportFromXml(xmlPath))
         {
-            // Associate the previously generated image with the imported reader
+            // After import, the image and read type must be set explicitly
             importedReader.SetBarCodeImage(imagePath);
+            importedReader.SetBarCodeReadType(DecodeType.Code128);
 
-            // Perform barcode detection using the imported configuration
-            BarCodeResult[] importedResults = importedReader.ReadBarCodes();
-            foreach (BarCodeResult result in importedResults)
+            // Perform barcode detection
+            BarCodeResult[] results = importedReader.ReadBarCodes();
+
+            Console.WriteLine($"Barcodes read: {results.Length}");
+            foreach (BarCodeResult result in results)
             {
-                Console.WriteLine($"[Imported] Detected: {result.CodeTypeName} - {result.CodeText}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // -------------------------------------------------
-        // Clean up temporary files (optional)
-        // -------------------------------------------------
+        // ------------------------------------------------------------
+        // Step 5: Clean up temporary files (optional)
+        // ------------------------------------------------------------
         try
         {
             File.Delete(imagePath);
             File.Delete(xmlPath);
-            Directory.Delete(tempDir);
+            Directory.Delete(workFolder);
         }
         catch
         {
-            // Ignore any cleanup errors to avoid interrupting the demo flow
+            // Ignored – cleanup failures should not affect program outcome
         }
     }
 }

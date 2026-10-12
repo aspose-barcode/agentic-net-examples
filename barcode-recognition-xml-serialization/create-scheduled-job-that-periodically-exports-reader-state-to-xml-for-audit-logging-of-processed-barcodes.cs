@@ -1,67 +1,95 @@
-// Title: Scheduled Barcode Export to XML for Audit Logging
-// Description: Demonstrates how to generate barcodes, read them, and periodically export the reader state to XML files for audit purposes.
-// Category-Description: This example belongs to the Aspose.BarCode reading and serialization category. It showcases the use of BarcodeGenerator, BarCodeReader, and the ExportToXml method to capture the internal state of a barcode reader after processing images. Developers working on logging, compliance, or diagnostic scenarios often need to persist reader details, and this pattern illustrates a typical scheduled job that creates barcodes, decodes them, and saves the reader state as XML for later analysis.
+// Title: Scheduled Barcode Reader State Export to XML for Audit Logging
+// Description: Demonstrates generating sample barcodes, reading them, and exporting the reader's internal state to XML files for audit purposes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, showcasing how to use BarcodeGenerator, BarCodeReader, and related settings to process barcodes and serialize the reader state. Typical use cases include scheduled jobs that need to log detailed processing information for compliance or debugging. Developers often need to generate barcodes, decode them, and persist reader diagnostics, which this sample illustrates.
 // Prompt: Create a scheduled job that periodically exports reader state to XML for audit logging of processed barcodes.
-// Tags: qr, barcode generation, barcode reading, xml export, audit logging, scheduled job, aspose.barcode
+// Tags: barcode generation, barcode recognition, xml export, audit logging, scheduled job, aspose.barcode, code128, qr, pdf417
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates a scheduled job that generates QR barcodes, reads them, and exports the reader state to XML for audit logging.
+/// Example program that generates sample barcodes, reads them, and exports the reader state to XML for audit logging.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that runs a simulated periodic execution loop, generating barcodes and exporting reader state.
+    /// Entry point of the application. Generates barcodes, processes them, and logs audit information.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated barcodes and XML logs
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeJob_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for barcode images and audit files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Number of periodic executions (simulated)
-        int executions = 3;
-
-        // Simulate a scheduled job by looping a fixed number of times
-        for (int i = 1; i <= executions; i++)
+        // Define sample barcodes to generate (type, text, output file name)
+        var samples = new List<(BaseEncodeType encodeType, string codeText, string fileName)>
         {
-            // ---------- Barcode Generation ----------
-            // Build the file path for the barcode image
-            string barcodePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            (EncodeTypes.Code128, "ABC123", "code128.png"),
+            (EncodeTypes.QR, "https://example.com", "qr.png"),
+            (EncodeTypes.Pdf417, "PDF417 Sample Text", "pdf417.png")
+        };
 
-            // Generate a QR barcode with sample data
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, $"Sample{i}"))
+        // Generate barcode images and save them to the temporary folder
+        foreach (var sample in samples)
+        {
+            using (var generator = new BarcodeGenerator(sample.encodeType, sample.codeText))
             {
-                // Set barcode module size (pixel dimension)
-                generator.Parameters.Barcode.XDimension.Pixels = 4f;
-                // Save the barcode image as PNG
-                generator.Save(barcodePath, BarCodeImageFormat.Png);
+                // Set X-dimension for better readability
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                string imagePath = Path.Combine(tempFolder, sample.fileName);
+                generator.Save(imagePath, BarCodeImageFormat.Png);
             }
-
-            // ---------- Reader State Export ----------
-            // Build the file path for the XML export of the reader state
-            string xmlPath = Path.Combine(tempFolder, $"reader_state_{i}.xml");
-
-            // Initialize a reader for the generated barcode image
-            using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
-            {
-                // Optionally read barcodes (not required for export)
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                // Export the current reader state to an XML file for audit logging
-                reader.ExportToXml(xmlPath);
-            }
-
-            // Log the outcome of the current execution
-            Console.WriteLine($"Execution {i}: Barcode saved to '{barcodePath}', reader state exported to '{xmlPath}'.");
         }
 
-        // Indicate that all simulated periodic exports have finished
-        Console.WriteLine("All periodic exports completed.");
+        // Prepare audit log file with a header line
+        string auditLogPath = Path.Combine(tempFolder, "audit_log.txt");
+        File.WriteAllText(auditLogPath, $"Audit Log Started: {DateTime.UtcNow:u}{Environment.NewLine}");
+
+        // Process each generated barcode image
+        for (int i = 0; i < samples.Count; i++)
+        {
+            string imagePath = Path.Combine(tempFolder, samples[i].fileName);
+            if (!File.Exists(imagePath))
+            {
+                Console.WriteLine($"Image not found: {imagePath}");
+                continue;
+            }
+
+            // Initialize the barcode reader for all supported types
+            using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+            {
+                // Configure reader settings
+                reader.BarcodeSettings.StripFNC = true;
+                reader.QualitySettings.XDimension = XDimensionMode.Small;
+                reader.QualitySettings.AllowIncorrectBarcodes = true;
+
+                // Read barcodes from the image
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                // Output read results to console
+                Console.WriteLine($"Processing {samples[i].fileName}: {results.Length} barcode(s) found.");
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                }
+
+                // Export the internal reader state to an XML file for audit purposes
+                string xmlPath = Path.Combine(tempFolder, $"reader_state_{i + 1}.xml");
+                reader.ExportToXml(xmlPath);
+
+                // Append a log entry indicating successful processing and export
+                string logEntry = $"[{DateTime.UtcNow:u}] Processed {samples[i].fileName}, exported state to {Path.GetFileName(xmlPath)}{Environment.NewLine}";
+                File.AppendAllText(auditLogPath, logEntry);
+            }
+        }
+
+        // Inform the user where the audit log is saved
+        Console.WriteLine("Processing completed. Audit log saved to:");
+        Console.WriteLine(auditLogPath);
     }
 }

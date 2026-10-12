@@ -1,8 +1,8 @@
-// Title: Barcode checkpoint/restart demo using state export/import
-// Description: Demonstrates exporting a BarCodeReader state to XML, closing the reader, reopening it, and continuing barcode detection on a PDF417 image.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to manage reader state across application sessions. It uses BarcodeGenerator for creating barcodes, BarCodeReader for detection, and the ExportToXml/ImportFromXml methods to persist and restore reader configuration. Developers often need checkpoint/restart capabilities when processing large batches or when pausing/resuming scans.
+// Title: Checkpoint/Restart Demo Using BarCodeReader State Export/Import
+// Description: Demonstrates exporting a BarCodeReader's configuration to XML, closing the reader, reopening it, and continuing barcode detection on the same image.
+// Category-Description: This example belongs to the Aspose.BarCode recognition and state‑management category. It showcases how to use BarcodeGenerator to create a barcode, BarCodeReader to configure recognition settings, and the ExportToXml/ImportFromXml methods to persist and restore reader state. Typical use cases include long‑running scanning jobs that need to be paused, checkpointed, and resumed without losing configuration. Developers often need to manage settings such as StripFNC, decode types, and image sources across application restarts.
 // Prompt: Create a demo that shows checkpoint/restart by exporting state, closing the reader, reopening, and continuing detection.
-// Tags: pdf417, checkpoint, restart, state export, state import, barcode generation, barcode recognition, aspose.barcode, csharp
+// Tags: barcode symbology, checkpoint restart, state export, state import, generation, recognition, aspose.barcode, code128, xml
 
 using System;
 using System.IO;
@@ -16,58 +16,90 @@ using Aspose.BarCode.BarCodeRecognition;
 class Program
 {
     /// <summary>
-    /// Entry point that creates a barcode, exports reader state, reimports it, and reads the barcode.
+    /// Entry point of the demo. Generates a barcode, exports reader settings, re‑imports them, and continues detection.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // ------------------------------------------------------------
+        // Prepare a temporary working folder for generated files.
+        // ------------------------------------------------------------
+        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
 
-        // Define paths for the generated barcode image and the exported reader state
-        string imagePath = Path.Combine(tempFolder, "sample.png");
-        string statePath = Path.Combine(tempFolder, "reader_state.xml");
+        // Paths for the barcode image and the exported reader state.
+        string imagePath = Path.Combine(workFolder, "barcode.png");
+        string statePath = Path.Combine(workFolder, "readerState.xml");
 
-        // Generate a sample PDF417 barcode image
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "DemoCheckpoint"))
+        // ------------------------------------------------------------
+        // Generate a simple Code128 barcode image.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Demo123"))
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 2; // Set module size
-            generator.Save(imagePath, BarCodeImageFormat.Png);   // Save as PNG
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Initialize a reader, configure it, and export its state to XML
-        using (var reader = new BarCodeReader())
+        // Verify that the image was created successfully.
+        if (!File.Exists(imagePath))
         {
-            reader.SetBarCodeReadType(DecodeType.Pdf417); // Limit detection to PDF417
-            reader.SetBarCodeImage(imagePath);           // Assign the barcode image
-            reader.BarcodeSettings.StripFNC = true;     // Example setting
-            reader.ExportToXml(statePath);               // Persist reader configuration
+            Console.WriteLine("Failed to create barcode image.");
+            return;
         }
 
-        // Import the previously saved reader state, reassign image and read type, then continue detection
-        using (var reader = BarCodeReader.ImportFromXml(statePath))
+        // ------------------------------------------------------------
+        // Initialize a BarCodeReader, configure a setting, and export its state.
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
         {
-            reader.SetBarCodeImage(imagePath);           // Reassign the image after import
-            reader.SetBarCodeReadType(DecodeType.Pdf417); // Reapply read type
+            // Example setting: ignore FNC characters during decoding.
+            reader.BarcodeSettings.StripFNC = true;
 
-            var results = reader.ReadBarCodes();         // Perform detection
+            // Export the current reader configuration to an XML file.
+            reader.ExportToXml(statePath);
+            Console.WriteLine($"Reader state exported to: {statePath}");
+        }
+
+        // Ensure the state file was written.
+        if (!File.Exists(statePath))
+        {
+            Console.WriteLine("Failed to export reader state.");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // Import the previously saved reader state, set the image and decode type,
+        // then continue barcode detection.
+        // ------------------------------------------------------------
+        using (var importedReader = BarCodeReader.ImportFromXml(statePath))
+        {
+            importedReader.SetBarCodeImage(imagePath);
+            importedReader.SetBarCodeReadType(DecodeType.Code128);
+
+            Console.WriteLine("Imported reader settings:");
+            Console.WriteLine($"StripFNC: {importedReader.BarcodeSettings.StripFNC}");
+
+            // Perform barcode detection using the restored settings.
+            var results = importedReader.ReadBarCodes();
             Console.WriteLine($"Barcodes read: {results.Length}");
-            foreach (var result in results)
+
+            // Output each detected barcode.
+            foreach (var result in importedReader.FoundBarCodes)
             {
                 Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Clean up temporary files (optional)
+        // ------------------------------------------------------------
+        // Cleanup temporary files (optional).
+        // ------------------------------------------------------------
         try
         {
             File.Delete(imagePath);
             File.Delete(statePath);
-            Directory.Delete(tempFolder);
+            Directory.Delete(workFolder);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignore any errors that occur during cleanup.
         }
     }
 }
