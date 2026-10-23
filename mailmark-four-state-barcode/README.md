@@ -52,6 +52,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Mailmark Two Dimensional Barcode](../mailmark-two-dimensional-barcode/) -- different variants of Mailmark
+- [Postal Barcode Types](../postal-barcode-types/) -- used in postal services
+- [Special Barcode Recognition Settings](../special-barcode-recognition-settings/) -- requires special recognition options
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

@@ -149,6 +149,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [GS1 Barcode Types](../gs1-barcode-types/) -- GS1 includes many 1‑D codes
+- [Barcode Appearance Customization](../barcode-appearance-customization/) -- visual tweaks often applied to 1‑D codes
+- [Barcode Checksum Control](../barcode-checksum-control/) -- checksum is common in 1‑D symbologies
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

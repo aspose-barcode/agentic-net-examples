@@ -53,6 +53,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Special Barcode Recognition Settings](../special-barcode-recognition-settings/) -- checksum is a special recognition option
+- [Barcode Configuration Serialization](../barcode-configuration-serialization/) -- checksum settings can be serialized
+- [Barcode Reading Properties](../barcode-reading-properties/) -- affects reading behavior
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

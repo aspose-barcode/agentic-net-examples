@@ -57,6 +57,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Mailmark Four State Barcode](../mailmark-four-state-barcode/) -- alternative Mailmark format
+- [Swiss QR Code](../swiss-qr-code/) -- both are 2‑D postal codes
+- [Two Dimensional Barcode Types](../two-dimensional-barcode-types/) -- belongs to 2‑D barcode family
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

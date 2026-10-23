@@ -53,6 +53,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Barcode Configuration Serialization](../barcode-configuration-serialization/) -- saved configs are exported
+- [Barcode Size and Resolution](../barcode-size-and-resolution/) -- export often includes size settings
+- [Barcode Appearance Customization](../barcode-appearance-customization/) -- appearance can be part of export
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

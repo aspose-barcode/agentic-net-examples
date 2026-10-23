@@ -57,6 +57,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [One Dimensional Barcode Types](../one-dimensional-barcode-types/) -- GS1 includes 1‑D symbologies
+- [Two Dimensional Barcode Types](../two-dimensional-barcode-types/) -- GS1 also defines 2‑D codes
+- [Postal Barcode Types](../postal-barcode-types/) -- GS1 used in postal applications
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

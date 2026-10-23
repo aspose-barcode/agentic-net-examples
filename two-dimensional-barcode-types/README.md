@@ -237,6 +237,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Swiss QR Code](../swiss-qr-code/) -- example of a 2‑D code
+- [MaxiCode Barcode](../maxicode-barcode/) -- another 2‑D symbology
+- [Mailmark Two Dimensional Barcode](../mailmark-two-dimensional-barcode/) -- Mailmark 2‑D variant
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)
