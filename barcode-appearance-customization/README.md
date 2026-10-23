@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-30-green)](./)
 
-Standalone, build-validated C# code examples for **Barcode Appearance Customization** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore practical C# examples for customizing barcode appearance with Aspose.BarCode, covering XDimension adjustments, rotation angles, padding strategies, and AutoSizeMode settings. Learn how to generate high‑resolution PNGs, batch‑process rotated barcodes, and build reusable functions or configuration files for flexible barcode rendering.
 
 ## Examples (30 files)
 
@@ -58,6 +58,20 @@ dotnet run
 - [Barcode Color Customization](../barcode-color-customization/) -- shares visual styling options
 - [Barcode Text Customization](../barcode-text-customization/) -- both affect displayed barcode content
 - [Barcode Size and Resolution](../barcode-size-and-resolution/) -- visual appearance includes size settings
+
+## FAQ
+
+**How do I increase the narrow bar width of a Code39 barcode to reduce visual density?**
+
+Set the barcode's XDimension property to a larger value, which widens the narrow bars and lowers visual density for print media.
+
+**What steps are needed to rotate a QR code by 45 degrees and save it as a JPEG?**
+
+Assign 45 to the RotationAngle property of the QR code, then call the Save method with ImageFormat.Jpeg to write the rotated image.
+
+**How can I generate a high‑resolution PNG barcode with specific image dimensions?**
+
+Configure AutoSizeMode to Interpolation, set ImageWidth and ImageHeight to the desired pixel values, and then save the barcode as a PNG.
 
 ## Resources
 

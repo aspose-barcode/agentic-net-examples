@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-34-green)](./)
 
-Standalone, build-validated C# code examples for **Barcode Size and Resolution** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore practical code samples for managing barcode size and resolution with Aspose.BarCode for .NET. Learn how to convert units, set dimensions in pixels, millimeters or inches, adjust DPI, and generate images via console utilities, web APIs, batch jobs, and UI controls. Includes unit‑test driven examples that verify scaling, auto‑size behavior, and accurate pixel output.
 
 ## Examples (34 files)
 
@@ -62,6 +62,20 @@ dotnet run
 - [Barcode Appearance Customization](../barcode-appearance-customization/) -- size influences visual appearance
 - [Barcode Color Customization](../barcode-color-customization/) -- visual tweaks often paired
 - [Barcode Saving and Export](../barcode-saving-and-export/) -- size settings are exported with images
+
+## FAQ
+
+**How do I calculate the XDimension in pixels for a 2 mm module width at 300 dpi and apply it to a generator?**
+
+Use the formula XDimension = (2 mm / 25.4 mm per inch) × 300 dpi, then assign the resulting pixel value to the generator's XDimension property before generating the barcode.
+
+**What steps are required to set barcode height and width in millimeters and save the result as a JPEG?**
+
+Configure the BarcodeGenerator's Unit to Millimeters, set BarCodeHeight = 30 and BarCodeWidth = 50, then call the Save method with the "jpeg" format to write the image file.
+
+**How can I convert dimensions from pixels to points before creating a Code128 barcode image?**
+
+Use Aspose.BarCode's Unit class to convert pixel values to points (1 point = 1/72 inch), then pass the converted point values to the Code128 generator for image creation.
 
 ## Resources
 

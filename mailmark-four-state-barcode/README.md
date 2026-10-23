@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-29-green)](./)
 
-Standalone, build-validated C# code examples for **Mailmark Four State Barcode** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore practical C# examples for creating, customizing, and decoding Mailmark four‑state barcodes with Aspose.BarCode. Learn how to adjust module size for compact labels, generate barcodes in bulk from CSV or customer data, optimize performance (PNG vs JPEG), configure multi‑threaded readers, and expose barcodes via REST or PowerShell scripts.
 
 ## Examples (29 files)
 
@@ -57,6 +57,20 @@ dotnet run
 - [Mailmark Two Dimensional Barcode](../mailmark-two-dimensional-barcode/) -- different variants of Mailmark
 - [Postal Barcode Types](../postal-barcode-types/) -- used in postal services
 - [Special Barcode Recognition Settings](../special-barcode-recognition-settings/) -- requires special recognition options
+
+## FAQ
+
+**How can I generate compact Mailmark barcodes for small labels?**
+
+Use the ComplexBarcodeGenerator and set a smaller module size as shown in the "adjust-barcode-module-size-to-produce-compact-mailmark-barcode-suitable-for-small-labels" example.
+
+**What is the best way to batch‑create Mailmark barcodes from a data source?**
+
+Follow the "batch-generate-mailmark-barcodes-from-customer-records-saving-each-as-separate-bmp-files" or the PowerShell script example, which iterate over CSV/customer rows and save each barcode as an individual image file.
+
+**How do I compare PNG and JPEG output for Mailmark barcodes?**
+
+Run the "compare-performance-of-generating-mailmark-barcodes-as-png-versus-jpeg-by-measuring-file-size-and-generation-time" sample, which measures file size and generation time for both formats.
 
 ## Resources
 

@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-35-green)](./)
 
-Standalone, build-validated C# code examples for **HIBC LIC Barcode** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+The HIBC LIC Barcode examples demonstrate generating and decoding HIBC‑LIC symbologies (DataMatrix, QR, Code 39) with custom settings such as quiet zones, DPI, background colors, image dimensions, and batch processing. They also cover creating primary, secondary, and combined code‑text objects, casting complex code texts, and exporting results as images, ZIP archives, CSV files, or PNG byte arrays using Aspose.BarCode for .NET.
 
 ## Examples (35 files)
 
@@ -63,6 +63,20 @@ dotnet run
 - [Postal Barcode Types](../postal-barcode-types/) -- both are specialized postal symbologies
 - [Mailmark Four State Barcode](../mailmark-four-state-barcode/) -- similar niche barcode families
 - [Mailmark Two Dimensional Barcode](../mailmark-two-dimensional-barcode/) -- related specialized formats
+
+## FAQ
+
+**How do I add a quiet zone of ten modules around a DataMatrix HIBC‑LIC barcode?**
+
+Set the generator’s QuietZoneModules property to 10 before rendering the DataMatrix HIBC‑LIC barcode.
+
+**How can I generate a 600 DPI DataMatrix HIBC‑LIC barcode for high‑density labels?**
+
+Configure the barcode generator’s ImageResolutionDpi (or Resolution) to 600 DPI, then generate the DataMatrix HIBC‑LIC image.
+
+**How can I batch decode a folder of TIFF images containing HIBC‑LIC barcodes and export the results to a CSV file?**
+
+Iterate over each TIFF file with BarCodeReader, call Decode on each image, collect the decoded text and symbology, and write the collected rows to a CSV file.
 
 ## Resources
 

@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-29-green)](./)
 
-Standalone, build-validated C# code examples for **Barcode Text Customization** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore practical C# examples for customizing barcode text with Aspose.BarCode, covering gap adjustments, alignment, font selection, automatic font sizing, and batch generation from CSV files. Learn how to fine‑tune main text, captions, and top captions for QR, UPC‑A, EAN‑13, Code39, Aztec, and DataMatrix symbols.
 
 ## Examples (29 files)
 
@@ -57,6 +57,20 @@ dotnet run
 - [Barcode Appearance Customization](../barcode-appearance-customization/) -- text styling is visual
 - [Barcode Color Customization](../barcode-color-customization/) -- text color often customized
 - [Barcode Size and Resolution](../barcode-size-and-resolution/) -- text size relates to barcode size
+
+## FAQ
+
+**How can I set a specific gap between a QR code and its text?**
+
+Use the CodeTextParameters.Gap property and set it to 4 points, which is ideal for high‑density QR codes.
+
+**What is the easiest way to apply different fonts to the main barcode text and its caption?**
+
+Assign separate Font objects to CodetextParameters.Font for the main text and CaptionParameters.Font for the caption.
+
+**How do I let Aspose.BarCode automatically choose the optimal font size for each barcode?**
+
+Set FontMode to FontMode.Auto on the CodetextParameters; the library then calculates the best font size per symbol.
 
 ## Resources
 

@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-90-green)](./)
 
-Standalone, build-validated C# code examples for **Postal Barcode Types** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore Aspose.BarCode for .NET examples covering postal barcode generation and decoding. Learn how to customize dimensions, colors, and output formats, build REST endpoints or command‑line utilities, and decode various postal symbologies (Postnet, Australia Post, KIX, Mailmark, OneCode, Planet) from streams, files, or byte arrays.
 
 ## Examples (90 files)
 
@@ -118,6 +118,20 @@ dotnet run
 - [Mailmark Four State Barcode](../mailmark-four-state-barcode/) -- postal-specific formats
 - [Mailmark Two Dimensional Barcode](../mailmark-two-dimensional-barcode/) -- postal 2‑D variant
 - [MaxiCode Barcode](../maxicode-barcode/) -- another postal 2‑D code
+
+## FAQ
+
+**How can I set a specific BarHeight for a Postnet barcode while keeping the width calculated automatically?**
+
+Set the generator's BarHeight property to the desired value (e.g., 40 points); Aspose.BarCode will retain its automatic width calculation for the Postnet symbology.
+
+**What is the recommended way to decode a postal barcode from a byte array and handle possible format errors?**
+
+Create a BarcodeReader, call Decode(byteArray), and wrap the call in a try‑catch block for FormatException to handle invalid barcode data.
+
+**How do I export a generated RM4SCC barcode to a byte array after configuring a custom XDimension?**
+
+Instantiate a BarcodeGenerator for RM4SCC, set XDimension to the required value, save the image to a MemoryStream with the desired format (e.g., PNG), and retrieve the byte array via MemoryStream.ToArray().
 
 ## Resources
 

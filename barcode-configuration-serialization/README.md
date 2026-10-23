@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-30-green)](./)
 
-Standalone, build-validated C# code examples for **Barcode Configuration Serialization** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore practical C# examples for serializing Aspose.BarCode configurations to XML and deserializing them back. Learn how to export/import settings via ExportToXml and ImportFromXml, clone generators, manage memory and stream disposal, and automate barcode creation with services, command‑line tools, and UI components.
 
 ## Examples (30 files)
 
@@ -58,6 +58,20 @@ dotnet run
 - [Barcode Recognition XML Serialization](../barcode-recognition-xml-serialization/) -- both involve XML serialization of settings
 - [Barcode Saving and Export](../barcode-saving-and-export/) -- saved configurations are exported
 - [Barcode Appearance Customization](../barcode-appearance-customization/) -- appearance settings can be serialized
+
+## FAQ
+
+**How can I clone an existing BarcodeGenerator configuration using XML serialization?**
+
+Chain ExportToXml on the source BarcodeGenerator to produce XML, then call ImportFromXml on a new BarcodeGenerator instance with that XML to clone the configuration.
+
+**What is the correct way to prevent file locks after exporting a barcode configuration to an XML file?**
+
+Wrap the FileStream used with ExportToXml in a using statement or explicitly call Dispose/Close on the stream after the export completes.
+
+**Which approach lets me automatically generate barcode images when new XML configuration files appear in a folder?**
+
+Create a Windows service (or a command‑line tool) that watches the target folder for new XML files and invokes ExportToXml/ImportFromXml to generate the corresponding barcode images.
 
 ## Resources
 

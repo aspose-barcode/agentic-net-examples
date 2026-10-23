@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-30-green)](./)
 
-Standalone, build-validated C# code examples for **Barcode Saving and Export** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore a collection of Aspose.BarCode for .NET C# examples that demonstrate how to generate, customize, and export barcodes in various formats such as SVG, PNG, GIF, TIFF, BMP, EMF, and JPEG. Learn batch processing from CSV lists, overlaying barcodes on images, applying anti‑aliasing, custom colors, fonts, and exporting directly to streams, HTML data URIs, HTTP responses, or PowerPoint slides for print‑ready and web‑ready solutions.
 
 ## Examples (30 files)
 
@@ -58,6 +58,20 @@ dotnet run
 - [Barcode Configuration Serialization](../barcode-configuration-serialization/) -- saved configs are exported
 - [Barcode Size and Resolution](../barcode-size-and-resolution/) -- export often includes size settings
 - [Barcode Appearance Customization](../barcode-appearance-customization/) -- appearance can be part of export
+
+## FAQ
+
+**How can I batch generate Code39 barcodes from a CSV file and save each as an individual SVG?**
+
+Read the CSV rows, create a BarCodeGenerator for each entry, set SymbologyType to Code39, and call Save(filePath, BarCodeImageFormat.Svg) inside the loop to produce separate SVG files.
+
+**How do I embed a generated barcode image into an HTML <img> tag using a data URI?**
+
+Generate the barcode into a MemoryStream, convert the stream to a Base64 string, and set the img src attribute to "data:image/png;base64,{Base64String}".
+
+**How can I export a barcode as a CMYK TIFF file suitable for print?**
+
+Configure the generator’s ImageColorMode to ImageColorMode.Cmyk, set the desired resolution, then call Save(filePath, BarCodeImageFormat.Tiff) to produce a CMYK TIFF output.
 
 ## Resources
 

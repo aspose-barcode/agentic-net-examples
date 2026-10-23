@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-34-green)](./)
 
-Standalone, build-validated C# code examples for **GS1 Barcode Types** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore C# code samples for generating GS1 barcodes with Aspose.BarCode for .NET. The collection shows how to create GS1 Code 128 and GS1 DataMatrix barcodes, apply margins, custom fonts, rotation, grayscale and transparency effects, produce high‑resolution TIFFs, disable quiet zones, and perform batch operations from CSV, databases or parallel processing with ZIP archiving.
 
 ## Examples (34 files)
 
@@ -62,6 +62,20 @@ dotnet run
 - [One Dimensional Barcode Types](../one-dimensional-barcode-types/) -- GS1 includes 1‑D symbologies
 - [Two Dimensional Barcode Types](../two-dimensional-barcode-types/) -- GS1 also defines 2‑D codes
 - [Postal Barcode Types](../postal-barcode-types/) -- GS1 used in postal applications
+
+## FAQ
+
+**How do I add a 10‑pixel margin around a GS1 Code 128 barcode and save it as a JPEG?**
+
+Create a BarcodeGenerator for Code128, set generator.Parameters.Barcode.Margin = 10, set generator.SaveFormat = BarCodeImageFormat.Jpeg, then call generator.Save("output.jpg").
+
+**How can I batch‑generate GS1 Code 128 barcodes from a CSV file of AI strings and output PNG files?**
+
+Read the CSV line‑by‑line, for each AI string assign generator.CodeText = "(01)" + aiString (or appropriate AI format), set the symbology to Code128, call generator.Save($"{aiString}.png", BarCodeImageFormat.Png) inside the loop.
+
+**How do I disable the quiet zone when generating a GS1 DataMatrix and export it as a PNG?**
+
+Set generator.Parameters.Barcode.DisableQuietZones = true before generation, configure the symbology to DataMatrix, then save with generator.Save("datamatrix.png", BarCodeImageFormat.Png).
 
 ## Resources
 

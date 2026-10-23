@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-48-green)](./)
 
-Standalone, build-validated C# code examples for **Special Barcode Recognition Settings** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore Aspose.BarCode for .NET examples that demonstrate advanced barcode recognition settings, including configuring .NET ThreadPool limits, enabling ProcessorSettings.UseAllCores for full CPU utilization, and toggling StripFNC to keep or remove FNC symbols. Learn how to build multithreaded batch processors, video stream readers, and Australia Post‑specific decoders with custom settings, all optimized for high‑performance scanning.
 
 ## Examples (48 files)
 
@@ -76,6 +76,20 @@ dotnet run
 - [Barcode Checksum Control](../barcode-checksum-control/) -- checksum is a special setting
 - [Barcode Reading Properties](../barcode-reading-properties/) -- advanced reading options
 - [Barcode Recognition Performance](../barcode-recognition-performance/) -- performance tuning uses special settings
+
+## FAQ
+
+**How can I limit the .NET ThreadPool before creating BarCodeReader instances?**
+
+Set ThreadPool.SetMinThreads(2, 2) and ThreadPool.SetMaxThreads(8, 8) before instantiating any BarCodeReader objects to restrict the pool to 2‑8 threads.
+
+**What does ProcessorSettings.UseAllCores = true do for barcode recognition?**
+
+Enabling ProcessorSettings.UseAllCores allocates all available CPU cores automatically, allowing the barcode reader to run in full parallel mode for faster decoding.
+
+**How do I control whether FNC symbols are kept or stripped during batch decoding?**
+
+Set the BarCodeReader's StripFNC property to false to keep FNC symbols, or true to strip them, before processing each image in a batch.
 
 ## Resources
 
