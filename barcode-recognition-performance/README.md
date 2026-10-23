@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-81-green)](./)
 
-Standalone, build-validated C# code examples for **Barcode Recognition Performance** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore C# code samples that show how to fine‑tune Aspose.BarCode performance by adjusting XDimension, MinimalXDimension, color schemes, and processing presets. Learn to filter sub‑pixel noise, benchmark speed and false‑positive rates, and generate batch reports for mixed‑format images. These examples cover real‑world scenarios such as high‑throughput scanning, stacked barcodes, and CPU usage comparisons.
 
 ## Examples (81 files)
 
@@ -109,6 +109,20 @@ dotnet run
 - [Barcode Recognition Basics](../barcode-recognition-basics/) -- builds on basic recognition
 - [Barcode Reading Properties](../barcode-reading-properties/) -- performance tweaks affect properties
 - [Barcode Recognition XML Serialization](../barcode-recognition-xml-serialization/) -- performance configs can be serialized
+
+## FAQ
+
+**How do I filter sub‑pixel noise when recognizing barcodes?**
+
+Activate QualitySettings.UseMinimalXDimension and set MinimalXDimension to 1 pixel, as demonstrated in the example that filters sub‑pixel noise.
+
+**What effect does changing MinimalXDimension from 0 to 2 pixels have on false‑positive rates?**
+
+The benchmark example measures false‑positive rates before and after setting MinimalXDimension to 2 pixels, showing how the change can reduce spurious detections.
+
+**Which preset gives faster reading speed for GIF barcode images, HighPerformance or MaxQuality?**
+
+The HighPerformance preset reads 100 GIF barcode images noticeably faster than the MaxQuality preset, while MaxQuality consumes more CPU, as shown in the CPU‑usage comparison example.
 
 ## Resources
 

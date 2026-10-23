@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-50-green)](./)
 
-Standalone, build-validated C# code examples for **Barcode Reading Properties** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore C# code snippets for Aspose.BarCode that demonstrate advanced barcode reading techniques, including accessing PDF417 extended parameters, adjusting DPI for precise region detection, batch extracting barcode metadata to CSV, handling orientation and rotation, enabling tryHarder mode for low‑contrast scans, and correctly disposing resources.
 
 ## Examples (50 files)
 
@@ -78,6 +78,20 @@ dotnet run
 - [Barcode Recognition Basics](../barcode-recognition-basics/) -- covers fundamental reading options
 - [Barcode Recognition Performance](../barcode-recognition-performance/) -- performance tuning uses reading properties
 - [Special Barcode Recognition Settings](../special-barcode-recognition-settings/) -- advanced reading tweaks
+
+## FAQ
+
+**How can I determine if a PDF417 barcode is linked to another segment using Aspose.BarCode?**
+
+Read the barcode with BarCodeReader, then inspect the PDF417ExtendedParameters.IsLinked property; it returns true when the barcode is linked to another segment.
+
+**What setting enables tryHarder mode to detect low‑contrast barcodes in challenging lighting?**
+
+Set BarCodeReaderOptions.TryHarder = true (or pass TryHarder=true in the reader constructor) before calling ReadBarCodes.
+
+**How do I batch‑process a folder of images to extract barcode metadata and save the results to a CSV file?**
+
+Iterate through the image files with a foreach loop, use BarCodeReader on each file to collect metadata (e.g., symbology, text, orientation), store the data in a list, and then write the list to a CSV using StreamWriter or a CSV helper library.
 
 ## Resources
 

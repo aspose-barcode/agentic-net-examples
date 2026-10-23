@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-75-green)](./)
 
-Standalone, build-validated C# code examples for **Barcode Recognition Basics** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore Aspose.BarCode for .NET C# examples that demonstrate how to access barcode reading quality and confidence, enforce or customize checksum validation, apply custom thresholds, use high‑resolution bitmap sources, and employ predefined 2D types. Learn batch processing of images, aborting recognition from another thread, handling RecognitionAbortedException, changing the source image at runtime, focusing on multiple target regions, and comparing performance with different checksum settings.
 
 ## Examples (75 files)
 
@@ -103,6 +103,20 @@ dotnet run
 - [Barcode Reading Properties](../barcode-reading-properties/) -- basic properties for reading
 - [Barcode Recognition Performance](../barcode-recognition-performance/) -- next step after basics
 - [Special Barcode Recognition Settings](../special-barcode-recognition-settings/) -- advanced settings beyond basics
+
+## FAQ
+
+**How can I retrieve the reading quality of each DataMatrix barcode and store it in a database?**
+
+After recognizing the image, iterate through each BarCodeResult and read the ReadingQuality property, then insert the numeric value into your database using standard ADO.NET or ORM commands.
+
+**How do I abort a running barcode recognition from another thread?**
+
+Call the BarCodeReader.Abort method from a separate thread while recognition is in progress; the operation stops immediately and a RecognitionAbortedException can be caught to handle the abort.
+
+**How can I limit recognition to specific areas of an image?**
+
+Create multiple TargetRegion objects for the desired rectangles, assign them to the BarCodeReader's TargetRegions collection, and the reader will focus detection only on those distinct areas within the same image file.
 
 ## Resources
 

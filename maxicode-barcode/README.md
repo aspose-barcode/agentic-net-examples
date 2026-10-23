@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-34-green)](./)
 
-Standalone, build-validated C# code examples for **MaxiCode Barcode** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore C# code samples for generating, customizing, and decoding MaxiCode barcodes with Aspose.BarCode for .NET. The examples show how to apply foreground/background colors, work with structured secondary messages, batch‑decode PNG files, and expose barcode generation through ASP.NET MVC, Web API, and console utilities.
 
 ## Examples (34 files)
 
@@ -62,6 +62,20 @@ dotnet run
 - [Two Dimensional Barcode Types](../two-dimensional-barcode-types/) -- MaxiCode is a 2‑D symbology
 - [Postal Barcode Types](../postal-barcode-types/) -- used in postal/parcel tracking
 - [Special Barcode Recognition Settings](../special-barcode-recognition-settings/) -- needs specific recognition settings
+
+## FAQ
+
+**How can I apply a custom background color to a MaxiCode barcode and still decode it successfully?**
+
+Create a BarcodeGenerator, set its BackColor property to the desired color, generate the image, then use BarcodeReader to decode the image and verify that the primary/secondary messages are returned correctly.
+
+**How do I batch decode all MaxiCode PNG files in a folder and export the results to a CSV report?**
+
+Loop through each *.png file in the target directory, use BarcodeReader to decode each image (retrieving primary and secondary messages), and write a line for each file to a CSV file with columns for filename and decoded data.
+
+**How can I build a MaxiCode structured secondary message from address components and embed it in a barcode?**
+
+Use the helper method that creates a MaxiCodeStructuredSecondaryMessage object from address fields (street, city, state, zip, country), assign this object to the generator’s StructuredMessage property, then generate the barcode image.
 
 ## Resources
 

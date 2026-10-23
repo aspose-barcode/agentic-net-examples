@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-214-green)](./)
 
-Standalone, build-validated C# code examples for **Two Dimensional Barcode Types** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore practical .NET C# examples for advanced 2‑D barcode handling with Aspose.BarCode, covering dynamic configuration of component types, layout dimensions, and mode settings for GS1 Composite, DataMatrix, DotCode, Han Xin, and MaxiCode. Learn batch processing techniques that read CSV, Excel, JSON or text sources to generate large sets of barcodes, and benchmark performance and memory usage across different barcode symbologies.
 
 ## Examples (214 files)
 
@@ -242,6 +242,20 @@ dotnet run
 - [Swiss QR Code](../swiss-qr-code/) -- example of a 2‑D code
 - [MaxiCode Barcode](../maxicode-barcode/) -- another 2‑D symbology
 - [Mailmark Two Dimensional Barcode](../mailmark-two-dimensional-barcode/) -- Mailmark 2‑D variant
+
+## FAQ
+
+**How can I let users choose the linear component type for a GS1 Composite barcode via a configuration file?**
+
+Use the example "allow-users-to-select-linear-component-type-via-configuration-file-and-generate-corresponding-gs1-composite-barcode.cs", which reads the linear component setting from a config file and creates the corresponding GS1 Composite barcode.
+
+**What is the recommended way to benchmark DotCode generation speed with multiple encoding modes in parallel?**
+
+Run the code in "benchmark-generation-speed-of-dotcode-barcodes-using-different-encoding-modes-in-parallel.cs", which launches parallel tasks for each encoding mode, measures elapsed time, and compares the speeds.
+
+**How do I create a batch job that reads data from a file and generates barcodes for each record?**
+
+Refer to the batch examples: CSV input for GS1 Composite barcodes ("create-batch-job-that-reads-csv-file-and-produces-gs1-composite-barcodes-for-each-record.cs"), Excel input for Han Xin barcodes ("create-batch-job-that-reads-excel-sheet-and-generates-han-xin-barcodes-for-each-row.cs"), JSON array for DataMatrix ("create-batch-routine-that-reads-json-array-and-produces-datamatrix-barcodes-saved-to-specified-folder.cs"), and plain text lines for DotCode images ("create-batch-script-that-reads-lines-from-text-file-and-generates-corresponding-dotcode-images.cs").
 
 ## Resources
 

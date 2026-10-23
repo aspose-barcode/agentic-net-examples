@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-35-green)](./)
 
-Standalone, build-validated C# code examples for **Barcode Recognition XML Serialization** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore Aspose.BarCode for .NET examples that demonstrate XML serialization of barcode recognition state, covering ExportToXml and ImportFromXml using file paths, streams, and network sockets. The collection includes performance benchmarks, batch processing, console utilities, scheduled jobs, unit tests, and configuration‑driven logging for robust barcode analysis workflows.
 
 ## Examples (35 files)
 
@@ -63,6 +63,20 @@ dotnet run
 - [Barcode Configuration Serialization](../barcode-configuration-serialization/) -- both serialize settings to XML
 - [Barcode Recognition Performance](../barcode-recognition-performance/) -- performance configs may be saved
 - [Barcode Saving and Export](../barcode-saving-and-export/) -- serialized data can be exported
+
+## FAQ
+
+**How can I compare the performance of ExportToXml when using a file path versus a stream overload?**
+
+Use the example "compare-performance-of-exporttoxml-using-file-path-versus-stream-overload-for-large-barcode-image-batches.cs", which processes large barcode image batches and measures execution time for each overload.
+
+**What is the recommended way to periodically export barcode reader state to XML for audit logging?**
+
+Refer to "create-scheduled-job-that-periodically-exports-reader-state-to-xml-for-audit-logging-of-processed-barcodes.cs", which shows how to set up a scheduled job that calls ExportToXml at regular intervals and writes the XML to a log directory.
+
+**How do I deserialize a previously exported XML state and reapply the same barcode image for further analysis?**
+
+See "deserialize-reader-state-from-xml-stream-then-reapply-same-barcode-image-for-analysis.cs"; it demonstrates reading the XML stream with ImportFromXml, then calling SetBarCodeImage again to continue analysis on the same image.
 
 ## Resources
 

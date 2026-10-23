@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-28-green)](./)
 
-Standalone, build-validated C# code examples for **Swiss QR Code** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore practical C# code snippets for working with Swiss QR Codes using Aspose.BarCode. Learn how to generate QR codes from payment data, customize appearance, batch‑process invoices, decode images at various resolutions, and extract key fields such as creditor name, IBAN, amount and currency. These examples cover end‑to‑end scenarios from image creation to JSON export and performance benchmarking.
 
 ## Examples (28 files)
 
@@ -56,6 +56,20 @@ dotnet run
 - [Two Dimensional Barcode Types](../two-dimensional-barcode-types/) -- Swiss QR is a 2‑D code
 - [Mailmark Two Dimensional Barcode](../mailmark-two-dimensional-barcode/) -- both are postal QR‑style codes
 - [Barcode Text Customization](../barcode-text-customization/) -- QR text content often customized
+
+## FAQ
+
+**How can I retrieve the creditor name, IBAN, amount, and currency from a decoded Swiss QR Code?**
+
+Use the decoded SwissQRCodetext instance returned by BarCodeReader and access its CreditorName, Iban, Amount, and Currency properties directly, as shown in the "access-creditor-name-iban-amount-and-currency-properties-from-decoded-swissqrcodetext-instance" example.
+
+**What is the best way to generate a Swiss QR Code image with a transparent background for overlaying on UI components?**
+
+Configure ComplexBarcodeGenerator by setting the BackgroundColor property to Color.Transparent before calling GenerateBarCodeImage, demonstrated in the "configure-complexbarcodegenerator-to-output-barcode-image-with-transparent-background-for-ui-component-overlay" snippet.
+
+**How can I measure the decoding performance of Swiss QR Code images at different resolutions?**
+
+Run BarCodeReader on images of varying DPI or pixel dimensions inside a Stopwatch loop and record the elapsed time; the "benchmark-time-required-to-decode-swiss-qr-code-images-of-varying-resolutions-using-barcodereader" example provides the exact code pattern.
 
 ## Resources
 

@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-28-green)](./)
 
-Standalone, build-validated C# code examples for **Barcode Color Customization** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore how to customize barcode colors in Aspose.BarCode for .NET—set individual colors for bars, text, background and captions, create gradient effects, batch‑process multiple barcodes with alternating colors, and verify color values programmatically. The examples also demonstrate that modifying color properties after calling Save does not alter the already saved image.
 
 ## Examples (28 files)
 
@@ -56,6 +56,20 @@ dotnet run
 - [Barcode Appearance Customization](../barcode-appearance-customization/) -- color is part of overall appearance
 - [Barcode Text Customization](../barcode-text-customization/) -- text color often customized together
 - [Barcode Size and Resolution](../barcode-size-and-resolution/) -- visual tweaks often include size tweaks
+
+## FAQ
+
+**How can I change only the text color of a DataMatrix barcode while keeping the default background?**
+
+Set the TextColor property (e.g., to orange) on the DataMatrix barcode object and leave the BackgroundColor unchanged before saving.
+
+**Do color changes made after calling Save affect the previously saved barcode image?**
+
+No. Changing color properties after Save does not modify the image that has already been written to disk.
+
+**Can I generate a barcode with custom bar, background, text, and caption colors in a single step?**
+
+Yes. Assign BarColor, BackgroundColor, TextColor, and CaptionColor on the barcode object before calling Save, and all colors are applied in that one generation call.
 
 ## Resources
 

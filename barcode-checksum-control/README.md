@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-30-green)](./)
 
-Standalone, build-validated C# code examples for **Barcode Checksum Control** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore practical C# examples for managing barcode checksum control with Aspose.BarCode. Learn how to toggle, hide, or force checksum visibility, configure per‑symbology settings via files or helper classes, generate checksum‑enabled barcodes in various formats, and integrate checksum logic into APIs, CI pipelines, and batch processes.
 
 ## Examples (30 files)
 
@@ -58,6 +58,20 @@ dotnet run
 - [Special Barcode Recognition Settings](../special-barcode-recognition-settings/) -- checksum is a special recognition option
 - [Barcode Configuration Serialization](../barcode-configuration-serialization/) -- checksum settings can be serialized
 - [Barcode Reading Properties](../barcode-reading-properties/) -- affects reading behavior
+
+## FAQ
+
+**How can I hide the checksum digit for Code 39 and ensure the encoded data excludes it?**
+
+Set the BarcodeParameters.HideChecksum property to true for Code 39, then verify the resulting barcode data string does not contain the checksum character.
+
+**What steps are needed to enable checksum for Code 128, set a custom margin, and save the image as a lossless TIFF?**
+
+Enable the checksum via the Code128 settings, assign the desired margin value, and call the Save method with ImageFormat.Tiff and the lossless compression option.
+
+**How do I create a reusable helper class to control checksum enable/disable and query its status?**
+
+Implement a class that encapsulates the barcode generator, exposing methods such as EnableChecksum(), DisableChecksum(), and IsChecksumEnabled() to manage and query the checksum state across symbologies.
 
 ## Resources
 

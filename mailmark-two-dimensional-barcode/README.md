@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-34-green)](./)
 
-Standalone, build-validated C# code examples for **Mailmark Two Dimensional Barcode** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore C# code samples for generating, customizing, and reading Mailmark 2‑dimensional barcodes with Aspose.BarCode. Learn how to adjust generator settings for high‑resolution label printing, batch process CSV data, cache images, compare barcode types, and build console utilities—all with ready‑to‑run examples.
 
 ## Examples (34 files)
 
@@ -62,6 +62,20 @@ dotnet run
 - [Mailmark Four State Barcode](../mailmark-four-state-barcode/) -- alternative Mailmark format
 - [Swiss QR Code](../swiss-qr-code/) -- both are 2‑D postal codes
 - [Two Dimensional Barcode Types](../two-dimensional-barcode-types/) -- belongs to 2‑D barcode family
+
+## FAQ
+
+**How do I generate a Mailmark barcode image optimized for high‑resolution label printing?**
+
+Use ComplexBarcodeGenerator with 300 dpi PNG output and custom dimensions or module size, as demonstrated in the examples "adjust‑generator‑settings‑to‑produce‑barcode‑image‑suitable‑for‑high‑resolution‑printing‑on‑labels" and "configure‑ComplexBarcodeGenerator‑to‑produce‑300‑dpi‑png‑image‑with‑custom‑dimensions‑for‑printing".
+
+**Can I batch generate Mailmark barcodes from a CSV file?**
+
+Yes. The "batch‑generate‑mailmark‑barcodes‑from‑csv‑file‑containing‑multiple‑rows‑of‑field‑data" sample reads each row of field data from a CSV and creates a corresponding barcode image for every entry.
+
+**How can I read multiple Mailmark barcode images and export their decoded data to CSV?**
+
+Use the "batch‑read‑multiple‑mailmark‑barcode‑images‑from‑directory‑and‑output‑their‑decoded‑data‑to‑csv" example, which scans a folder of barcode images, decodes each one, and writes the extracted fields to a CSV file.
 
 ## Resources
 

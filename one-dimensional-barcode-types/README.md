@@ -4,7 +4,7 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
 [![Examples](https://img.shields.io/badge/examples-126-green)](./)
 
-Standalone, build-validated C# code examples for **One Dimensional Barcode Types** using [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/). Each file is a complete console application — copy it, run `dotnet run`, and it works.
+Explore C# code samples for one‑dimensional barcodes using Aspose.BarCode .NET, demonstrating how to adjust barcode text font, alignment and automatic scaling for narrow barcodes, and how to customize foreground and background colors—including theme‑specific shades and ARGB values. These examples show practical steps for improving readability, contrast and layout in receipt, label and UI‑themed barcode images.
 
 ## Examples (126 files)
 
@@ -154,6 +154,20 @@ dotnet run
 - [GS1 Barcode Types](../gs1-barcode-types/) -- GS1 includes many 1‑D codes
 - [Barcode Appearance Customization](../barcode-appearance-customization/) -- visual tweaks often applied to 1‑D codes
 - [Barcode Checksum Control](../barcode-checksum-control/) -- checksum is common in 1‑D symbologies
+
+## FAQ
+
+**How do I set the barcode text to Arial 12 pt and center it beneath the bars?**
+
+In the example "adjust-barcode-text-font-to-arial-size-12-pt-and-center-text-beneath-bars.cs" the code sets barcode.TextFont = new Font("Arial", 12); then sets barcode.TextAlignment = TextAlignment.Center; and enables barcode.ShowHumanReadableText = true; so the text appears centered under the bars with the specified font.
+
+**How can I enable automatic scaling of barcode text for narrow barcode widths?**
+
+The samples "align-barcode-text-to-center-and-enable-automatic-scaling-to-fit-within-narrow-barcode-width.cs" and related files set barcode.AutoSize = true (or barcode.TextAutoFit = AutoFitMode.AutoFit) and then choose the desired alignment (center, left, or right). This automatically reduces the text size to fit within a narrow barcode without truncation.
+
+**How do I apply a custom background color such as LightCoral or an ARGB value to a barcode?**
+
+Use the BackColor property as shown in "apply-custom-background-color-named-lightcoral-to-match-ui-theme-requirements.cs" (barcode.BackColor = Color.LightCoral) or in "apply-custom-background-color-using-argb-value-255-255-255-0-to-create-semi-transparent-effect.cs" (barcode.BackColor = Color.FromArgb(255, 255, 255, 0)) to set a solid or semi‑transparent background.
 
 ## Resources
 
