@@ -255,7 +255,7 @@ Other Aspose products with agentic, build-validated example repositories:
 
 ## License
 
-All examples use [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/) and require a valid license for production use. See [licensing options](https://purchase.aspose.com/buy).
+All examples use [Aspose.BarCode for .NET](https://products.aspose.com/barcode/net/) and require a valid license for production use. See [licensing options](https://purchase.aspose.com).
 
 ---
 
