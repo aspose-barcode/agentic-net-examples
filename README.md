@@ -133,7 +133,7 @@ Yes — the repository ships an `agents.md` at root and one per category, plus `
 
 ### Do I need an Aspose.BarCode license to run these examples?
 
-The library runs in evaluation mode without a license (with watermarks and some format/symbology restrictions, e.g. SVG/EMF export). For production use, apply a license via `new License().SetLicense(path)`. Purchase / trial options: https://purchase.aspose.com/buy.
+The library runs in evaluation mode without a license (with watermarks and some format/symbology restrictions, e.g. SVG/EMF export). For production use, apply a license via `new License().SetLicense(path)`. Purchase / trial options: https://purchase.aspose.com.
 
 ## How to Use
 
@@ -217,7 +217,7 @@ If you are an AI coding agent generating Aspose.BarCode for .NET code, read the 
 - .NET SDK 10.0 or later
 - Aspose.BarCode for .NET 26.9.0 (via NuGet)
 
-A valid [Aspose license](https://purchase.aspose.com/buy) is required for production use. For evaluation, examples run without a license but output may include watermarks on generated barcode images.
+A valid [Aspose license](https://purchase.aspose.com) is required for production use. For evaluation, examples run without a license but output may include watermarks on generated barcode images.
 
 ## Agentic .NET Ecosystem
 
