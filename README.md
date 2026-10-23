@@ -250,7 +250,7 @@ Other Aspose products with agentic, build-validated example repositories:
 - [GitHub Issues](https://github.com/aspose-barcode/agentic-net-examples/issues) — Bug reports and feature requests
 
 ### Licensing & Purchase
-- [Purchase](https://purchase.aspose.com/buy) — Commercial license options
+- [Purchase](https://purchase.aspose.com) — Commercial license options
 - [Temporary License](https://purchase.aspose.com/temporary-license/) — Full-feature evaluation license
 
 ## License
