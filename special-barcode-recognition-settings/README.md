@@ -71,6 +71,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Barcode Checksum Control](../barcode-checksum-control/) -- checksum is a special setting
+- [Barcode Reading Properties](../barcode-reading-properties/) -- advanced reading options
+- [Barcode Recognition Performance](../barcode-recognition-performance/) -- performance tuning uses special settings
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

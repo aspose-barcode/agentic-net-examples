@@ -104,6 +104,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Barcode Recognition Basics](../barcode-recognition-basics/) -- builds on basic recognition
+- [Barcode Reading Properties](../barcode-reading-properties/) -- performance tweaks affect properties
+- [Barcode Recognition XML Serialization](../barcode-recognition-xml-serialization/) -- performance configs can be serialized
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

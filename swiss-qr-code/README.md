@@ -51,6 +51,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Two Dimensional Barcode Types](../two-dimensional-barcode-types/) -- Swiss QR is a 2‑D code
+- [Mailmark Two Dimensional Barcode](../mailmark-two-dimensional-barcode/) -- both are postal QR‑style codes
+- [Barcode Text Customization](../barcode-text-customization/) -- QR text content often customized
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

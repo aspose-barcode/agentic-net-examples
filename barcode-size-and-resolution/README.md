@@ -57,6 +57,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Barcode Appearance Customization](../barcode-appearance-customization/) -- size influences visual appearance
+- [Barcode Color Customization](../barcode-color-customization/) -- visual tweaks often paired
+- [Barcode Saving and Export](../barcode-saving-and-export/) -- size settings are exported with images
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

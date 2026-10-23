@@ -58,6 +58,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Barcode Configuration Serialization](../barcode-configuration-serialization/) -- both serialize settings to XML
+- [Barcode Recognition Performance](../barcode-recognition-performance/) -- performance configs may be saved
+- [Barcode Saving and Export](../barcode-saving-and-export/) -- serialized data can be exported
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

@@ -113,6 +113,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Mailmark Four State Barcode](../mailmark-four-state-barcode/) -- postal-specific formats
+- [Mailmark Two Dimensional Barcode](../mailmark-two-dimensional-barcode/) -- postal 2‑D variant
+- [MaxiCode Barcode](../maxicode-barcode/) -- another postal 2‑D code
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

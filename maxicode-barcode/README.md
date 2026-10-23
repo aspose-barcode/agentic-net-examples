@@ -57,6 +57,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Two Dimensional Barcode Types](../two-dimensional-barcode-types/) -- MaxiCode is a 2‑D symbology
+- [Postal Barcode Types](../postal-barcode-types/) -- used in postal/parcel tracking
+- [Special Barcode Recognition Settings](../special-barcode-recognition-settings/) -- needs specific recognition settings
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

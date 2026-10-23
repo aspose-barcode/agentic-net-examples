@@ -73,6 +73,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Barcode Recognition Basics](../barcode-recognition-basics/) -- covers fundamental reading options
+- [Barcode Recognition Performance](../barcode-recognition-performance/) -- performance tuning uses reading properties
+- [Special Barcode Recognition Settings](../special-barcode-recognition-settings/) -- advanced reading tweaks
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)

@@ -58,6 +58,12 @@ dotnet-script example-file.csx
 dotnet run
 ```
 
+## Related Examples
+
+- [Postal Barcode Types](../postal-barcode-types/) -- both are specialized postal symbologies
+- [Mailmark Four State Barcode](../mailmark-four-state-barcode/) -- similar niche barcode families
+- [Mailmark Two Dimensional Barcode](../mailmark-two-dimensional-barcode/) -- related specialized formats
+
 ## Resources
 
 - 📖 [Aspose.BarCode for .NET Documentation](https://docs.aspose.com/barcode/net/)
