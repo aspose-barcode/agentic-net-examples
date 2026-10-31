@@ -1,85 +1,81 @@
-// Title: Load BarCodeReader state from XML and read barcodes
-// Description: Demonstrates loading a previously exported BarCodeReader configuration from an XML file, assigning the barcode image, and extracting barcode values.
-// Category-Description: This example belongs to the Aspose.BarCode state management category, showcasing how to export a BarCodeReader's settings to XML, import them later, and reuse the configuration for barcode recognition. It uses key API classes such as BarcodeGenerator, BarCodeReader, and related settings objects. Typical use cases include persisting reader configurations across sessions, sharing settings between applications, or debugging complex recognition setups. Developers often need to serialize/deserialize reader state to streamline deployment and maintain consistent decoding behavior.
+// Title: Load BarCodeReader state from XML, set image, and read barcodes
+// Description: Demonstrates how to export a BarCodeReader configuration to XML, import it later, assign the corresponding image, and output detected barcode values.
+// Category-Description: This example belongs to the Aspose.BarCode state management category, illustrating the use of BarcodeGenerator for image creation, BarCodeReader for barcode detection, and the ExportToXml / ImportFromXml methods for persisting and restoring reader settings. Developers working with batch processing, configuration sharing, or repeatable scanning scenarios commonly need to save reader configurations and reuse them across sessions.
 // Prompt: Develop a utility that loads an XML state file, sets the corresponding image, and outputs detected barcode values.
-// Tags: barcode, symbology, generation, recognition, xml, state, import, export, aspose.barcode, csharp
+// Tags: barcode symbology, state export, xml, barcode reading, aspose.barcode, qrcode, generation, detection
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a barcode, exports the reader state to XML,
-/// imports the state back, assigns the image, and reads the barcode values.
+/// Example program that generates a QR barcode, saves the reader state to XML,
+/// reloads the state, assigns the image, and prints detected barcode information.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the full workflow from image creation
-    /// to state import and barcode extraction.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Prepare a temporary working folder for generated files
-        // ------------------------------------------------------------
-        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeStateDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workFolder);
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeStateDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        string imagePath = Path.Combine(workFolder, "sample.png");
-        string xmlPath = Path.Combine(workFolder, "readerState.xml");
+        // Define paths for the generated image and the exported XML state
+        string imagePath = Path.Combine(tempFolder, "sample.png");
+        string xmlPath = Path.Combine(tempFolder, "readerState.xml");
 
         // ------------------------------------------------------------
-        // Step 1: Generate a sample barcode image (Code128)
+        // Step 1: Generate a sample QR barcode image
         // ------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample123"))
         {
-            // Adjust X-dimension for better visual quality
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Save the barcode as a PNG file
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Step 2: Create a BarCodeReader, configure settings, and export its state to XML
-        // ------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
-        {
-            // Example configuration – can be customized as needed
-            reader.BarcodeSettings.StripFNC = true;
-            reader.QualitySettings.XDimension = XDimensionMode.Small;
-
-            // Export the configured state (the image reference itself is NOT saved)
-            reader.ExportToXml(xmlPath);
-        }
-
-        // ------------------------------------------------------------
-        // Step 3: Verify that the exported files exist before proceeding
-        // ------------------------------------------------------------
-        if (!File.Exists(xmlPath))
-        {
-            Console.WriteLine($"State file not found: {xmlPath}");
-            return;
-        }
-
+        // Verify that the image was created successfully
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine($"Barcode image not found: {imagePath}");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
         // ------------------------------------------------------------
-        // Step 4: Import the reader state from XML, assign the image, and read barcodes
+        // Step 2: Create a BarCodeReader, configure it, and export its state to XML
         // ------------------------------------------------------------
-        using (BarCodeReader importedReader = BarCodeReader.ImportFromXml(xmlPath))
+        using (var writerReader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // After import, the image and read type must be set explicitly
-            importedReader.SetBarCodeImage(imagePath);
-            importedReader.SetBarCodeReadType(DecodeType.Code128);
+            // Example setting: enable stripping of FNC characters from the result
+            writerReader.BarcodeSettings.StripFNC = true;
 
-            // Perform barcode detection
-            BarCodeResult[] results = importedReader.ReadBarCodes();
+            // Export the current reader configuration to an XML file
+            writerReader.ExportToXml(xmlPath);
+        }
 
+        // Verify that the XML state file was created successfully
+        if (!File.Exists(xmlPath))
+        {
+            Console.WriteLine("Failed to export reader state to XML.");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // Step 3: Import the reader state from XML, assign the image, and read barcodes
+        // ------------------------------------------------------------
+        using (BarCodeReader reader = BarCodeReader.ImportFromXml(xmlPath))
+        {
+            // The XML does not contain the image data, so we set the image source explicitly
+            reader.SetBarCodeImage(imagePath);
+
+            // Read all barcodes from the image using the imported settings
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Output the number of barcodes detected and their details
             Console.WriteLine($"Barcodes read: {results.Length}");
             foreach (BarCodeResult result in results)
             {
@@ -88,13 +84,13 @@ class Program
         }
 
         // ------------------------------------------------------------
-        // Step 5: Clean up temporary files (optional)
+        // Cleanup: delete temporary files and folder (optional)
         // ------------------------------------------------------------
         try
         {
             File.Delete(imagePath);
             File.Delete(xmlPath);
-            Directory.Delete(workFolder);
+            Directory.Delete(tempFolder);
         }
         catch
         {

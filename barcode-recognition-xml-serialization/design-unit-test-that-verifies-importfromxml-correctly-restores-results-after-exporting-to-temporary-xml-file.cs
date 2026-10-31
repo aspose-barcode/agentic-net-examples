@@ -1,98 +1,99 @@
-// Title: ImportFromXml restores barcode reader state from XML
-// Description: Demonstrates exporting a BarCodeReader state to an XML file and importing it back to verify that the decoded barcode results are preserved.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on persisting and restoring reader state via XML. It showcases the use of BarcodeGenerator, BarCodeReader, ExportToXml, and ImportFromXml APIs—common tasks for developers who need to cache recognition results, share reader configurations, or implement repeatable tests across sessions.
+// Title: ImportFromXml State Restoration Test
+// Description: Demonstrates exporting a BarcodeGenerator to XML and importing it back, verifying that the generator's settings and generated image are preserved.
+// Category-Description: This example belongs to the Aspose.BarCode generation and persistence category. It showcases the use of BarcodeGenerator, its ExportToXml and ImportFromXml methods, and typical validation steps such as comparing parameters and rendered images. Developers working with barcode creation often need to serialize generator configurations for later reuse or for sharing across services, making this pattern a common requirement.
 // Prompt: Design a unit test that verifies ImportFromXml correctly restores results after exporting to a temporary XML file.
-// Tags: barcode, symbology, import, export, xml, aspose.barcode, generation, recognition, unit-test
+// Tags: barcode symbology, import, export, xml, unit-test, generation, aspose.barcode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR barcode, reads it, exports the reader state to XML,
-/// imports the state back, and verifies that the decoded results are identical.
+/// Example program that exports a BarcodeGenerator configuration to XML,
+/// imports it back, and validates that the restored generator produces the same results.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the barcode generation, export/import, and validation steps.
+    /// Entry point that performs the export, import, and verification steps.
     /// </summary>
     static void Main()
     {
         // Create a unique temporary directory for test artifacts
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeXmlTest_" + Guid.NewGuid().ToString("N"));
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
 
-        // Define file paths for the barcode image and the exported XML state
-        string barcodePath = Path.Combine(tempDir, "barcode.png");
-        string xmlPath = Path.Combine(tempDir, "readerState.xml");
+        // Define file paths for XML state and generated images
+        string xmlPath = Path.Combine(tempDir, "generator.xml");
+        string imgPath1 = Path.Combine(tempDir, "original.png");
+        string imgPath2 = Path.Combine(tempDir, "imported.png");
 
-        // Variables to hold the original decoding results
-        string originalCodeText = null;
-        string originalCodeType = null;
-
-        // -------------------------------------------------
-        // Generate a QR barcode image and save it to disk
-        // -------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
-        {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
-
-        // -------------------------------------------------
-        // Read the barcode, capture results, and export reader state to XML
-        // -------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
-        {
-            var results = reader.ReadBarCodes();
-            if (results.Length > 0)
-            {
-                originalCodeText = results[0].CodeText;
-                originalCodeType = results[0].CodeTypeName;
-            }
-
-            // Persist the reader's internal state for later reuse
-            reader.ExportToXml(xmlPath);
-        }
-
-        // -------------------------------------------------
-        // Import the previously saved reader state from XML and read again
-        // -------------------------------------------------
-        using (var importedReader = BarCodeReader.ImportFromXml(xmlPath))
-        {
-            // Reassign the image and decode type to the imported reader
-            importedReader.SetBarCodeImage(barcodePath);
-            importedReader.SetBarCodeReadType(DecodeType.QR);
-
-            var results = importedReader.ReadBarCodes();
-
-            // Capture the results after import
-            string importedCodeText = null;
-            string importedCodeType = null;
-            if (results.Length > 0)
-            {
-                importedCodeText = results[0].CodeText;
-                importedCodeType = results[0].CodeTypeName;
-            }
-
-            // Verify that the imported results match the original ones
-            bool restoredCorrectly = originalCodeText == importedCodeText && originalCodeType == importedCodeType;
-            Console.WriteLine($"ImportFromXml restored correctly: {restoredCorrectly}");
-        }
-
-        // -------------------------------------------------
-        // Cleanup temporary files and directory
-        // -------------------------------------------------
         try
         {
-            if (File.Exists(barcodePath)) File.Delete(barcodePath);
-            if (File.Exists(xmlPath)) File.Delete(xmlPath);
-            Directory.Delete(tempDir, true);
+            // ------------------------------------------------------------
+            // 1. Create original generator, configure parameters, save image, export state to XML
+            // ------------------------------------------------------------
+            using (var gen1 = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
+            {
+                gen1.Parameters.Barcode.XDimension.Pixels = 4f;
+                gen1.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
+                gen1.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
+
+                // Save the barcode image generated with the original settings
+                gen1.Save(imgPath1, BarCodeImageFormat.Png);
+
+                // Export the generator's configuration to an XML file
+                gen1.ExportToXml(xmlPath);
+            }
+
+            // ------------------------------------------------------------
+            // 2. Import generator from the previously saved XML and verify restored state
+            // ------------------------------------------------------------
+            using (var gen2 = BarcodeGenerator.ImportFromXml(xmlPath))
+            {
+                // Save the barcode image generated from the imported settings
+                gen2.Save(imgPath2, BarCodeImageFormat.Png);
+
+                // Validate that key parameters match the original configuration
+                bool sameXDim = Math.Abs(gen2.Parameters.Barcode.XDimension.Pixels - 4f) < 0.001f;
+                bool sameCode = gen2.CodeText == "Test123";
+                bool sameColor = gen2.Parameters.Barcode.BarColor.ToArgb() == Aspose.Drawing.Color.Blue.ToArgb();
+
+                // Load both images to compare dimensions (size equality is a simple proxy for visual similarity)
+                using (var bmp1 = new Bitmap(imgPath1))
+                using (var bmp2 = new Bitmap(imgPath2))
+                {
+                    bool sameSize = bmp1.Width == bmp2.Width && bmp1.Height == bmp2.Height;
+
+                    // Aggregate all checks into a single test result
+                    bool testPass = sameXDim && sameCode && sameColor && sameSize;
+
+                    // Output the test result
+                    Console.WriteLine(testPass
+                        ? "PASS: ImportFromXml restored state correctly."
+                        : "FAILED: State mismatch after ImportFromXml.");
+                }
+            }
         }
-        catch
+        finally
         {
-            // Ignored - cleanup failure should not affect test result
+            // ------------------------------------------------------------
+            // 3. Cleanup temporary files and directory
+            // ------------------------------------------------------------
+            try
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+            catch
+            {
+                // Ignored - cleanup failure should not affect test result
+            }
         }
     }
 }
