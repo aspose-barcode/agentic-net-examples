@@ -1,106 +1,117 @@
-// Title: Verify barcode decoding after switching quality presets mid‑batch
-// Description: Demonstrates generating a batch of Code128 barcodes, then reading them while changing the reader's quality preset halfway through, ensuring earlier results remain unaffected.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create images, BarCodeReader with QualitySettings to control decoding performance, and typical batch processing patterns. Developers often need to adjust quality presets for speed or accuracy and must verify that changing settings does not corrupt previously decoded results.
+// Title: Switching Barcode Quality Presets Mid‑Batch
+// Description: Demonstrates generating a batch of Code128 barcodes, reading them while changing the reader's QualitySettings preset halfway through, and confirming earlier results stay correct.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create images, BarCodeReader with QualitySettings presets (HighPerformance, HighQuality) to decode, and typical batch‑processing patterns where settings may change. Developers often need to switch presets for performance or quality reasons without affecting previously processed data, making this a useful reference for CI pipelines and automated scanning workflows.
 // Prompt: Verify that switching presets mid‑batch does not corrupt previously obtained results.
-// Tags: barcode, code128, qualitysettings, batch, generation, recognition, aspose.barcode, png
+// Tags: barcode, code128, qualitysettings, preset, batch, generation, recognition, aspnet, aspose.barcode
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating and reading a batch of Code128 barcodes while switching
-/// quality presets mid‑batch to verify that earlier results remain correct.
+/// Demonstrates switching barcode reader quality presets during batch processing
+/// and verifying that earlier decoded results remain unchanged.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates barcodes, reads them with varying quality
-    /// presets, validates decoded texts, and cleans up temporary files.
+    /// Entry point. Generates barcodes, reads them with varying presets,
+    /// and validates consistency of earlier results.
     /// </summary>
     static void Main()
     {
         // Create a unique temporary folder for the batch
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchPresetTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        string batchFolder = Path.Combine(Path.GetTempPath(), "PresetBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // Generate sample barcode images and store expected texts
+        // Generate sample barcodes
+        int totalBarcodes = 6;
         List<string> filePaths = new List<string>();
         List<string> expectedTexts = new List<string>();
-        for (int i = 0; i < 6; i++)
+        for (int i = 1; i <= totalBarcodes; i++)
         {
             string codeText = $"CODE{i:D3}";
-            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
-
-            // Generate a Code128 barcode image
+            string filePath = Path.Combine(batchFolder, $"barcode_{i}.png");
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                // Save each barcode as a PNG image
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-
             filePaths.Add(filePath);
             expectedTexts.Add(codeText);
         }
 
-        // Read the barcodes, switching quality presets mid‑batch
-        bool allMatch = true;
-        for (int i = 0; i < filePaths.Count; i++)
+        // Read barcodes in a batch, switching presets mid‑batch
+        Dictionary<string, string> firstHalfResults = new Dictionary<string, string>();
+        int half = totalBarcodes / 2;
+        for (int index = 0; index < filePaths.Count; index++)
         {
-            string file = filePaths[i];
-            string expected = expectedTexts[i];
-
-            using (var reader = new BarCodeReader(file, DecodeType.Code128))
+            string path = filePaths[index];
+            if (!File.Exists(path))
             {
-                // Apply NormalQuality to the first half, HighQuality to the second half
-                if (i < filePaths.Count / 2)
-                {
-                    reader.QualitySettings = QualitySettings.NormalQuality;
-                }
-                else
-                {
-                    reader.QualitySettings = QualitySettings.HighQuality;
-                }
+                Console.WriteLine($"File not found: {path}");
+                continue;
+            }
 
-                // Decode the barcode(s) in the current image
+            // Choose preset based on position in the batch
+            QualitySettings preset = (index < half) ? QualitySettings.HighPerformance : QualitySettings.HighQuality;
+
+            using (var reader = new BarCodeReader(path, DecodeType.Code128))
+            {
+                // Apply the selected quality preset
+                reader.QualitySettings = preset;
                 BarCodeResult[] results = reader.ReadBarCodes();
                 if (results.Length == 0)
                 {
-                    Console.WriteLine($"No barcode detected in {Path.GetFileName(file)}");
-                    allMatch = false;
+                    Console.WriteLine($"No barcode detected in {Path.GetFileName(path)} using preset {preset}.");
                     continue;
                 }
 
-                string decoded = results[0].CodeText;
-                if (decoded != expected)
+                string decodedText = results[0].CodeText;
+                Console.WriteLine($"File: {Path.GetFileName(path)} | Preset: {preset} | Decoded: {decodedText}");
+
+                // Store results from the first half for later verification
+                if (index < half)
                 {
-                    Console.WriteLine($"Mismatch in {Path.GetFileName(file)}: expected '{expected}', got '{decoded}'");
-                    allMatch = false;
-                }
-                else
-                {
-                    Console.WriteLine($"Decoded {Path.GetFileName(file)} successfully: '{decoded}'");
+                    firstHalfResults[path] = decodedText;
                 }
             }
         }
 
-        // Report overall verification result
-        Console.WriteLine(allMatch
-            ? "All barcodes decoded correctly after preset switch."
-            : "Some barcodes failed verification.");
+        // Verify that previously obtained results are unchanged
+        bool allMatch = true;
+        foreach (var kvp in firstHalfResults)
+        {
+            string original = expectedTexts[filePaths.IndexOf(kvp.Key)];
+            if (!string.Equals(kvp.Value, original, StringComparison.Ordinal))
+            {
+                Console.WriteLine($"Mismatch for {Path.GetFileName(kvp.Key)}: expected {original}, got {kvp.Value}");
+                allMatch = false;
+            }
+        }
 
-        // Clean up temporary files and folder
+        Console.WriteLine(allMatch
+            ? "All previously obtained results match expected values after preset switch."
+            : "Some previously obtained results do not match expected values.");
+
+        // Cleanup temporary files
         try
         {
-            foreach (string f in filePaths) File.Delete(f);
-            Directory.Delete(tempFolder);
+            foreach (var file in filePaths)
+            {
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
+            }
+            Directory.Delete(batchFolder, true);
         }
         catch
         {
-            // Ignored
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

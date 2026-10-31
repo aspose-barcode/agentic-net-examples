@@ -1,65 +1,80 @@
 // Title: Measure barcode recognition time for a high‑resolution PNG image
-// Description: Demonstrates loading a high‑resolution PNG barcode image, recognizing it with Aspose.BarCode, and measuring the time taken using default settings.
-// Category-Description: This example belongs to the Aspose.BarCode image recognition category, illustrating how to use BarCodeReader with default decoding options. It shows typical steps such as loading an image, initializing the reader, and timing the recognition process. Developers working with barcode scanning, performance benchmarking, or high‑resolution image handling will find this pattern useful.
+// Description: Generates a high‑resolution QR code PNG and measures the time Aspose.BarCode needs to recognize it using default settings.
+// Category-Description: Demonstrates combined use of Aspose.BarCode generation and recognition APIs. The example showcases BarcodeGenerator for creating barcodes (QR, Code128, etc.) and BarCodeReader for decoding them. Typical scenarios include performance testing, batch processing, and validation of barcode quality in high‑DPI images. Developers often need to benchmark recognition speed or verify that generated barcodes are readable across different resolutions.
 // Prompt: Load a high‑resolution PNG image and measure barcode recognition time using default settings.
-// Tags: barcode, recognition, performance, png, high-resolution, aspose.barcode, reader, decode
+// Tags: qr code, barcode generation, barcode recognition, performance measurement, png, high resolution, aspose.barcode, c#
 
 using System;
-using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
+using System.Diagnostics;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates loading a high‑resolution PNG barcode image, recognizing it, and measuring the recognition time.
+/// Demonstrates how to generate a high‑resolution QR code image, then measure the time required
+/// to recognize the barcode using Aspose.BarCode's default settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code image if missing, reads barcodes, and outputs timing information.
+    /// Entry point of the example. Creates a temporary PNG, runs recognition, reports timing,
+    /// and cleans up temporary resources.
     /// </summary>
     static void Main()
     {
-        // Define the temporary file path for the high‑resolution PNG image.
-        string imagePath = Path.Combine(Path.GetTempPath(), "high_res.png");
+        // --------------------------------------------------------------------
+        // 1. Prepare a temporary folder to store the generated barcode image.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "highres.png");
 
-        // If the image does not exist, generate a QR code with 300 dpi resolution.
-        if (!File.Exists(imagePath))
+        // ---------------------------------------------------------------
+        // 2. Generate a high‑resolution QR code and save it as a PNG file.
+        // ---------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
-            {
-                generator.Parameters.Resolution = 300; // Set high resolution.
-                generator.Save(imagePath, BarCodeImageFormat.Png);
-            }
+            generator.Parameters.Resolution = 300; // Set DPI to 300 for high quality.
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image was successfully created.
+        // -------------------------------------------------
+        // 3. Verify that the image file was successfully created.
+        // -------------------------------------------------
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("Failed to create the barcode image.");
             return;
         }
 
-        // Initialize the barcode reader for all supported symbologies.
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // -------------------------------------------------
+        // 4. Measure barcode recognition time using default settings.
+        // -------------------------------------------------
+        Stopwatch watch = Stopwatch.StartNew();
+        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Start timing the recognition process.
-            Stopwatch sw = Stopwatch.StartNew();
+            var results = reader.ReadBarCodes();
+            watch.Stop();
 
-            // Perform barcode detection.
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Stop the timer.
-            sw.Stop();
-
-            // Output performance and detection results.
-            Console.WriteLine($"Recognition time: {sw.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Barcodes found: {results?.Length ?? 0}");
+            Console.WriteLine($"Recognition time: {watch.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Barcodes found: {results.Length}");
             foreach (var result in results)
             {
                 Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
+        }
+
+        // -------------------------------------------------
+        // 5. Clean up temporary files and folder.
+        // -------------------------------------------------
+        try
+        {
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignored – cleanup failures should not affect program outcome.
         }
     }
 }

@@ -1,71 +1,100 @@
-// Title: Deconvolution Settings for Recognizing Blurred QR Codes in JPEG Images
-// Description: Demonstrates how to configure deconvolution and high‑quality settings to improve detection of blurred QR codes stored as JPEG files.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on image preprocessing options such as QualitySettings and DeconvolutionMode. It shows how to use BarCodeReader with DecodeType.QR, adjust QualitySettings.HighQuality, and set Deconvolution to Fast to enhance recognition of low‑quality or blurred images. Developers working with QR code scanning in challenging imaging conditions can reference this pattern for better results.
+// Title: Configure Deconvolution for QR Code Recognition in JPEG Images
+// Description: Demonstrates generating a QR code as a JPEG, then reading it with default settings and with deconvolution and low-quality mode to improve detection of blurred images.
+// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It showcases the use of BarcodeGenerator for QR code creation, BarCodeReader for decoding, and the QualitySettings API (DeconvolutionMode, BarcodeQualityMode, XDimensionMode) to enhance recognition of low‑quality or blurred barcodes. Developers working with scanned documents, mobile captures, or any scenario where image quality is suboptimal can reference this pattern to boost decoding reliability.
 // Prompt: Configure deconvolution parameters to improve recognition of blurred QR codes in JPEG files.
-// Tags: qr code, deconvolution, qualitysettings, barcode recognition, aspose.barcode, jpeg
+// Tags: qr code, deconvolution, quality settings, barcode recognition, jpeg, aspose.barcode, generation, reading
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates configuring deconvolution parameters to improve recognition of blurred QR codes in JPEG files.
+/// Example program that generates a QR code JPEG and shows how to configure deconvolution
+/// and quality settings to improve recognition of blurred QR codes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Reads a JPEG image, applies high‑quality and fast deconvolution settings, and outputs detected QR code information.
+    /// Entry point. Generates a QR code image, reads it with default and enhanced settings,
+    /// and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Path to the JPEG image containing a blurred QR code
-        string imagePath = "blurred_qr.jpg";
+        // Create a unique temporary folder for the demo files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Verify that the image file exists before attempting to read it
-        if (!File.Exists(imagePath))
+        // Define the full path for the generated QR code image
+        string qrImagePath = Path.Combine(tempFolder, "qr_code.jpg");
+
+        // Generate a QR code containing a URL and save it as a JPEG image
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            Console.WriteLine($"Image file not found: {imagePath}");
+            // Generation parameters can be adjusted here if needed
+            generator.Save(qrImagePath, BarCodeImageFormat.Jpeg);
+        }
+
+        // Verify that the image file was created successfully
+        if (!File.Exists(qrImagePath))
+        {
+            Console.WriteLine("Failed to create QR code image.");
             return;
         }
 
-        // Specify that we are interested in decoding QR codes
-        BaseDecodeType decodeType = DecodeType.QR;
-
-        // Initialize the barcode reader with the image path and decode type
-        using (var reader = new BarCodeReader(imagePath, decodeType))
+        // --------------------------------------------------------------------
+        // Read the QR code using default reader settings (no quality tweaks)
+        // --------------------------------------------------------------------
+        Console.WriteLine("Reading QR code with default settings:");
+        using (var defaultReader = new BarCodeReader(qrImagePath, DecodeType.QR))
         {
-            // Apply quality settings suitable for blurred QR codes
-            reader.QualitySettings = QualitySettings.HighQuality;
-            // Use fast deconvolution to enhance image clarity for better recognition
+            var defaultResults = defaultReader.ReadBarCodes();
+            if (defaultResults.Length > 0)
+            {
+                Console.WriteLine($"Detected: {defaultResults[0].CodeText}");
+            }
+            else
+            {
+                Console.WriteLine("No barcode detected.");
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Read the QR code with deconvolution and low‑quality mode enabled
+        // --------------------------------------------------------------------
+        Console.WriteLine("\nReading QR code with deconvolution and low-quality mode:");
+        using (var reader = new BarCodeReader(qrImagePath, DecodeType.QR))
+        {
+            // Apply quality‑enhancing settings to help recognize blurred images
             reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+            reader.QualitySettings.BarcodeQuality = BarcodeQualityMode.Low;
+            // Optionally use minimal X‑dimension mode for finer detection
+            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
 
-            try
+            var results = reader.ReadBarCodes();
+            if (results.Length > 0)
             {
-                // Attempt to read all barcodes from the image
-                BarCodeResult[] results = reader.ReadBarCodes();
+                Console.WriteLine($"Detected: {results[0].CodeText}");
+            }
+            else
+            {
+                Console.WriteLine("No barcode detected even after applying quality settings.");
+            }
+        }
 
-                // Check if any barcodes were detected
-                if (results.Length == 0)
-                {
-                    Console.WriteLine("No barcodes detected.");
-                }
-                else
-                {
-                    // Output details for each detected barcode
-                    foreach (var result in results)
-                    {
-                        Console.WriteLine($"CodeText: {result.CodeText}");
-                        Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                        Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Handle any errors that occur during barcode reading
-                Console.WriteLine($"Error during barcode reading: {ex.Message}");
-            }
+        // -------------------------------------------------
+        // Clean up temporary files and directories created
+        // -------------------------------------------------
+        try
+        {
+            File.Delete(qrImagePath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Suppress any cleanup errors to avoid interrupting the demo flow
         }
     }
 }

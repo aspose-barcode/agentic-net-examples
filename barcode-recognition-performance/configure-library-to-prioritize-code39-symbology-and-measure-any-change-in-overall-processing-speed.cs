@@ -1,8 +1,8 @@
-// Title: Code39 Symbology Prioritization Speed Test
-// Description: Demonstrates generating Code39 and Code128 barcodes, then measuring the read performance when scanning all symbologies versus Code39 only.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Typical scenarios include performance benchmarking, batch processing, and selective symbology scanning. Developers often need to prioritize a specific symbology to improve throughput, and this snippet illustrates how to do so while measuring processing time.
+// Title: Code39 Barcode Generation and Speed Comparison
+// Description: Generates a set of Code39 barcodes, then measures the time required to read them with default settings versus prioritizing the Code39 symbology.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Typical scenarios include performance testing, batch processing, and validating barcode symbology handling in applications. Developers often need to generate barcodes, read them efficiently, and compare processing times across different decode configurations.
 // Prompt: Configure the library to prioritize Code39 symbology and measure any change in overall processing speed.
-// Tags: barcode symbology, speed test, code39, code128, generation, recognition, aspose.barcode, performance
+// Tags: barcode symbology, performance, code39, generation, recognition, aspose.barcode
 
 using System;
 using System.Collections.Generic;
@@ -11,118 +11,99 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates barcode images and compares scanning performance
-/// when using a full symbology scan versus a Code39‑only scan.
+/// Demonstrates generating Code39 barcodes and comparing read performance with and without prioritizing the Code39 symbology.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, measures read times with and without
-    /// prioritizing Code39, and cleans up temporary files.
+    /// Entry point that creates barcodes, measures reading speed, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary folder for generated images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Code39SpeedTest_" + Guid.NewGuid().ToString("N"));
+        // Create a dedicated temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Code39Demo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate sample barcode images and collect their file paths
-        List<string> barcodeFiles = new List<string>();
-        GenerateBarcode(Path.Combine(tempFolder, "code39_1.png"), EncodeTypes.Code39, "CODE39A");
-        barcodeFiles.Add(Path.Combine(tempFolder, "code39_1.png"));
-        GenerateBarcode(Path.Combine(tempFolder, "code39_2.png"), EncodeTypes.Code39, "CODE39B");
-        barcodeFiles.Add(Path.Combine(tempFolder, "code39_2.png"));
-        GenerateBarcode(Path.Combine(tempFolder, "code128_1.png"), EncodeTypes.Code128, "CODE128A");
-        barcodeFiles.Add(Path.Combine(tempFolder, "code128_1.png"));
-        GenerateBarcode(Path.Combine(tempFolder, "code128_2.png"), EncodeTypes.Code128, "CODE128B");
-        barcodeFiles.Add(Path.Combine(tempFolder, "code128_2.png"));
-        GenerateBarcode(Path.Combine(tempFolder, "code39_3.png"), EncodeTypes.Code39, "CODE39C");
-        barcodeFiles.Add(Path.Combine(tempFolder, "code39_3.png"));
+        // Generate a collection of sample Code39 barcode images
+        List<string> barcodeFiles = GenerateBarcodes(tempFolder, 5);
 
-        // Measure reading time without specifying symbology (full scan)
-        TimeSpan fullScanTime = MeasureReading(barcodeFiles, null);
-        Console.WriteLine($"Full scan time (all symbologies): {fullScanTime.TotalMilliseconds} ms");
+        // Measure reading speed using the default decoder (all symbologies)
+        TimeSpan defaultTime = MeasureReadingSpeed(barcodeFiles, null);
+        Console.WriteLine($"Reading all symbologies time: {defaultTime.TotalMilliseconds} ms");
 
-        // Measure reading time with Code39 only (prioritized)
+        // Measure reading speed when prioritizing Code39 symbology
         BaseDecodeType code39Decode = DecodeType.Code39;
-        TimeSpan code39OnlyTime = MeasureReading(barcodeFiles, code39Decode);
-        Console.WriteLine($"Code39‑only scan time: {code39OnlyTime.TotalMilliseconds} ms");
+        TimeSpan code39Time = MeasureReadingSpeed(barcodeFiles, code39Decode);
+        Console.WriteLine($"Reading only Code39 time: {code39Time.TotalMilliseconds} ms");
 
-        // Cleanup temporary folder
-        try
+        // Clean up generated files and temporary directory
+        foreach (string file in barcodeFiles)
         {
-            Directory.Delete(tempFolder, true);
+            try { File.Delete(file); } catch { }
         }
-        catch
-        {
-            // Ignore cleanup errors (e.g., files in use)
-        }
+        try { Directory.Delete(tempFolder); } catch { }
     }
 
     /// <summary>
-    /// Generates a barcode image using the specified encoding type and text.
+    /// Generates a specified number of Code39 barcode images in the given folder.
     /// </summary>
-    /// <param name="filePath">Full path where the image will be saved.</param>
-    /// <param name="encodeType">Symbology to encode (e.g., Code39, Code128).</param>
-    /// <param name="codeText">Text to encode in the barcode.</param>
-    static void GenerateBarcode(string filePath, BaseEncodeType encodeType, string codeText)
+    /// <param name="folder">The directory where barcode images will be saved.</param>
+    /// <param name="count">The number of barcode images to generate.</param>
+    /// <returns>A list of file paths for the generated barcode images.</returns>
+    static List<string> GenerateBarcodes(string folder, int count)
     {
-        // Create a generator with the desired symbology and text
-        BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText);
-        // Save the generated barcode as a PNG image
-        generator.Save(filePath, BarCodeImageFormat.Png);
+        var files = new List<string>();
+        for (int i = 1; i <= count; i++)
+        {
+            // Create barcode text and generator for Code39 symbology
+            string codeText = "CODE39-" + i;
+            var generator = new BarcodeGenerator(EncodeTypes.Code39, codeText);
+
+            // Define output file path and save the barcode as PNG
+            string filePath = Path.Combine(folder, $"code39_{i}.png");
+            generator.Save(filePath, BarCodeImageFormat.Png);
+            files.Add(filePath);
+        }
+        return files;
     }
 
     /// <summary>
-    /// Measures the time required to read a collection of barcode images.
+    /// Measures the time required to read a collection of barcode images using the specified decode type.
     /// </summary>
-    /// <param name="files">List of image file paths to process.</param>
-    /// <param name="decodeType">
-    /// Optional specific symbology to decode. If null, all supported symbologies are scanned.
-    /// </param>
-    /// <returns>Elapsed time as a <see cref="TimeSpan"/>.</returns>
-    static TimeSpan MeasureReading(List<string> files, BaseDecodeType decodeType)
+    /// <param name="files">List of barcode image file paths to read.</param>
+    /// <param name="decodeType">Optional decode type to prioritize; if null, all symbologies are considered.</param>
+    /// <returns>The elapsed time taken to process all images.</returns>
+    static TimeSpan MeasureReadingSpeed(List<string> files, BaseDecodeType decodeType)
     {
         Stopwatch sw = new Stopwatch();
         sw.Start();
 
         foreach (string file in files)
         {
-            if (!File.Exists(file))
-                continue;
-
-            // Choose reader constructor based on whether a specific symbology is requested
-            if (decodeType == null)
+            try
             {
-                using (BarCodeReader reader = new BarCodeReader(file))
+                // Choose appropriate BarCodeReader constructor based on decode type
+                if (decodeType == null)
                 {
-                    try
+                    using (var reader = new BarCodeReader(file))
                     {
-                        BarCodeResult[] results = reader.ReadBarCodes();
-                        // Results can be processed here if needed
+                        reader.ReadBarCodes();
                     }
-                    catch (ArgumentException)
+                }
+                else
+                {
+                    using (var reader = new BarCodeReader(file, decodeType))
                     {
-                        // Skip files that cannot be loaded as images
+                        reader.ReadBarCodes();
                     }
                 }
             }
-            else
+            catch (ArgumentException)
             {
-                using (BarCodeReader reader = new BarCodeReader(file, decodeType))
-                {
-                    try
-                    {
-                        BarCodeResult[] results = reader.ReadBarCodes();
-                        // Results can be processed here if needed
-                    }
-                    catch (ArgumentException)
-                    {
-                        // Skip files that cannot be loaded as images
-                    }
-                }
+                Console.WriteLine($"Failed to load image: {file}");
             }
         }
 

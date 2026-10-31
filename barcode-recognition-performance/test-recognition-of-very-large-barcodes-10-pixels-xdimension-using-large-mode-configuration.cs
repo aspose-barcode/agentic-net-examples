@@ -1,8 +1,8 @@
 // Title: Large XDimension Barcode Generation and Recognition Example
-// Description: Demonstrates generating a Code128 barcode with an XDimension larger than 10 pixels using Large mode, then recognizing it.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating high‑resolution barcodes and BarCodeReader for decoding them, highlighting the XDimensionMode.Large setting. Developers working with large‑format barcodes, such as those required for printing on large surfaces or high‑density scanning, will find this pattern useful.
-// Prompt: Test recognition of very large barcodes (>10 pixels XDimension) using Large mode configuration.
-// Tags: barcode symbology, generation, recognition, large xdimension, code128, png, aspose.barcode, csharp
+// Description: Demonstrates generating a Code128 barcode with an XDimension larger than 10 pixels and recognizing it using the Large XDimension mode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to work with high‑resolution barcodes. It uses key API classes such as BarcodeGenerator, BarCodeReader, QualitySettings, and XDimensionMode to create and decode barcodes that require a large XDimension. Developers often need this pattern for printing barcodes on large labels or for scenarios where increased module size improves scan reliability.
+/// Prompt: Test recognition of very large barcodes (>10 pixels XDimension) using Large mode configuration.
+/// Tags: barcode, code128, large-xdimension, generation, recognition, qualitysettings, aspose.barcode, png
 
 using System;
 using System.IO;
@@ -13,44 +13,50 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Code128 barcode with a large XDimension and then reads it back using Large mode settings.
+/// Example program that creates a Code128 barcode with a large XDimension and then reads it using
+/// the Large XDimension mode to demonstrate handling of very large barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary folder, generates a barcode image,
-    /// reads the barcode using large XDimension mode, outputs the results, and cleans up.
+    /// Entry point of the example. Generates a barcode image, reads it back, and cleans up the temporary file.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "LargeBarcodeTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Define a temporary file path for the generated barcode image.
+        string tempPath = Path.Combine(Path.GetTempPath(), "largeBarcode.png");
 
-        // Define barcode content and output file path
-        string barcodeText = "LargeBarcodeTest1234567890";
-        string imagePath = Path.Combine(tempFolder, "barcode.png");
-
-        // Generate a barcode with XDimension set to 12 points (>10 pixels) in Large mode
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeText))
+        // ------------------------------------------------------------
+        // Generate a Code128 barcode with an XDimension greater than 10 pixels.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "LargeXDimTest"))
         {
-            generator.Parameters.Barcode.XDimension.Point = 12f; // XDimension > 10 pixels
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            // Set the XDimension to 12 pixels (large module size).
+            generator.Parameters.Barcode.XDimension.Pixels = 12f;
+            // Save the barcode as a PNG image to the temporary location.
+            generator.Save(tempPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully
-        if (!File.Exists(imagePath))
+        // Verify that the barcode image was successfully created.
+        if (!File.Exists(tempPath))
         {
-            Console.WriteLine("Failed to generate barcode image.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Recognize the generated barcode using Large XDimension mode
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // ------------------------------------------------------------
+        // Read the generated barcode using Large XDimension mode.
+        // ------------------------------------------------------------
+        BaseDecodeType decodeType = DecodeType.Code128;
+        using (var reader = new BarCodeReader(tempPath, decodeType))
         {
+            // Configure the reader to treat the barcode as having a large XDimension.
             reader.QualitySettings.XDimension = XDimensionMode.Large;
+
+            // Perform the recognition.
             BarCodeResult[] results = reader.ReadBarCodes();
 
+            // Output the number of barcodes detected and their details.
             Console.WriteLine($"Barcodes read: {results.Length}");
             foreach (BarCodeResult result in results)
             {
@@ -58,14 +64,16 @@ class Program
             }
         }
 
-        // Cleanup temporary folder and its contents
+        // ------------------------------------------------------------
+        // Clean up the temporary barcode image file.
+        // ------------------------------------------------------------
         try
         {
-            Directory.Delete(tempFolder, true);
+            File.Delete(tempPath);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore any errors during cleanup
+            Console.WriteLine($"Could not delete temporary file: {ex.Message}");
         }
     }
 }

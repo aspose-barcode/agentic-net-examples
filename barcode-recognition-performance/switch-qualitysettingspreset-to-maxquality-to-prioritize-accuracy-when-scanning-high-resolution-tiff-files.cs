@@ -1,86 +1,82 @@
-// Title: Scanning High‑Resolution TIFF Barcode with MaxQuality Setting
-// Description: Demonstrates generating a QR barcode saved as a high‑resolution TIFF file and reading it using the MaxQuality preset for optimal scanning accuracy.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes, BarCodeReader for decoding, and QualitySettings to control scanning precision. Typical use cases include processing high‑resolution scanned documents where accurate barcode detection is critical. Developers often need to adjust quality presets, handle multiple symbologies, and manage temporary files when integrating barcode workflows.
+// Title: High‑Resolution TIFF Barcode Generation and Recognition with MaxQuality Setting
+// Description: Demonstrates generating a high‑resolution Code128 barcode saved as a TIFF file and then reading it using the MaxQuality preset for optimal accuracy.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes with custom resolution and BarCodeReader with QualitySettings to improve detection reliability, a common requirement when processing high‑resolution scanned images. Developers often need to adjust resolution and quality presets to balance performance and accuracy in image‑based barcode scanning scenarios.
 // Prompt: Switch QualitySettings.Preset to MaxQuality to prioritize accuracy when scanning high‑resolution TIFF files.
-// Tags: qr, tiff, barcode generation, barcode recognition, maxquality, qualitysettings, aspnet, csharp, aspose.barcode
+// Tags: barcode, code128, tiff, highresolution, maxquality, generation, recognition, aspnet, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that creates a QR barcode, saves it as a TIFF image,
-/// and reads it back using the MaxQuality preset for high‑accuracy scanning.
+/// Generates a high‑resolution Code128 barcode, saves it as a TIFF file,
+/// and reads it back using the MaxQuality preset for maximum recognition accuracy.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, reads it with high quality settings,
-    /// and cleans up temporary resources.
+    /// Entry point of the example. Executes barcode generation, recognition, and cleanup.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTiffDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Define a temporary file path for the generated TIFF barcode.
+        string tiffPath = Path.Combine(Path.GetTempPath(), "sample_barcode.tiff");
 
-        // Define the full path for the generated TIFF file
-        string tiffPath = Path.Combine(tempFolder, "sample.tiff");
-
-        // Generate a high‑resolution QR barcode and save it as a TIFF image
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample Text"))
+        // ------------------------------------------------------------
+        // Generate a high‑resolution barcode and save it as a TIFF file.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "HighRes123"))
         {
-            // The generator uses default resolution; adjust size parameters here if needed
+            // Set a high resolution (e.g., 600 DPI) to simulate a high‑resolution scan source.
+            generator.Parameters.Resolution = 600f;
+
+            // Save the barcode image in TIFF format.
             generator.Save(tiffPath, BarCodeImageFormat.Tiff);
         }
 
-        // Verify that the TIFF file was successfully created
+        // Verify that the TIFF file was successfully created.
         if (!File.Exists(tiffPath))
         {
-            Console.WriteLine("Failed to create the TIFF file.");
+            Console.WriteLine($"Failed to create barcode image at '{tiffPath}'.");
             return;
         }
 
-        // Initialize a barcode reader for multiple symbologies, targeting the generated TIFF
-        using (BarCodeReader reader = new BarCodeReader(
-            tiffPath,
-            DecodeType.QR,
-            DecodeType.Code128,
-            DecodeType.DataMatrix,
-            DecodeType.Aztec,
-            DecodeType.Pdf417))
+        // ------------------------------------------------------------
+        // Read the barcode from the TIFF using the MaxQuality preset.
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(tiffPath, DecodeType.AllSupportedTypes))
         {
-            // Switch to MaxQuality for the highest detection accuracy
+            // Apply the MaxQuality preset for maximum recognition accuracy.
             reader.QualitySettings = QualitySettings.MaxQuality;
 
-            // Perform barcode detection
+            // Perform barcode recognition.
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Output detection results
+            // Output recognition results.
             if (results.Length == 0)
             {
-                Console.WriteLine("No barcodes detected.");
+                Console.WriteLine("No barcodes were detected.");
             }
             else
             {
-                foreach (BarCodeResult result in results)
+                foreach (var result in results)
                 {
                     Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
             }
         }
 
-        // Clean up temporary files and directory
+        // ------------------------------------------------------------
+        // Clean up the temporary TIFF file.
+        // ------------------------------------------------------------
         try
         {
             File.Delete(tiffPath);
-            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect program outcome
+            // Ignore any cleanup errors.
         }
     }
 }

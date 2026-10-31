@@ -1,111 +1,97 @@
-// Title: Barcode Recognition Throughput Comparison with Hardware Acceleration
-// Description: Generates a set of Code128 barcodes, then measures the time required to recognize them using Aspose.BarCode's hardware‑accelerated multi‑core mode versus a single‑core software‑only mode.
-// Category-Description: This example belongs to the Aspose.BarCode performance and optimization category. It demonstrates how to use BarcodeGenerator for barcode creation and BarCodeReader with ProcessorSettings to control threading and hardware acceleration. Typical scenarios include high‑volume scanning, benchmarking, and tuning recognition speed for enterprise applications.
+// Title: Barcode Recognition Throughput Benchmark with Hardware Acceleration
+// Description: Demonstrates generating sample Code128 barcodes, then measuring recognition speed using Aspose.BarCode in software‑only and hardware‑accelerated modes.
+// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader with ProcessorSettings to control multithreading and hardware acceleration. Developers often need to compare throughput of different recognition configurations to optimize processing pipelines for large volumes of images.
 // Prompt: Enable hardware acceleration if available and compare recognition throughput against software‑only mode.
-// Tags: barcode, code128, performance, hardware-acceleration, recognition, generation, aspose.barcode, .net
+// Tags: barcode, performance, benchmark, hardware acceleration, multithreading, code128, generation, recognition, aspose.barcode
 
 using System;
-using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
+using System.Diagnostics;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates hardware‑accelerated versus software‑only barcode recognition throughput.
+/// Demonstrates barcode generation and recognition throughput comparison between software-only and hardware‑accelerated modes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, runs two benchmarks, and prints the results.
+    /// Entry point that creates sample barcodes, runs benchmarks, and outputs timing results.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder to store generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodePerf_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the sample barcodes
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBenchmark_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate a set of sample Code128 barcodes
-        int sampleCount = 5;
+        // Generate sample barcode images
+        const int sampleCount = 5;
         for (int i = 0; i < sampleCount; i++)
         {
-            string text = $"CODE{i}";
+            string codeText = $"Sample{i}";
             string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
+                // Set barcode color to black
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                // Save as PNG image
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
         }
 
-        // Benchmark using hardware acceleration (all available cores)
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
-        var hwResult = BenchmarkReading(tempFolder, "Hardware-accelerated (all cores)");
+        // Benchmark software‑only (single‑thread) mode
+        long softwareTime = BenchmarkReading(tempFolder, useMultithread: false, out int softwareCount);
+        Console.WriteLine($"Software‑only mode: {softwareCount} barcodes read in {softwareTime} ms");
 
-        // Benchmark using software‑only mode (single core)
-        BarCodeReader.ProcessorSettings.UseAllCores = false;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 1;
-        var swResult = BenchmarkReading(tempFolder, "Software-only (single core)");
+        // Benchmark hardware‑accelerated (multithread) mode
+        long hardwareTime = BenchmarkReading(tempFolder, useMultithread: true, out int hardwareCount);
+        Console.WriteLine($"Hardware‑accelerated mode: {hardwareCount} barcodes read in {hardwareTime} ms");
 
-        // Output the comparison results
-        Console.WriteLine();
-        Console.WriteLine("=== Throughput Comparison ===");
-        Console.WriteLine($"{hwResult.Label}: {hwResult.TotalMilliseconds} ms total, {hwResult.AverageMs:F2} ms per image");
-        Console.WriteLine($"{swResult.Label}: {swResult.TotalMilliseconds} ms total, {swResult.AverageMs:F2} ms per image");
-
-        // Clean up the temporary folder
+        // Clean up temporary files
         try
         {
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore any errors during cleanup
+            // Ignore any cleanup errors
         }
     }
 
     /// <summary>
-    /// Measures the time required to read all barcodes in the specified folder.
+    /// Measures the time required to read all barcodes in a folder using specified threading settings.
     /// </summary>
     /// <param name="folderPath">Path to the folder containing barcode images.</param>
-    /// <param name="label">Label describing the benchmark scenario.</param>
-    /// <returns>A tuple containing the label, total elapsed milliseconds, and average milliseconds per image.</returns>
-    private static (string Label, long TotalMilliseconds, double AverageMs) BenchmarkReading(string folderPath, string label)
+    /// <param name="useMultithread">If true, enables multithreading (hardware acceleration); otherwise, single‑threaded.</param>
+    /// <param name="totalBarcodes">Outputs the total number of barcodes decoded.</param>
+    /// <returns>Elapsed time in milliseconds.</returns>
+    static long BenchmarkReading(string folderPath, bool useMultithread, out int totalBarcodes)
     {
-        // Retrieve all PNG files in the folder
-        string[] files = Directory.GetFiles(folderPath, "*.png");
-        Stopwatch sw = new Stopwatch();
-        int totalBarcodes = 0;
+        // Configure multithreading settings based on the benchmark mode
+        BarCodeReader.ProcessorSettings.UseAllCores = useMultithread;
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = useMultithread ? Environment.ProcessorCount : 1;
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = useMultithread ? Environment.ProcessorCount * 2 : 0;
 
-        // Start timing
-        sw.Start();
-        foreach (string file in files)
+        totalBarcodes = 0;
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        // Read each generated barcode image
+        foreach (string file in Directory.GetFiles(folderPath, "*.png"))
         {
-            try
+            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
             {
-                // Read barcodes from the current image
-                using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+                foreach (var result in reader.ReadBarCodes())
                 {
-                    var results = reader.ReadBarCodes();
-                    if (results != null)
-                    {
-                        totalBarcodes += results.Length;
-                    }
+                    totalBarcodes++;
+                    // For demonstration, output the decoded text (optional)
+                    Console.WriteLine($"Decoded: {result.CodeText}");
                 }
             }
-            catch (ArgumentException)
-            {
-                // Skip files that cannot be loaded as images
-                continue;
-            }
         }
-        // Stop timing
-        sw.Stop();
 
-        // Calculate average time per image
-        double avg = files.Length > 0 ? (double)sw.ElapsedMilliseconds / files.Length : 0;
-        return (label, sw.ElapsedMilliseconds, avg);
+        stopwatch.Stop();
+        return stopwatch.ElapsedMilliseconds;
     }
 }

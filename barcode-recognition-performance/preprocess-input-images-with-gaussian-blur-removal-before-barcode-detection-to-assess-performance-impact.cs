@@ -1,96 +1,117 @@
-// Title: Barcode detection performance comparison with Gaussian blur removal
-// Description: Demonstrates generating a QR barcode image and measuring detection time with and without applying deconvolution (Gaussian blur removal) to assess its impact on recognition speed.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and QualitySettings.Deconvolution to improve image quality before detection. Typical scenarios include preprocessing scanned images to enhance barcode readability and evaluating performance trade‑offs in automated scanning systems.
+// Title: Barcode detection performance comparison with and without Gaussian blur removal
+// Description: Demonstrates generating sample barcodes, then recognizing them using Aspose.BarCode with default settings and with deconvolution (Gaussian blur removal) to measure impact on detection speed and accuracy.
+// Category-Description: This example belongs to the Aspose.BarCode image preprocessing and recognition category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader with QualitySettings.Deconvolution to apply Gaussian blur removal, and Stopwatch for performance measurement. Developers often need to evaluate preprocessing techniques to improve barcode detection in low‑quality images, making this a useful reference for performance testing and image enhancement scenarios.
 // Prompt: Preprocess input images with Gaussian blur removal before barcode detection to assess performance impact.
-// Tags: barcode, qr, detection, deconvolution, gaussian blur, performance, aspose.barcode, generation, recognition
+// Tags: barcode, gaussian blur, deconvolution, performance, recognition, Aspose.BarCode, image preprocessing, barcode generation
 
 using System;
-using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
+using System.Diagnostics;
+using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a QR barcode, then reads it twice: once without preprocessing and once with Gaussian blur removal (deconvolution),
-/// printing detection results and timing information for each approach.
+/// Demonstrates barcode generation and recognition with and without Gaussian blur removal (deconvolution) to compare performance.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes barcode generation, detection, timing, and cleanup.
+    /// Entry point that creates sample barcodes, runs recognition in two modes, and reports timing results.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a dedicated temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "barcode.png");
 
-        // Generate a sample QR barcode image and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Define sample barcode data: type, text, and output file name
+        var samples = new List<(BaseEncodeType encodeType, string codeText, string fileName)>
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
+            (EncodeTypes.QR, "SampleQR123", "qr.png"),
+            (EncodeTypes.Code128, "CODE128TEST", "code128.png"),
+            (EncodeTypes.DataMatrix, "DMATRIX", "datamatrix.png")
+        };
 
-        // Verify that the barcode image was created successfully
-        if (!File.Exists(barcodePath))
+        // Generate barcode images and save them as PNG files
+        foreach (var (encodeType, codeText, fileName) in samples)
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // ------------------------------------------------------------
-        // Detection without any preprocessing
-        // ------------------------------------------------------------
-        Stopwatch swNoPre = new Stopwatch();
-        swNoPre.Start();
-
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
-        {
-            // Read all barcodes found in the image
-            foreach (var result in reader.ReadBarCodes())
+            string filePath = Path.Combine(tempFolder, fileName);
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                Console.WriteLine($"[NoPre] Detected: {result.CodeText} Type: {result.CodeTypeName}");
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
         }
 
-        swNoPre.Stop();
-        Console.WriteLine($"Detection time without preprocessing: {swNoPre.ElapsedMilliseconds} ms");
+        Console.WriteLine("Barcode images generated in: " + tempFolder);
+        Console.WriteLine();
 
-        // ------------------------------------------------------------
-        // Detection with Gaussian blur removal (Deconvolution)
-        // ------------------------------------------------------------
-        Stopwatch swDeconv = new Stopwatch();
-        swDeconv.Start();
-
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
+        // Process each image: compare default recognition vs. deconvolution (blur removal)
+        foreach (var (_, _, fileName) in samples)
         {
-            // Enable deconvolution (blur removal) before reading
-            reader.QualitySettings.Deconvolution = DeconvolutionMode.Normal;
-
-            // Read all barcodes after applying deconvolution
-            foreach (var result in reader.ReadBarCodes())
+            string filePath = Path.Combine(tempFolder, fileName);
+            if (!File.Exists(filePath))
             {
-                Console.WriteLine($"[Deconv] Detected: {result.CodeText} Type: {result.CodeTypeName}");
+                Console.WriteLine($"File not found: {filePath}");
+                continue;
             }
+
+            // ----- Default recognition (no preprocessing) -----
+            string defaultResult = "";
+            long defaultTimeMs = 0;
+            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            {
+                var sw = Stopwatch.StartNew();
+                var barcodes = reader.ReadBarCodes();
+                sw.Stop();
+                defaultTimeMs = sw.ElapsedMilliseconds;
+
+                // Capture the first detected barcode (if any)
+                foreach (var code in barcodes)
+                {
+                    defaultResult = $"Type: {code.CodeTypeName}, Text: {code.CodeText}";
+                    break;
+                }
+            }
+
+            // ----- Recognition with deconvolution (Gaussian blur removal) -----
+            string deconvResult = "";
+            long deconvTimeMs = 0;
+            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            {
+                // Enable deconvolution to mitigate blur effects
+                reader.QualitySettings.Deconvolution = DeconvolutionMode.Normal;
+
+                var sw = Stopwatch.StartNew();
+                var barcodes = reader.ReadBarCodes();
+                sw.Stop();
+                deconvTimeMs = sw.ElapsedMilliseconds;
+
+                // Capture the first detected barcode (if any)
+                foreach (var code in barcodes)
+                {
+                    deconvResult = $"Type: {code.CodeTypeName}, Text: {code.CodeText}";
+                    break;
+                }
+            }
+
+            // Output comparison results for the current file
+            Console.WriteLine($"File: {fileName}");
+            Console.WriteLine($"  Default  -> {defaultResult} (Time: {defaultTimeMs} ms)");
+            Console.WriteLine($"  Deconv   -> {deconvResult} (Time: {deconvTimeMs} ms)");
+            Console.WriteLine();
         }
 
-        swDeconv.Stop();
-        Console.WriteLine($"Detection time with deconvolution: {swDeconv.ElapsedMilliseconds} ms");
-
-        // ------------------------------------------------------------
-        // Cleanup temporary files and directories
-        // ------------------------------------------------------------
+        // Cleanup: delete temporary folder and all generated files
         try
         {
-            File.Delete(barcodePath);
             Directory.Delete(tempFolder, true);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignored – cleanup failures should not affect program outcome
+            Console.WriteLine("Cleanup failed: " + ex.Message);
         }
     }
 }

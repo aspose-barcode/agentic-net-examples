@@ -1,80 +1,87 @@
-// Title: Barcode Scanning CPU Benchmark for Animated GIF Frames
-// Description: Demonstrates how to generate QR code images, treat them as GIF frames, and measure CPU time spent scanning each frame using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode performance testing category, showcasing the use of BarcodeGenerator for image creation and BarCodeReader for recognition. It illustrates typical scenarios where developers need to benchmark scanning speed and CPU consumption, such as processing animated GIFs or video streams containing barcodes. The code highlights key API classes like BarcodeGenerator, BarCodeReader, EncodeTypes, and DecodeType, providing a reusable pattern for performance measurement in barcode‑related applications.
+// Title: Barcode Scanning Benchmark for Animated GIF Frames
+// Description: Demonstrates generating sample barcode images (simulating GIF frames) and measuring CPU usage while scanning them with Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode performance testing category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for recognition, and ProcessorSettings for multithreaded execution. Developers often need to benchmark scanning speed and CPU consumption when processing large image sequences such as animated GIF frames.
 // Prompt: Create a performance benchmark that records CPU usage during barcode scanning of animated GIF frames.
-// Tags: barcode, qr, performance, cpu, gif, generation, recognition, aspose.barcode
+// Tags: barcode symbology, performance benchmark, cpu usage, animated gif, multithreading, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
 using System.Diagnostics;
-using System.Collections.Generic;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Provides a sample program that benchmarks CPU usage while scanning barcode images
-/// (simulating frames of an animated GIF) using Aspose.BarCode.
+/// Generates sample barcode images, treats them as frames of an animated GIF,
+/// and benchmarks CPU usage while scanning the frames using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates sample QR code images, scans each image while measuring elapsed and CPU time,
-    /// and outputs the results to the console.
+    /// Entry point of the benchmark application.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for sample barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "GifBenchmark_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder to store generated barcode frame images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeFrames_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate sample barcode images (QR codes) with different texts
-        List<string> imagePaths = new List<string>();
-        for (int i = 1; i <= 5; i++)
+        // Generate sample barcode images (simulating animated GIF frames)
+        int frameCount = 5;
+        for (int i = 0; i < frameCount; i++)
         {
-            string codeText = $"Sample{i}";
-            string imagePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            string codeText = $"Frame{i + 1}";
             using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
             {
-                generator.Save(imagePath, BarCodeImageFormat.Png);
+                string filePath = Path.Combine(tempFolder, $"frame_{i + 1}.png");
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            imagePaths.Add(imagePath);
         }
 
-        // Benchmark CPU usage for scanning each image (simulating GIF frames)
-        Console.WriteLine("Barcode scanning benchmark (CPU usage per frame):");
+        // Configure multithreaded reading to use all available CPU cores
+        BarCodeReader.ProcessorSettings.UseAllCores = true;
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 0; // 0 = let the library decide
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
+
+        // Record CPU time before processing starts
         Process currentProcess = Process.GetCurrentProcess();
+        TimeSpan cpuStart = currentProcess.TotalProcessorTime;
+        Stopwatch wallClock = Stopwatch.StartNew();
 
-        foreach (string path in imagePaths)
+        // Scan each generated frame for barcodes
+        string[] files = Directory.GetFiles(tempFolder, "*.png");
+        foreach (string file in files)
         {
-            if (!File.Exists(path))
+            using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
             {
-                Console.WriteLine($"File not found: {path}");
-                continue;
+                // Read all barcodes in the current image
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // Output result for demonstration (can be omitted in a real benchmark)
+                    Console.WriteLine($"{Path.GetFileName(file)}: {result.CodeTypeName} -> {result.CodeText}");
+                }
             }
-
-            // Record CPU time before scanning
-            TimeSpan cpuStart = currentProcess.TotalProcessorTime;
-            Stopwatch sw = Stopwatch.StartNew();
-
-            // Perform barcode recognition
-            using (var reader = new BarCodeReader(path, DecodeType.AllSupportedTypes))
-            {
-                reader.ReadBarCodes();
-            }
-
-            // Stop timing
-            sw.Stop();
-            TimeSpan cpuEnd = currentProcess.TotalProcessorTime;
-            TimeSpan cpuUsed = cpuEnd - cpuStart;
-
-            // Output elapsed wall‑clock time and CPU time for this frame
-            Console.WriteLine($"{Path.GetFileName(path)} - Elapsed: {sw.ElapsedMilliseconds} ms, CPU time: {cpuUsed.TotalMilliseconds:F2} ms");
         }
 
-        // Clean up temporary files
+        // Stop timing and calculate CPU usage
+        wallClock.Stop();
+        TimeSpan cpuEnd = currentProcess.TotalProcessorTime;
+        TimeSpan cpuUsed = cpuEnd - cpuStart;
+
+        // Display benchmark results
+        Console.WriteLine();
+        Console.WriteLine("Benchmark Results:");
+        Console.WriteLine($"Processed {files.Length} frames.");
+        Console.WriteLine($"Wall-clock time: {wallClock.Elapsed.TotalMilliseconds} ms");
+        Console.WriteLine($"CPU time used: {cpuUsed.TotalMilliseconds} ms");
+
+        // Clean up temporary files and folder
         try
         {
-            Directory.Delete(tempFolder, true);
+            foreach (string file in files)
+            {
+                File.Delete(file);
+            }
+            Directory.Delete(tempFolder);
         }
         catch
         {

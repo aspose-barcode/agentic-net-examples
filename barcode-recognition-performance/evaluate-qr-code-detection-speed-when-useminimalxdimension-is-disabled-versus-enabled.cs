@@ -1,93 +1,89 @@
 // Title: QR Code Detection Speed Comparison with XDimension Settings
-// Description: Demonstrates measuring the time required to detect a QR code when the XDimension mode is set to Normal versus UseMinimalXDimension.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a QR code image and BarCodeReader with different XDimensionMode settings (Normal and UseMinimalXDimension) to evaluate detection performance. Developers often need to benchmark barcode scanning speed under various quality settings for high‑throughput or resource‑constrained scenarios.
+// Description: Demonstrates measuring the detection time of a QR code when the XDimension quality setting is set to Normal versus UseMinimalXDimension.
+// Category-Description: This example belongs to the Aspose.BarCode performance testing category. It showcases the use of BarcodeGenerator for QR code creation and BarCodeReader with QualitySettings to adjust XDimension modes. Developers often need to evaluate recognition speed and accuracy when tweaking rendering parameters, especially for high‑throughput scanning scenarios.
 // Prompt: Evaluate QR code detection speed when UseMinimalXDimension is disabled versus enabled.
-// Tags: qr code, detection speed, xdimension, minimalxdimension, aspose.barcode, barcode generation, barcode recognition, performance test
+// Tags: qr code, detection speed, xdimension, aspose.barcode, generation, recognition, performance
 
 using System;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
 /// Example program that generates a QR code, then measures detection time using
-/// normal XDimension mode and the UseMinimalXDimension mode.
+/// normal XDimension and the UseMinimalXDimension mode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a QR code image, runs two detection passes with different
-    /// XDimension settings, prints the timing results, and cleans up temporary files.
+    /// Entry point of the application. Generates a QR code image, runs two
+    /// detection tests with different XDimension settings, and outputs the
+    /// elapsed time for each test.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Prepare a temporary folder to store the generated QR image
-        // ------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "QrSpeedTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "qr.png");
+        // Create a temporary directory to store the generated QR code image.
+        string tempDir = Path.Combine(Path.GetTempPath(), "QrSpeedTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "qr.png");
 
-        // ------------------------------------------------------------
-        // Generate a QR code image using BarcodeGenerator
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code Text"))
+        // Generate QR code image using BarcodeGenerator.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose QR Test"))
         {
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Detect the QR code with normal XDimension mode
-        // ------------------------------------------------------------
-        long normalTimeMs;
-        int normalCount;
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        // Verify that the image was created successfully.
+        if (!File.Exists(imagePath))
         {
-            reader.QualitySettings.XDimension = XDimensionMode.Normal;
-            var sw = Stopwatch.StartNew();
-            var results = reader.ReadBarCodes();
-            sw.Stop();
-            normalTimeMs = sw.ElapsedMilliseconds;
-            normalCount = results.Length;
+            Console.WriteLine("Failed to generate QR code image.");
+            return;
         }
 
         // ------------------------------------------------------------
-        // Detect the QR code with UseMinimalXDimension mode
+        // Test 1: Normal XDimension
         // ------------------------------------------------------------
-        long minimalTimeMs;
-        int minimalCount;
-        using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+        using (var readerNormal = new BarCodeReader(imagePath, DecodeType.QR))
         {
-            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
-            reader.QualitySettings.MinimalXDimension = 1f;
+            // Set quality setting to Normal XDimension.
+            readerNormal.QualitySettings.XDimension = XDimensionMode.Normal;
+
+            // Measure detection time.
             var sw = Stopwatch.StartNew();
-            var results = reader.ReadBarCodes();
+            BarCodeResult[] results = readerNormal.ReadBarCodes();
             sw.Stop();
-            minimalTimeMs = sw.ElapsedMilliseconds;
-            minimalCount = results.Length;
+
+            Console.WriteLine($"Normal XDimension: Detected {results.Length} barcode(s) in {sw.ElapsedMilliseconds} ms");
         }
 
         // ------------------------------------------------------------
-        // Output the detection results
+        // Test 2: UseMinimalXDimension
         // ------------------------------------------------------------
-        Console.WriteLine($"Normal XDimension: Detected {normalCount} barcode(s) in {normalTimeMs} ms");
-        Console.WriteLine($"UseMinimalXDimension: Detected {minimalCount} barcode(s) in {minimalTimeMs} ms");
+        using (var readerMinimal = new BarCodeReader(imagePath, DecodeType.QR))
+        {
+            // Enable minimal XDimension mode and set a custom minimal value.
+            readerMinimal.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
+            readerMinimal.QualitySettings.MinimalXDimension = 1f;
 
-        // ------------------------------------------------------------
-        // Clean up temporary files and folder
-        // ------------------------------------------------------------
+            // Measure detection time.
+            var sw = Stopwatch.StartNew();
+            BarCodeResult[] results = readerMinimal.ReadBarCodes();
+            sw.Stop();
+
+            Console.WriteLine($"UseMinimalXDimension: Detected {results.Length} barcode(s) in {sw.ElapsedMilliseconds} ms");
+        }
+
+        // Cleanup temporary files and directory.
         try
         {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder, true);
+            File.Delete(imagePath);
+            Directory.Delete(tempDir);
         }
         catch
         {
-            // Ignore any errors during cleanup
+            // Ignore any errors during cleanup.
         }
     }
 }

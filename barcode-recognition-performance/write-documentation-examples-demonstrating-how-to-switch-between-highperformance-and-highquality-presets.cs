@@ -1,8 +1,8 @@
-// Title: Switching Between HighPerformance and HighQuality Presets in Aspose.BarCode
-// Description: Demonstrates how to read a barcode using the HighPerformance and HighQuality quality presets, illustrating their effect on recognition results.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode image and BarCodeReader with different QualitySettings presets (HighPerformance, HighQuality) to decode the image. Developers working with barcode scanning often need to balance speed versus accuracy; these presets provide quick ways to toggle between performance‑focused and quality‑focused recognition.
+// Title: Switching between HighPerformance and HighQuality presets for barcode reading
+// Description: Demonstrates generating a Code128 barcode and reading it using Aspose.BarCode's HighPerformance and HighQuality quality settings.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to adjust the QualitySettings preset on BarCodeReader. It highlights the use of BarcodeGenerator for creation, BarCodeReader for decoding, and the QualitySettings enum to toggle between performance‑oriented and quality‑oriented reading modes—common tasks for developers needing fast scans or maximum accuracy.
 // Prompt: Write documentation examples demonstrating how to switch between HighPerformance and HighQuality presets.
-// Tags: barcode symbology, quality preset, recognition, generation, aspose.barcode, highperformance, highquality
+// Tags: barcode, code128, highperformance, highquality, qualitysettings, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,63 +10,69 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates switching between HighPerformance and HighQuality quality presets
-/// when reading a barcode with Aspose.BarCode.
+/// Demonstrates how to generate a barcode and read it using different quality presets (HighPerformance vs HighQuality).
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, then reads it
-    /// using both HighPerformance and HighQuality presets, outputting the results.
+    /// Entry point of the example. Generates a barcode, reads it with two different quality settings, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a temporary directory to store the generated barcode image
-        string tempDir = Path.Combine(Path.GetTempPath(), "PresetDemo_" + Guid.NewGuid().ToString("N"));
+        // Prepare a unique temporary directory for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
-        string barcodePath = Path.Combine(tempDir, "code128.png");
+        string barcodePath = Path.Combine(tempDir, "sample.png");
 
-        // Generate a sample Code128 barcode image
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Generate a simple Code128 barcode and save it as PNG
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "AsposeDemo"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Define the quality presets to demonstrate
-        var presets = new (string Name, QualitySettings Settings)[]
+        // Verify that the barcode image was successfully created
+        if (!File.Exists(barcodePath))
         {
-            ("HighPerformance", QualitySettings.HighPerformance),
-            ("HighQuality", QualitySettings.HighQuality)
-        };
-
-        // Iterate over each preset, read the barcode, and display results
-        foreach (var preset in presets)
-        {
-            Console.WriteLine($"Reading with preset: {preset.Name}");
-            using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
-            {
-                // Apply the selected quality preset
-                reader.QualitySettings = preset.Settings;
-
-                // Perform barcode recognition
-                BarCodeResult[] results = reader.ReadBarCodes();
-                Console.WriteLine($"Barcodes read: {results.Length}");
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
-                }
-            }
-            Console.WriteLine();
+            Console.WriteLine("Failed to generate barcode image.");
+            return;
         }
 
-        // Cleanup temporary files and directory
+        // ------------------------------------------------------------
+        // Read the barcode using the HighPerformance preset (faster, lower accuracy)
+        // ------------------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        {
+            reader.QualitySettings = QualitySettings.HighPerformance;
+            var results = reader.ReadBarCodes();
+            Console.WriteLine($"HighPerformance preset - Barcodes read: {results.Length}");
+            foreach (var result in results)
+            {
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+            }
+        }
+
+        // ------------------------------------------------------------
+        // Read the same barcode using the HighQuality preset (slower, higher accuracy)
+        // ------------------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        {
+            reader.QualitySettings = QualitySettings.HighQuality;
+            var results = reader.ReadBarCodes();
+            Console.WriteLine($"HighQuality preset - Barcodes read: {results.Length}");
+            foreach (var result in results)
+            {
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+            }
+        }
+
+        // Clean up temporary files and directory
         try
         {
-            if (File.Exists(barcodePath))
-                File.Delete(barcodePath);
-            Directory.Delete(tempDir, true);
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
         }
         catch
         {

@@ -1,8 +1,8 @@
-// Title: Demonstrate AllowIncorrectBarcodes handling with Aspose.BarCode
-// Description: Shows how to generate a Code128 barcode, read it with AllowIncorrectBarcodes enabled, and verify that the Confidence property is null or None.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It illustrates the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, focusing on the QualitySettings.AllowIncorrectBarcodes property. Developers often need to handle imperfect scans; this snippet demonstrates checking BarCodeResult.Confidence when incorrect barcodes are permitted, a common scenario in automated testing and batch processing.
+// Title: Demonstrate AllowIncorrectBarcodes effect on BarCodeResult Confidence
+// Description: Generates a QR code, reads it with AllowIncorrectBarcodes set to false and true, and checks that the Confidence property is None (null equivalent) in both cases.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, illustrating how QualitySettings.AllowIncorrectBarcodes influences the BarCodeResult.Confidence value. It uses BarcodeGenerator, BarCodeReader, and BarCodeResult classes, common for developers needing to validate barcode confidence when tolerating imperfect scans. Suitable for unit‑test scenarios and CI pipelines.
 // Prompt: Write unit tests verifying that AllowIncorrectBarcodes returns BarCodeResult.Confidence as null.
-// Tags: barcode, code128, allowincorrectbarcodes, confidence, aspose.barcode, generation, recognition, unit-test
+// Tags: barcode, qr, allowincorrectbarcodes, confidence, unit-test, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
@@ -11,32 +11,93 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program demonstrating the effect of AllowIncorrectBarcodes on confidence values when reading barcodes with Aspose.BarCode.
+/// Demonstrates how the AllowIncorrectBarcodes setting affects the <see cref="BarCodeResult.Confidence"/> value
+/// when reading a generated QR code. The example is useful as a reference for writing unit tests that verify
+/// confidence handling in barcode recognition scenarios.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, runs verification, and cleans up temporary files.
+    /// Entry point of the example. Generates a QR code, reads it twice with different
+    /// <c>AllowIncorrectBarcodes</c> settings, and asserts that the confidence reported is <c>None</c>.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for test files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarCodeTest_" + Guid.NewGuid().ToString("N"));
+        // ----------------------------------------------------------------------
+        // Setup: create a temporary folder and define the output file path
+        // ----------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "barcode.png");
 
-        // Define the full path for the generated barcode image
-        string barcodePath = Path.Combine(tempFolder, "code128.png");
-
-        // Generate a simple Code128 barcode and save it as PNG
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // ----------------------------------------------------------------------
+        // Generate a simple QR code (valid barcode) and save it as PNG
+        // ----------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Run the verification test that checks AllowIncorrectBarcodes behavior
-        VerifyAllowIncorrectBarcodes(barcodePath);
+        // ----------------------------------------------------------------------
+        // Read the barcode with AllowIncorrectBarcodes = false
+        // ----------------------------------------------------------------------
+        BarCodeResult[] resultsFalse;
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        {
+            reader.QualitySettings.AllowIncorrectBarcodes = false;
+            resultsFalse = reader.ReadBarCodes();
+        }
 
-        // Clean up temporary files and folder
+        // ----------------------------------------------------------------------
+        // Read the barcode with AllowIncorrectBarcodes = true
+        // ----------------------------------------------------------------------
+        BarCodeResult[] resultsTrue;
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        {
+            reader.QualitySettings.AllowIncorrectBarcodes = true;
+            resultsTrue = reader.ReadBarCodes();
+        }
+
+        // ----------------------------------------------------------------------
+        // Helper method to assert that the Confidence property is None (i.e., null equivalent)
+        // ----------------------------------------------------------------------
+        void AssertConfidenceIsNone(BarCodeResult result, string scenario)
+        {
+            if (result == null)
+            {
+                Console.WriteLine($"{scenario}: No result returned.");
+                return;
+            }
+
+            // BarCodeConfidence enum default (None) represents lack of confidence.
+            if (result.Confidence == BarCodeConfidence.None)
+            {
+                Console.WriteLine($"{scenario}: Passed (Confidence is None).");
+            }
+            else
+            {
+                Console.WriteLine($"{scenario}: Failed (Confidence = {result.Confidence}).");
+            }
+        }
+
+        // ----------------------------------------------------------------------
+        // Perform assertions for both scenarios
+        // ----------------------------------------------------------------------
+        Console.WriteLine("Testing with AllowIncorrectBarcodes = false");
+        if (resultsFalse.Length > 0)
+            AssertConfidenceIsNone(resultsFalse[0], "AllowIncorrectBarcodes false");
+        else
+            Console.WriteLine("AllowIncorrectBarcodes false: No barcodes detected.");
+
+        Console.WriteLine("Testing with AllowIncorrectBarcodes = true");
+        if (resultsTrue.Length > 0)
+            AssertConfidenceIsNone(resultsTrue[0], "AllowIncorrectBarcodes true");
+        else
+            Console.WriteLine("AllowIncorrectBarcodes true: No barcodes detected.");
+
+        // ----------------------------------------------------------------------
+        // Cleanup temporary files and folder
+        // ----------------------------------------------------------------------
         try
         {
             if (File.Exists(barcodePath))
@@ -45,40 +106,7 @@ class Program
         }
         catch
         {
-            // Ignored - cleanup failure should not affect test result
+            // Ignored - cleanup failure should not affect test outcome
         }
-    }
-
-    static void VerifyAllowIncorrectBarcodes(string imagePath)
-    {
-        bool testPassed = true;
-
-        // Initialize a reader for the generated barcode with AllowIncorrectBarcodes set to true
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            reader.QualitySettings.AllowIncorrectBarcodes = true;
-            BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Iterate through each result and verify Confidence is null or None
-            foreach (BarCodeResult result in results)
-            {
-                bool isNull = result.Confidence == null;
-                bool isNone = false;
-                try
-                {
-                    isNone = result.Confidence == BarCodeConfidence.None;
-                }
-                catch { }
-
-                if (!isNull && !isNone)
-                {
-                    testPassed = false;
-                    Console.WriteLine($"[Fail] Expected Confidence null or None, got {result.Confidence}");
-                }
-            }
-        }
-
-        // Output the overall test result
-        Console.WriteLine(testPassed ? "AllowIncorrectBarcodes test passed" : "AllowIncorrectBarcodes test failed");
     }
 }

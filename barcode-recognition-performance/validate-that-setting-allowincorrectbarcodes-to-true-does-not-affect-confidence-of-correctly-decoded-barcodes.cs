@@ -1,79 +1,104 @@
-// Title: Validate AllowIncorrectBarcodes does not affect confidence for correct barcodes
-// Description: Demonstrates how to generate a Code128 barcode, read it with AllowIncorrectBarcodes set to false and true, and compare the confidence values to ensure they remain unchanged.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader's QualitySettings, specifically the AllowIncorrectBarcodes property. It shows typical usage for developers who need to control tolerance for incorrect barcodes while preserving confidence metrics, useful in validation and quality assurance scenarios.
+// Title: Validate AllowIncorrectBarcodes does not affect confidence of a correctly decoded barcode
+// Description: Generates a Code128 barcode, reads it with AllowIncorrectBarcodes set to false and true, and verifies that the confidence level remains unchanged for a valid barcode.
+// Category-Description: This example belongs to the Aspose.BarCode reading and quality‑settings category. It demonstrates how to use BarcodeGenerator to create barcodes, BarCodeReader with QualitySettings to control tolerance for incorrect barcodes, and BarCodeResult.Confidence to assess decoding reliability. Developers often need to ensure that enabling tolerance does not degrade confidence for correctly decoded symbols.
 // Prompt: Validate that setting AllowIncorrectBarcodes to true does not affect confidence of correctly decoded barcodes.
-// Tags: code128, barcode, confidence, allowincorrectbarcodes, recognition, aspose.barcode, c#
+// Tags: barcode, code128, confidence, allowincorrectbarcodes, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates validation that setting AllowIncorrectBarcodes to true does not affect the confidence of correctly decoded barcodes.
+/// Demonstrates validation that the AllowIncorrectBarcodes quality setting does not change the confidence
+/// of a correctly decoded barcode when toggled between false and true.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates a barcode, reads it with different AllowIncorrectBarcodes settings, and compares confidence values.
+    /// Entry point. Generates a barcode, reads it with different AllowIncorrectBarcodes settings,
+    /// compares confidence values, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary file path for the generated barcode image.
-        string tempPath = Path.Combine(Path.GetTempPath(), "tempBarcode.png");
+        // --------------------------------------------------------------------
+        // Prepare a temporary folder for the barcode image
+        // --------------------------------------------------------------------
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodeFile = Path.Combine(tempDir, "code128.png");
 
-        // Generate a correct Code128 barcode and save it as PNG.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // --------------------------------------------------------------------
+        // Generate a correct Code128 barcode and save it as PNG
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ASPOSE123"))
         {
-            generator.Save(tempPath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Save(barcodeFile, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully.
-        if (!File.Exists(tempPath))
+        // Verify that the image was created
+        if (!File.Exists(barcodeFile))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Read the barcode with AllowIncorrectBarcodes set to false and capture confidence.
+        // --------------------------------------------------------------------
+        // Read the barcode with AllowIncorrectBarcodes = false
+        // --------------------------------------------------------------------
         BarCodeConfidence confidenceFalse = BarCodeConfidence.None;
-        using (var reader = new BarCodeReader(tempPath, DecodeType.Code128))
+        using (var reader = new BarCodeReader(barcodeFile, DecodeType.Code128))
         {
             reader.QualitySettings.AllowIncorrectBarcodes = false;
             BarCodeResult[] results = reader.ReadBarCodes();
             if (results.Length > 0)
                 confidenceFalse = results[0].Confidence;
+            else
+                Console.WriteLine("No barcode detected with AllowIncorrectBarcodes = false.");
         }
 
-        // Read the same barcode with AllowIncorrectBarcodes set to true and capture confidence.
+        // --------------------------------------------------------------------
+        // Read the same barcode with AllowIncorrectBarcodes = true
+        // --------------------------------------------------------------------
         BarCodeConfidence confidenceTrue = BarCodeConfidence.None;
-        using (var reader = new BarCodeReader(tempPath, DecodeType.Code128))
+        using (var reader = new BarCodeReader(barcodeFile, DecodeType.Code128))
         {
             reader.QualitySettings.AllowIncorrectBarcodes = true;
             BarCodeResult[] results = reader.ReadBarCodes();
             if (results.Length > 0)
                 confidenceTrue = results[0].Confidence;
+            else
+                Console.WriteLine("No barcode detected with AllowIncorrectBarcodes = true.");
         }
 
-        // Output the confidence values for comparison.
+        // --------------------------------------------------------------------
+        // Output the confidence values for both reads
+        // --------------------------------------------------------------------
         Console.WriteLine($"Confidence with AllowIncorrectBarcodes = false: {confidenceFalse}");
         Console.WriteLine($"Confidence with AllowIncorrectBarcodes = true : {confidenceTrue}");
 
-        // Determine whether confidence remained unchanged.
-        if (confidenceFalse == confidenceTrue)
-            Console.WriteLine("Confidence unchanged for correctly decoded barcode.");
+        // --------------------------------------------------------------------
+        // Validate that confidence is unchanged and strong
+        // --------------------------------------------------------------------
+        if (confidenceFalse == confidenceTrue && confidenceFalse == BarCodeConfidence.Strong)
+            Console.WriteLine("Validation passed: confidence unchanged for correctly decoded barcode.");
         else
-            Console.WriteLine("Confidence differs; check implementation.");
+            Console.WriteLine("Validation failed: confidence differs or is not Strong.");
 
-        // Clean up the temporary barcode image file.
+        // --------------------------------------------------------------------
+        // Cleanup temporary files and directory
+        // --------------------------------------------------------------------
         try
         {
-            File.Delete(tempPath);
+            File.Delete(barcodeFile);
+            Directory.Delete(tempDir);
         }
         catch
         {
-            // Ignore any errors that occur during cleanup.
+            // Ignore cleanup errors
         }
     }
 }

@@ -1,11 +1,12 @@
-// Title: Profiling CPU impact of AllowIncorrectBarcodes during barcode scanning
-// Description: Demonstrates how to measure the performance difference when the AllowIncorrectBarcodes setting is toggled while scanning multiple barcode types.
-// Category-Description: This example belongs to the Aspose.BarCode scanning and performance profiling category. It showcases the use of BarCodeReader with QualitySettings, BarcodeGenerator for creating sample images, and Stopwatch for timing. Developers often need to evaluate how configuration options affect CPU load in high‑throughput scanning scenarios, making this a useful reference for performance testing.
+// Title: Profile CPU Impact of AllowIncorrectBarcodes During Barcode Scanning
+// Description: Demonstrates how to measure CPU usage when reading barcodes with the AllowIncorrectBarcodes setting toggled, using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode performance profiling category. It shows how to generate sample Code128 barcodes, read them repeatedly with BarCodeReader, and capture wall‑clock and processor time. Developers working on high‑throughput scanning solutions often need to evaluate the effect of QualitySettings.AllowIncorrectBarcodes on CPU load, making this pattern useful for benchmarking and optimization.
 // Prompt: Profile the impact of AllowIncorrectBarcodes on overall CPU load during continuous scanning.
-// Tags: barcode, scanning, performance, allowincorrectbarcodes, aspose.barcode, csharp, profiling
+// Tags: barcode, performance, profiling, allowincorrectbarcodes, code128, aspose.barcode, cpu, benchmarking
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
@@ -13,126 +14,99 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates profiling the CPU impact of the AllowIncorrectBarcodes setting during continuous barcode scanning.
+/// Generates sample barcodes, reads them repeatedly with different AllowIncorrectBarcodes settings,
+/// and reports wall‑clock and CPU time to help profile performance impact.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates sample barcodes, profiles scanning with different AllowIncorrectBarcodes settings, and outputs timing results.
+    /// Entry point. Creates temporary barcode images, profiles reading with both false and true
+    /// AllowIncorrectBarcodes values, and cleans up generated files.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for generated barcode images
+        // Create a unique temporary folder for generated barcode images
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeProfile_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate a set of sample barcode files (Code128, QR, DataMatrix, Aztec, Pdf417)
-        var barcodeFiles = GenerateSampleBarcodes(tempFolder);
+        // Generate a set of sample Code128 barcode images
+        List<string> barcodeFiles = new List<string>();
+        for (int i = 0; i < 5; i++)
+        {
+            string codeText = "Sample" + i + DateTime.Now.Ticks;
+            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            {
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+            barcodeFiles.Add(filePath);
+        }
 
-        // Number of scan repetitions for each configuration
-        const int repetitions = 100;
+        // Number of read iterations per image (controls total workload)
+        int readIterations = 20;
 
-        // Profile scanning with AllowIncorrectBarcodes set to false
-        double timeFalse = ProfileScanning(barcodeFiles, false, repetitions);
-        Console.WriteLine($"AllowIncorrectBarcodes = false, total time (ms): {timeFalse:F2}, avg per scan (ms): {timeFalse / (barcodeFiles.Count * repetitions):F4}");
+        // Profile reading with AllowIncorrectBarcodes set to false
+        ProfileReading(barcodeFiles, readIterations, false);
 
-        // Profile scanning with AllowIncorrectBarcodes set to true
-        double timeTrue = ProfileScanning(barcodeFiles, true, repetitions);
-        Console.WriteLine($"AllowIncorrectBarcodes = true,  total time (ms): {timeTrue:F2}, avg per scan (ms): {timeTrue / (barcodeFiles.Count * repetitions):F4}");
+        // Profile reading with AllowIncorrectBarcodes set to true
+        ProfileReading(barcodeFiles, readIterations, true);
 
-        // Clean up generated barcode files and temporary folder
+        // Clean up generated files and temporary folder
         foreach (var file in barcodeFiles)
         {
-            try { File.Delete(file); } catch { }
+            if (File.Exists(file))
+                File.Delete(file);
         }
-        try { Directory.Delete(tempFolder, true); } catch { }
+        Directory.Delete(tempFolder, true);
     }
 
     /// <summary>
-    /// Generates sample barcode images of various symbologies and returns their file paths.
+    /// Reads each barcode file repeatedly, measuring wall‑clock and CPU time.
     /// </summary>
-    /// <param name="folder">The folder where barcode images will be saved.</param>
-    /// <returns>List of file paths for the generated barcode images.</returns>
-    static System.Collections.Generic.List<string> GenerateSampleBarcodes(string folder)
+    /// <param name="files">List of barcode image file paths.</param>
+    /// <param name="iterations">How many times to loop over the file list.</param>
+    /// <param name="allowIncorrect">Value to assign to QualitySettings.AllowIncorrectBarcodes.</param>
+    static void ProfileReading(List<string> files, int iterations, bool allowIncorrect)
     {
-        var files = new System.Collections.Generic.List<string>();
+        // Display current profiling mode
+        string mode = allowIncorrect ? "AllowIncorrectBarcodes: true" : "AllowIncorrectBarcodes: false";
+        Console.WriteLine(mode);
 
-        // Code128 barcode
-        string path1 = Path.Combine(folder, "code128.png");
-        using (var gen = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
+        // Capture initial CPU time and start a wall‑clock timer
+        Process proc = Process.GetCurrentProcess();
+        TimeSpan cpuStart = proc.TotalProcessorTime;
+        Stopwatch sw = Stopwatch.StartNew();
+
+        int totalBarcodesRead = 0;
+
+        // Perform the reading loop
+        for (int iter = 0; iter < iterations; iter++)
         {
-            gen.Save(path1, BarCodeImageFormat.Png);
-        }
-        files.Add(path1);
-
-        // QR code
-        string path2 = Path.Combine(folder, "qr.png");
-        using (var gen = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
-        {
-            gen.Save(path2, BarCodeImageFormat.Png);
-        }
-        files.Add(path2);
-
-        // DataMatrix barcode
-        string path3 = Path.Combine(folder, "datamatrix.png");
-        using (var gen = new BarcodeGenerator(EncodeTypes.DataMatrix, "DM12345"))
-        {
-            gen.Save(path3, BarCodeImageFormat.Png);
-        }
-        files.Add(path3);
-
-        // Aztec barcode
-        string path4 = Path.Combine(folder, "aztec.png");
-        using (var gen = new BarcodeGenerator(EncodeTypes.Aztec, "AZTEC"))
-        {
-            gen.Save(path4, BarCodeImageFormat.Png);
-        }
-        files.Add(path4);
-
-        // Pdf417 barcode
-        string path5 = Path.Combine(folder, "pdf417.png");
-        using (var gen = new BarcodeGenerator(EncodeTypes.Pdf417, "PDF417DATA"))
-        {
-            gen.Save(path5, BarCodeImageFormat.Png);
-        }
-        files.Add(path5);
-
-        return files;
-    }
-
-    /// <summary>
-    /// Profiles the time required to scan a collection of barcode images repeatedly, with a specified AllowIncorrectBarcodes setting.
-    /// </summary>
-    /// <param name="files">List of barcode image file paths to scan.</param>
-    /// <param name="allowIncorrect">Whether to allow incorrect barcodes during scanning.</param>
-    /// <param name="repetitions">Number of times each file is scanned.</param>
-    /// <returns>Total elapsed time in milliseconds for the entire profiling run.</returns>
-    static double ProfileScanning(System.Collections.Generic.List<string> files, bool allowIncorrect, int repetitions)
-    {
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        // Perform the scanning loop
-        for (int i = 0; i < repetitions; i++)
-        {
-            foreach (var file in files)
+            foreach (var path in files)
             {
-                if (!File.Exists(file))
+                if (!File.Exists(path))
                     continue;
 
-                // Initialize a reader for the current barcode image
-                using (var reader = new BarCodeReader(file))
+                using (var reader = new BarCodeReader(path, DecodeType.Code128))
                 {
                     // Apply the AllowIncorrectBarcodes setting for this run
                     reader.QualitySettings.AllowIncorrectBarcodes = allowIncorrect;
-
-                    // ReadBarCodes returns an array; results are ignored as we only measure performance
-                    var results = reader.ReadBarCodes();
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    totalBarcodesRead += results.Length;
                 }
             }
         }
 
-        stopwatch.Stop();
-        return stopwatch.Elapsed.TotalMilliseconds;
+        // Stop timers and calculate elapsed times
+        sw.Stop();
+        TimeSpan cpuEnd = proc.TotalProcessorTime;
+        TimeSpan cpuUsed = cpuEnd - cpuStart;
+
+        // Output profiling results
+        Console.WriteLine($"Total reads performed: {files.Count * iterations}");
+        Console.WriteLine($"Barcodes recognized: {totalBarcodesRead}");
+        Console.WriteLine($"Elapsed wall time: {sw.Elapsed.TotalSeconds:F2} s");
+        Console.WriteLine($"CPU time used: {cpuUsed.TotalSeconds:F2} s");
+        Console.WriteLine();
     }
 }

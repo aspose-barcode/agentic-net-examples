@@ -1,105 +1,113 @@
-// Title: Performance Graph of Barcode Recognition Time vs XDimension Modes
-// Description: Demonstrates measuring recognition time for Code128 barcodes while varying XDimension settings, useful for performance tuning.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases how to create barcodes with BarcodeGenerator, read them with BarCodeReader, and adjust QualitySettings such as XDimensionMode. Developers often need to benchmark recognition speed for different scanner configurations, making this pattern valuable for performance analysis and optimization.
+// Title: Performance graph of barcode recognition time vs XDimension values
+// Description: Demonstrates measuring recognition time for Code128 barcodes while varying XDimensionMode settings and outputs CSV data for graphing.
+// Category-Description: This example belongs to the Aspose.BarCode performance testing category. It shows how to generate barcodes, configure QualitySettings.XDimension, and use BarCodeReader to measure processing time. Developers often need to benchmark recognition speed across different XDimension modes for optimization and reporting.
 // Prompt: Generate performance graphs comparing recognition time versus XDimension values for a sample dataset.
-// Tags: barcode symbology, performance, recognition, xdimension, code128, aspose.barcode, image generation
+// Tags: barcode, performance, xdimension, code128, aspose.barcode, benchmarking, csv
 
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates Code128 barcodes, measures recognition time across different XDimension modes,
-/// and outputs timing results. Useful for performance analysis of Aspose.BarCode recognition settings.
+/// Example program that generates sample Code128 barcodes, measures recognition time
+/// for different XDimensionMode settings, and outputs CSV data suitable for performance graphs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, runs recognition with various XDimension modes, prints timing results,
-    /// and cleans up temporary files.
+    /// Entry point. Creates temporary barcodes, runs recognition benchmarks, prints results, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodePerf_" + Guid.NewGuid().ToString("N"));
+        // Create a dedicated temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Perf_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Sample data to encode in barcodes
-        string[] codes = { "Sample1", "Sample2", "Sample3", "Sample4", "Sample5" };
-        string[] imagePaths = new string[codes.Length];
-
-        // Generate barcode images and store their file paths
-        for (int i = 0; i < codes.Length; i++)
+        // Generate a set of sample barcode images
+        List<string> barcodeFiles = new List<string>();
+        int sampleCount = 5;
+        for (int i = 1; i <= sampleCount; i++)
         {
-            string filePath = Path.Combine(tempFolder, $"code_{i + 1}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codes[i]))
+            string codeText = $"Sample{i:D2}";
+            string filePath = Path.Combine(tempFolder, $"code{i:D2}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            imagePaths[i] = filePath;
+            barcodeFiles.Add(filePath);
         }
 
-        // Define the XDimension modes that will be tested
-        XDimensionMode[] modes = new XDimensionMode[]
+        // Define the XDimension modes to be tested
+        var modes = new List<(XDimensionMode mode, string name, bool setMinimal)>
         {
-            XDimensionMode.Normal,
-            XDimensionMode.Small,
-            XDimensionMode.UseMinimalXDimension
+            (XDimensionMode.Normal, "Normal", false),
+            (XDimensionMode.Small, "Small", false),
+            (XDimensionMode.UseMinimalXDimension, "UseMinimalXDimension", true)
         };
 
-        // Header for console output
-        Console.WriteLine("Recognition Time (ms) vs XDimension Mode");
-        Console.WriteLine("Mode\tTimeMs\tBarcodesRead");
+        // Output CSV header
+        Console.WriteLine("XDimensionMode,TotalTimeMs,AvgTimeMs,TotalRecognized");
 
-        // Iterate over each XDimension mode and measure recognition performance
-        foreach (var mode in modes)
+        // Iterate over each mode and measure recognition performance
+        foreach (var (mode, name, setMinimal) in modes)
         {
-            int totalRead = 0;
             Stopwatch sw = Stopwatch.StartNew();
+            int totalRecognized = 0;
 
-            // Recognize each generated barcode image using the current mode
-            foreach (var path in imagePaths)
+            // Process each generated barcode file
+            foreach (string file in barcodeFiles)
             {
-                if (!File.Exists(path))
+                if (!File.Exists(file))
                 {
-                    Console.WriteLine($"File not found: {path}");
+                    Console.WriteLine($"Warning: file not found {file}");
                     continue;
                 }
 
-                using (var reader = new BarCodeReader(path, DecodeType.Code128))
+                using (var reader = new BarCodeReader(file, DecodeType.Code128))
                 {
-                    // Apply the XDimension mode to the reader's quality settings
+                    // Apply the current XDimension mode
                     reader.QualitySettings.XDimension = mode;
 
-                    // If using minimal XDimension, set a specific value
-                    if (mode == XDimensionMode.UseMinimalXDimension)
+                    // Optionally set a minimal XDimension value
+                    if (setMinimal)
                     {
                         reader.QualitySettings.MinimalXDimension = 1;
                     }
 
-                    // Perform barcode reading and count results
-                    var results = reader.ReadBarCodes();
-                    totalRead += results.Length;
+                    // Perform recognition and count results
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    totalRecognized += results?.Length ?? 0;
                 }
             }
 
             sw.Stop();
-            // Output the elapsed time and total barcodes read for the current mode
-            Console.WriteLine($"{mode}\t{sw.ElapsedMilliseconds}\t{totalRead}");
+            double avgTime = sw.Elapsed.TotalMilliseconds / barcodeFiles.Count;
+
+            // Output CSV line with aggregated results for this mode
+            Console.WriteLine($"{name},{sw.Elapsed.TotalMilliseconds:F2},{avgTime:F2},{totalRecognized}");
         }
 
-        // Optional cleanup of temporary files and folder
+        // Clean up temporary files and folder
         try
         {
+            foreach (string file in barcodeFiles)
+            {
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
+            }
             Directory.Delete(tempFolder, true);
         }
-        catch
+        catch (Exception ex)
         {
-            // Suppress any errors during cleanup
+            Console.WriteLine($"Cleanup warning: {ex.Message}");
         }
     }
 }
