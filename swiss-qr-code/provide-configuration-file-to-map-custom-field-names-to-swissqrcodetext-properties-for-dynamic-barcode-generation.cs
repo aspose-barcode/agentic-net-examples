@@ -1,123 +1,122 @@
-// Title: Generate Swiss QR Code with Custom Field Mapping
-// Description: Demonstrates creating a Swiss QR Code barcode using Aspose.BarCode by loading a JSON configuration that maps custom field names to SwissQRCodetext properties, populating the data, and saving the image as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Swiss QR (QR‑Bill) creation. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and related classes to produce payment QR codes. Developers often need to map external data sources to barcode fields dynamically, and this pattern illustrates loading a configuration file, applying mappings, and generating the barcode image.
+// Title: Generate and Decode Swiss QR Code using Aspose.BarCode
+// Description: Demonstrates creating a Swiss QR Code barcode from a JSON configuration, saving it as a PNG image, and then decoding it to verify the encoded data.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on complex barcode types such as Swiss QR Codes. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and BarCodeReader classes for dynamic barcode creation, customization, and decoding—common tasks for financial applications and payment processing systems.
 // Prompt: Provide a configuration file to map custom field names to SwissQRCodetext properties for dynamic barcode generation.
-// Tags: swissqr, barcode, complexbarcode, json, configuration, aspose.barcode, png
+// Tags: barcode, swissqr, generation, decoding, png, aspose.barcode, complexbarcode, financial, payment
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Text.Json;
-using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Swiss QR Code barcode with dynamic field mapping via a JSON configuration.
+/// Demonstrates generating a Swiss QR Code barcode from configuration data,
+/// saving it as an image, and decoding it to verify the contents.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Swiss QR Code image based on sample data and a configuration file that maps custom field names to barcode properties.
+    /// Simple POCO representing the configuration fields required for a Swiss QR Code.
     /// </summary>
-    static void Main()
+    class Config
     {
-        // Define temporary paths for the configuration file and the generated barcode image
-        string configPath = Path.Combine(Path.GetTempPath(), "SwissQRConfig.json");
-        string outputPath = Path.Combine(Path.GetTempPath(), "SwissQRGenerated.png");
-
-        // Create a sample configuration file if it does not already exist
-        if (!File.Exists(configPath))
-        {
-            var sampleConfig = new Dictionary<string, string>
-            {
-                { "CreditorName", "Bill.Creditor.Name" },
-                { "CreditorCountry", "Bill.Creditor.CountryCode" },
-                { "Account", "Bill.Account" },
-                { "Amount", "Bill.Amount" },
-                { "Currency", "Bill.Currency" },
-                { "Reference", "Bill.Reference" }
-            };
-            string json = JsonSerializer.Serialize(sampleConfig, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(configPath, json);
-        }
-
-        // Sample data that corresponds to the custom field names defined in the configuration
-        var fieldValues = new Dictionary<string, string>
-        {
-            { "CreditorName", "John Doe" },
-            { "CreditorCountry", "CH" },
-            { "Account", "CH9300762011623852957" },
-            { "Amount", "199.95" },
-            { "Currency", "CHF" },
-            { "Reference", "210000000003139471430009017" }
-        };
-
-        // Load the JSON configuration that maps custom field names to SwissQRCodetext property paths
-        string configJson = File.ReadAllText(configPath);
-        var configMap = JsonSerializer.Deserialize<Dictionary<string, string>>(configJson);
-
-        // Initialize a Swiss QR codetext object and set the QR‑Bill version
-        SwissQRCodetext swissQr = new SwissQRCodetext();
-        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-
-        // Populate the SwissQRCodetext instance using the mapping defined in the configuration file
-        foreach (var kvp in configMap)
-        {
-            string customField = kvp.Key;
-            string propertyPath = kvp.Value;
-
-            // Skip fields for which no value is provided in the sample data
-            if (!fieldValues.TryGetValue(customField, out string value))
-                continue;
-
-            SetProperty(swissQr, propertyPath, value);
-        }
-
-        // Generate the barcode image using ComplexBarcodeGenerator and save it as PNG
-        using (var generator = new ComplexBarcodeGenerator(swissQr))
-        {
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-        }
-
-        Console.WriteLine($"Swiss QR Code generated at: {outputPath}");
+        public string CreditorName { get; set; }
+        public string CreditorCountryCode { get; set; }
+        public string DebtorName { get; set; }
+        public string DebtorCountryCode { get; set; }
+        public string Account { get; set; }
+        public decimal Amount { get; set; }
+        public string Currency { get; set; }
+        public string Reference { get; set; }
     }
 
     /// <summary>
-    /// Sets a property on the SwissQRCodetext instance based on a dot‑separated property path.
+    /// Entry point. Generates a Swiss QR Code, saves it, and then reads it back.
     /// </summary>
-    /// <param name="codetext">The SwissQRCodetext object to modify.</param>
-    /// <param name="propertyPath">The property path (e.g., "Bill.Creditor.Name").</param>
-    /// <param name="value">The string value to assign.</param>
-    static void SetProperty(SwissQRCodetext codetext, string propertyPath, string value)
+    static void Main()
     {
-        switch (propertyPath)
+        // Determine the path for the JSON configuration file in the temp folder.
+        string configPath = Path.Combine(Path.GetTempPath(), "SwissQRConfig.json");
+
+        // If the config file does not exist, create a default one with sample data.
+        if (!File.Exists(configPath))
         {
-            case "Bill.Creditor.Name":
-                codetext.Bill.Creditor.Name = value;
-                break;
-            case "Bill.Creditor.CountryCode":
-                codetext.Bill.Creditor.CountryCode = value;
-                break;
-            case "Bill.Account":
-                codetext.Bill.Account = value;
-                break;
-            case "Bill.Amount":
-                if (decimal.TryParse(value, out decimal amount))
-                    codetext.Bill.Amount = amount;
-                break;
-            case "Bill.Currency":
-                codetext.Bill.Currency = value;
-                break;
-            case "Bill.Reference":
-                codetext.Bill.Reference = value;
-                break;
-            // Additional mappings can be added here as needed
-            default:
-                // Unknown property path; ignore or log as appropriate
-                break;
+            var defaultConfig = new Config
+            {
+                CreditorName = "John Doe",
+                CreditorCountryCode = "CH",
+                DebtorName = "Jane Smith",
+                DebtorCountryCode = "CH",
+                Account = "CH9300762011623852957",
+                Amount = 199.95m,
+                Currency = "CHF",
+                Reference = "210000000003139471430009017"
+            };
+            string json = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(configPath, json);
+            Console.WriteLine($"Created default config at: {configPath}");
+        }
+
+        // Load configuration from the JSON file.
+        Config cfg;
+        try
+        {
+            string json = File.ReadAllText(configPath);
+            cfg = JsonSerializer.Deserialize<Config>(json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to read config: {ex.Message}");
+            return;
+        }
+
+        // Build Swiss QR Code text using the loaded configuration.
+        var swissQr = new SwissQRCodetext();
+        swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
+        swissQr.Bill.Account = cfg.Account;
+        swissQr.Bill.Amount = cfg.Amount;
+        swissQr.Bill.Currency = cfg.Currency;
+        swissQr.Bill.Reference = cfg.Reference;
+        swissQr.Bill.Creditor = new Address
+        {
+            Name = cfg.CreditorName,
+            CountryCode = cfg.CreditorCountryCode
+        };
+        swissQr.Bill.Debtor = new Address
+        {
+            Name = cfg.DebtorName,
+            CountryCode = cfg.DebtorCountryCode
+        };
+
+        // Save the generated barcode as a PNG image.
+        string outputPath = Path.Combine(Path.GetTempPath(), "SwissQR.png");
+        using (var generator = new ComplexBarcodeGenerator(swissQr))
+        {
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
+        Console.WriteLine($"Swiss QR Code saved to: {outputPath}");
+
+        // Read back the saved image and decode the QR code.
+        using (var reader = new BarCodeReader(outputPath, DecodeType.QR))
+        {
+            foreach (var result in reader.ReadBarCodes())
+            {
+                SwissQRCodetext decoded = ComplexCodetextReader.TryDecodeSwissQR(result.CodeText);
+                if (decoded != null)
+                {
+                    Console.WriteLine("Decoded Swiss QR Code:");
+                    Console.WriteLine($"  Account: {decoded.Bill.Account}");
+                    Console.WriteLine($"  Amount: {decoded.Bill.Amount}");
+                    Console.WriteLine($"  Currency: {decoded.Bill.Currency}");
+                    Console.WriteLine($"  Creditor: {decoded.Bill.Creditor.Name}");
+                    Console.WriteLine($"  Debtor: {decoded.Bill.Debtor.Name}");
+                }
+            }
         }
     }
 }

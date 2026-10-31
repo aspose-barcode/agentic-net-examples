@@ -1,94 +1,125 @@
-// Title: Barcode Generation with Audit Logging using Aspose.BarCode
-// Description: Demonstrates generating a Code128 barcode, saving it as a PNG file, and logging all generation parameters and outcomes to an audit log.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure barcode properties, render the image, and record operational details using custom file logging. Developers working with barcode creation, image export, and compliance auditing can use similar patterns with BarcodeGenerator, BarCodeImageFormat, and parameter settings to meet regulatory or diagnostic requirements.
+// Title: Barcode generation with audit logging using Aspose.BarCode
+// Description: Demonstrates creating a Code128 barcode, saving it as PNG, and logging generation parameters and read results for audit purposes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode creation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and related parameter classes to produce and decode barcodes, while recording operational details. Developers often need such patterns for compliance, troubleshooting, and audit trails when integrating barcode functionality into .NET applications.
 // Prompt: Implement logging of barcode generation parameters and outcomes using .NET built‑in logging framework for audit trails.
-// Tags: barcode, symbology, generation, png, logging, audit, aspose.barcode, code128
+// Tags: barcode, code128, generation, recognition, logging, audit, aspose.barcode, png
 
 using System;
 using System.IO;
-using Aspose.BarCode;
+using System.Text;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode, saves it as a PNG image, and logs generation details for audit purposes.
+/// Demonstrates barcode generation, saving, reading, and audit logging using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Prepares output locations, configures the barcode, logs parameters,
-    /// saves the image, and records success or error information.
+    /// Entry point of the example. Generates a barcode, logs parameters, saves the image, reads it back, and records outcomes.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare output directory and file paths for the barcode image and audit log
-        // --------------------------------------------------------------------
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeAudit_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-        string barcodePath = Path.Combine(outputDir, "sample.png");
-        string logPath = Path.Combine(outputDir, "audit.log");
+        // ------------------------------------------------------------
+        // Prepare a unique working directory for temporary files
+        // ------------------------------------------------------------
+        string workDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // --------------------------------------------------------------------
-        // Simple file‑based logging helper that also writes to console
-        // --------------------------------------------------------------------
-        void Log(string message)
-        {
-            string entry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} - {message}{Environment.NewLine}";
-            File.AppendAllText(logPath, entry);
-            Console.WriteLine(message);
-        }
+        // Define paths for the barcode image and the audit log file
+        string barcodePath = Path.Combine(workDir, "sample_barcode.png");
+        string logPath = Path.Combine(workDir, "audit_log.txt");
+
+        // ------------------------------------------------------------
+        // Initialize the audit log with a start timestamp
+        // ------------------------------------------------------------
+        File.WriteAllText(logPath, $"Audit Log Started at {DateTime.UtcNow:u}{Environment.NewLine}");
+
+        // ------------------------------------------------------------
+        // Set barcode generation parameters
+        // ------------------------------------------------------------
+        string codeText = "1234567890";
+        BaseEncodeType encodeType = EncodeTypes.Code128;
 
         try
         {
-            // --------------------------------------------------------------------
-            // Create a barcode generator for Code128 symbology with the desired text
-            // --------------------------------------------------------------------
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            // Create a generator for the specified symbology and data
+            using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // --------------------------------------------------------------------
-                // Configure barcode appearance and rendering parameters
-                // --------------------------------------------------------------------
+                // Log the basic generation parameters
+                Log(logPath, $"Generating barcode:");
+                Log(logPath, $"  Symbology: {encodeType.TypeName}");
+                Log(logPath, $"  CodeText: {codeText}");
+
+                // Configure visual and technical settings, logging each change
                 generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.Barcode.BarHeight.Point = 50f;
+                Log(logPath, $"  XDimension (points): {generator.Parameters.Barcode.XDimension.Point}");
+
                 generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                Log(logPath, $"  BarColor: Black");
+
                 generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+                Log(logPath, $"  BackColor: White");
+
                 generator.Parameters.Resolution = 300f;
-                generator.Parameters.RotationAngle = 0f;
-                generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+                Log(logPath, $"  Resolution (dpi): {generator.Parameters.Resolution}");
 
-                // --------------------------------------------------------------------
-                // Log all relevant generation parameters for audit tracking
-                // --------------------------------------------------------------------
-                Log("Generating barcode with the following parameters:");
-                Log($"  Symbology: {generator.BarcodeType.TypeName}");
-                Log($"  CodeText: {generator.CodeText}");
-                Log($"  XDimension (points): {generator.Parameters.Barcode.XDimension.Point}");
-                Log($"  BarHeight (points): {generator.Parameters.Barcode.BarHeight.Point}");
-                Log($"  BarColor: {generator.Parameters.Barcode.BarColor}");
-                Log($"  BackColor: {generator.Parameters.BackColor}");
-                Log($"  Resolution (dpi): {generator.Parameters.Resolution}");
-                Log($"  RotationAngle: {generator.Parameters.RotationAngle}");
-                Log($"  AutoSizeMode: {generator.Parameters.AutoSizeMode}");
+                generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+                Log(logPath, $"  AutoSizeMode: Nearest");
 
-                // --------------------------------------------------------------------
-                // Save the generated barcode image to the specified PNG file
-                // --------------------------------------------------------------------
+                generator.Parameters.ImageWidth.Pixels = 300f;
+                generator.Parameters.ImageHeight.Pixels = 150f;
+                Log(logPath, $"  ImageWidth (pixels): {generator.Parameters.ImageWidth.Pixels}");
+                Log(logPath, $"  ImageHeight (pixels): {generator.Parameters.ImageHeight.Pixels}");
+
+                // Save the generated barcode image to disk
                 generator.Save(barcodePath, BarCodeImageFormat.Png);
-                Log($"Barcode image saved successfully to: {barcodePath}");
+                Log(logPath, $"Barcode saved to: {barcodePath}");
             }
         }
         catch (Exception ex)
         {
-            // --------------------------------------------------------------------
-            // Log any exception that occurs during barcode generation
-            // --------------------------------------------------------------------
-            Log($"Error during barcode generation: {ex.GetType().Name} - {ex.Message}");
+            // Log any generation errors and abort further processing
+            Log(logPath, $"Error during barcode generation: {ex.Message}");
+            return;
         }
 
-        // --------------------------------------------------------------------
-        // Final log entry indicating where the audit log is stored
-        // --------------------------------------------------------------------
-        Log($"Audit log written to: {logPath}");
+        // ------------------------------------------------------------
+        // Read the saved barcode and log the decoding results
+        // ------------------------------------------------------------
+        try
+        {
+            using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+            {
+                Log(logPath, $"Reading barcode from: {barcodePath}");
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    Log(logPath, $"  Decoded CodeText: {result.CodeText}");
+                    Log(logPath, $"  Decoded Symbology: {result.CodeType}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log any reading errors
+            Log(logPath, $"Error during barcode reading: {ex.Message}");
+        }
+
+        // ------------------------------------------------------------
+        // Finalize the audit log
+        // ------------------------------------------------------------
+        Log(logPath, $"Audit Log Completed at {DateTime.UtcNow:u}");
+    }
+
+    /// <summary>
+    /// Appends a timestamped message to the specified log file using UTF‑8 encoding.
+    /// </summary>
+    /// <param name="logFilePath">Full path to the audit log file.</param>
+    /// <param name="message">Message to record.</param>
+    static void Log(string logFilePath, string message)
+    {
+        string entry = $"{DateTime.UtcNow:u} {message}{Environment.NewLine}";
+        File.AppendAllText(logFilePath, entry, Encoding.UTF8);
     }
 }

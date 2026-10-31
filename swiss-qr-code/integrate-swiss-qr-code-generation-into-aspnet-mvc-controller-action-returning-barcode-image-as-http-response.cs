@@ -1,38 +1,39 @@
-// Title: Generate Swiss QR Code using Aspose.BarCode
-// Description: Demonstrates creating a Swiss QR Code (QR‑Bill) with Aspose.BarCode, configuring bill details, and saving the image as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and related classes to produce QR‑Bill compliant Swiss QR Codes. Typical use cases include generating payment QR codes for invoices or financial documents in .NET applications. Developers often need to set bill parameters, adjust barcode appearance, and output the image for web or desktop consumption.
+// Title: Generate Swiss QR Code and output as PNG (Base64 and file)
+// Description: Demonstrates creating a Swiss QR Code for a payment bill using Aspose.BarCode, rendering it to a PNG image, and showing the result as a Base64 string and a temporary file.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Swiss QR Code (QR‑Bill) creation. It showcases the use of ComplexBarcodeGenerator, SwissQRCodetext, and related parameter settings to produce payment‑ready QR codes. Developers building invoicing, banking, or e‑commerce solutions often need to generate QR‑Bill images for Swiss payments, and this snippet illustrates the typical workflow for such use cases.
 // Prompt: Integrate Swiss QR Code generation into an ASP.NET MVC controller action returning the barcode image as HTTP response.
-// Tags: swiss qr, barcode generation, png, aspnet mvc, aspose.barcode, complexbarcode, qr-bill
+// Tags: swiss qr code, barcode generation, png, aspnet mvc, aspose.barcode, complexbarcode, image output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
+using Aspose.BarCode.Generation;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Swiss QR Code (QR‑Bill) using Aspose.BarCode.
+/// Demonstrates generation of a Swiss QR Code using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates the barcode, saves it to a temporary file, and outputs a Base64 string.
+    /// Entry point that creates the QR code, saves it to a memory stream, prints Base64 and writes to a temporary file.
     /// </summary>
     static void Main()
     {
-        // Simulated request payload for Swiss QR Code
-        var swissQr = new SwissQRCodetext();
+        // NOTE: In a real ASP.NET MVC application this logic would be placed in a controller action
+        // that returns the image as an HTTP response. Here we demonstrate the core barcode generation
+        // in a console program.
 
-        // Populate bill details required for a Swiss QR‑Bill
+        // ------------------------------------------------------------
+        // Create Swiss QR Code data (QR‑Bill)
+        // ------------------------------------------------------------
+        var swissQr = new SwissQRCodetext();
         swissQr.Bill.Version = SwissQRBill.QrBillStandardVersion.V2_0;
-        swissQr.Bill.Account = "CH4431999123000889012";
-        swissQr.Bill.Amount = 1000.25m;
+        swissQr.Bill.Account = "CH9300762011623852957";
+        swissQr.Bill.Amount = 199.95m;
         swissQr.Bill.Currency = "CHF";
         swissQr.Bill.Reference = "210000000003139471430009017";
-
-        // Creditor (payee) address information
         swissQr.Bill.Creditor = new Address
         {
             Name = "Muster & Söhne",
@@ -42,8 +43,6 @@ class Program
             Town = "Zürich",
             CountryCode = "CH"
         };
-
-        // Debtor (payer) address information
         swissQr.Bill.Debtor = new Address
         {
             Name = "Muster AG",
@@ -54,26 +53,36 @@ class Program
             CountryCode = "CH"
         };
 
-        // Generate the barcode using the complex barcode generator
+        // ------------------------------------------------------------
+        // Generate the barcode image
+        // ------------------------------------------------------------
         using (var generator = new ComplexBarcodeGenerator(swissQr))
         {
-            // Set visual parameters: module size and QR encoding mode
+            // Configure visual and encoding parameters
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
             generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Save the barcode image to a temporary file (simulating an HTTP response body)
-            string outputPath = Path.Combine(Path.GetTempPath(), "SwissQR.png");
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-            Console.WriteLine($"Swiss QR Code image saved to: {outputPath}");
-
-            // Also output a Base64 representation of the image (simulating HTTP response content)
+            // Save the barcode to a memory stream in PNG format
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0;
+
+                // ------------------------------------------------------------
+                // Output the image as a Base64 string (useful for embedding in HTML)
+                // ------------------------------------------------------------
                 string base64 = Convert.ToBase64String(ms.ToArray());
-                Console.WriteLine("Base64 representation of the image:");
+                Console.WriteLine("Swiss QR Code image (Base64 PNG):");
                 Console.WriteLine(base64);
+
+                // ------------------------------------------------------------
+                // Write the PNG to a temporary file for verification
+                // ------------------------------------------------------------
+                string outputPath = Path.Combine(Path.GetTempPath(), "SwissQR.png");
+                File.WriteAllBytes(outputPath, ms.ToArray());
+                Console.WriteLine($"Image saved to: {outputPath}");
             }
         }
     }
