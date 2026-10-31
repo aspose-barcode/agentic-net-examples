@@ -1,72 +1,54 @@
-// Title: Read All Detected Barcodes from an Image Using BarCodeReader
-// Description: Demonstrates how to generate a barcode image, then instantiate BarCodeReader to detect and list all barcode types present in the image.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode image and BarCodeReader to scan the image for any supported symbologies. Developers commonly use these APIs to automate barcode creation, batch‑process scanned documents, or integrate barcode scanning into .NET applications.
+// Title: Read all barcode types from an image using BarCodeReader
+// Description: Demonstrates how to instantiate Aspose.BarCode.BarCodeReader with an image file path and retrieve all detected barcode types.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader and DecodeType.AllSupportedTypes to detect multiple symbologies in a single image. Typical use cases include batch processing of scanned documents, inventory verification, and automated data capture where various barcode formats may appear. Developers often need to enumerate detected barcodes and extract their type and text for further processing.
 // Prompt: Instantiate BarCodeReader with an image file path and read all detected barcode types.
-// Tags: barcode symbology, barcode generation, barcode recognition, read, aspose.barcode, csharp, console
+// Tags: barcode, barcode recognition, decode type, all supported types, aspose.barcode, c#, console
 
 using System;
 using System.IO;
-using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Sample program that generates a barcode image, reads all barcodes from it,
-/// and outputs the detected symbology names and values.
+/// Demonstrates reading all supported barcode types from an image file using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Accepts an optional image path argument, validates the file, and prints detected barcode types and texts.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
+    /// <param name="args">Command‑line arguments; first argument may be the image file path.</param>
     static void Main(string[] args)
     {
-        // Create a unique temporary folder for the sample barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "sample.png");
+        // Determine the image path: use the first argument if provided, otherwise default to "sample.png".
+        string imagePath = args.Length > 0 ? args[0] : "sample.png";
 
-        // Generate a sample Code128 barcode image and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
-        {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // Verify that the image file was created successfully
+        // Verify that the specified image file exists before attempting to read.
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Barcode image file not found.");
+            Console.WriteLine($"Image file not found: {imagePath}");
             return;
         }
 
-        // Instantiate BarCodeReader with the image path and read all detected barcodes
-        using (var reader = new BarCodeReader(imagePath))
+        // Create a BarCodeReader that scans for all supported barcode types in the image.
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
+            // Read all barcodes detected in the image.
             BarCodeResult[] results = reader.ReadBarCodes();
 
-            // Output the detection results
+            // If no barcodes were found, inform the user.
             if (results.Length == 0)
             {
                 Console.WriteLine("No barcodes detected.");
             }
             else
             {
+                // Iterate through each detected barcode and output its type and decoded text.
                 foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
                 }
             }
-        }
-
-        // Clean up temporary files and folder
-        try
-        {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignored – cleanup failures are non‑critical for this demo
         }
     }
 }

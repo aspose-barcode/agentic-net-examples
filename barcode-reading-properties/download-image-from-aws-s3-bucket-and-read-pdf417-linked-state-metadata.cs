@@ -1,91 +1,101 @@
-// Title: Read PDF417 Linked State Metadata from an Image Downloaded from AWS S3
-// Description: Demonstrates downloading an image from an AWS S3 bucket (placeholder) and using Aspose.BarCode to read PDF417 barcode linked state metadata.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to load an image, generate a sample PDF417 barcode with linked state, and extract metadata using BarCodeReader and DecodeType.Pdf417. Developers working with barcode scanning, PDF417 symbology, or integrating cloud storage retrieval will find this pattern useful for quick prototyping and testing.
+// Title: Download image from AWS S3 and read PDF417 linked state metadata
+// Description: Demonstrates downloading a barcode image from an Amazon S3 bucket and using Aspose.BarCode to decode a PDF417 barcode, extracting its linked‑state metadata.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on PDF417 symbology. It showcases the BarCodeReader class for image‑based decoding, typical for scenarios where barcodes are stored remotely (e.g., cloud storage) and need to be processed server‑side. Developers often use this pattern to retrieve additional barcode properties such as linked state, error correction level, or segment information.
 // Prompt: Download image from AWS S3 bucket and read PDF417 linked state metadata.
-// Tags: pdf417, barcode, read, linkedstate, aws, s3, image, generation, recognition, aspose.barcode
+// Tags: pdf417, barcode, recognition, aws, s3, download, metadata, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates downloading an image (placeholder) from AWS S3 and reading PDF417 linked state metadata using Aspose.BarCode.
+/// Example program that downloads a barcode image from an AWS S3 bucket,
+/// decodes a PDF417 barcode using Aspose.BarCode, and outputs linked‑state metadata.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Downloads (or generates) an image and reads PDF417 linked state metadata.
+    /// Asynchronously downloads the image, reads the PDF417 barcode, and displays its metadata.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static async Task Main(string[] args)
     {
         // --------------------------------------------------------------------
-        // Configuration: specify the S3 bucket and object key (replace with real values when using AWS SDK)
+        // 1. Define the public S3 URL of the barcode image.
         // --------------------------------------------------------------------
-        string bucketName = "my-s3-bucket";
-        string objectKey = "sample-pdf417.png";
-
-        // Determine a temporary local path to store the downloaded image
-        string localPath = Path.Combine(Path.GetTempPath(), "downloaded_pdf417.png");
+        string s3Url = "https://example-bucket.s3.amazonaws.com/sample.png";
 
         // --------------------------------------------------------------------
-        // Attempt to download the image from S3 (placeholder implementation)
+        // 2. Create a temporary file path to store the downloaded image.
         // --------------------------------------------------------------------
-        DownloadImageFromS3(bucketName, objectKey, localPath);
+        string tempFilePath = Path.Combine(Path.GetTempPath(), "downloaded_barcode.png");
 
         // --------------------------------------------------------------------
-        // If the image was not downloaded, generate a sample PDF417 barcode with linked state
+        // 3. Download the image from S3 and write it to the temporary file.
         // --------------------------------------------------------------------
-        if (!File.Exists(localPath))
+        try
         {
-            Console.WriteLine($"Image not found at '{localPath}'. Generating a sample PDF417 barcode with linked state.");
-            GenerateSamplePdf417WithLinkedState(localPath);
-        }
-
-        // --------------------------------------------------------------------
-        // Read PDF417 linked state metadata from the image using BarCodeReader
-        // --------------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(localPath, DecodeType.Pdf417))
-        {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            using (HttpClient client = new HttpClient())
             {
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"IsLinked: {result.Extended.Pdf417.IsLinked}");
+                byte[] data = await client.GetByteArrayAsync(s3Url);
+                File.WriteAllBytes(tempFilePath, data);
+                Console.WriteLine($"Image downloaded to: {tempFilePath}");
             }
         }
-    }
-
-    // ------------------------------------------------------------------------
-    // Placeholder for AWS S3 download. In a real environment, use Amazon.S3 SDK.
-    // ------------------------------------------------------------------------
-    static void DownloadImageFromS3(string bucket, string key, string destinationPath)
-    {
-        // Example using AWS SDK (commented out because the SDK is not available in the runner):
-        // var s3Client = new AmazonS3Client();
-        // var request = new GetObjectRequest { BucketName = bucket, Key = key };
-        // using (GetObjectResponse response = s3Client.GetObjectAsync(request).Result)
-        // using (var responseStream = response.ResponseStream)
-        // using (var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write))
-        // {
-        //     responseStream.CopyTo(fileStream);
-        // }
-
-        // For the purpose of this runnable example, do nothing.
-        // The method will leave the file unchanged; if it does not exist, a sample will be generated.
-    }
-
-    // ------------------------------------------------------------------------
-    // Generates a sample PDF417 barcode image with the IsLinked property set to true.
-    // ------------------------------------------------------------------------
-    static void GenerateSamplePdf417WithLinkedState(string path)
-    {
-        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleLinkedState"))
+        catch (Exception ex)
         {
-            gen.Parameters.Barcode.XDimension.Pixels = 2;
-            gen.Parameters.Barcode.Pdf417.IsLinked = true;
-            gen.Save(path, BarCodeImageFormat.Png);
+            Console.WriteLine($"Failed to download image: {ex.Message}");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // 4. Verify that the file was successfully saved.
+        // --------------------------------------------------------------------
+        if (!File.Exists(tempFilePath))
+        {
+            Console.WriteLine("Downloaded file not found.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // 5. Set up the decoder for PDF417 barcodes.
+        // --------------------------------------------------------------------
+        BaseDecodeType decodeType = DecodeType.Pdf417;
+
+        // --------------------------------------------------------------------
+        // 6. Read the barcode and output its type, text, and linked‑state flag.
+        // --------------------------------------------------------------------
+        try
+        {
+            using (BarCodeReader reader = new BarCodeReader(tempFilePath, decodeType))
+            {
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"IsLinked: {result.Extended.Pdf417.IsLinked}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error reading barcode: {ex.Message}");
+        }
+        finally
+        {
+            // --------------------------------------------------------------------
+            // 7. Clean up the temporary file regardless of success or failure.
+            // --------------------------------------------------------------------
+            try
+            {
+                File.Delete(tempFilePath);
+            }
+            catch
+            {
+                // Suppress any exceptions during cleanup.
+            }
         }
     }
 }

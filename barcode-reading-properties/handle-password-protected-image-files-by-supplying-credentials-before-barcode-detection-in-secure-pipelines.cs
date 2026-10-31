@@ -1,83 +1,88 @@
 // Title: Detect barcodes in password‑protected PDF files
 // Description: Demonstrates opening a secured PDF with a password, converting each page to an image, and reading any barcodes present.
-// Category-Description: This example belongs to the Aspose.BarCode for .NET barcode recognition category, illustrating how to work with protected documents using Aspose.Pdf and Aspose.BarCode. It shows the use of Document, PdfConverter, and BarCodeReader classes to extract barcodes from PDFs in secure processing pipelines, a common requirement for automated invoice or ticket processing systems.
+// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Pdf integration category, showing how to combine PdfDocument and PdfConverter with BarCodeReader to process protected documents. Developers often need to extract barcodes from confidential PDFs in automated pipelines, requiring credential handling and page‑wise image conversion before detection.
 // Prompt: Handle password‑protected image files by supplying credentials before barcode detection in secure pipelines.
-// Tags: pdf, password, barcode detection, aspnet, aspose.barcode, aspose.pdf, decode, image conversion
+// Tags: pdf, password, barcode detection, aspnet, aspose.barcode, aspose.pdf, image conversion, automation
 
 using System;
 using System.IO;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Pdf;
 using Aspose.Pdf.Facades;
 
 /// <summary>
-/// Example program that opens a password‑protected PDF, converts each page to an image,
-/// and reads any barcodes found on those pages using Aspose.BarCode.
+/// Demonstrates barcode detection in a password‑protected PDF using Aspose.BarCode and Aspose.Pdf.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Opens the PDF with the supplied password, converts each page to an image, and reads all supported barcodes.
     /// </summary>
     static void Main()
     {
-        // Path to the password‑protected PDF file
+        // Define the path to the protected PDF and its password.
         string pdfPath = "protected.pdf";
+        string password = "myPassword";
 
-        // Password required to open the PDF
-        string password = "secret";
-
-        // Verify that the PDF file exists before proceeding
+        // Verify that the PDF file exists before proceeding.
         if (!File.Exists(pdfPath))
         {
             Console.WriteLine($"File not found: {pdfPath}");
             return;
         }
 
-        // Open the PDF document using the supplied password
-        using (var pdfDocument = new Document(pdfPath, password))
+        try
         {
-            // Initialize a PDF‑to‑image converter with barcode‑optimization enabled
-            using (var pdfConverter = new PdfConverter(pdfDocument))
+            // Open the PDF document using the provided password.
+            using (var pdfDocument = new Aspose.Pdf.Document(pdfPath, password))
             {
-                pdfConverter.RenderingOptions.BarcodeOptimization = true;
-
-                // Iterate through each page of the PDF
-                int pageCount = pdfDocument.Pages.Count;
-                for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
+                // Initialize a PDF converter to render pages as images.
+                using (var converter = new PdfConverter(pdfDocument))
                 {
-                    // Configure the converter to process a single page
-                    pdfConverter.StartPage = pageNumber;
-                    pdfConverter.EndPage = pageNumber;
-                    pdfConverter.DoConvert();
+                    // Enable barcode optimization for better detection performance.
+                    converter.RenderingOptions.BarcodeOptimization = true;
 
-                    // Capture the rendered page as an image stream
-                    using (var imageStream = new MemoryStream())
+                    int pageCount = pdfDocument.Pages.Count;
+
+                    // Process each page individually.
+                    for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
                     {
-                        pdfConverter.GetNextImage(imageStream);
-                        imageStream.Position = 0; // Reset stream position for reading
+                        // Set the range to a single page for conversion.
+                        converter.StartPage = pageNumber;
+                        converter.EndPage = pageNumber;
+                        converter.DoConvert();
 
-                        // Create a barcode reader for the image stream, supporting all barcode types
-                        using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                        // Retrieve the rendered image into a memory stream.
+                        using (var imageStream = new MemoryStream())
                         {
-                            bool anyFound = false;
+                            converter.GetNextImage(imageStream);
+                            imageStream.Position = 0; // Reset stream position for reading.
 
-                            // Enumerate all detected barcodes on the current page
-                            foreach (var result in reader.ReadBarCodes())
+                            try
                             {
-                                anyFound = true;
-                                Console.WriteLine($"Page {pageNumber}: Type = {result.CodeTypeName}, Text = {result.CodeText}");
+                                // Create a barcode reader that supports all barcode types.
+                                using (var reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                                {
+                                    // Iterate through all detected barcodes on the current page.
+                                    foreach (var result in reader.ReadBarCodes())
+                                    {
+                                        Console.WriteLine($"Page {pageNumber}: Type={result.CodeTypeName}, Text={result.CodeText}");
+                                    }
+                                }
                             }
-
-                            // Inform the user if no barcodes were detected on this page
-                            if (!anyFound)
+                            catch (Exception ex)
                             {
-                                Console.WriteLine($"Page {pageNumber}: No barcodes detected.");
+                                // Handle any errors that occur during barcode reading.
+                                Console.WriteLine($"Error reading barcodes on page {pageNumber}: {ex.Message}");
                             }
                         }
                     }
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            // Handle errors related to opening or processing the PDF document.
+            Console.WriteLine($"Failed to process PDF: {ex.Message}");
         }
     }
 }

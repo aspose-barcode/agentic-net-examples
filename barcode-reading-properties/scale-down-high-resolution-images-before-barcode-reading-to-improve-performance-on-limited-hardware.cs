@@ -1,8 +1,8 @@
-// Title: Scale down high‑resolution barcode image before reading
+// Title: Scale Down High‑Resolution Barcode Image for Faster Reading
 // Description: Demonstrates generating a high‑resolution barcode, scaling it down, and reading it to improve performance on limited hardware.
-// Category-Description: This example belongs to the Aspose.BarCode image preprocessing category. It shows how to use BarcodeGenerator to create a barcode, Aspose.Drawing to resize images, and BarCodeReader to decode barcodes. Typical use cases include reducing image size to speed up recognition on devices with constrained resources, such as embedded systems or mobile devices. Developers often need to balance image quality with processing speed, and this snippet illustrates the common workflow.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, Image manipulation via Aspose.Drawing to reduce image size, and BarCodeReader for decoding. Developers often need to handle high‑resolution scans on constrained devices, making image scaling a common performance‑optimizing technique.
 // Prompt: Scale down high‑resolution images before barcode reading to improve performance on limited hardware.
-// Tags: barcode, scaling, image preprocessing, performance, code128, generation, recognition, aspose.barcode, aspose.drawing
+// Tags: barcode, scaling, performance, code128, generation, recognition, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,69 +12,97 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates creating a high‑resolution barcode, scaling the image down,
-/// and reading the barcode from the scaled image to improve recognition performance.
+/// Generates a high‑resolution barcode, scales the image down, and reads the barcode from the scaled image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, rescales it, reads it, and cleans up temporary files.
+    /// Entry point of the example. Executes the barcode generation, scaling, and recognition workflow.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeScaleDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary folder for intermediate files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeScaleDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define file paths for the original high‑resolution and the scaled images
-        string highResPath = Path.Combine(tempFolder, "high.png");
-        string scaledPath = Path.Combine(tempFolder, "scaled.png");
+        // Define file paths for the high‑resolution and scaled images
+        string highResPath = Path.Combine(tempDir, "highres.png");
+        string scaledPath = Path.Combine(tempDir, "scaled.png");
 
-        // Generate a high‑resolution barcode image (300 DPI) and save it to disk
+        // ------------------------------------------------------------
+        // Generate a high‑resolution barcode image (600 DPI)
+        // ------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            generator.Parameters.Resolution = 300f; // high DPI for better quality
+            generator.Parameters.Resolution = 600f; // Set high DPI for the barcode
             generator.Save(highResPath, BarCodeImageFormat.Png);
         }
 
-        // Scale down the high‑resolution image to reduce processing load during recognition
-        using (Image original = Image.FromFile(highResPath))
+        // Verify that the high‑resolution image was created successfully
+        if (!File.Exists(highResPath))
         {
-            int newWidth = original.Width / 3;
-            int newHeight = original.Height / 3;
+            Console.WriteLine("Failed to create high‑resolution barcode image.");
+            return;
+        }
 
-            using (var bitmap = new Bitmap(newWidth, newHeight))
+        // ------------------------------------------------------------
+        // Scale down the image to half its original dimensions
+        // ------------------------------------------------------------
+        using (var original = Image.FromFile(highResPath))
+        {
+            int newWidth = original.Width / 2;
+            int newHeight = original.Height / 2;
+
+            using (var scaled = new Bitmap(newWidth, newHeight))
             {
-                using (Graphics graphics = Graphics.FromImage(bitmap))
+                using (var graphics = Graphics.FromImage(scaled))
                 {
-                    // Draw the original image onto the smaller bitmap
+                    // Draw the original image onto the scaled bitmap
                     graphics.DrawImage(original, 0, 0, newWidth, newHeight);
                 }
 
-                // Save the scaled image for barcode reading
-                bitmap.Save(scaledPath, ImageFormat.Png);
+                // Save the scaled image as PNG
+                scaled.Save(scaledPath, ImageFormat.Png);
             }
         }
 
-        // Read barcodes from the scaled image using the BarCodeReader
+        // Verify that the scaled image was created successfully
+        if (!File.Exists(scaledPath))
+        {
+            Console.WriteLine("Failed to create scaled barcode image.");
+            return;
+        }
+
+        // ------------------------------------------------------------
+        // Read barcodes from the scaled image
+        // ------------------------------------------------------------
         using (var reader = new BarCodeReader(scaledPath, DecodeType.AllSupportedTypes))
         {
+            bool anyFound = false;
             foreach (var result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                anyFound = true;
+                Console.WriteLine($"Detected Type: {result.CodeType}, Text: {result.CodeText}");
+            }
+
+            if (!anyFound)
+            {
+                Console.WriteLine("No barcodes detected in the scaled image.");
             }
         }
 
-        // Attempt to clean up temporary files and folder; ignore any errors
+        // ------------------------------------------------------------
+        // Cleanup temporary files and directory (optional)
+        // ------------------------------------------------------------
         try
         {
             File.Delete(highResPath);
             File.Delete(scaledPath);
-            Directory.Delete(tempFolder);
+            Directory.Delete(tempDir);
         }
         catch
         {
-            // Cleanup failures are non‑critical for this demo
+            // Ignore any errors during cleanup
         }
     }
 }
