@@ -1,35 +1,37 @@
-// Title: Mailmark 4-State Barcode Generation and Decoding with Failure Logging
-// Description: Demonstrates generating a Mailmark 4‑state barcode, decoding it, and logging any decoding failures for troubleshooting.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing the use of ComplexBarcodeGenerator for creating Mailmark barcodes and BarCodeReader for decoding them. Developers working with postal or logistics solutions often need to generate Mailmark symbols, read them from images, and capture detailed error information when decoding fails. The code illustrates typical API classes (MailmarkCodetext, ComplexBarcodeGenerator, BarCodeReader) and common patterns for handling success and failure scenarios.
-/// Prompt: Implement logging of decoding failures, capturing raw image path and exception details for Mailmark troubleshooting.
-// Tags: mailmark, barcode, generation, recognition, logging, complexbarcode, aspose.barcode
+// Title: Mailmark 4‑State Barcode Generation and Decoding with Failure Logging
+// Description: Demonstrates generating a Mailmark 4‑State barcode, decoding it, and logging any decoding failures, including missing files and parsing errors.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator for creating Mailmark barcodes, BarCodeReader for decoding, and handling DecodeType.Mailmark. Developers often need to generate Mailmark barcodes for logistics, read them from images, and capture detailed logs when decoding fails for troubleshooting.
+// Prompt: Implement logging of decoding failures, capturing raw image path and exception details for Mailmark troubleshooting.
+// Tags: mailmark, barcode, generation, decoding, logging, aspnet, aspose.barcode, complexbarcode, error-handling
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates Mailmark 4‑state barcode generation, decoding, and logging of failures.
+/// Demonstrates Mailmark barcode generation, decoding, and failure logging using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Mailmark barcode, attempts to decode it,
-    /// and logs any decoding failures to a file for later analysis.
+    /// Entry point of the demo. Generates a Mailmark barcode, attempts decoding, and logs any failures.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to store the barcode image and log file.
+        // Create a unique temporary folder for demo files
         string tempFolder = Path.Combine(Path.GetTempPath(), "MailmarkDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define paths for the generated image and the failure log.
-        string imagePath = Path.Combine(tempFolder, "Mailmark4State.png");
+        // Path for the log file that will capture decoding failures
         string logPath = Path.Combine(tempFolder, "decode_failures.log");
 
-        // Configure Mailmark 4‑state barcode parameters.
+        // Generate a Mailmark 4‑State barcode image
+        string imagePath = Path.Combine(tempFolder, "Mailmark4State.png");
         var mailmark = new MailmarkCodetext
         {
             Format = 4,
@@ -40,63 +42,93 @@ class Program
             DestinationPostCodePlusDPS = "EF61AH8T "
         };
 
-        // Generate the barcode image using ComplexBarcodeGenerator.
+        // Use ComplexBarcodeGenerator to create the barcode image
         using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Attempt to read the generated barcode and handle possible failures.
+        // Attempt to read the generated barcode and log any issues
+        TryDecodeImage(imagePath, logPath);
+
+        // Attempt to read a non‑existent image to demonstrate exception logging
+        string missingPath = Path.Combine(tempFolder, "nonexistent.png");
+        TryDecodeImage(missingPath, logPath);
+
+        Console.WriteLine($"Demo completed. Log file: {logPath}");
+    }
+
+    /// <summary>
+    /// Tries to decode a barcode from the specified image path, logging failures or missing results.
+    /// </summary>
+    /// <param name="path">Path to the image file containing the barcode.</param>
+    /// <param name="logPath">Path to the log file where failures are recorded.</param>
+    static void TryDecodeImage(string path, string logPath)
+    {
         try
         {
-            BaseDecodeType decodeType = DecodeType.Mailmark;
-            using (var reader = new BarCodeReader(imagePath, decodeType))
-            {
-                BarCodeResult[] results = reader.ReadBarCodes();
+            // Verify that the image file exists before attempting to read
+            if (!File.Exists(path))
+                throw new FileNotFoundException("Image file not found.", path);
 
+            // Initialize the barcode reader for Mailmark symbology
+            using (var reader = new BarCodeReader(path, DecodeType.Mailmark))
+            {
+                var results = reader.ReadBarCodes();
+
+                // No barcodes detected – log this condition
                 if (results.Length == 0)
                 {
-                    // No barcode detected – treat as a failure and log it.
-                    LogFailure(imagePath, new Exception("No barcode detected"));
+                    LogNoResult(logPath, path);
                 }
                 else
                 {
-                    // Output successful decoding results.
+                    // Process each detected barcode
                     foreach (var result in results)
                     {
-                        Console.WriteLine($"CodeText: {result.CodeText}");
-                        Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                        Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+                        var decoded = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
+                        if (decoded != null)
+                        {
+                            Console.WriteLine($"Decoded Mailmark from '{path}':");
+                            Console.WriteLine($"  ItemID: {decoded.ItemID}");
+                            Console.WriteLine($"  SupplychainID: {decoded.SupplychainID}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Barcode read but could not parse Mailmark codetext in '{path}'.");
+                        }
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            // Log any exception that occurs during the decoding process.
-            LogFailure(imagePath, ex);
+            // Log any exception that occurs during decoding
+            LogFailure(logPath, path, ex);
         }
-
-        // Inform the user where the log file is located.
-        Console.WriteLine($"Log file written to: {logPath}");
     }
 
     /// <summary>
-    /// Appends a detailed entry to the failure log, including timestamp, image path, and exception information.
+    /// Writes detailed information about a decoding failure to the log file.
     /// </summary>
-    /// <param name="imagePath">Full path to the barcode image that failed to decode.</param>
-    /// <param name="ex">Exception that was thrown during decoding.</param>
-    static void LogFailure(string imagePath, Exception ex)
+    /// <param name="logPath">Path to the log file.</param>
+    /// <param name="imagePath">Path to the image that caused the failure.</param>
+    /// <param name="ex">Exception thrown during decoding.</param>
+    static void LogFailure(string logPath, string imagePath, Exception ex)
     {
-        // Resolve the log file path based on the image's directory.
-        string logPath = Path.Combine(Path.GetDirectoryName(imagePath) ?? "", "decode_failures.log");
+        string message = $"{DateTime.Now}: Failed to decode image '{imagePath}'. Exception: {ex.Message}{Environment.NewLine}{ex.StackTrace}{Environment.NewLine}";
+        File.AppendAllText(logPath, message);
+    }
 
-        // Build a formatted log entry.
-        string entry = $"[{DateTime.Now}] Decoding failure for image: {imagePath}{Environment.NewLine}" +
-                       $"Exception: {ex.GetType().FullName} - {ex.Message}{Environment.NewLine}{Environment.NewLine}";
-
-        // Append the entry to the log file.
-        File.AppendAllText(logPath, entry);
+    /// <summary>
+    /// Logs a message indicating that no barcode was detected in the specified image.
+    /// </summary>
+    /// <param name="logPath">Path to the log file.</param>
+    /// <param name="imagePath">Path to the image with no detectable barcode.</param>
+    static void LogNoResult(string logPath, string imagePath)
+    {
+        string message = $"{DateTime.Now}: No barcode detected in image '{imagePath}'.{Environment.NewLine}";
+        File.AppendAllText(logPath, message);
     }
 }

@@ -1,34 +1,54 @@
-// Title: Multi‑threaded Mailmark barcode decoding using BarCodeReader
-// Description: Demonstrates generating a batch of Mailmark barcode images and decoding them with BarCodeReader configured for multi‑threaded processing to speed up large‑scale image analysis.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on complex barcode types such as Mailmark. It showcases key API classes like ComplexBarcodeGenerator, MailmarkCodetext, BarCodeReader, and ProcessorSettings, illustrating typical use cases where developers need to process many barcode images efficiently, often leveraging multi‑core CPUs for faster decoding.
+// Title: Multithreaded Mailmark Barcode Decoding Example
+// Description: Demonstrates configuring Aspose.BarCode's BarCodeReader for multithreaded processing and decoding a batch of Mailmark barcode images.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on performance optimization using the BarCodeReader class. It shows how to enable all CPU cores, adjust thread‑pool limits, generate sample Mailmark barcodes, and read them efficiently. Developers working with large volumes of barcode images can use these techniques to accelerate decoding in batch processing scenarios.
 // Prompt: Configure BarCodeReader for multi‑threaded processing to accelerate decoding of large Mailmark image batches.
-// Tags: mailmark, decoding, multithreading, console, aspose.barcode, aspose.barcode.recognition, aspose.barcode.generation, aspose.barcode.complexbarcode
+// Tags: mailmark, barcode, multithreading, reader, aspose.barcode, image, batch processing
 
 using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Aspose.BarCode.Generation;
+using System.Threading;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates multi‑threaded decoding of Mailmark barcodes using Aspose.BarCode.
+/// Sample program that configures multithreaded barcode reading,
+/// generates a set of Mailmark barcode images, and decodes them using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates sample Mailmark images, configures the reader for multi‑threaded processing,
-    /// decodes each image, and cleans up temporary resources.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary folder for the batch
+        // ------------------------------------------------------------
+        // Configure BarCodeReader to use all available CPU cores.
+        // ------------------------------------------------------------
+        BarCodeReader.ProcessorSettings.UseAllCores = true;
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = Environment.ProcessorCount;
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
+
+        // ------------------------------------------------------------
+        // Optionally adjust the .NET ThreadPool limits to match the core count.
+        // ------------------------------------------------------------
+        int workerThreads, completionPortThreads;
+        ThreadPool.GetMaxThreads(out workerThreads, out completionPortThreads);
+        ThreadPool.SetMaxThreads(Math.Max(Environment.ProcessorCount * 4, workerThreads), completionPortThreads);
+        ThreadPool.GetMinThreads(out workerThreads, out completionPortThreads);
+        ThreadPool.SetMinThreads(Math.Max(Environment.ProcessorCount * 4, workerThreads), completionPortThreads);
+
+        // ------------------------------------------------------------
+        // Create a temporary folder to store the generated Mailmark images.
+        // ------------------------------------------------------------
         string batchFolder = Path.Combine(Path.GetTempPath(), "MailmarkBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(batchFolder);
 
-        // Generate a small set of Mailmark barcode images
+        // ------------------------------------------------------------
+        // Generate a small set of Mailmark barcode images.
+        // ------------------------------------------------------------
         List<string> imageFiles = new List<string>();
         for (int i = 0; i < 5; i++)
         {
@@ -42,20 +62,17 @@ class Program
                 DestinationPostCodePlusDPS = "EF61AH8T "
             };
 
-            string filePath = Path.Combine(batchFolder, $"mailmark_{i}.png");
+            string imagePath = Path.Combine(batchFolder, $"mailmark_{i}.png");
             using (var generator = new ComplexBarcodeGenerator(mailmark))
             {
-                // Save the generated barcode as PNG
-                generator.Save(filePath, BarCodeImageFormat.Png);
+                generator.Save(imagePath, BarCodeImageFormat.Png);
             }
-            imageFiles.Add(filePath);
+            imageFiles.Add(imagePath);
         }
 
-        // Configure multithreaded processing for BarCodeReader
-        BarCodeReader.ProcessorSettings.UseAllCores = true;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
-
-        // Process each generated image
+        // ------------------------------------------------------------
+        // Decode each generated image using BarCodeReader.
+        // ------------------------------------------------------------
         foreach (string file in imageFiles)
         {
             if (!File.Exists(file))
@@ -64,34 +81,40 @@ class Program
                 continue;
             }
 
-            using (var reader = new BarCodeReader(file, DecodeType.Mailmark))
+            try
             {
-                Stopwatch sw = Stopwatch.StartNew();
-                var results = reader.ReadBarCodes();
-                sw.Stop();
-
-                Console.WriteLine($"File: {Path.GetFileName(file)} - Detected: {results.Length} barcode(s) in {sw.ElapsedMilliseconds} ms");
-                foreach (var result in results)
+                using (var reader = new BarCodeReader(file, DecodeType.Mailmark))
                 {
-                    Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    if (results.Length == 0)
+                    {
+                        Console.WriteLine($"No barcode detected in {Path.GetFileName(file)} (Mailmark reading not supported).");
+                    }
+                    else
+                    {
+                        foreach (var result in results)
+                        {
+                            Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                        }
+                    }
                 }
-
-                // Note: Mailmark 4‑state recognition is not supported; zero results are expected.
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Failed to load image '{Path.GetFileName(file)}': {ex.Message}");
             }
         }
 
-        // Clean up temporary files (optional)
+        // ------------------------------------------------------------
+        // Clean up temporary files (optional).
+        // ------------------------------------------------------------
         try
         {
-            foreach (var file in imageFiles)
-            {
-                File.Delete(file);
-            }
-            Directory.Delete(batchFolder);
+            Directory.Delete(batchFolder, true);
         }
         catch
         {
-            // Ignore any cleanup errors
+            // Ignore cleanup errors.
         }
     }
 }

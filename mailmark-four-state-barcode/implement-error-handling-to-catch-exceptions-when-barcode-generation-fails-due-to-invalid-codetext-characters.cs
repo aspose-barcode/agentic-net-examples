@@ -1,47 +1,59 @@
-// Title: Generate ITF6 barcode with error handling for invalid codetext
-// Description: Demonstrates generating an ITF6 barcode using Aspose.BarCode and handling errors when the provided codetext does not meet the symbology requirements.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure the BarcodeGenerator, set validation options, and catch exceptions for invalid input. It showcases key classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, which developers use to create barcodes in various formats and need robust error handling for incorrect codetext.
+// Title: Barcode generation with error handling for invalid codetext
+// Description: Demonstrates creating a barcode image, handling errors when the codetext is invalid for the selected symbology.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showing how to use BarcodeGenerator, configure ThrowExceptionWhenCodeTextIncorrect, and catch exceptions during Save. Developers often need to validate codetext and handle generation failures when integrating barcode creation into automated workflows or CI pipelines.
 // Prompt: Implement error handling to catch exceptions when barcode generation fails due to invalid Codetext characters.
-// Tags: itf6, barcode, error-handling, generation, aspnet, aspose.barcode, png
+// Tags: barcode, symbology, error handling, generation, png, aspose.barcode, code128, itf6
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
-/// <summary>
-/// Demonstrates ITF6 barcode generation with validation and error handling.
-/// </summary>
-class Program
+namespace BarcodeErrorHandlingDemo
 {
     /// <summary>
-    /// Entry point. Generates an ITF6 barcode, validates codetext, and handles generation errors.
+    /// Demonstrates barcode generation with proper error handling for invalid codetext.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Create a unique temporary directory for the output file
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-
-        // Define the full path for the generated PNG image
-        string outputPath = Path.Combine(outputDir, "invalid_itf6.png");
-
-        // ITF6 requires a 6‑digit numeric codetext; "12" is intentionally invalid to trigger an error
-        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.ITF6, "12"))
+        /// <summary>
+        /// Entry point of the demo. Generates a valid barcode and attempts to generate an invalid one,
+        /// catching any exceptions that occur due to incorrect codetext.
+        /// </summary>
+        static void Main()
         {
-            // Instruct the generator to throw an exception when the codetext does not satisfy the symbology rules
-            gen.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+            // Create a unique temporary directory for output files.
+            string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(outputDir);
 
-            try
+            // -------------------- Generate a valid barcode --------------------
+            string validPath = Path.Combine(outputDir, "valid.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Valid123"))
             {
-                // Attempt to save the barcode image; this will fail due to invalid codetext
-                gen.Save(outputPath, BarCodeImageFormat.Png);
-                Console.WriteLine("Barcode generated successfully: " + outputPath);
+                // Save the barcode image in PNG format.
+                generator.Save(validPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Valid barcode saved to: {validPath}");
             }
-            catch (Exception ex)
+
+            // -------------------- Attempt to generate an invalid barcode --------------------
+            string invalidPath = Path.Combine(outputDir, "invalid.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.ITF6, "12"))
             {
-                // Capture and display the error message for debugging or logging purposes
-                Console.WriteLine("Barcode generation failed: " + ex.Message);
+                // Instruct the generator to throw an exception if the codetext is incorrect for the symbology.
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+
+                try
+                {
+                    // This call is expected to fail because "12" is not a valid ITF6 codetext.
+                    generator.Save(invalidPath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Invalid barcode saved to: {invalidPath}");
+                }
+                catch (Exception ex)
+                {
+                    // Handle the generation error and output a friendly message.
+                    Console.WriteLine($"Error generating barcode: {ex.Message}");
+                }
             }
         }
     }
