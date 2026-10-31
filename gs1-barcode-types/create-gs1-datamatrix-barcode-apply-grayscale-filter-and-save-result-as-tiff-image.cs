@@ -1,66 +1,63 @@
-// Title: Generate GS1 DataMatrix Barcode, Apply Grayscale Filter, Save as TIFF
-// Description: This example creates a GS1 DataMatrix barcode, converts the generated image to grayscale, and saves it as a TIFF file.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation (BarcodeGenerator, EncodeTypes) combined with Aspose.Drawing image manipulation (Bitmap, Color). Typical for developers needing to produce machine‑readable GS1 DataMatrix symbols, apply custom visual effects, and export to lossless formats such as TIFF for printing or archival. This snippet belongs to a collection of barcode rendering and post‑processing examples.
+// Title: Create GS1 DataMatrix barcode with grayscale filter and save as TIFF
+// Description: Demonstrates generating a GS1 DataMatrix barcode, converting the image to grayscale, and saving it as a TIFF file.
+// Category-Description: This example belongs to the Aspose.BarCode image processing category, illustrating how to use BarcodeGenerator to create GS1 DataMatrix symbols, manipulate the resulting Bitmap with Aspose.Drawing, and export the image in a specific format. Developers often need to generate barcodes, apply visual effects, and store them in formats like TIFF for printing or archival purposes.
 // Prompt: Create a GS1 DataMatrix barcode, apply a grayscale filter, and save the result as a TIFF image.
-// Tags: gs1datamatrix, datamatrix, barcode, grayscale, tiff, image processing, aspose.barcode, aspose.drawing
+// Tags: datamatrix, gs1, grayscale, tiff, aspose.barcode, imageprocessing, bitmap
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates creating a GS1 DataMatrix barcode, applying a grayscale filter, and saving it as a TIFF image.
+/// Generates a GS1 DataMatrix barcode, applies a grayscale filter, and saves the result as a TIFF image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates the barcode, processes the image, and writes the output file.
+    /// Entry point of the example. Creates the barcode, processes the image, and writes the output file.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output TIFF file
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1datamatrix_grayscale.tiff");
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "GS1DataMatrix_Grayscale.tif");
 
-        // GS1 DataMatrix barcode content (Application Identifier 01 and 21)
-        string codeText = "(01)12345678901231(21)ASPOSE";
+        // GS1 DataMatrix barcode text containing a valid GTIN-14 Application Identifier (01).
+        string gs1CodeText = "(01)00123456789012";
 
-        // Initialize the barcode generator for GS1 DataMatrix with the specified text
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
+        // Initialize the barcode generator for GS1 DataMatrix with the specified text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, gs1CodeText))
         {
-            // Generate the barcode image as an Aspose.Drawing.Bitmap
+            // Generate the barcode image as a Bitmap.
             using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Iterate over each pixel to convert the image to grayscale
+                // Iterate over each pixel to convert the image to grayscale.
                 for (int y = 0; y < bitmap.Height; y++)
                 {
                     for (int x = 0; x < bitmap.Width; x++)
                     {
-                        // Retrieve the original pixel color
+                        // Retrieve the original pixel color.
                         Color original = bitmap.GetPixel(x, y);
 
-                        // Compute the average of RGB components to obtain a gray value
-                        int gray = (original.R + original.G + original.B) / 3;
+                        // Compute the luminance using standard NTSC coefficients.
+                        int gray = (int)(original.R * 0.3f + original.G * 0.59f + original.B * 0.11f);
 
-                        // Preserve the original alpha channel while setting RGB to the gray value
+                        // Create a new grayscale color preserving the original alpha channel.
                         Color grayColor = Color.FromArgb(original.A, gray, gray, gray);
 
-                        // Apply the grayscale color back to the pixel
+                        // Set the pixel to the new grayscale color.
                         bitmap.SetPixel(x, y, grayColor);
                     }
                 }
 
-                // Save the processed bitmap as a TIFF image using a file stream
-                using (FileStream fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
-                {
-                    bitmap.Save(fs, ImageFormat.Tiff);
-                }
+                // Save the processed bitmap as a TIFF image to the defined path.
+                bitmap.Save(outputPath, ImageFormat.Tiff);
             }
         }
 
-        // Inform the user where the file has been saved
+        // Inform the user where the file has been saved.
         Console.WriteLine($"GS1 DataMatrix barcode saved as grayscale TIFF at: {outputPath}");
     }
 }

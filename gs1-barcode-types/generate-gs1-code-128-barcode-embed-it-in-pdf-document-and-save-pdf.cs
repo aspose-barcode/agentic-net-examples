@@ -1,8 +1,8 @@
-// Title: Generate GS1 Code 128 Barcode and Embed in PDF
-// Description: This example creates a GS1 Code 128 barcode, renders it as a PNG image, inserts the image into a PDF document, and saves the PDF file.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation (using BarcodeGenerator, EncodeTypes) together with Aspose.Pdf PDF creation (using Document, Image). Typical for developers who need to embed machine‑readable barcodes into printable documents such as invoices, shipping labels, or product catalogs. The example shows how to configure barcode dimensions, stream the image, and place it on a PDF page.
+// Title: Generate GS1 Code 128 barcode and embed in PDF
+// Description: Demonstrates creating a GS1 Code 128 barcode, converting it to an image, and placing it into a PDF document saved to disk.
+// Category-Description: This example belongs to the Aspose.BarCode for .NET barcode generation category, illustrating how to use BarcodeGenerator with EncodeTypes.GS1Code128, customize barcode appearance, and integrate the generated image into an Aspose.Pdf Document. Typical use cases include adding product identifiers to invoices, shipping labels, or reports where a PDF output is required. Developers often need to combine barcode creation with PDF manipulation using Aspose.BarCode and Aspose.Pdf APIs.
 // Prompt: Generate a GS1 Code 128 barcode, embed it in a PDF document, and save the PDF.
-// Tags: gs1, code128, barcode, pdf generation, aspose.barcode, aspose.pdf, image embedding, barcode generation
+// Tags: barcode, gs1code128, pdf, aspose.barcode, aspose.pdf, generation, image, embed
 
 using System;
 using System.IO;
@@ -16,56 +16,52 @@ using Aspose.Pdf;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, adds it to a PDF, and writes the PDF to disk.
+    /// Entry point of the example. Creates the barcode, adds it to a PDF page, and writes the PDF file.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the GS1 data string (Application Identifier 01 for GTIN).
-        string codeText = "(01)12345678901231";
+        // Define the output PDF file path in the current directory.
+        string outputPdfPath = Path.Combine(Directory.GetCurrentDirectory(), "GS1Code128.pdf");
 
-        // Initialize the barcode generator with GS1 Code 128 symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, codeText))
+        // Initialize the barcode generator for GS1 Code 128 with the required data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1Code128, "(01)12345678901231"))
         {
-            // Set the X‑dimension (module width) to 2 pixels for better readability.
+            // Set barcode visual parameters.
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
 
             // Render the barcode to a memory stream in PNG format.
-            var barcodeStream = new MemoryStream();
-            generator.Save(barcodeStream, BarCodeImageFormat.Png);
-            barcodeStream.Position = 0; // Reset stream position for reading.
-
-            // Create a new PDF document.
-            using (var pdfDoc = new Document())
+            using (var barcodeStream = new MemoryStream())
             {
-                // Add a page to the PDF.
-                var page = pdfDoc.Pages.Add();
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                barcodeStream.Position = 0; // Reset stream position for reading.
 
-                // Create an Image object that uses the barcode stream.
-                var pdfImage = new Image
+                // Create a new PDF document.
+                using (var pdfDoc = new Document())
                 {
-                    ImageStream = barcodeStream,
-                    FixWidth = 200,   // Desired width of the barcode image in the PDF.
-                    FixHeight = 100,  // Desired height of the barcode image in the PDF.
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
-                };
+                    // Add a page to the PDF.
+                    var page = pdfDoc.Pages.Add();
 
-                // Add the image to the page's paragraph collection.
-                page.Paragraphs.Add(pdfImage);
+                    // Create an image object from the barcode stream.
+                    var pdfImage = new Aspose.Pdf.Image
+                    {
+                        ImageStream = barcodeStream,
+                        FixWidth = 200,
+                        FixHeight = 200,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
 
-                // Determine the output file path in the current working directory.
-                string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "GS1Code128.pdf");
+                    // Add the image to the page's paragraph collection.
+                    page.Paragraphs.Add(pdfImage);
 
-                // Save the PDF document to disk.
-                pdfDoc.Save(outputPath);
+                    // Save the PDF document to the specified path.
+                    pdfDoc.Save(outputPdfPath);
+                }
             }
-
-            // Clean up the memory stream.
-            barcodeStream.Dispose();
         }
 
-        // Inform the user that the PDF was generated successfully.
-        Console.WriteLine("PDF with GS1 Code 128 barcode generated successfully.");
+        // Inform the user where the PDF was saved.
+        Console.WriteLine($"PDF saved to: {outputPdfPath}");
     }
 }

@@ -1,52 +1,43 @@
-// Title: Generate GS1 DataMatrix Barcode and Save as High‑Resolution TIFF
-// Description: Demonstrates creating a GS1 DataMatrix barcode, configuring a square ECC200 version, and exporting it as a 300 dpi TIFF image suitable for print.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It shows how to use the BarcodeGenerator class with EncodeTypes.GS1DataMatrix, set resolution, select DataMatrix version and ECC type, and save the result in a TIFF format. Developers working on printing or packaging solutions often need to generate GS1‑compliant DataMatrix symbols with precise dimensions and high‑resolution output.
+// Title: Generate a GS1 DataMatrix barcode and save as high‑resolution TIFF
+// Description: Demonstrates creating a GS1 DataMatrix barcode with a square shape, setting printing‑ready resolution, and exporting it to a TIFF image file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters such as symbology, version, module size, colors, and image resolution using the BarcodeGenerator class. Typical use cases include generating machine‑readable GS1 DataMatrix codes for product labeling and printing high‑quality images for packaging. Developers often need to customize barcode appearance and output format for integration into automated printing workflows.
 // Prompt: Create a GS1 DataMatrix barcode, specify square shape, and export as high‑resolution TIFF for printing.
-// Tags: gs1, datamatrix, barcode, generation, tiff, resolution, printing, aspose.barcode, aspose.barcode.generation
+// Tags: gs1datamatrix, datamatrix, barcode, generation, tiff, highresolution, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a GS1 DataMatrix barcode and saves it as a high‑resolution TIFF image.
+/// Demonstrates generating a GS1 DataMatrix barcode and saving it as a high‑resolution TIFF image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Generates the barcode, configures its appearance and resolution, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the full output file path (GS1DataMatrix.tiff in the current directory)
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "GS1DataMatrix.tiff");
+        // Determine output file path in the current directory
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gs1_datamatrix.tiff");
+        // GS1 DataMatrix payload (Application Identifier 01 with GTIN)
+        string codeText = "(01)01234567890128";
 
-        // Ensure the target directory exists; create it if necessary
-        string outputDir = Path.GetDirectoryName(outputPath);
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // GS1 DataMatrix code text (GTIN‑14 example)
-        string codeText = "(01)12345678901231";
-
-        // Create and configure the barcode generator
+        // Initialize the barcode generator with GS1 DataMatrix symbology and the payload
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
         {
-            // Set a high resolution (300 dpi) for print‑ready output
+            // Set image resolution to 300 DPI for high‑quality printing
             generator.Parameters.Resolution = 300f;
-
-            // Choose a square ECC200 version (32 × 32 modules) to enforce a square shape
+            // Choose a square DataMatrix version (32x32 modules)
             generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
-            generator.Parameters.Barcode.DataMatrix.EccType = DataMatrixEccType.Ecc200;
-
-            // Optional: disable filled bars for DataMatrix (default is false)
-            generator.Parameters.Barcode.FilledBars = false;
-
-            // Save the generated barcode as a high‑resolution TIFF image
+            // Define the size of a single module (2 points)
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            // Set barcode foreground and background colors
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            // Save the generated barcode as a TIFF image
             generator.Save(outputPath, BarCodeImageFormat.Tiff);
         }
 
