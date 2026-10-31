@@ -1,43 +1,40 @@
-// Title: Generate MaxiCode Mode 4 Barcode and Save as BMP
-// Description: Creates a MaxiCode barcode in Mode 4 using default primary data and writes the image to a BMP file.
-// Category-Description: This example demonstrates how to generate a MaxiCode barcode with Aspose.BarCode for .NET. It covers the use of BarcodeGenerator, setting barcode parameters such as X‑dimension and MaxiCode mode, and saving the result in BMP format. Developers working with shipping and logistics can use MaxiCode to encode data for high‑speed scanning; typical scenarios include creating barcodes for package labeling, tracking, and inventory systems.
+// Title: Generate MaxiCode Mode 4 barcode and save as BMP
+// Description: Demonstrates creating a MaxiCode Mode 4 barcode using Aspose.BarCode and saving it to a BMP image file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to configure MaxiCode parameters such as mode and X‑dimension. It uses the BarcodeGenerator class with EncodeTypes.MaxiCode and illustrates typical use cases like generating shipping labels or inventory tags where MaxiCode Mode 4 is required. Developers often need to customize dimensions and output formats, and this snippet provides a concise reference.
 // Prompt: Generate a MaxiCode Mode 4 barcode with default primary data and store the result in BMP format.
-// Tags: maxicode, barcode generation, bmp, aspose.barcode, encoding, image output
+// Tags: maxicode, barcode generation, bmp output, aspnet, aspose.barcode, encode types
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode Mode 4 barcode and saving it as a BMP image.
+/// Demonstrates generating a MaxiCode Mode 4 barcode and saving it as a BMP file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and writes the output file.
+    /// Entry point of the example. Creates the barcode, configures parameters, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output BMP file in the current directory.
+        // Determine output file path in the current directory
         string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "MaxiCodeMode4.bmp");
 
-        // Initialize the barcode generator for MaxiCode with default data ("Sample").
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample"))
+        // Initialize the barcode generator for MaxiCode with sample data
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode Mode 4"))
         {
-            // Set the X-dimension (module size) in pixels.
+            // Set the X-dimension (module size) in pixels
             generator.Parameters.Barcode.XDimension.Pixels = 15f;
-
-            // Configure the MaxiCode mode to Mode 4.
+            // Specify the MaxiCode mode to use (Mode 4)
             generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode4;
-
-            // Save the generated barcode image to the specified path in BMP format.
+            // Save the generated barcode image as BMP
             generator.Save(outputPath, BarCodeImageFormat.Bmp);
         }
 
-        // Output the location of the saved barcode image.
+        // Inform the user where the file was saved
         Console.WriteLine($"MaxiCode Mode 4 barcode saved to: {outputPath}");
     }
 }

@@ -1,62 +1,74 @@
-// Title: Decode unreadable MaxiCode image with error handling
-// Description: Demonstrates how to attempt decoding a corrupted MaxiCode image and handle errors gracefully using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It showcases the BarCodeReader class with DecodeType.MaxiCode to read barcodes from images. Typical use cases include validating image quality before processing and handling unreadable or corrupted barcode images. Developers often need robust error handling to prevent crashes when decoding fails.
+// Title: Decode corrupted MaxiCode barcode with error handling
+// Description: Demonstrates generating a MaxiCode barcode, intentionally corrupting the image to simulate an unreadable barcode, and decoding it while handling potential errors.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and common error handling patterns. Developers working with barcode imaging often need to generate barcodes, process scanned images, and gracefully handle unreadable or damaged inputs. This snippet serves as a reference for such scenarios, highlighting key API classes like BarcodeGenerator, BarCodeReader, and DecodeType.
 // Prompt: Implement error handling that catches BarcodeException when decoding an unreadable MaxiCode image.
-// Tags: maxicode, barcode, decoding, error-handling, aspose.barcode, barcodereader, decode-type
+// Tags: maxicode, barcode, decoding, error handling, aspose.barcode, generation, recognition
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates an invalid MaxiCode image, attempts to decode it,
-/// and demonstrates error handling for unreadable barcode images.
+/// Demonstrates generating a MaxiCode barcode, corrupting it, and attempting to decode with error handling.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a temporary file with random data,
-    /// tries to read a MaxiCode barcode, handles any decoding errors, and cleans up.
+    /// Entry point of the example. Generates, corrupts, and decodes a MaxiCode barcode while handling possible errors.
     /// </summary>
     static void Main()
     {
-        // Define path for a temporary file that will hold invalid image data
-        string tempPath = Path.Combine(Path.GetTempPath(), "invalid_maxicode.png");
+        // Prepare a unique temporary directory for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "maxicode.png");
 
-        // --------------------------------------------------------------------
-        // Create a temporary file with random bytes to simulate an unreadable image
-        // --------------------------------------------------------------------
-        try
+        // Generate a valid MaxiCode barcode and save it as a PNG image
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample"))
         {
-            // Generate 256 random bytes
-            byte[] randomData = new byte[256];
-            new Random().NextBytes(randomData);
-
-            // Write the random bytes to the temporary file
-            File.WriteAllBytes(tempPath, randomData);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
-        catch (Exception ex)
+
+        // Corrupt the image file to simulate an unreadable barcode
+        if (File.Exists(imagePath))
         {
-            Console.WriteLine($"Failed to create test file: {ex.Message}");
+            byte[] data = File.ReadAllBytes(imagePath);
+            // Overwrite the middle portion of the file with zeros
+            int start = data.Length / 4;
+            int length = data.Length / 2;
+            for (int i = start; i < start + length && i < data.Length; i++)
+            {
+                data[i] = 0;
+            }
+            File.WriteAllBytes(imagePath, data);
+        }
+
+        // Verify that the image file exists before attempting decoding
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine("Image file not found.");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // Attempt to decode the unreadable MaxiCode image
-        // --------------------------------------------------------------------
+        // Specify the decode type for MaxiCode
+        BaseDecodeType decodeType = DecodeType.MaxiCode;
+
         try
         {
-            // Initialize BarCodeReader for the temporary file with MaxiCode decoding
-            using (BarCodeReader reader = new BarCodeReader(tempPath, DecodeType.MaxiCode))
+            // Initialize the barcode reader for the corrupted image
+            using (var reader = new BarCodeReader(imagePath, decodeType))
             {
-                // Read all barcodes found in the image
+                // Attempt to read barcodes from the image
                 BarCodeResult[] results = reader.ReadBarCodes();
 
                 // Check if any barcodes were detected
                 if (results.Length == 0)
                 {
-                    Console.WriteLine("No barcodes detected (expected for unreadable image).");
+                    Console.WriteLine("No barcode detected.");
                 }
                 else
                 {
@@ -70,24 +82,26 @@ class Program
         }
         catch (Exception ex)
         {
-            // Catch generic exceptions (BarcodeException is not part of the API)
+            // Handle any exception that occurs during decoding (e.g., unreadable image)
             Console.WriteLine($"Error while decoding MaxiCode: {ex.Message}");
         }
         finally
         {
-            // --------------------------------------------------------------------
-            // Clean up the temporary file
-            // --------------------------------------------------------------------
+            // Clean up temporary files and directories
             try
             {
-                if (File.Exists(tempPath))
+                if (File.Exists(imagePath))
                 {
-                    File.Delete(tempPath);
+                    File.Delete(imagePath);
+                }
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
                 }
             }
             catch
             {
-                // Suppress any errors that occur during cleanup
+                // Suppress any cleanup errors to avoid masking the original exception
             }
         }
     }
