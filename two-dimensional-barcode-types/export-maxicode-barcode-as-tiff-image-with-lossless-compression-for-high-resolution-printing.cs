@@ -1,48 +1,56 @@
 // Title: Export MaxiCode barcode to TIFF with lossless compression
 // Description: Demonstrates generating a MaxiCode barcode and saving it as a TIFF image using lossless compression, suitable for high‑resolution printing.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to configure barcode parameters such as symbology mode, resolution, and colors, and how to export the result to a TIFF file with lossless compression. Developers working with barcode creation for print media often need to produce high‑quality raster images; the key classes used are BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and related parameter objects. The snippet serves as a reference for generating printable barcodes in .NET applications.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters such as resolution and X‑dimension and export the result to a TIFF file with lossless compression. It uses the BarcodeGenerator class together with EncodeTypes and BarCodeImageFormat to create barcodes for printing and packaging applications. Developers often need to produce high‑quality printable barcodes, and this snippet shows the typical steps for such use cases.
 // Prompt: Export MaxiCode barcode as TIFF image with lossless compression for high‑resolution printing.
-// Tags: maxicode, barcode, tiff, lossless compression, image generation, aspnet, aspose.barcode, c#
+// Tags: maxicode, barcode generation, tiff, lossless compression, high resolution printing, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode and saving it as a TIFF image with lossless compression.
+/// Generates a MaxiCode barcode and saves it as a TIFF image with lossless compression.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, configures parameters, and saves the image.
+    /// Entry point of the example. Creates the output folder, configures the barcode generator,
+    /// and writes the resulting TIFF file to disk.
     /// </summary>
     static void Main()
     {
-        // Determine the output file path in the system's temporary folder
-        string outputPath = Path.Combine(Path.GetTempPath(), "maxicode.tiff");
-        string directory = Path.GetDirectoryName(outputPath);
+        // Determine the output directory relative to the current working folder.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
 
-        // Ensure the target directory exists
-        if (!Directory.Exists(directory))
+        // Ensure the output directory exists.
+        if (!Directory.Exists(outputDir))
         {
-            Directory.CreateDirectory(directory);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Create a barcode generator for MaxiCode with the desired text
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Hello MaxiCode"))
-        {
-            // Set MaxiCode mode (Mode4), resolution (300 DPI), and bar color (black)
-            generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode4;
-            generator.Parameters.Resolution = 300f;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+        // Full path for the generated TIFF file.
+        string outputPath = Path.Combine(outputDir, "MaxiCode.tiff");
 
-            // Save the generated barcode as a TIFF image (lossless compression by default)
+        // Text to encode in the MaxiCode barcode.
+        string codeText = "Sample MaxiCode";
+
+        // Initialize the barcode generator for MaxiCode symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
+        {
+            // Set a high resolution (300 DPI) for high‑quality printing.
+            generator.Parameters.Resolution = 300f;
+
+            // Define the X‑dimension (module width) in points.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+
+            // Save the barcode as a TIFF image using lossless compression.
             generator.Save(outputPath, BarCodeImageFormat.Tiff);
         }
 
-        // Inform the user where the file was saved
+        // Inform the user where the file was saved.
         Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
     }
 }

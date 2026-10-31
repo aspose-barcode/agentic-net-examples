@@ -1,90 +1,70 @@
-// Title: Generate QR Code and embed into PDF report
-// Description: Demonstrates creating a QR Code barcode, converting it to an image, and inserting it into a PDF document with title and description text.
-// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Pdf integration category, showcasing how to generate barcodes (QR, DataMatrix, etc.) using the BarcodeGenerator class and embed them as images in PDF files via the Document class. Typical use cases include adding scannable codes to invoices, tickets, or reports where developers need to combine barcode creation with PDF document generation.
-// Prompt: Generate QR Code barcode and embed it into a PDF report alongside descriptive text.
-// Tags: qr code, barcode generation, pdf creation, aspose.barcode, aspose.pdf, image embedding, report generation
-
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Pdf;
 using Aspose.Pdf.Text;
 
-/// <summary>
-/// Example program that creates a QR Code barcode and embeds it into a PDF report with accompanying text.
-/// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point of the application. Generates a QR Code, adds it to a PDF document, and saves the result.
-    /// </summary>
     static void Main()
     {
-        // Define the output PDF file path.
-        string outputPdf = Path.Combine(Directory.GetCurrentDirectory(), "QrReport.pdf");
+        // Define output files in the temporary directory
+        string outputPdfPath = Path.Combine(Path.GetTempPath(), "QrCodeReport.pdf");
 
-        // Text to encode in the QR Code.
-        string qrText = "https://example.com";
-
-        // Generate the QR Code image and store it in a memory stream.
-        MemoryStream barcodeStream = new MemoryStream();
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // Generate QR Code barcode and store it in a memory stream
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Set high error correction level for better readability.
+            // Set QR code specific parameters
+            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
+            generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            // Define barcode and background colors.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
             generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-            // Set the size of each QR module (pixel dimension).
-            generator.Parameters.Barcode.XDimension.Pixels = 8f;
-            // Save the generated barcode as a PNG image into the stream.
-            generator.Save(barcodeStream, BarCodeImageFormat.Png);
-        }
-        // Reset stream position for reading.
-        barcodeStream.Position = 0;
 
-        // Create a new PDF document and embed the barcode image with descriptive text.
-        using (var pdfDoc = new Document())
-        {
-            // Add a new page to the PDF.
-            var page = pdfDoc.Pages.Add();
-
-            // Create an image object from the barcode stream.
-            var pdfImage = new Aspose.Pdf.Image
+            using (var barcodeStream = new MemoryStream())
             {
-                ImageStream = barcodeStream,
-                FixWidth = 200.0,
-                FixHeight = 200.0,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-            // Add the image to the page.
-            page.Paragraphs.Add(pdfImage);
+                generator.Save(barcodeStream, BarCodeImageFormat.Png);
+                barcodeStream.Position = 0;
 
-            // Add a title text fragment.
-            var title = new TextFragment("QR Code Report")
-            {
-                Position = new Position(50, 750),
-                TextState = { FontSize = 20 }
-            };
-            page.Paragraphs.Add(title);
+                // Create PDF document and embed the barcode image with descriptive text
+                using (var pdfDoc = new Document())
+                {
+                    var page = pdfDoc.Pages.Add();
 
-            // Add a description text fragment.
-            var description = new TextFragment("This QR code links to example.com")
-            {
-                Position = new Position(50, 500),
-                TextState = { FontSize = 12 }
-            };
-            page.Paragraphs.Add(description);
+                    // Add title text
+                    var title = new TextFragment("QR Code Report");
+                    title.TextState.FontSize = 18;
+                    title.TextState.FontStyle = FontStyles.Bold;
+                    title.Position = new Position(50, 750);
+                    page.Paragraphs.Add(title);
 
-            // Save the PDF document to the specified file.
-            pdfDoc.Save(outputPdf);
+                    // Add the barcode image
+                    var pdfImage = new Aspose.Pdf.Image
+                    {
+                        ImageStream = barcodeStream,
+                        FixWidth = 200.0,
+                        FixHeight = 200.0,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        Margin = new MarginInfo { Top = 20 }
+                    };
+                    page.Paragraphs.Add(pdfImage);
+
+                    // Add descriptive text below the image
+                    var description = new TextFragment("This QR code encodes the URL: https://example.com");
+                    description.TextState.FontSize = 12;
+                    description.Position = new Position(50, 500);
+                    page.Paragraphs.Add(description);
+
+                    // Save the PDF
+                    pdfDoc.Save(outputPdfPath);
+                }
+            }
         }
 
-        // Release the memory stream resources.
-        barcodeStream.Dispose();
-
-        // Inform the user where the PDF was saved.
-        Console.WriteLine($"PDF report generated at: {outputPdf}");
+        Console.WriteLine($"PDF report generated at: {outputPdfPath}");
     }
 }

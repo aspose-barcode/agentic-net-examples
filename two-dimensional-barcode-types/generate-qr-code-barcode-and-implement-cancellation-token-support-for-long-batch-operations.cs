@@ -1,97 +1,105 @@
-// Title: Generate QR Code batch with cancellation token support
-// Description: Demonstrates creating multiple QR Code barcodes using Aspose.BarCode and shows how to cancel a long-running batch operation via a CancellationToken.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR, configure QR error correction, and save images in PNG format. Typical use cases include batch creation of QR codes for inventory, tickets, or marketing materials where operations may need to be aborted gracefully. Developers often need to manage long-running barcode generation tasks and implement cancellation patterns using CancellationToken.
-// Prompt: Generate QR Code barcode and implement cancellation token support for long batch operations.
-// Tags: qr, barcode, generation, cancellation token, batch processing, aspose.barcode, png
-
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
-/// <summary>
-/// Example program that generates a batch of QR Code barcodes and demonstrates cancellation support.
-/// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point of the application. Sets up the output directory, starts a cancellation timer,
-    /// and invokes the QR batch generation method.
-    /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a unique temporary folder for the generated QR code images.
-        string outputFolder = Path.Combine(Path.GetTempPath(), "QrBatch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
-        Console.WriteLine($"Output folder: {outputFolder}");
+        // Create a unique temporary folder for the batch
+        string batchFolder = Path.Combine(Path.GetTempPath(), "BatchQR_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // Use a CancellationTokenSource to allow the batch operation to be cancelled.
-        using (CancellationTokenSource cts = new CancellationTokenSource())
+        // Prepare sample texts
+        List<string> texts = new List<string>();
+        for (int i = 0; i < 5; i++)
         {
-            // Schedule cancellation after 2 seconds to demonstrate the feature.
-            Task.Run(() =>
-            {
-                Thread.Sleep(2000);
-                Console.WriteLine("Cancellation requested.");
-                cts.Cancel();
-            });
-
-            // Generate the QR codes, passing the cancellation token.
-            GenerateQrBatch(outputFolder, cts.Token);
+            texts.Add($"Sample QR {i}");
         }
 
-        Console.WriteLine("Program completed.");
-    }
-
-    /// <summary>
-    /// Generates up to ten QR Code images from a predefined set of sample texts.
-    /// The method respects the provided <see cref="CancellationToken"/> and stops
-    /// processing if cancellation is requested.
-    /// </summary>
-    /// <param name="folderPath">Directory where PNG files will be saved.</param>
-    /// <param name="token">Token used to observe cancellation requests.</param>
-    static void GenerateQrBatch(string folderPath, CancellationToken token)
-    {
-        // Sample data to encode into QR codes.
-        string[] sampleTexts = new string[]
+        // Generate QR code images
+        List<string> generatedFiles = new List<string>();
+        for (int i = 0; i < texts.Count; i++)
         {
-            "First QR",
-            "Second QR",
-            "Third QR",
-            "Fourth QR",
-            "Fifth QR",
-            "Sixth QR"
-        };
-
-        // Limit the number of generated barcodes to the smaller of the sample count or 10.
-        int maxCount = Math.Min(sampleTexts.Length, 10);
-        for (int i = 0; i < maxCount; i++)
-        {
-            // Check for cancellation before processing each item.
-            if (token.IsCancellationRequested)
+            string filePath = Path.Combine(batchFolder, $"qr_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, texts[i]))
             {
-                Console.WriteLine($"Operation cancelled before generating item {i + 1}.");
-                break;
-            }
-
-            string text = sampleTexts[i];
-            string filePath = Path.Combine(folderPath, $"qr_{i + 1}.png");
-
-            // Create a QR Code generator with the specified text.
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, text))
-            {
-                // Configure visual properties: module size and error correction level.
                 generator.Parameters.Barcode.XDimension.Pixels = 4f;
                 generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-
-                // Save the generated QR code as a PNG image.
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-
-            Console.WriteLine($"Generated QR code {i + 1}: {filePath}");
+            generatedFiles.Add(filePath);
         }
+
+        Console.WriteLine("Generated QR code images:");
+        foreach (var f in generatedFiles)
+        {
+            Console.WriteLine(f);
+        }
+
+        // Set up a cancellation token that cancels after 2 seconds
+        using (var cts = new CancellationTokenSource(2000))
+        {
+            CancellationToken token = cts.Token;
+
+            Console.WriteLine("\nStarting batch decoding with cancellation support...");
+
+            for (int i = 0; i < generatedFiles.Count; i++)
+            {
+                if (token.IsCancellationRequested)
+                {
+                    Console.WriteLine("Operation cancelled by token.");
+                    break;
+                }
+
+                string file = generatedFiles[i];
+                try
+                {
+                    using (var reader = new BarCodeReader(file, DecodeType.QR))
+                    {
+                        reader.ReadBarCodes();
+                        Console.WriteLine($"\nFile: {Path.GetFileName(file)} - Found {reader.FoundCount} barcode(s)");
+                        foreach (BarCodeResult result in reader.FoundBarCodes)
+                        {
+                            Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        }
+                    }
+                }
+                catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+                {
+                    Console.WriteLine($"Skipping unreadable file '{file}': {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error processing file '{file}': {ex.Message}");
+                }
+            }
+        }
+
+        // Clean up temporary files and folder
+        try
+        {
+            foreach (var file in generatedFiles)
+            {
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
+            }
+            if (Directory.Exists(batchFolder))
+            {
+                Directory.Delete(batchFolder, true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Cleanup error: {ex.Message}");
+        }
+
+        Console.WriteLine("\nBatch operation completed.");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate QR Code and embed it into a Word document using Aspose.BarCode and Aspose.Words
-// Description: This example creates a QR Code barcode from a URL, converts it to a PNG image, and inserts the image into a Word document.
-// Category-Description: Demonstrates how to generate a barcode image with Aspose.BarCode, manipulate its dimensions, and embed the image into a Word file using Aspose.Words (Open XML SDK). The sample showcases the BarcodeGenerator, EncodeTypes, BarCodeImageFormat, Document, and DocumentBuilder classes—common tools for developers who need to add barcodes to Office documents for reporting, labeling, or automated document generation.
+// Title: Generate QR Code barcode and embed into Word document
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, converting it to an image, and inserting it into a Word document using Aspose.Words/Open XML SDK.
+// Category-Description: This example belongs to the Aspose.BarCode for .NET barcode generation and Aspose.Words document manipulation category. It shows how to use BarcodeGenerator (EncodeTypes.QR) to produce high‑resolution QR Code images, retrieve their dimensions, and embed them into a DOCX file via DocumentBuilder. Developers working with automated report generation, document templating, or any scenario that requires embedding barcodes into Office documents will find this pattern useful.
 // Prompt: Generate QR Code barcode and embed it into a Word document using Open XML SDK.
-// Tags: qr code, barcode generation, image embedding, word document, aspose.barcode, aspose.words, openxml, png
+// Tags: qr code, barcode generation, document embedding, docx, aspose.barcode, aspose.words, openxml
 
 using System;
 using System.IO;
@@ -12,51 +12,58 @@ using Aspose.Words;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode and inserting it into a Word document.
+/// Demonstrates generating a QR Code barcode and embedding it into a Word document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR Code, converts it to PNG, and embeds it in a DOCX file.
+    /// Entry point of the example. Creates a QR Code image and inserts it into a DOCX file.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Text to encode in the QR Code
-        string qrText = "https://example.com";
+        // Define the output path for the generated Word document.
+        string outputDocPath = Path.Combine(Environment.CurrentDirectory, "QRCodeInWord.docx");
 
-        // Desired image resolution (dots per inch)
-        int resolution = 300;
+        // Initialize a new Word document and a DocumentBuilder for content insertion.
+        Document wordDoc = new Document();
+        DocumentBuilder builder = new DocumentBuilder(wordDoc);
 
-        // Initialize the barcode generator for QR code with the specified text
-        var generator = new BarcodeGenerator(EncodeTypes.QR, qrText);
-        generator.Parameters.Resolution = resolution;
+        // Add introductory text to the document.
+        builder.Writeln("Document with an embedded QR Code barcode:");
 
-        // Generate a bitmap to obtain the pixel dimensions of the QR Code
-        using (Bitmap bitmap = generator.GenerateBarCodeImage())
+        // Generate a QR Code barcode using Aspose.BarCode.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Save the barcode image to a memory stream in PNG format
-            using (var imageStream = new MemoryStream())
+            // Set a high resolution to ensure the barcode image is sharp.
+            generator.Parameters.Resolution = 300;
+
+            // Produce a bitmap to obtain the image dimensions.
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-                byte[] imageBytes = imageStream.ToArray();
+                // Save the barcode image to a memory stream in PNG format.
+                using (MemoryStream imageStream = new MemoryStream())
+                {
+                    generator.Save(imageStream, BarCodeImageFormat.Png);
+                    imageStream.Position = 0;
 
-                // Convert pixel dimensions to points (1 inch = 72 points) for Word insertion
-                double widthPoints = (bitmap.Width * 72.0) / resolution;
-                double heightPoints = (bitmap.Height * 72.0) / resolution;
+                    // Convert pixel dimensions to points (1 inch = 72 points) for Word insertion.
+                    float widthPoints = (float)(bitmap.Width * 72) / generator.Parameters.Resolution;
+                    float heightPoints = (float)(bitmap.Height * 72) / generator.Parameters.Resolution;
 
-                // Create a new Word document and insert the barcode image
-                var doc = new Document();
-                var builder = new DocumentBuilder(doc);
-                builder.Write("QR Code:");
-                builder.InsertImage(imageBytes, widthPoints, heightPoints);
-                builder.Writeln();
-
-                // Define the output path and save the document as DOCX
-                string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "QrBarcodeWord.docx");
-                doc.Save(outputPath, SaveFormat.Docx);
-                Console.WriteLine($"Document saved to: {outputPath}");
+                    // Insert the barcode image into the document with the calculated size.
+                    builder.InsertImage(imageStream.ToArray(), widthPoints, heightPoints);
+                }
             }
         }
+
+        // Add trailing text to the document.
+        builder.Writeln();
+        builder.Writeln("End of document.");
+
+        // Save the Word document to the specified path in DOCX format.
+        wordDoc.Save(outputDocPath, SaveFormat.Docx);
+
+        // Inform the user where the document was created.
+        Console.WriteLine($"Word document created at: {outputDocPath}");
     }
 }

@@ -1,71 +1,61 @@
-// Title: Encode Binary Data into DotCode Barcode and Verify Byte Accuracy
-// Description: Demonstrates how to encode a byte array into a DotCode barcode using binary mode, save it as PNG, and then read back the barcode to confirm the original byte sequence is preserved.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating DotCode symbols with binary encoding, and BarCodeReader for decoding. Developers working with low‑level data transmission, inventory systems, or any scenario requiring exact byte‑level fidelity can use these APIs to embed and retrieve binary payloads in DotCode barcodes.
+// Title: Encode binary data into DotCode barcode and verify byte representation
+// Description: Demonstrates how to generate a DotCode barcode in binary mode from a byte array, save it as PNG, and read it back to confirm the encoded bytes match the original data.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows the use of BarcodeGenerator with EncodeTypes.DotCode, setting DotCodeEncodeMode.Binary, and BarCodeReader for decoding. Typical use cases include encoding raw binary payloads (e.g., firmware, identifiers) into DotCode symbols and validating them programmatically. Developers often need to work with the BarcodeGenerator.Parameters.Barcode.DotCode API and the BarCodeReader.DecodeType enumeration to handle binary data.
 // Prompt: Encode binary data into DotCode using Binary mode and verify correct byte representation.
-// Tags: dotcode, binary encoding, barcode generation, barcode recognition, aspose.barcode, png, c#
+// Tags: dotcode, binary, barcode generation, barcode recognition, aspose.barcode, png, c#
+
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates encoding binary data into a DotCode barcode, saving it as an image,
-/// and verifying that the decoded bytes match the original data.
+/// Demonstrates encoding a byte array into a DotCode barcode using binary mode,
+/// saving the image, and verifying the encoded bytes by reading the barcode back.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a DotCode barcode from a byte array,
-    /// saves it to a temporary PNG file, reads it back, and validates the byte content.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Define the binary data that will be encoded into the barcode.
-        byte[] originalData = { 0xFF, 0xFE, 0xFD, 0xFC, 0xFB, 0xFA, 0xF9 };
+        // Prepare binary data to be encoded.
+        byte[] binaryData = { 0xFF, 0xFE, 0xFD, 0xFC, 0xFB, 0xFA, 0xF9 };
 
-        // Determine a temporary file path for the generated barcode image.
-        string outputPath = Path.Combine(Path.GetTempPath(), "DotCodeBinary.png");
+        // Create a temporary folder for the generated barcode image.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "DotCodeBinary_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        string imagePath = Path.Combine(outputFolder, "dotcode_binary.png");
 
-        // --------------------------------------------------------------------
-        // Generate DotCode barcode in Binary mode
-        // --------------------------------------------------------------------
+        // Generate DotCode barcode in Binary mode and save it as PNG.
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DotCode))
         {
-            // Set the raw byte array as the code text.
-            generator.SetCodeText(originalData);
-
-            // Configure the DotCode encoder to use binary encoding.
+            generator.SetCodeText(binaryData);
             generator.Parameters.Barcode.DotCode.EncodeMode = DotCodeEncodeMode.Binary;
-
-            // Save the generated barcode as a PNG image.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Read the barcode and verify the decoded bytes match the original data
-        // --------------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(outputPath, DecodeType.DotCode))
+        // Verify the barcode by reading it back and comparing the decoded bytes.
+        BaseDecodeType decodeType = DecodeType.DotCode;
+        using (BarCodeReader reader = new BarCodeReader(imagePath, decodeType))
         {
             bool matchFound = false;
 
             // Iterate through all detected barcodes (there should be only one).
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Retrieve the decoded byte array from the barcode.
-                byte[] decodedBytes = result.CodeBytes;
+                byte[] readBytes = result.CodeBytes;
 
-                // Initial length check.
-                matchFound = decodedBytes != null && decodedBytes.Length == originalData.Length;
-
-                // If lengths match, compare each byte.
-                if (matchFound)
+                // Check that the decoded byte array matches the original length and content.
+                if (readBytes != null && readBytes.Length == binaryData.Length)
                 {
-                    for (int i = 0; i < decodedBytes.Length; i++)
+                    matchFound = true;
+                    for (int i = 0; i < readBytes.Length; i++)
                     {
-                        if (decodedBytes[i] != originalData[i])
+                        if (readBytes[i] != binaryData[i])
                         {
                             matchFound = false;
                             break;
@@ -73,17 +63,19 @@ class Program
                     }
                 }
 
-                // Output the original and decoded byte sequences and verification result.
-                Console.WriteLine("Original Bytes : " + BitConverter.ToString(originalData));
-                Console.WriteLine("Decoded  Bytes : " + (decodedBytes != null ? BitConverter.ToString(decodedBytes) : "null"));
-                Console.WriteLine("Verification    : " + (matchFound ? "Success" : "Failure"));
+                Console.WriteLine(matchFound
+                    ? "Success: Read bytes match the original binary data."
+                    : "Failure: Read bytes do not match the original binary data.");
             }
 
-            // If no matching barcode was found, inform the user.
+            // If no matching barcode was found, report the failure.
             if (!matchFound)
             {
-                Console.WriteLine("No matching barcode found or decoding failed.");
+                Console.WriteLine("No barcode detected or byte mismatch.");
             }
         }
+
+        // Clean up (optional): delete the temporary folder and its contents.
+        // Directory.Delete(outputFolder, true);
     }
 }

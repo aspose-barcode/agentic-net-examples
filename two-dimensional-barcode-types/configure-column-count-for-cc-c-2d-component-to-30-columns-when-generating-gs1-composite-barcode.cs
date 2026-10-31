@@ -1,8 +1,8 @@
-// Title: Generate GS1 Composite barcode with CC_C component and 30 PDF417 columns
-// Description: Demonstrates how to create a GS1 Composite barcode where the 2‑D component is CC_C and its PDF417 matrix is configured to 30 columns. Shows setting linear component type, visual options, and saving as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on composite symbologies. It illustrates using BarcodeGenerator, EncodeTypes, and GS1CompositeBar parameters to customize both linear and 2‑D components, a common requirement when integrating GS1 barcodes into packaging or labeling workflows. Developers often need to adjust PDF417 settings such as column count to meet industry specifications.
+// Title: Configure PDF417 column count for GS1 Composite barcode (CC_C)
+// Description: Demonstrates how to set the CC_C 2D component to use 30 columns when generating a GS1 Composite barcode and save it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on GS1 Composite symbology. It shows usage of BarcodeGenerator, EncodeTypes, and PDF417 parameters to customize composite barcodes. Developers often need to adjust 2D component settings such as column count, X‑dimension, and human‑readable text for specific scanning requirements.
 // Prompt: Configure column count for CC_C 2D component to 30 columns when generating a GS1 Composite barcode.
-// Tags: gs1 composite, pdf417, column count, barcode generation, png, aspose.barcode, csharp
+// Tags: gs1 composite, column count, pdf417, png, barcodegenerator, encode types
 
 using System;
 using System.IO;
@@ -10,44 +10,51 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a GS1 Composite barcode with a CC_C 2‑D component
-/// and configures the PDF417 matrix to use 30 columns.
+/// Generates a GS1 Composite barcode with a CC_C 2D component configured to 30 PDF417 columns and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates the barcode, applies required settings, and saves the image.
+    /// Entry point that creates and saves the barcode image.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary output directory for the generated image
-        string outputDir = Path.Combine(Path.GetTempPath(), "Gs1CompositeExample");
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "GS1Composite_CC_C_30Columns.png");
+        // Define the output file path in the temporary directory
+        string outputPath = Path.Combine(Path.GetTempPath(), "GS1Composite_CC_C_30Columns.png");
 
-        // GS1 Composite barcode data: linear part + 2‑D part separated by '|'
-        string codeText = "(01)98898765432106(3202)012345|(10)ABCD0123(240)0123456789";
+        // Build the composite code text:
+        //   - Linear part (GS1 Code128) containing a valid GTIN‑14
+        //   - 2D part containing arbitrary data
+        string linearPart = "(01)01234567890128"; // valid GTIN‑14
+        string twoDPart = "Aspose.Barcode";
+        string codeText = $"{linearPart}|{twoDPart}";
 
-        // Initialize the barcode generator with GS1 Composite symbology
+        // Initialize the barcode generator for GS1 Composite symbology
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            // Set the 2‑D component type to CC_C (requires PDF417)
+            // Set the 2D component type to CC_C (PDF417 based)
             generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
 
-            // Linear component must be GS1 Code128 for CC_C composite barcodes
+            // Set the linear component type to GS1 Code128
             generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+
+            // Allow non‑GS1 data in the 2D component (optional)
+            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
 
             // Configure PDF417 to use 30 columns for the CC_C component
             generator.Parameters.Barcode.Pdf417.Columns = 30;
 
-            // Optional visual tweaks: reduce module size and hide human‑readable text
-            generator.Parameters.Barcode.XDimension.Pixels = 2;
+            // Optional: increase X‑dimension for better visual size
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Hide human‑readable text to keep the image clean
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
             // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user where the file was saved
+        Console.WriteLine($"GS1 Composite barcode saved to: {outputPath}");
     }
 }

@@ -1,6 +1,6 @@
-// Title: Generate Han Xin Barcode as Byte Array
-// Description: Demonstrates creating a Han Xin 2‑D barcode and returning it as a PNG byte array suitable for email attachments.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.HanXin. It covers configuring Han Xin specific parameters such as Unicode encoding mode and error correction level, then saving the barcode to a memory stream. Developers working with 2‑D barcodes for document automation, email embedding, or web services will find this pattern useful.
+// Title: Generate Han Xin barcode as byte array
+// Description: Creates a Han Xin 2D barcode from a text string and returns the PNG image as a byte array, ideal for embedding in email attachments.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to use the BarcodeGenerator class with EncodeTypes.HanXin. It shows setting error correction level and version, saving the barcode to a memory stream, and retrieving the image bytes. Developers working with 2D barcodes, especially Han Xin, often need to produce barcode images for reports, emails, or other non‑file outputs.
 // Prompt: Create method that returns Han Xin barcode as byte array for inclusion in email attachments.
 // Tags: hanxin, barcode, generation, png, bytearray, aspose.barcode, email
 
@@ -8,53 +8,51 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides an example of generating a Han Xin barcode and obtaining its PNG representation as a byte array.
+/// Demonstrates generating a Han Xin barcode and obtaining its PNG representation as a byte array.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Han Xin barcode, displays its size, and optionally saves it to a temporary file.
+    /// Entry point of the example. Generates a barcode, displays its size, and saves it to disk.
     /// </summary>
     static void Main()
     {
-        // Text to encode in the barcode
-        string sampleText = "https://example.com";
+        // Define the text to encode in the barcode.
+        string sampleText = "Sample123";
 
-        // Generate the barcode and receive the PNG data as a byte array
-        byte[] barcodeBytes = GenerateHanXinBarcode(sampleText);
-        Console.WriteLine($"Generated Han Xin barcode byte array length: {barcodeBytes.Length}");
+        // Generate the barcode and retrieve the image as a byte array.
+        byte[] barcodeData = GenerateHanXinBarcode(sampleText);
+        Console.WriteLine($"Generated Han Xin barcode byte array length: {barcodeData.Length}");
 
-        // Optional: write the byte array to a file for visual verification
-        string outputPath = Path.Combine(Path.GetTempPath(), "HanXinBarcode.png");
-        using (var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
-        {
-            fileStream.Write(barcodeBytes, 0, barcodeBytes.Length);
-        }
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        // Save the byte array to a PNG file for verification.
+        string outputFile = Path.Combine(Directory.GetCurrentDirectory(), "HanXin.png");
+        File.WriteAllBytes(outputFile, barcodeData);
+        Console.WriteLine($"Barcode saved to {outputFile}");
     }
 
     /// <summary>
-    /// Generates a Han Xin barcode for the specified text and returns the image as a PNG byte array.
+    /// Generates a Han Xin barcode for the specified text and returns the PNG image as a byte array.
     /// </summary>
     /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>Byte array containing the PNG representation of the generated barcode.</returns>
+    /// <returns>Byte array containing the PNG representation of the barcode.</returns>
     static byte[] GenerateHanXinBarcode(string codeText)
     {
-        // Initialize the barcode generator with Han Xin symbology
+        // Initialize the barcode generator with Han Xin symbology.
         using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
         {
-            // Configure Unicode encoding mode and medium error correction level
-            generator.Parameters.Barcode.HanXin.EncodeMode = HanXinEncodeMode.Unicode;
+            // Configure error correction level and let the version be chosen automatically.
             generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L2;
+            generator.Parameters.Barcode.HanXin.Version = HanXinVersion.Auto;
 
-            // Save the barcode image to a memory stream in PNG format
-            using (var memoryStream = new MemoryStream())
+            // Save the barcode image to a memory stream in PNG format.
+            using (var stream = new MemoryStream())
             {
-                generator.Save(memoryStream, BarCodeImageFormat.Png);
-                return memoryStream.ToArray();
+                generator.Save(stream, BarCodeImageFormat.Png);
+                // Return the image data as a byte array.
+                return stream.ToArray();
             }
         }
     }

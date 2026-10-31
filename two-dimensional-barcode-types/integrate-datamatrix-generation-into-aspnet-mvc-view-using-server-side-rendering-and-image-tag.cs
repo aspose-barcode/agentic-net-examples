@@ -1,55 +1,50 @@
-// Title: Generate DataMatrix Barcode and Embed as Base64 Image Tag in ASP.NET MVC
-// Description: Demonstrates creating a DataMatrix barcode with Aspose.BarCode, converting it to a Base64 data URI, and rendering it in an HTML <img> tag suitable for ASP.NET MVC views.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class to produce DataMatrix symbology, customize appearance, and output the result as PNG. Typical use cases include embedding barcodes directly into web pages, emails, or reports without storing physical image files. Developers often need to render barcodes server‑side and deliver them as data URIs for seamless integration into HTML markup.
+// Title: Generate DataMatrix barcode and embed as HTML img tag for ASP.NET MVC
+// Description: Demonstrates server‑side creation of a DataMatrix barcode image using Aspose.BarCode and shows how to embed it in an MVC view with an <img> tag.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to use BarcodeGenerator with EncodeTypes.DataMatrix, configure DataMatrix parameters, and save the result as PNG. Typical use cases include generating barcodes on the fly for web applications, reports, or documents. Developers often need to render barcodes server‑side and reference them in HTML views, which this snippet demonstrates.
 // Prompt: Integrate DataMatrix generation into ASP.NET MVC view using server‑side rendering and an image tag.
-// Tags: datamatrix, barcode, generation, base64, aspnet-mvc, image, png, aspose.barcode
+// Tags: datamatrix, barcode, generation, aspnet mvc, image tag, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides a console demonstration of generating a DataMatrix barcode,
-/// converting it to a Base64‑encoded PNG, and outputting an HTML <img> tag.
-/// In a real ASP.NET MVC application the same logic would be used to embed
-/// the barcode directly into a view.
+/// Example program that creates a DataMatrix barcode image and outputs an HTML <img> tag
+/// suitable for inclusion in an ASP.NET MVC view.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, saves it to a file,
-    /// creates a Base64 data URI, and writes the corresponding <img> tag to the console.
+    /// Entry point. Generates a DataMatrix barcode, saves it as PNG, and prints an <img> tag.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode and the temporary file name.
-        const string codeText = "Hello";
-        const string outputFile = "datamatrix.png";
+        // Define the text to encode in the DataMatrix barcode
+        string codeText = "Hello Aspose";
 
-        // Initialize the generator for DataMatrix symbology.
+        // Determine a temporary file path for the generated PNG image
+        string outputFile = Path.Combine(Path.GetTempPath(), "datamatrix.png");
+
+        // Create a BarcodeGenerator for DataMatrix with the specified text
         using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Optional: set foreground (barcode) and background colors.
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
+            // Optional: configure DataMatrix-specific parameters (size, error correction)
+            generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
+            generator.Parameters.Barcode.DataMatrix.EccType = DataMatrixEccType.Ecc200;
 
-            // Persist the barcode as a PNG file for reference or debugging.
+            // Save the generated barcode image to the temporary file in PNG format
             generator.Save(outputFile, BarCodeImageFormat.Png);
-
-            // Render the barcode to a memory stream to build a Base64 data URI.
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] imageBytes = ms.ToArray();
-                string base64 = Convert.ToBase64String(imageBytes);
-
-                // Construct the HTML <img> tag with the data URI.
-                string imgTag = $"<img src=\"data:image/png;base64,{base64}\" alt=\"DataMatrix Barcode\" />";
-                Console.WriteLine(imgTag);
-            }
         }
+
+        // Build an HTML <img> tag that references the generated image file name
+        string imgTag = $"<img src=\"{Path.GetFileName(outputFile)}\" alt=\"DataMatrix Barcode\" />";
+
+        // Output information to the console (useful for debugging or console apps)
+        Console.WriteLine("Generated DataMatrix barcode saved to:");
+        Console.WriteLine(outputFile);
+        Console.WriteLine("HTML img tag for MVC view:");
+        Console.WriteLine(imgTag);
     }
 }

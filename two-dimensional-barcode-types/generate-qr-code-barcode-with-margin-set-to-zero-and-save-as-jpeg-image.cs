@@ -1,43 +1,43 @@
 // Title: Generate QR Code with Zero Margin and Save as JPEG
-// Description: This example creates a QR Code barcode with no padding and saves it as a JPEG image.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation for QR Code symbology, focusing on margin (padding) configuration and image export. Uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical use cases include creating compact QR codes for web or print where extra whitespace must be avoided. Developers often need to adjust padding and choose output formats when integrating barcode generation into .NET applications.
+// Description: Demonstrates how to create a QR Code barcode using Aspose.BarCode, set all padding to zero, and export the image as a JPEG file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical use cases include creating compact QR codes for web or mobile applications where minimal whitespace is required. Developers often need to control barcode padding, symbology, and output format when integrating barcode generation into automated workflows.
 // Prompt: Generate a QR Code barcode with margin set to zero and save as JPEG image.
-// Tags: qr code, barcode generation, margin, padding, jpeg, aspose.barcode, c#
+// Tags: qr code, zero margin, barcode generation, jpeg output, aspose.barcode, aspose.drawing
 
 using System;
-using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
-/// <summary>
-/// Example program that generates a QR Code with zero margins and saves it as a JPEG file.
-/// </summary>
-class Program
+namespace BarcodeExample
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Demonstrates generating a QR Code barcode with zero margin and saving it as a JPEG image.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Define the output file path in the current working directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_zero_margin.jpg");
-
-        // Initialize the barcode generator for QR Code symbology with the desired text.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        /// <summary>
+        /// Entry point of the example. Creates a QR Code, removes all padding, and saves the result.
+        /// </summary>
+        static void Main()
         {
-            // Set all padding (margin) values to zero to eliminate whitespace around the QR Code.
-            generator.Parameters.Barcode.Padding.Left.Point = 0f;
-            generator.Parameters.Barcode.Padding.Top.Point = 0f;
-            generator.Parameters.Barcode.Padding.Right.Point = 0f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 0f;
+            // Define the output file name and format
+            const string outputPath = "qr_zero_margin.jpg";
 
-            // Save the generated barcode as a JPEG image to the specified path.
-            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            // Initialize the barcode generator with QR symbology and the desired text
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+            {
+                // Remove all padding (margin) by setting each side to 0 points
+                generator.Parameters.Barcode.Padding.Left.Point = 0f;
+                generator.Parameters.Barcode.Padding.Right.Point = 0f;
+                generator.Parameters.Barcode.Padding.Top.Point = 0f;
+                generator.Parameters.Barcode.Padding.Bottom.Point = 0f;
+
+                // Save the generated barcode as a JPEG image
+                generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            }
+
+            // Output the location of the saved file for verification
+            Console.WriteLine($"QR Code saved to {outputPath}");
         }
-
-        // Inform the user where the QR Code image has been saved.
-        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

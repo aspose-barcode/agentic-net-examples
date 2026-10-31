@@ -1,104 +1,84 @@
 // Title: Benchmark memory usage of MaxiCode vs DataMatrix barcode generation
-// Description: Demonstrates how to measure and compare the memory consumption of generating MaxiCode and DataMatrix barcodes using Aspose.BarCode. The example runs multiple iterations and reports average memory increase per generation.
-// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, illustrating how to use the BarcodeGenerator class with EncodeTypes.MaxiCode and EncodeTypes.DataMatrix. Developers often need to evaluate memory and speed characteristics when generating barcodes in high‑throughput or resource‑constrained environments; this snippet shows typical setup, GC handling, and memory measurement techniques.
+// Description: Demonstrates how to measure and compare the memory consumption of generating MaxiCode and DataMatrix barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, illustrating the use of BarcodeGenerator, EncodeTypes, and memory measurement via GC. Developers often need to evaluate resource usage when generating different symbologies for high‑throughput or memory‑constrained applications. The snippet shows typical patterns for creating barcodes, saving them to streams, and calculating average memory per generation.
 // Prompt: Create a benchmark comparing memory usage of barcode generation for MaxiCode versus DataMatrix.
-// Tags: barcode, memory benchmark, maximcode, datamatrix, aspnet, aspose.barcode, performance, generation
+// Tags: barcode, memory benchmark, maxicode, datamatrix, performance, aspose.barcode, generation, gc
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates benchmarking memory usage for MaxiCode and DataMatrix barcode generation using Aspose.BarCode.
+/// Provides a simple benchmark to compare memory usage when generating MaxiCode and DataMatrix barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Executes the benchmark and prints average memory increase for each symbology.
+    /// Entry point. Executes the benchmark and prints average memory usage for each symbology.
     /// </summary>
     static void Main()
     {
-        const int iterations = 5;
-        Console.WriteLine("Benchmarking barcode generation memory usage...");
+        const int sampleCount = 5; // Number of iterations per symbology
 
-        // Run benchmarks for both symbologies
-        double avgMaxi = BenchmarkMaxiCode(iterations);
-        double avgDataMatrix = BenchmarkDataMatrix(iterations);
+        // Benchmark memory for MaxiCode generation
+        long maxiCodeMemory = BenchmarkMemory(EncodeTypes.MaxiCode, "MaxiCodeSample", sampleCount);
+        // Benchmark memory for DataMatrix generation
+        long dataMatrixMemory = BenchmarkMemory(EncodeTypes.DataMatrix, "DataMatrixSample", sampleCount);
 
-        // Output results
-        Console.WriteLine($"Average memory increase per MaxiCode generation: {avgMaxi:N0} bytes");
-        Console.WriteLine($"Average memory increase per DataMatrix generation: {avgDataMatrix:N0} bytes");
+        // Output average memory per generation (bytes)
+        Console.WriteLine($"Average memory used per MaxiCode generation: {maxiCodeMemory / sampleCount} bytes");
+        Console.WriteLine($"Average memory used per DataMatrix generation: {dataMatrixMemory / sampleCount} bytes");
     }
 
     /// <summary>
-    /// Measures average memory increase when generating MaxiCode barcodes.
+    /// Runs the memory benchmark for a given barcode type over a specified number of iterations.
     /// </summary>
-    /// <param name="count">Number of iterations to perform.</param>
-    /// <returns>Average memory increase in bytes.</returns>
-    static double BenchmarkMaxiCode(int count)
+    /// <param name="encodeType">The barcode symbology to generate.</param>
+    /// <param name="codeText">The text to encode in the barcode.</param>
+    /// <param name="iterations">How many times to repeat the generation.</param>
+    /// <returns>Total memory consumed across all iterations.</returns>
+    static long BenchmarkMemory(BaseEncodeType encodeType, string codeText, int iterations)
     {
-        long totalDiff = 0;
-        for (int i = 0; i < count; i++)
+        long totalMemory = 0;
+        for (int i = 0; i < iterations; i++)
         {
-            // Ensure a clean memory state before measurement
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            long before = GC.GetTotalMemory(true);
-
-            // Generate a MaxiCode barcode and write it to a memory stream
-            using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample"))
-            {
-                generator.Parameters.Barcode.XDimension.Pixels = 5f;
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                }
-            }
-
-            // Capture memory usage after generation
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            long after = GC.GetTotalMemory(true);
-            totalDiff += (after - before);
+            // Measure memory for a single generation and accumulate
+            totalMemory += MeasureGenerationMemory(encodeType, codeText);
         }
-        return (double)totalDiff / count;
+        return totalMemory;
     }
 
     /// <summary>
-    /// Measures average memory increase when generating DataMatrix barcodes.
+    /// Measures the memory allocated during a single barcode generation.
     /// </summary>
-    /// <param name="count">Number of iterations to perform.</param>
-    /// <returns>Average memory increase in bytes.</returns>
-    static double BenchmarkDataMatrix(int count)
+    /// <param name="encodeType">The barcode symbology to generate.</param>
+    /// <param name="codeText">The text to encode.</param>
+    /// <returns>Memory used (in bytes) for this generation.</returns>
+    static long MeasureGenerationMemory(BaseEncodeType encodeType, string codeText)
     {
-        long totalDiff = 0;
-        for (int i = 0; i < count; i++)
+        // Force a clean GC state before measurement
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        long before = GC.GetTotalMemory(true); // Memory before generation
+
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Ensure a clean memory state before measurement
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            long before = GC.GetTotalMemory(true);
+            // Set a modest module size for the barcode
+            generator.Parameters.Barcode.XDimension.Pixels = 5f;
 
-            // Generate a DataMatrix barcode with specific version and ECC settings
-            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "Sample"))
+            using (var stream = new MemoryStream())
             {
-                generator.Parameters.Barcode.XDimension.Pixels = 5f;
-                generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
-                generator.Parameters.Barcode.DataMatrix.EccType = DataMatrixEccType.Ecc200;
-                using (var ms = new MemoryStream())
-                {
-                    generator.Save(ms, BarCodeImageFormat.Png);
-                }
+                // Save the generated barcode to a memory stream in PNG format
+                generator.Save(stream, BarCodeImageFormat.Png);
             }
-
-            // Capture memory usage after generation
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            long after = GC.GetTotalMemory(true);
-            totalDiff += (after - before);
         }
-        return (double)totalDiff / count;
+
+        long after = GC.GetTotalMemory(true); // Memory after generation
+        return after - before;
     }
 }

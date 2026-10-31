@@ -1,71 +1,61 @@
-// Title: Save GS1 Composite barcode as JPEG with quality 90
-// Description: Demonstrates generating a GS1 Composite barcode and saving it as a JPEG image with a quality setting of 90, suitable for web display.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to configure barcode parameters, generate a composite barcode, and export it using Aspose.Drawing's image codecs. Developers working with barcode creation, format conversion, and image optimization often need to adjust dimensions, component types, and compression quality for web-friendly output.
+// Title: Save GS1 Composite barcode as JPEG with quality level 90
+// Description: Demonstrates generating a GS1 Composite barcode and saving it as a JPEG image suitable for web display.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to create GS1 Composite (linear + 2‑D) barcodes using the BarcodeGenerator class. It shows setting basic visual parameters, configuring the composite components, and exporting the result to a JPEG file. Developers working with product identification, inventory, or retail systems often need to generate GS1‑128 and GS1‑DataMatrix composites for scanning and online presentation.
 // Prompt: Save GS1 Composite barcode image as JPEG with quality level 90 for web display.
-// Tags: gs1 composite barcode, jpeg export, image quality, aspose.barcode, aspose.drawing, barcode generation
+// Tags: gs1 composite barcode, jpeg output, image quality, aspose.barcode, barcode generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a GS1 Composite barcode and saving it as a JPEG image with quality 90.
+/// Generates a GS1 Composite barcode and saves it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, configures parameters, and writes the JPEG file.
+    /// Entry point of the example. Creates the barcode, configures its components,
+    /// and writes the image to a temporary JPEG file.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the current working directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "GS1Composite.jpg");
+        // Define the output file path in the system's temporary folder.
+        string outputPath = Path.Combine(Path.GetTempPath(), "GS1Composite.jpg");
 
-        // Initialize the barcode generator with GS1 Composite symbology and sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, "(01)01234567890128|HelloWorld"))
+        // Ensure the target directory exists.
+        string outputDir = Path.GetDirectoryName(outputPath);
+        if (!Directory.Exists(outputDir))
         {
-            // Set the X-dimension (module width) to 2 pixels.
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
-
-            // Hide the human‑readable text (code text) from the image.
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
-
-            // Configure the 2‑D component of the composite barcode.
-            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_B;
-
-            // Set the linear component to GS1‑Code128.
-            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-
-            // Allow non‑GS1 encoding for the linear component (optional).
-            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
-
-            // Generate the barcode image as a bitmap.
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
-            {
-                // Locate the JPEG codec from the installed image encoders.
-                ImageCodecInfo jpegCodec = Array.Find(ImageCodecInfo.GetImageEncoders(),
-                    c => c.FormatID == ImageFormat.Jpeg.Guid);
-
-                if (jpegCodec == null)
-                {
-                    Console.WriteLine("JPEG codec not found.");
-                    return;
-                }
-
-                // Set the JPEG quality to 90 (out of 100) using encoder parameters.
-                using (EncoderParameters encoderParams = new EncoderParameters(1))
-                {
-                    encoderParams.Param[0] = new EncoderParameter(Encoder.Quality, (long)90);
-                    // Save the bitmap as a JPEG file with the specified quality.
-                    bitmap.Save(outputPath, jpegCodec, encoderParams);
-                }
-            }
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Inform the user where the file was saved.
-        Console.WriteLine($"GS1 Composite barcode saved as JPEG with quality 90 at: {outputPath}");
+        // Prepare the GS1 Composite code text.
+        // Linear part (GS1‑128) contains a GTIN‑14 (AI (01)).
+        string linearPart = "(01)01234567890128";
+        // 2D part (e.g., CC‑C) contains arbitrary data.
+        string twoDPart = "HelloWorld";
+        // Combine parts with the '|' separator required for composite barcodes.
+        string codeText = $"{linearPart}|{twoDPart}";
+
+        // Create a barcode generator for the GS1 Composite symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
+        {
+            // Set basic visual parameters.
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
+            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+
+            // Configure the composite components.
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
+            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
+
+            // Note: Aspose.BarCode does not expose a JPEG quality setting.
+            // The image will be saved with default JPEG compression.
+            generator.Save(outputPath, BarCodeImageFormat.Jpeg);
+        }
+
+        Console.WriteLine($"GS1 Composite barcode saved as JPEG to: {outputPath}");
     }
 }

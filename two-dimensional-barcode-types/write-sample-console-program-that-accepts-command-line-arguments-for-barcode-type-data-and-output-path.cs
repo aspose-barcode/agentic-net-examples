@@ -1,8 +1,8 @@
 // Title: Generate barcode image from command‑line arguments
-// Description: Demonstrates how to create a barcode image using Aspose.BarCode by specifying symbology, data, and output file via command‑line parameters.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical use cases include creating barcodes for inventory, shipping labels, or product packaging. Developers often need to accept dynamic input, resolve symbology types, and save images in various formats, which this sample covers.
+// Description: Demonstrates how to create a barcode image using Aspose.BarCode by passing the symbology, data, and output file path via command‑line arguments.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. It shows typical scenarios such as dynamic barcode creation in console utilities, batch processing, and integration into CI pipelines where image format is inferred from file extension.
 // Prompt: Write a sample console program that accepts command‑line arguments for barcode type, data, and output path.
-// Tags: barcode generation, command-line, encode types, image format, aspose.barcode, console app
+// Tags: barcode generation, command line, encode types, image format, aspose.barcode, console app
 
 using System;
 using System.IO;
@@ -12,16 +12,14 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Sample console application that generates a barcode image based on command‑line arguments.
+/// Sample console application that generates a barcode image based on command‑line parameters.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Parses arguments, resolves the requested symbology, and saves the generated barcode.
+    /// Entry point. Parses arguments, resolves the symbology, determines image format, and saves the barcode.
     /// </summary>
-    /// <param name="args">
-    /// args[0] – symbology name (e.g., "Code128"); args[1] – data to encode; args[2] – output file path.
-    /// </param>
+    /// <param name="args">Command‑line arguments: [0] symbology name, [1] data string, [2] output file path.</param>
     static void Main(string[] args)
     {
         // Default values used when arguments are missing
@@ -30,74 +28,68 @@ class Program
         string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode.png");
 
         // Override defaults with supplied arguments, if any
-        if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
+        if (args.Length >= 1 && !string.IsNullOrWhiteSpace(args[0]))
             symbologyName = args[0];
-        if (args.Length > 1 && !string.IsNullOrWhiteSpace(args[1]))
+        if (args.Length >= 2 && !string.IsNullOrWhiteSpace(args[1]))
             codeText = args[1];
-        if (args.Length > 2 && !string.IsNullOrWhiteSpace(args[2]))
+        if (args.Length >= 3 && !string.IsNullOrWhiteSpace(args[2]))
             outputPath = args[2];
 
-        // Resolve the symbology name to the corresponding EncodeTypes enum value using reflection
-        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+        // Resolve symbology name to BaseEncodeType via reflection
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
         if (field == null)
         {
             Console.WriteLine($"Unknown symbology: {symbologyName}");
             return;
         }
 
-        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
-        BarCodeImageFormat imageFormat = GetImageFormatFromPath(outputPath);
-
-        // Ensure the output directory exists before attempting to save the file
-        string outDir = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(outDir) && !Directory.Exists(outDir))
+        BaseEncodeType encodeType = field.GetValue(null) as BaseEncodeType;
+        if (encodeType == null)
         {
-            Directory.CreateDirectory(outDir);
+            Console.WriteLine($"Failed to obtain encode type for symbology: {symbologyName}");
+            return;
         }
 
-        // Generate the barcode and save it using the selected image format
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Ensure the output directory exists
+        string outputDir = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
         {
-            // Example of setting a simple property (optional)
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-
-            generator.Save(outputPath, imageFormat);
+            Directory.CreateDirectory(outputDir);
         }
 
-        Console.WriteLine($"Barcode generated: {outputPath}");
-    }
-
-    /// <summary>
-    /// Determines the appropriate <see cref="BarCodeImageFormat"/> based on the file extension of the output path.
-    /// </summary>
-    /// <param name="path">The full output file path.</param>
-    /// <returns>The matching image format; defaults to PNG for unknown extensions.</returns>
-    static BarCodeImageFormat GetImageFormatFromPath(string path)
-    {
-        string ext = Path.GetExtension(path).ToLowerInvariant();
+        // Determine image format from file extension (default to PNG)
+        BarCodeImageFormat imageFormat = BarCodeImageFormat.Png;
+        string ext = Path.GetExtension(outputPath).ToLowerInvariant();
         switch (ext)
         {
             case ".png":
-                return BarCodeImageFormat.Png;
+                imageFormat = BarCodeImageFormat.Png;
+                break;
             case ".jpg":
             case ".jpeg":
-                return BarCodeImageFormat.Jpeg;
+                imageFormat = BarCodeImageFormat.Jpeg;
+                break;
             case ".bmp":
-                return BarCodeImageFormat.Bmp;
+                imageFormat = BarCodeImageFormat.Bmp;
+                break;
             case ".gif":
-                return BarCodeImageFormat.Gif;
+                imageFormat = BarCodeImageFormat.Gif;
+                break;
             case ".tiff":
             case ".tif":
-                return BarCodeImageFormat.Tiff;
-            case ".svg":
-                return BarCodeImageFormat.Svg;
-            case ".pdf":
-                return BarCodeImageFormat.Pdf;
-            case ".emf":
-                return BarCodeImageFormat.Emf;
+                imageFormat = BarCodeImageFormat.Tiff;
+                break;
             default:
-                // Default to PNG if the extension is not recognized
-                return BarCodeImageFormat.Png;
+                Console.WriteLine($"Unrecognized or unsupported file extension '{ext}'. Defaulting to PNG.");
+                break;
         }
+
+        // Generate the barcode and save it to the specified path
+        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            generator.Save(outputPath, imageFormat);
+        }
+
+        Console.WriteLine($"Barcode generated: Type={symbologyName}, Data=\"{codeText}\", SavedTo=\"{outputPath}\"");
     }
 }

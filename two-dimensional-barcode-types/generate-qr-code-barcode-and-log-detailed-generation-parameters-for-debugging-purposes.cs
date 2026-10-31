@@ -1,18 +1,19 @@
 // Title: Generate QR Code and Log Parameters
-// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, customizing its appearance and QR‑specific settings, saving it as PNG, and outputting all generation parameters for debugging.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with QR Code symbology. It shows typical use cases such as setting module size, error correction level, version, encoding mode, ECI encoding, colors, padding, resolution, and rotation. Developers working with barcode creation often need to fine‑tune these parameters and log them for troubleshooting or audit purposes.
+// Description: Demonstrates how to create a QR Code barcode with Aspose.BarCode, configure its properties, and output detailed generation settings for debugging.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes.QR, and related parameter classes (e.g., QRErrorLevel, QRVersion, ECIEncodings). Typical scenarios include creating QR codes for URLs, product data, or authentication tokens, where developers need to fine‑tune dimensions, error correction, and output resolution. The snippet shows how to retrieve and log these settings, a common requirement for troubleshooting and ensuring consistent barcode quality across deployments.
 // Prompt: Generate QR Code barcode and log detailed generation parameters for debugging purposes.
-// Tags: qr code, barcode generation, debugging, parameters, aspose.barcode, png output
+// Tags: qr code, barcode generation, debugging, parameters, aspnet, aspose.barcode, image output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample program that generates a QR Code barcode, saves it as a PNG file,
-/// and writes detailed generation parameters to the console for debugging.
+/// Example program that generates a QR Code using Aspose.BarCode,
+/// logs all relevant generation parameters, and saves the image to disk.
 /// </summary>
 class Program
 {
@@ -21,67 +22,56 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Determine a temporary file path for the output image.
-        string outputPath = Path.Combine(Path.GetTempPath(), "SampleQrCode.png");
-
-        // Initialize the QR Code generator with the desired text to encode.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Prepare the output directory where barcode images will be saved.
+        string outputDir = Path.Combine(Environment.CurrentDirectory, "Output");
+        if (!Directory.Exists(outputDir))
         {
-            // -----------------------------------------------------------------
-            // QR Code specific configuration
-            // -----------------------------------------------------------------
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Set the size of a single QR module (pixel dimension).
+        // Define file paths and the text to encode in the QR Code.
+        string outputPath = Path.Combine(outputDir, "qr.png");
+        string codeText = "Aspose QR Code Example";
+
+        // Initialize the QR Code generator with the desired symbology and data.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        {
+            // Configure generation parameters for size, error correction, version, encoding, resolution, rotation, and padding.
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
-
-            // Configure QR error correction level, version, encoding mode, and ECI encoding.
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-            generator.Parameters.Barcode.QR.Version = QRVersion.Version05;
-            generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Auto;
+            generator.Parameters.Barcode.QR.Version = QRVersion.Auto;
             generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
-
-            // -----------------------------------------------------------------
-            // Visual appearance settings
-            // -----------------------------------------------------------------
-
-            // Define foreground (barcode) and background colors.
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Set padding around the barcode in points.
-            generator.Parameters.Barcode.Padding.Left.Point = 5f;
-            generator.Parameters.Barcode.Padding.Top.Point = 5f;
-            generator.Parameters.Barcode.Padding.Right.Point = 5f;
-            generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
-
-            // Define image resolution (DPI) and rotation angle.
             generator.Parameters.Resolution = 300f;
             generator.Parameters.RotationAngle = 0f;
+            generator.Parameters.Barcode.Padding.Left.Point = 2f;
+            generator.Parameters.Barcode.Padding.Top.Point = 2f;
+            generator.Parameters.Barcode.Padding.Right.Point = 2f;
+            generator.Parameters.Barcode.Padding.Bottom.Point = 2f;
 
-            // -----------------------------------------------------------------
-            // Save the generated barcode image to the file system.
-            // -----------------------------------------------------------------
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // -----------------------------------------------------------------
-            // Log all relevant generation parameters for debugging purposes.
-            // -----------------------------------------------------------------
+            // Log all configured parameters to the console for debugging purposes.
             Console.WriteLine("QR Code Generation Parameters:");
-            Console.WriteLine($"  CodeText               : {generator.CodeText}");
-            Console.WriteLine($"  XDimension (Pixels)    : {generator.Parameters.Barcode.XDimension.Pixels}");
-            Console.WriteLine($"  QR ErrorLevel          : {generator.Parameters.Barcode.QR.ErrorLevel}");
-            Console.WriteLine($"  QR Version             : {generator.Parameters.Barcode.QR.Version}");
-            Console.WriteLine($"  QR EncodeMode          : {generator.Parameters.Barcode.QR.EncodeMode}");
-            Console.WriteLine($"  QR ECIEncoding         : {generator.Parameters.Barcode.QR.ECIEncoding}");
-            Console.WriteLine($"  BarColor               : {generator.Parameters.Barcode.BarColor}");
-            Console.WriteLine($"  BackColor              : {generator.Parameters.BackColor}");
-            Console.WriteLine($"  Padding Left (Point)   : {generator.Parameters.Barcode.Padding.Left.Point}");
-            Console.WriteLine($"  Padding Top (Point)    : {generator.Parameters.Barcode.Padding.Top.Point}");
-            Console.WriteLine($"  Padding Right (Point)  : {generator.Parameters.Barcode.Padding.Right.Point}");
-            Console.WriteLine($"  Padding Bottom (Point) : {generator.Parameters.Barcode.Padding.Bottom.Point}");
-            Console.WriteLine($"  Resolution (DPI)       : {generator.Parameters.Resolution}");
-            Console.WriteLine($"  RotationAngle (degrees): {generator.Parameters.RotationAngle}");
-            Console.WriteLine($"  Output file            : {outputPath}");
+            Console.WriteLine($"  CodeText: {generator.CodeText}");
+            Console.WriteLine($"  XDimension (Pixels): {generator.Parameters.Barcode.XDimension.Pixels}");
+            Console.WriteLine($"  ErrorLevel: {generator.Parameters.Barcode.QR.ErrorLevel}");
+            Console.WriteLine($"  Version: {generator.Parameters.Barcode.QR.Version}");
+            Console.WriteLine($"  ECIEncoding: {generator.Parameters.Barcode.QR.ECIEncoding}");
+            Console.WriteLine($"  Resolution (dpi): {generator.Parameters.Resolution}");
+            Console.WriteLine($"  RotationAngle: {generator.Parameters.RotationAngle}");
+            Console.WriteLine($"  Padding (Points) - Left: {generator.Parameters.Barcode.Padding.Left.Point}, Top: {generator.Parameters.Barcode.Padding.Top.Point}, Right: {generator.Parameters.Barcode.Padding.Right.Point}, Bottom: {generator.Parameters.Barcode.Padding.Bottom.Point}");
+
+            // Generate the QR Code bitmap and log its dimensions.
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            {
+                Console.WriteLine($"Generated bitmap size: {bitmap.Width}x{bitmap.Height}");
+                // Save the bitmap to a PNG file.
+                bitmap.Save(outputPath, ImageFormat.Png);
+            }
+
+            // Additionally, save the QR Code using the generator's built‑in Save method.
+            string alternatePath = Path.Combine(outputDir, "qr_generator_save.png");
+            generator.Save(alternatePath, BarCodeImageFormat.Png);
+            Console.WriteLine($"QR code saved to: {outputPath}");
+            Console.WriteLine($"QR code also saved via generator.Save to: {alternatePath}");
         }
     }
 }

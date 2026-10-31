@@ -1,8 +1,8 @@
-// Title: Generate QR Code and Create JPEG Thumbnail
-// Description: This example generates a QR Code barcode, saves it as a JPEG image, and creates a 150x150 thumbnail version.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation and image processing using Aspose.Drawing. It covers creating QR Code symbology, configuring barcode parameters, saving to JPEG, and resizing images to produce thumbnails. Developers working with barcode creation, image manipulation, or preparing assets for cloud storage will find this pattern useful.
+// Title: Generate QR Code and Create JPEG Thumbnail in Simulated Cloud Bucket
+// Description: This example generates a QR Code barcode, saves it as a JPEG image, and creates a smaller thumbnail version, storing both in a temporary folder that simulates a cloud storage bucket.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation (BarcodeGenerator, EncodeTypes) combined with Aspose.Drawing image manipulation (Bitmap, Graphics) to produce QR Code images and thumbnails. Typical for scenarios where barcodes need to be stored or displayed in cloud storage, requiring both full‑size and preview images. Developers often use these APIs to automate barcode creation, resize images, and integrate with cloud SDKs for upload.
 // Prompt: Generate QR Code barcode and store thumbnail in cloud storage bucket as JPEG.
-// Tags: qr code, barcode generation, jpeg, thumbnail, aspose.barcode, aspose.drawing, image processing
+// Tags: qr code, barcode generation, thumbnail, jpeg, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,70 +12,59 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code barcode, saves it as a JPEG,
-/// creates a thumbnail image, and outlines where to upload the thumbnail to cloud storage.
+/// Demonstrates generating a QR Code barcode, saving it as JPEG, and creating a thumbnail image stored in a simulated cloud bucket.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point that creates the QR Code, generates a thumbnail, and writes the file locations to the console.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Set up a temporary output directory for the generated images.
-        // --------------------------------------------------------------------
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
+        // Define a temporary folder to simulate a cloud storage bucket.
+        string bucketPath = Path.Combine(Path.GetTempPath(), "cloud_bucket");
+        Directory.CreateDirectory(bucketPath);
 
-        // Define file paths for the full-size QR image and its thumbnail.
-        string fullImagePath = Path.Combine(outputDir, "qr_full.jpg");
-        string thumbImagePath = Path.Combine(outputDir, "qr_thumbnail.jpg");
+        // Paths for the full‑size QR code image and its thumbnail.
+        string qrPath = Path.Combine(bucketPath, "qr.jpg");
+        string thumbPath = Path.Combine(bucketPath, "qr_thumb.jpg");
 
-        // Text to encode in the QR Code.
-        string qrText = "https://example.com";
-
-        // --------------------------------------------------------------------
-        // Generate the QR Code barcode and save it as a JPEG image.
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // Generate QR Code barcode and save it as a JPEG file.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Optional: set the size of each QR module (pixel dimension).
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-
-            // Optional: set the error correction level (LevelM provides a good balance).
+            // Optional: set QR error correction level to improve readability.
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Save the generated barcode to the specified JPEG file.
-            generator.Save(fullImagePath, BarCodeImageFormat.Jpeg);
+            // Save the full‑size QR code image.
+            generator.Save(qrPath, BarCodeImageFormat.Jpeg);
         }
 
-        // --------------------------------------------------------------------
-        // Create a 150x150 pixel thumbnail from the generated QR image.
-        // --------------------------------------------------------------------
-        using (var original = new Bitmap(fullImagePath))
+        // Create a thumbnail from the generated QR code image.
+        using (var original = new Bitmap(qrPath))
         {
+            // Define thumbnail width and calculate height to preserve aspect ratio.
             int thumbWidth = 150;
-            int thumbHeight = 150;
+            int thumbHeight = (int)(original.Height * (thumbWidth / (float)original.Width));
 
             using (var thumbnail = new Bitmap(thumbWidth, thumbHeight))
             {
+                // Draw the scaled image onto the thumbnail bitmap.
                 using (var graphics = Graphics.FromImage(thumbnail))
                 {
-                    // Draw the original image scaled down to the thumbnail dimensions.
                     graphics.DrawImage(original, 0, 0, thumbWidth, thumbHeight);
                 }
 
                 // Save the thumbnail as a JPEG file.
-                thumbnail.Save(thumbImagePath, ImageFormat.Jpeg);
+                thumbnail.Save(thumbPath, ImageFormat.Jpeg);
             }
         }
 
-        // Output the locations of the generated files.
-        Console.WriteLine($"QR code saved to: {fullImagePath}");
-        Console.WriteLine($"Thumbnail saved to: {thumbImagePath}");
+        // Output the locations of the saved images.
+        Console.WriteLine($"QR code saved to: {qrPath}");
+        Console.WriteLine($"Thumbnail saved to: {thumbPath}");
 
-        // NOTE: In a real scenario, upload 'thumbImagePath' to a cloud storage bucket using the appropriate SDK.
-        // The cloud SDK is not available in this runner, so the upload step is omitted.
+        // In a real implementation, the thumbnail would be uploaded to a cloud storage bucket
+        // using the appropriate SDK (e.g., Azure Blob Storage, AWS S3, Google Cloud Storage).
+        // The upload code is omitted here because the required SDKs are not available in the snippet runner.
     }
 }

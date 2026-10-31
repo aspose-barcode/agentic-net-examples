@@ -1,102 +1,82 @@
-// Title: Generate and Verify QR Code Barcode using Aspose.BarCode
-// Description: This example creates a QR Code barcode image, saves it as PNG, and then reads it back to confirm the encoded text matches the original.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition APIs. It uses BarcodeGenerator to produce QR Code images and BarCodeReader to decode them, a common workflow for developers who need to embed scannable data (e.g., URLs, identifiers) in applications and verify correctness automatically. Ideal for batch processing, testing, and integration scenarios where barcode readability must be programmatically ensured.
+// Title: Generate QR Code and verify readability using Aspose.BarCode
+// Description: Demonstrates creating a QR Code barcode image with Aspose.BarCode, then reading it back with the built‑in barcode recognizer to confirm the encoded text matches the original.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to produce a QR Code, configure its parameters (X‑dimension, error correction level), save the image, and then employ BarCodeReader with DecodeType.QR to decode and validate the barcode. Developers working with QR Code creation, image output, and automated verification can use this pattern for testing, batch processing, or integration scenarios.
 // Prompt: Generate a QR Code barcode and verify readability with external scanner library.
-// Tags: qr code, barcode generation, barcode recognition, png, aspose.barcode, csharp
+// Tags: qr code, barcode generation, barcode recognition, aspose.barcode, c#, console
 
 using System;
 using System.IO;
+using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode, saving it, and verifying its readability using Aspose.BarCode.
+/// Demonstrates QR Code generation and verification using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR Code, reads it back, and validates the decoded text.
+    /// Entry point of the demo. Generates a QR Code, reads it back, and validates the content.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare temporary directory and file path for the barcode image
-        // --------------------------------------------------------------------
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeQrDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string barcodePath = Path.Combine(tempDir, "qr.png");
+        // Prepare a unique temporary folder for the demo files.
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // --------------------------------------------------------------------
-        // Text that will be encoded into the QR Code
-        // --------------------------------------------------------------------
-        string originalText = "Aspose QR Code Test";
+        // Define the output image path and the text to encode.
+        string qrPath = Path.Combine(tempFolder, "qr.png");
+        string originalText = "Hello Aspose QR";
 
-        // --------------------------------------------------------------------
-        // Generate QR Code using BarcodeGenerator
-        // --------------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, originalText))
+        // Generate QR Code with specific parameters.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, originalText))
         {
-            // Set error correction level to Medium (Level M)
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-            // Define module size (pixel dimension)
-            generator.Parameters.Barcode.XDimension.Pixels = 5f;
-            // Save the generated barcode as a PNG image
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            // Set module size (X dimension) and high error correction level.
+            generator.Parameters.Barcode.XDimension.Pixels = 8f;
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+            // Save the generated QR Code as a PNG image.
+            generator.Save(qrPath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Verify that the barcode image was created successfully
-        // --------------------------------------------------------------------
-        if (!File.Exists(barcodePath))
+        // Verify that the image file was created successfully.
+        if (!File.Exists(qrPath))
         {
-            Console.WriteLine("Failed to generate barcode image.");
+            Console.WriteLine("Failed to generate QR code image.");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // Initialize barcode reader for QR Code decoding
-        // --------------------------------------------------------------------
-        BaseDecodeType decodeType = DecodeType.QR;
-        using (BarCodeReader reader = new BarCodeReader(barcodePath, decodeType))
+        // Read and decode the QR Code from the saved image.
+        using (var reader = new BarCodeReader(qrPath, DecodeType.QR))
         {
-            // Read all barcodes found in the image
             var results = reader.ReadBarCodes();
+            var first = results.FirstOrDefault();
 
-            // Check if any barcode was detected
-            if (results == null || results.Length == 0)
+            // Compare the decoded text with the original input.
+            if (first != null && first.CodeText == originalText)
             {
-                Console.WriteLine("No barcode detected.");
-                return;
+                Console.WriteLine("QR code read successfully. Decoded text matches original.");
             }
-
-            // Iterate through detection results and validate decoded text
-            foreach (var result in results)
+            else if (first != null)
             {
-                Console.WriteLine($"Decoded Text: {result.CodeText}");
-                Console.WriteLine($"Symbology: {result.CodeType}");
-                if (result.CodeText == originalText)
-                {
-                    Console.WriteLine("Verification succeeded: decoded text matches original.");
-                }
-                else
-                {
-                    Console.WriteLine("Verification failed: decoded text does not match original.");
-                }
+                Console.WriteLine($"QR code read, but text mismatch. Expected: '{originalText}', Got: '{first.CodeText}'.");
+            }
+            else
+            {
+                Console.WriteLine("No QR code detected in the generated image.");
             }
         }
 
-        // --------------------------------------------------------------------
-        // Cleanup temporary files and directory (optional)
-        // --------------------------------------------------------------------
+        // Cleanup temporary files and folder (optional).
         try
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempDir);
+            File.Delete(qrPath);
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignore any errors during cleanup
+            // Ignored - cleanup not critical for demo.
         }
     }
 }

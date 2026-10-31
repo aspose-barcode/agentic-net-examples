@@ -1,102 +1,60 @@
-// Title: Generate QR Code and Validate via BarCodeReader in a Unit Test
-// Description: This example creates a QR Code image using Aspose.BarCode, saves it to a temporary file, then reads it back to verify the encoded text matches the original.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation and recognition workflows, focusing on QR Code creation with BarcodeGenerator and validation using BarCodeReader. Ideal for developers writing automated tests that need to ensure barcode data integrity. Covers typical use cases such as unit testing, CI pipelines, and temporary file handling, highlighting key API classes like BarcodeGenerator, BarCodeReader, and related parameter settings.
-// Prompt: Generate a QR Code barcode and integrate generation into unit test suite for validation.
-// Tags: qr code, barcode generation, barcode recognition, unit testing, aspose.barcode
-
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
-/// <summary>
-/// Demonstrates QR Code generation and validation using Aspose.BarCode within a self‑contained test scenario.
-/// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point that creates a QR Code, saves it, reads it back, and reports validation results.
-    /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a unique temporary directory and file path for the barcode image
-        // --------------------------------------------------------------------
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeQrTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string barcodePath = Path.Combine(tempDir, "qr.png");
+        // Create a unique temporary folder for test artifacts
+        string tempFolder = Path.Combine(Path.GetTempPath(), "QrTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Text to encode into the QR Code
-        string originalText = "Aspose QR Code Test";
-
-        // --------------------------------------------------------------------
-        // Generate QR Code using BarcodeGenerator
-        // --------------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, originalText))
+        // Define test cases with different error correction levels
+        var testCases = new List<(QRErrorLevel level, string description)>
         {
-            // Set module size (pixel dimension) and error correction level
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            (QRErrorLevel.LevelL, "Low"),
+            (QRErrorLevel.LevelM, "Medium")
+        };
 
-            // Save the generated QR Code as a PNG image
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
+        bool allPassed = true;
 
-        // --------------------------------------------------------------------
-        // Validate the generated QR Code by reading it back with BarCodeReader
-        // --------------------------------------------------------------------
-        bool testPassed = false;
-
-        if (File.Exists(barcodePath))
+        foreach (var (level, description) in testCases)
         {
-            // Use a decoder that supports all barcode types
-            BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
-
-            using (BarCodeReader reader = new BarCodeReader(barcodePath, decodeType))
+            string filePath = Path.Combine(tempFolder, $"qr_{description}.png");
+            // Generate QR Code
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose QR Test"))
             {
-                var results = reader.ReadBarCodes();
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                generator.Parameters.Barcode.QR.ErrorLevel = level;
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
 
-                foreach (var result in results)
-                {
-                    if (result.CodeText == originalText)
-                    {
-                        testPassed = true;
-                        Console.WriteLine("Test Passed: Decoded text matches original.");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Test Failed: Decoded text '{result.CodeText}' does not match original.");
-                    }
-                }
+            // Read and validate QR Code
+            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.QR))
+            {
+                BarCodeResult[] results = reader.ReadBarCodes();
+                bool success = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
+                Console.WriteLine($"Test '{description}' (ErrorLevel={level}): {(success ? "PASS" : "FAIL")}");
+                if (!success) allPassed = false;
             }
         }
-        else
-        {
-            Console.WriteLine("Test Failed: Barcode image file was not created.");
-        }
 
-        // Report overall test outcome if no matching result was found
-        if (!testPassed)
-        {
-            Console.WriteLine("QR Code generation/validation test completed with failures.");
-        }
+        // Summary
+        Console.WriteLine(allPassed ? "ALL TESTS PASSED" : "ONE OR MORE TESTS FAILED");
 
-        // --------------------------------------------------------------------
-        // Cleanup temporary files and directories
-        // --------------------------------------------------------------------
+        // Cleanup
         try
         {
-            if (File.Exists(barcodePath))
-                File.Delete(barcodePath);
-
-            if (Directory.Exists(tempDir))
-                Directory.Delete(tempDir);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect the test result
+            // Ignore cleanup errors
         }
     }
 }

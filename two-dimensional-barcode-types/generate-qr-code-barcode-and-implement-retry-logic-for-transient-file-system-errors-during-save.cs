@@ -1,8 +1,8 @@
 // Title: Generate QR Code with retry logic for file save
-// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode and saving it to a PNG file with retry handling for transient I/O errors.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure QR Code parameters (error correction level, module size) and persist the image using BarcodeGenerator. Typical use cases include generating QR codes for URLs, contact info, or product data, where developers need robust file system operations with retry logic for temporary failures. Key API classes: BarcodeGenerator, EncodeTypes, QRErrorLevel, BarCodeImageFormat.
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode and saving it as PNG with retry handling for transient file system errors.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure QR Code parameters (EncodeTypes.QR, error correction level) and implement robust file saving with retry logic for IOException and UnauthorizedAccessException. Developers commonly use these APIs to produce QR codes for URLs, product information, or authentication, and need to handle occasional file access issues in automated or cloud environments.
 // Prompt: Generate QR Code barcode and implement retry logic for transient file system errors during save.
-// Tags: qr code, barcode generation, retry logic, io exception handling, aspose.barcode, png output
+// Tags: qr code, barcode generation, retry logic, file io, aspose.barcode, png output
 
 using System;
 using System.IO;
@@ -10,62 +10,56 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates QR Code generation and resilient file saving with retry logic.
+/// Demonstrates generating a QR Code barcode and saving it with retry logic for transient file system errors.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a QR Code and attempts to save it with retry handling for I/O errors.
+    /// Entry point of the example. Generates a QR Code and attempts to save it with retry handling.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory for the generated QR code image
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeQrDemo");
-        if (!Directory.Exists(outputDir))
-        {
-            // Create the directory if it does not already exist
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Full file path for the PNG image
+        // Prepare output directory and file path
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
         string filePath = Path.Combine(outputDir, "qr.png");
-        const int maxAttempts = 3; // Maximum number of save attempts
 
-        // Initialize the barcode generator for QR code with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello, Aspose!"))
+        // QR code content (e.g., a URL)
+        string codeText = "https://example.com";
+
+        // Maximum number of save attempts
+        const int maxAttempts = 3;
+
+        // Create and configure the QR code generator
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Set QR code error correction level to high (Level H)
+            // Set module size (pixel dimension) for the QR code
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            // Use high error correction level to improve readability
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            // Define the size of each QR module in pixels
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Attempt to save the image, retrying on transient file system errors
+            // Attempt to save with retry logic for transient file system errors
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
                 try
                 {
-                    // Save the generated QR code as a PNG file
                     generator.Save(filePath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"QR code saved successfully to: {filePath}");
+                    Console.WriteLine($"QR code successfully saved to: {filePath}");
                     break; // Exit loop on successful save
                 }
-                catch (IOException ex)
+                catch (IOException) when (attempt < maxAttempts)
                 {
-                    // Handle I/O errors such as file being locked or disk issues
-                    Console.WriteLine($"IO attempt {attempt} failed: {ex.Message}");
-                    if (attempt == maxAttempts)
-                    {
-                        Console.WriteLine("All attempts failed. Exiting.");
-                    }
+                    Console.WriteLine($"Attempt {attempt} failed with IOException. Retrying...");
                 }
-                catch (UnauthorizedAccessException ex)
+                catch (UnauthorizedAccessException) when (attempt < maxAttempts)
                 {
-                    // Handle permission-related errors
-                    Console.WriteLine($"Access attempt {attempt} failed: {ex.Message}");
-                    if (attempt == maxAttempts)
-                    {
-                        Console.WriteLine("All attempts failed. Exiting.");
-                    }
+                    Console.WriteLine($"Attempt {attempt} failed with UnauthorizedAccessException. Retrying...");
+                }
+                catch (Exception ex)
+                {
+                    // Unexpected exception – log and rethrow
+                    Console.WriteLine($"Failed to save QR code: {ex.Message}");
+                    throw;
                 }
             }
         }

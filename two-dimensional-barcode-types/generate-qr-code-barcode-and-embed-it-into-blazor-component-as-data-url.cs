@@ -1,50 +1,47 @@
 // Title: Generate QR Code and embed as Data URL in Blazor
-// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, converting it to a Base64‑encoded PNG data URL that can be used directly in a Blazor component.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce image output. Typical use cases include rendering barcodes on web pages, mobile apps, or Blazor components without saving files to disk. Developers often need to customize dimensions, error correction levels, and convert the image to a data URL for inline display.
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, converting it to a PNG Base64 data URL, and outputting the string for use in a Blazor component.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation and image export. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and BarCodeImageFormat for rendering barcodes as images. Developers commonly use these APIs to generate barcodes on the fly and embed them in web UI frameworks like Blazor via data URLs.
 // Prompt: Generate QR Code barcode and embed it into a Blazor component as data URL.
-// Tags: qr code, barcode generation, data url, aspose.barcode, png, blazor
+// Tags: qr code, barcode generation, data url, base64, aspnet blazor, aspose.barcode, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code barcode and outputs it as a data URL.
+/// Demonstrates generating a QR Code barcode and converting it to a Base64 data URL for embedding in a Blazor component.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a QR Code, encodes it to PNG, and prints a data URL.
+    /// Entry point that creates the QR Code, saves it as PNG in memory, and prints the data URL.
     /// </summary>
     static void Main()
     {
-        // Text to be encoded in the QR Code.
-        string codeText = "Hello, Aspose QR!";
+        // Define the text to encode in the QR code.
+        string codeText = "Hello Aspose QR!";
 
-        // Initialize the barcode generator for QR Code with the specified text.
+        // Initialize the QR code generator with the desired symbology and text.
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Set the size of each QR module (pixel dimension).
+            // Optional: adjust the size of each QR module (pixel dimension).
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Configure the error correction level (Level M provides a good balance).
+            // Optional: set the error correction level (LevelM provides a good balance).
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Create a memory stream to hold the generated PNG image.
+            // Render the barcode to a memory stream in PNG format.
             using (MemoryStream ms = new MemoryStream())
             {
-                // Save the barcode image to the memory stream in PNG format.
                 generator.Save(ms, BarCodeImageFormat.Png);
-
-                // Reset the stream position to the beginning before reading.
-                ms.Position = 0;
 
                 // Convert the PNG bytes to a Base64 string.
                 string base64 = Convert.ToBase64String(ms.ToArray());
 
-                // Build the data URL that can be used directly in HTML/Blazor.
-                string dataUrl = "data:image/png;base64," + base64;
+                // Build the data URL that can be used directly in an <img> tag in Blazor.
+                string dataUrl = $"data:image/png;base64,{base64}";
 
                 // Output the data URL to the console (or capture it for further use).
                 Console.WriteLine(dataUrl);

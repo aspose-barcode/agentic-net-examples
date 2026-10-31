@@ -1,80 +1,72 @@
-// Title: Generate a Code128 barcode preview from file or sample text
-// Description: Demonstrates reading source content, truncating it, and creating a PNG barcode image using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and image format classes to produce barcodes. Typical use cases include creating printable labels, embedding barcodes in documents, or previewing barcodes in development tools. Developers often need to configure appearance, resolution, and output format while handling input text safely.
+// Title: Generate and preview a Code128 barcode from the current source file
+// Description: This example reads its own source code, trims it to a manageable length, and creates a Code128 barcode image saved to a temporary folder for preview.
+// Category-Description: Demonstrates Aspose.BarCode generation in a console context, focusing on the BarcodeGenerator class, EncodeTypes enumeration, and image output via BarCodeImageFormat. Typical use cases include creating barcodes for documents, inventory, or UI previews. Developers often need quick, programmatic barcode creation without UI dependencies, making this pattern a common starting point for integration into larger applications or extensions.
 // Prompt: Develop a sample Visual Studio plugin that previews generated barcode based on current code file content.
-// Tags: barcode symbology, barcode generation, png output, aspose.barcode, aspose.drawing, code128
+// Tags: code128, barcode generation, png, aspose.barcode, aspose.drawing, console sample
 
 using System;
 using System.IO;
-using System.Text;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Console application that reads text (from a file or fallback), generates a Code128 barcode,
-/// and saves it as a PNG image for preview purposes.
+/// Demonstrates generating a Code128 barcode from the program's source file and saving it as a PNG preview.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Handles input, barcode creation, and output path reporting.
+    /// Entry point. Reads the source file, creates a barcode image, and writes the output path to the console.
     /// </summary>
-    /// <param name="args">Command‑line arguments; optionally the path to a source text file.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine source file to read. If a path is provided as an argument and the file exists, use it.
-        // Otherwise, use a fallback sample text.
-        string sourceContent;
-        if (args.Length > 0 && File.Exists(args[0]))
+        // Determine the path of this source file (Program.cs) assuming it resides alongside the executable.
+        string exePath = AppDomain.CurrentDomain.BaseDirectory;
+        string sourcePath = Path.Combine(exePath, "Program.cs");
+
+        // Verify that the source file exists before attempting to read it.
+        if (!File.Exists(sourcePath))
         {
-            try
-            {
-                // Read the entire file using UTF‑8 encoding.
-                sourceContent = File.ReadAllText(args[0], Encoding.UTF8);
-            }
-            catch (Exception ex)
-            {
-                // On failure, log the error and fall back to a default string.
-                Console.WriteLine($"Failed to read file '{args[0]}': {ex.Message}");
-                sourceContent = "FallbackSample";
-            }
-        }
-        else
-        {
-            // No valid file argument supplied; use a predefined sample.
-            sourceContent = "FallbackSample";
+            Console.WriteLine($"Source file not found: {sourcePath}");
+            return;
         }
 
-        // Truncate content to a reasonable length for barcode generation (e.g., 100 characters).
-        if (sourceContent.Length > 100)
+        // Read the entire content of the source file.
+        string codeText = File.ReadAllText(sourcePath);
+        if (string.IsNullOrWhiteSpace(codeText))
         {
-            sourceContent = sourceContent.Substring(0, 100);
+            Console.WriteLine("Source file is empty; nothing to encode.");
+            return;
         }
 
-        // Prepare output path in the temporary folder.
-        string outputPath = Path.Combine(Path.GetTempPath(), "preview_barcode.png");
-
-        // Generate barcode using Code128 symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, ""))
+        // Truncate to a reasonable length for barcode generation (Code128 supports long texts, but keep it short for preview).
+        const int maxLength = 100;
+        if (codeText.Length > maxLength)
         {
-            // Set the code text with explicit UTF‑8 encoding.
-            generator.SetCodeText(sourceContent, Encoding.UTF8);
+            codeText = codeText.Substring(0, maxLength);
+        }
 
-            // Optional appearance settings.
-            generator.Parameters.Barcode.BarColor = Color.Black;   // Barcode bars color.
-            generator.Parameters.BackColor = Color.White;          // Background color.
-            generator.Parameters.Barcode.XDimension.Point = 2f;   // Module width.
-            generator.Parameters.Resolution = 300f;                // Image resolution (dpi).
+        // Prepare output path in a temporary folder.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodePreview");
+        Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "CodePreview.png");
 
-            // Save the barcode image in PNG format.
+        // Generate the barcode using Aspose.BarCode.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        {
+            // Basic appearance settings.
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Parameters.Resolution = 300f;
+
+            // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
         // Inform the user where the preview image was saved.
         Console.WriteLine($"Barcode preview generated at: {outputPath}");
-        Console.WriteLine("Note: This console sample demonstrates core barcode generation logic.");
-        Console.WriteLine("A full Visual Studio plugin would embed the image in the IDE UI, which is not possible in this console environment.");
+        // Note: In a real Visual Studio extension, the image would be displayed in a tool window.
+        // This console sample demonstrates the core barcode generation logic.
     }
 }

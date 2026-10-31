@@ -1,72 +1,64 @@
-// Title: GS1 Composite Barcode Caching Example
-// Description: Demonstrates how to cache generated GS1 Composite barcode images using Aspose.BarCode to avoid redundant generation for duplicate inputs.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on GS1 Composite symbology. It showcases the use of BarcodeGenerator, encoding settings, and in‑memory caching to improve performance in scenarios where the same barcode data is requested multiple times. Developers working with high‑throughput barcode creation or web services can reuse this pattern to reduce CPU load and I/O.
+// Title: GS1 Composite Barcode Generation with Caching Example
+// Description: Demonstrates generating a GS1 Composite barcode image and caching the result to avoid redundant processing for identical code texts.
+// Category-Description: Shows how to use Aspose.BarCode's BarcodeGenerator to create GS1 Composite barcodes, configure parameters, and implement an in‑memory cache for repeated requests. This example belongs to the barcode generation and performance optimization category, illustrating typical use of EncodeTypes, BarCodeImageFormat, and generator parameters. Developers often need to cache generated images to improve response times in web services or batch processing.
 // Prompt: Implement caching of generated GS1 Composite barcode images to improve performance for repeated requests.
-// Tags: gs1 composite, barcode generation, caching, png, aspose.barcode, aspose.barcode.generation
+// Tags: gs1 composite, barcode generation, caching, aspnet, aspose.barcode, image output, png, encode types
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates caching of GS1 Composite barcode images using Aspose.BarCode.
+/// Demonstrates GS1 Composite barcode generation with an in‑memory cache to improve performance for repeated requests.
 /// </summary>
 class Program
 {
-    // In‑memory cache: key = barcode text, value = PNG byte array
-    static readonly Dictionary<string, byte[]> _cache = new Dictionary<string, byte[]>();
+    // In‑memory cache mapping the barcode text to the generated image bytes.
+    static readonly Dictionary<string, byte[]> _barcodeCache = new Dictionary<string, byte[]>();
 
     /// <summary>
-    /// Entry point. Generates barcodes, caches duplicates, and saves PNG files.
+    /// Entry point of the demo. Generates a GS1 Composite barcode twice, showing cache hits on the second iteration.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary folder for output images
-        string outputFolder = Path.Combine(Path.GetTempPath(), "GS1CompositeCacheDemo");
-        if (!Directory.Exists(outputFolder))
-        {
-            Directory.CreateDirectory(outputFolder);
-        }
+        // Define the linear and 2D parts of the GS1 Composite code text.
+        string linearPart = "(01)01234567890128";
+        string twoDPart = "(01)01234567890128";
+        string codeText = $"{linearPart}|{twoDPart}";
 
-        // Sample GS1 Composite code texts (some duplicates to test caching)
-        List<string> codeTexts = new List<string>
-        {
-            "(01)01234567890128|HelloWorld",
-            "(01)01234567890128|HelloWorld", // duplicate
-            "(01)01234567890128|SampleData",
-            "(01)01234567890128|SampleData", // duplicate
-            "(01)01234567890128|AnotherTest"
-        };
+        // Prepare an output directory in the temporary folder.
+        string outputDir = Path.Combine(Path.GetTempPath(), "GS1CompositeCacheDemo");
+        Directory.CreateDirectory(outputDir);
 
-        int index = 1;
-        foreach (string codeText in codeTexts)
+        // Generate the same barcode twice to demonstrate caching behavior.
+        for (int i = 1; i <= 2; i++)
         {
-            // Retrieve barcode image bytes, using cache when possible
-            byte[] imageBytes = GetBarcodeImageBytes(codeText);
+            // Build the file path for the current iteration.
+            string filePath = Path.Combine(outputDir, $"GS1Composite_{i}.png");
 
-            // Save the PNG file to the output folder
-            string filePath = Path.Combine(outputFolder, $"barcode_{index}.png");
+            // Retrieve the image bytes from cache or generate a new barcode.
+            byte[] imageBytes = GetOrCreateBarcodeImage(codeText);
+
+            // Write the image to disk.
             File.WriteAllBytes(filePath, imageBytes);
-            Console.WriteLine($"Saved barcode {index} to: {filePath}");
-            index++;
+            Console.WriteLine($"Barcode image saved to: {filePath} (Iteration {i})");
         }
 
-        Console.WriteLine("Processing completed.");
+        Console.WriteLine("Demo completed.");
     }
 
     /// <summary>
-    /// Generates a GS1 Composite barcode image or returns a cached version.
+    /// Returns a cached barcode image if available; otherwise generates a new GS1 Composite barcode,
+    /// stores it in the cache, and returns the image bytes.
     /// </summary>
-    /// <param name="codeText">The GS1 Composite code text to encode.</param>
-    /// <returns>PNG image bytes representing the barcode.</returns>
-    static byte[] GetBarcodeImageBytes(string codeText)
+    /// <param name="codeText">The combined linear and 2D component text for the GS1 Composite barcode.</param>
+    /// <returns>Byte array containing the PNG image of the barcode.</returns>
+    static byte[] GetOrCreateBarcodeImage(string codeText)
     {
-        // Return cached image if it already exists
-        if (_cache.TryGetValue(codeText, out byte[] cachedBytes))
+        // Check if the barcode for the given text is already cached.
+        if (_barcodeCache.TryGetValue(codeText, out byte[] cachedBytes))
         {
             Console.WriteLine("Cache hit for code text.");
             return cachedBytes;
@@ -74,30 +66,25 @@ class Program
 
         Console.WriteLine("Cache miss - generating barcode.");
 
-        // Create a new barcode generator for GS1 Composite symbology
+        // Create a new BarcodeGenerator for GS1 Composite symbology.
         using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, codeText))
         {
-            // Configure GS1 Composite parameters
-            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
-            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
-
-            // For CC_C (full PDF417) set column count
-            generator.Parameters.Barcode.Pdf417.Columns = 30;
-
-            // Optional visual settings
+            // Configure visual and encoding parameters.
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_B;
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
 
-            // Save barcode to a memory stream in PNG format
+            // Save the generated barcode to a memory stream in PNG format.
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] bytes = ms.ToArray();
+                byte[] imageBytes = ms.ToArray();
 
-                // Store generated image in cache for future requests
-                _cache[codeText] = bytes;
-                return bytes;
+                // Store the generated image in the cache for future requests.
+                _barcodeCache[codeText] = imageBytes;
+                return imageBytes;
             }
         }
     }

@@ -1,120 +1,105 @@
 // Title: Validate MaxiCode barcode against ISO/IEC 16023 using Aspose.BarCode
-// Description: Generates a MaxiCode (Mode 2) barcode, saves it as a PNG, then reads it back to verify that the decoded data matches the original, demonstrating compliance with ISO/IEC 16023.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and validation category. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, BarCodeReader, and related classes to create, render, and recognize MaxiCode symbols. Developers working with shipping, logistics, or inventory systems often need to generate MaxiCode barcodes and ensure they conform to the ISO/IEC 16023 standard; this snippet provides a concise reference for those tasks.
+// Description: Demonstrates generating a MaxiCode (Mode 2) barcode, decoding it, and performing a round‑trip check to ensure the data complies with the ISO/IEC 16023 specification.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, BarCodeReader, and related classes to create, read, and validate MaxiCode symbols—common tasks for logistics, shipping, and inventory systems that require ISO‑compliant MaxiCode barcodes.
 // Prompt: Validate that the generated MaxiCode barcode complies with ISO/IEC 16023 standard using built‑in validator.
-// Tags: maxicode, barcode, validation, iso/iec 16023, aspose.barcode, complexbarcode, generation, recognition, png
+// Tags: maxicode, iso-iec-16023, validation, barcode generation, barcode recognition, complex barcode, aspnet.barcode, csharp
 
 using System;
 using System.IO;
-using System.Linq;
-using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates generation of a MaxiCode (Mode 2) barcode, saving it to a temporary file,
-/// and round‑trip validation using Aspose.BarCode's built‑in decoder to simulate ISO/IEC 16023 compliance.
+/// Example program that creates a MaxiCode (Mode 2) barcode, reads it back,
+/// and verifies that the encoded data matches the original input, providing
+/// a practical compliance check with ISO/IEC 16023.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a MaxiCode barcode, validates it by decoding, and cleans up the temporary image.
+    /// Entry point. Generates a MaxiCode barcode, decodes it, and validates the round‑trip data.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // Prepare a unique temporary file path for the generated PNG image.
+        // Create a unique temporary folder for the generated barcode image.
         // --------------------------------------------------------------------
-        string tempPath = Path.Combine(Path.GetTempPath(), "MaxiCode_" + Guid.NewGuid().ToString("N") + ".png");
+        string tempDir = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "maxicode.png");
 
         // --------------------------------------------------------------------
-        // Build the structured second message (Mode 2) required by MaxiCode.
+        // Build MaxiCode codetext (Mode 2) with a structured second message.
         // --------------------------------------------------------------------
-        var structuredMessage = new MaxiCodeStructuredSecondMessage();
-        structuredMessage.Add("634 ALPHA DRIVE");
-        structuredMessage.Add("PITTSBURGH");
-        structuredMessage.Add("PA");
-        structuredMessage.Year = 99; // Two‑digit year
-
-        // --------------------------------------------------------------------
-        // Assemble the full MaxiCode codetext with postal, country, and service data.
-        // --------------------------------------------------------------------
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        var codetext = new MaxiCodeCodetextMode2
         {
-            PostalCode = "524032140",
+            PostalCode = "524032140", // 9 digits required for Mode 2
             CountryCode = 56,
-            ServiceCategory = 999,
-            SecondMessage = structuredMessage
+            ServiceCategory = 999
         };
 
-        // --------------------------------------------------------------------
-        // Generate the barcode image using ComplexBarcodeGenerator.
-        // --------------------------------------------------------------------
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
-        {
-            // Optional visual customisation.
-            generator.Parameters.Barcode.XDimension.Pixels = 5f;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+        var secondMessage = new MaxiCodeStructuredSecondMessage();
+        secondMessage.Add("634 ALPHA DRIVE");
+        secondMessage.Add("PITTSBURGH");
+        secondMessage.Add("PA");
+        secondMessage.Year = 99;
+        codetext.SecondMessage = secondMessage;
 
-            // Save the image as PNG.
-            generator.Save(tempPath, BarCodeImageFormat.Png);
+        // --------------------------------------------------------------------
+        // Generate the MaxiCode barcode and save it as a PNG file.
+        // --------------------------------------------------------------------
+        using (var generator = new ComplexBarcodeGenerator(codetext))
+        {
+            generator.Parameters.Barcode.XDimension.Point = 2f;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
         // --------------------------------------------------------------------
-        // Verify that the image file was successfully created.
+        // Read and decode the generated barcode.
         // --------------------------------------------------------------------
-        if (!File.Exists(tempPath))
-        {
-            Console.WriteLine("Failed to generate barcode image.");
-            return;
-        }
-
-        // --------------------------------------------------------------------
-        // Decode the generated barcode and compare the decoded data with the original.
-        // --------------------------------------------------------------------
-        bool validationPassed = false;
-        using (var reader = new BarCodeReader(tempPath, DecodeType.MaxiCode))
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.MaxiCode))
         {
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Decode complex MaxiCode codetext based on the mode reported by the scanner.
-                MaxiCodeCodetext decoded = ComplexCodetextReader.TryDecodeMaxiCode(result.Extended.MaxiCode.Mode, result.CodeText);
-                if (decoded is MaxiCodeCodetextMode2 decodedMode2)
+                // Decode complex codetext from the raw code text.
+                var complex = ComplexCodetextReader.TryDecodeMaxiCode(result.Extended.MaxiCode.Mode, result.CodeText);
+                if (complex is MaxiCodeCodetextMode2 decoded)
                 {
-                    // Compare basic fields (postal code, country code, service category).
-                    bool basicMatch = decodedMode2.PostalCode == maxiCodeCodetext.PostalCode &&
-                                      decodedMode2.CountryCode == maxiCodeCodetext.CountryCode &&
-                                      decodedMode2.ServiceCategory == maxiCodeCodetext.ServiceCategory;
+                    // Verify primary fields (postal code, country code, service category).
+                    bool fieldsMatch = decoded.PostalCode == codetext.PostalCode &&
+                                       decoded.CountryCode == codetext.CountryCode &&
+                                       decoded.ServiceCategory == codetext.ServiceCategory;
 
-                    // Compare the structured second message if present.
-                    if (decodedMode2.SecondMessage is MaxiCodeStructuredSecondMessage decodedSecond)
+                    // Verify the structured second message (identifiers and year).
+                    bool secondMatch = false;
+                    if (decoded.SecondMessage is MaxiCodeStructuredSecondMessage decodedSecond)
                     {
-                        bool messageMatch = decodedSecond.Year == structuredMessage.Year &&
-                                            decodedSecond.Identifiers.SequenceEqual(structuredMessage.Identifiers);
-                        validationPassed = basicMatch && messageMatch;
+                        if (decodedSecond.Year == secondMessage.Year &&
+                            decodedSecond.Identifiers.Count == secondMessage.Identifiers.Count)
+                        {
+                            secondMatch = true;
+                            for (int i = 0; i < secondMessage.Identifiers.Count && secondMatch; i++)
+                            {
+                                if (decodedSecond.Identifiers[i] != secondMessage.Identifiers[i])
+                                    secondMatch = false;
+                            }
+                        }
                     }
+
+                    // Overall validation result.
+                    bool validationPassed = fieldsMatch && secondMatch;
+                    Console.WriteLine("Round‑trip validation passed: " + validationPassed);
+                }
+                else
+                {
+                    Console.WriteLine("Decoded codetext is not MaxiCodeMode2.");
                 }
             }
         }
 
-        // --------------------------------------------------------------------
-        // Output the validation result.
-        // --------------------------------------------------------------------
-        Console.WriteLine(validationPassed
-            ? "MaxiCode barcode round‑trip validation succeeded (ISO/IEC 16023 compliance simulated)."
-            : "MaxiCode barcode validation failed.");
-
-        // --------------------------------------------------------------------
-        // Clean up the temporary image file.
-        // --------------------------------------------------------------------
-        try
-        {
-            File.Delete(tempPath);
-        }
-        catch
-        {
-            // Suppress any errors during cleanup.
-        }
+        // Note: Aspose.BarCode does not provide a dedicated ISO/IEC 16023 validator.
+        // The round‑trip check above serves as a practical compliance verification.
     }
 }

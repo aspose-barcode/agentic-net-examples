@@ -1,96 +1,93 @@
 // Title: Unit test for handling null or empty CodeText across all barcode types
-// Description: Demonstrates how to verify that Aspose.BarCode throws exceptions when CodeText is null or empty for each supported barcode symbology.
-// Category-Description: This example belongs to the Aspose.BarCode generation validation suite, illustrating the use of EncodeTypes enumeration, BarcodeGenerator, and exception handling to ensure input validation. Developers testing barcode creation often need to confirm that invalid inputs are rejected, making this pattern useful for unit testing and CI pipelines.
+// Description: Demonstrates how to verify that Aspose.BarCode throws an exception when CodeText is null or empty for each supported barcode symbology.
+// Category-Description: This example belongs to the Aspose.BarCode validation suite, illustrating the use of EncodeTypes, BarcodeGenerator, and exception handling to ensure correct input validation. Developers working with barcode generation often need to test edge cases such as missing or empty data to guarantee robust applications. The snippet shows how to iterate over all encode types and programmatically assert expected failures.
 // Prompt: Create unit test that verifies correct handling of null or empty CodeText for all barcode types.
-// Tags: barcode symbology, validation, unit test, null handling, empty string, aspose.barcode, encode types, exception handling
+// Tags: barcode symbology, validation, exception handling, encode types, aspose.barcode, unit test
 
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Contains a simple console‑based test that iterates over all barcode symbologies
-/// and verifies that providing a null or empty CodeText results in an exception.
+/// Contains a simple console‑based test that iterates over every supported barcode symbology
+/// and verifies that generating a barcode with a null or empty <c>CodeText</c> throws an exception.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a temporary folder, runs the tests for each EncodeTypes value,
-    /// and reports the results.
+    /// Entry point that runs the validation tests and reports results to the console.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for any generated files (none are actually saved here)
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Collect any test failures for reporting at the end
+        var failures = new List<string>();
 
-        int totalTests = 0;
-        int failedTests = 0;
+        // Retrieve all public static fields of EncodeTypes (each represents a barcode symbology)
+        var encodeTypeFields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
 
-        // Retrieve all public static fields of the EncodeTypes enum (each represents a barcode type)
-        FieldInfo[] fields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
-        foreach (FieldInfo field in fields)
+        // Iterate through each barcode type and run tests for null and empty CodeText
+        foreach (var field in encodeTypeFields)
         {
-            // Ensure the field value is a BaseEncodeType instance before testing
-            if (field.GetValue(null) is BaseEncodeType encodeType)
-            {
-                // Test with empty string
-                totalTests++;
-                if (!TestCodeText(encodeType, "", tempFolder))
-                {
-                    failedTests++;
-                }
+            var encodeType = field.GetValue(null) as BaseEncodeType;
+            if (encodeType == null) continue;
 
-                // Test with null
-                totalTests++;
-                if (!TestCodeText(encodeType, null, tempFolder))
-                {
-                    failedTests++;
-                }
-            }
+            // Test with null CodeText
+            TestCodeText(encodeType, null, failures);
+
+            // Test with empty CodeText
+            TestCodeText(encodeType, string.Empty, failures);
         }
 
-        // Output a summary of the test run
-        Console.WriteLine($"Total tests run: {totalTests}");
-        Console.WriteLine($"Tests failed: {failedTests}");
-        Console.WriteLine($"Tests passed: {totalTests - failedTests}");
+        // Output summary of test execution
+        Console.WriteLine($"Total tests run: {encodeTypeFields.Length * 2}");
+        if (failures.Count == 0)
+        {
+            Console.WriteLine("All tests passed.");
+        }
+        else
+        {
+            Console.WriteLine($"FAILED: {failures.Count} tests failed.");
+            foreach (var msg in failures)
+            {
+                Console.WriteLine(msg);
+            }
+        }
     }
 
     /// <summary>
-    /// Attempts to generate a barcode with the specified <paramref name="codeText"/> and verifies that an exception is thrown.
+    /// Attempts to generate a barcode with the specified <paramref name="codeText"/> and records a failure
+    /// if no exception is thrown. Expected behavior is an exception when <paramref name="codeText"/> is null or empty.
     /// </summary>
     /// <param name="encodeType">The barcode symbology to test.</param>
-    /// <param name="codeText">The CodeText value (null or empty) to validate.</param>
-    /// <param name="folder">The folder path used for temporary storage (not used in this test).</param>
-    /// <returns>True if the expected exception is thrown; otherwise, false.</returns>
-    static bool TestCodeText(BaseEncodeType encodeType, string codeText, string folder)
+    /// <param name="codeText">The CodeText value to use (null or empty).</param>
+    /// <param name="failures">Collection to which failure messages are added.</param>
+    static void TestCodeText(BaseEncodeType encodeType, string codeText, List<string> failures)
     {
-        // Determine a readable name for the test case (null vs empty)
-        string testName = codeText == null ? "null" : "empty";
-
+        string testName = $"{encodeType.GetType().Name}.{encodeType} with {(codeText == null ? "null" : "empty")} CodeText";
         try
         {
-            // Initialize the generator with the current encode type and the test CodeText
+            // Initialize generator with the current encode type and test CodeText
             using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Configure the generator to throw on invalid CodeText
+                // Configure generator to throw on invalid CodeText
                 generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
 
-                // Trigger barcode generation; this should raise an exception for null/empty CodeText
-                generator.GenerateBarCodeImage();
-
-                // If we reach this point, the generator incorrectly accepted the invalid input
-                Console.WriteLine($"FAIL: {encodeType.GetType().Name}.{encodeType} accepted {testName} CodeText.");
-                return false;
+                // Attempt to generate the barcode image; should throw
+                using (var bitmap = generator.GenerateBarCodeImage())
+                {
+                    // If we reach this point, no exception was thrown – record as failure
+                    failures.Add($"{testName}: Expected exception but none was thrown.");
+                }
             }
         }
         catch (Exception ex)
         {
-            // Expected outcome: an exception indicates proper validation
-            Console.WriteLine($"PASS: {encodeType.GetType().Name}.{encodeType} threw exception for {testName} CodeText -> {ex.Message}");
-            return true;
+            // Expected path: an exception should be thrown; log for visibility
+            Console.WriteLine($"{testName}: Caught expected exception: {ex.Message}");
         }
     }
 }

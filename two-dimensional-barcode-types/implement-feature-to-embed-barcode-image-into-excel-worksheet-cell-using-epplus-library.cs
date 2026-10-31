@@ -1,8 +1,8 @@
-// Title: Embed Code128 barcode image into an Excel worksheet cell using Aspose.Cells
-// Description: Generates a Code128 barcode, saves it as a PNG image, and inserts the image into cell A1 of a new Excel workbook.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to create barcode images with the BarcodeGenerator class and embed them into Office documents using Aspose.Cells. Typical use cases include adding product identifiers, inventory tags, or QR codes directly into spreadsheets for reporting or distribution. Developers often need to combine barcode creation with document automation to streamline data workflows.
-/// Prompt: Implement feature to embed barcode image into Excel worksheet cell using EPPlus library.
-/// Tags: code128, barcode generation, png, aspose.barcode, aspose.cells, excel
+// Title: Embed a Code128 barcode image into an Excel cell using Aspose.BarCode and Aspose.Cells
+// Description: Demonstrates generating a Code128 barcode image with Aspose.BarCode and inserting it into a specific cell of an Excel worksheet using Aspose.Cells. The example adjusts the cell dimensions to fit the barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode generation and Aspose.Cells integration category, showing how to create barcode images (using BarcodeGenerator, EncodeTypes) and embed them into Excel files (using Workbook, Worksheet, Picture). Typical use cases include adding product identifiers, inventory tags, or QR codes directly into spreadsheets for reporting or distribution. Developers often need to control image resolution, hide human‑readable text, and align the picture within cells.
+// Prompt: Implement feature to embed barcode image into Excel worksheet cell using EPPlus library.
+// Tags: code128, barcode-generation, png, aspose.barcode, aspose.cells
 
 using System;
 using System.IO;
@@ -14,47 +14,64 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to generate a barcode image and embed it into an Excel worksheet cell.
+/// Demonstrates embedding a generated barcode image into an Excel worksheet cell.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, inserts it into an Excel file, and saves the result.
+    /// Entry point. Generates a Code128 barcode, adjusts cell size, inserts the image, and saves the workbook.
     /// </summary>
     static void Main()
     {
-        // Define the output Excel file path in the current directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "BarcodeInExcel.xlsx");
+        // Define output file path and barcode parameters
+        string outputPath = Path.Combine(Path.GetTempPath(), "BarcodeInExcel.xlsx");
+        string codeText = "1234567890";
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+        int resolution = 300; // DPI for barcode image
+        int cellRow = 2;      // Zero‑based row index where the image will be placed
+        int cellColumn = 1;   // Zero‑based column index where the image will be placed
 
-        // Create a BarcodeGenerator for Code128 with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Create a new Excel workbook
+        using (var workbook = new Workbook())
         {
-            // Hide the human‑readable text beneath the barcode (optional).
-            generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
+            Worksheet sheet = workbook.Worksheets[0];
 
-            // Render the barcode to a memory stream as a PNG image.
-            using (var imageStream = new MemoryStream())
+            // Generate the barcode image using Aspose.BarCode
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                generator.Save(imageStream, BarCodeImageFormat.Png);
-                imageStream.Position = 0; // Reset stream position for reading.
+                // Set image resolution and hide human‑readable text
+                generator.Parameters.Resolution = (float)resolution;
+                generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-                // Create a new Excel workbook and get the first worksheet.
-                var workbook = new Workbook();
-                var sheet = workbook.Worksheets[0];
+                using (var bitmap = generator.GenerateBarCodeImage())
+                {
+                    // Determine image dimensions in pixels
+                    int imageWidth = bitmap.Width;
+                    int imageHeight = bitmap.Height;
 
-                // Insert the barcode image into cell A1 (row 0, column 0).
-                int row = 0;
-                int column = 0;
-                int pictureIndex = sheet.Pictures.Add(row, column, row + 1, column + 1, imageStream);
-                var picture = sheet.Pictures[pictureIndex];
-                picture.Placement = PlacementType.MoveAndSize; // Ensure the image moves/resizes with the cell.
+                    // Convert image size to Excel column width / row height (96 DPI base)
+                    int cellWidth = (96 * imageWidth) / resolution;
+                    int cellHeight = (96 * imageHeight) / resolution;
+                    sheet.Cells.SetColumnWidthPixel(cellColumn, cellWidth);
+                    sheet.Cells.SetRowHeightPixel(cellRow, cellHeight);
 
-                // Save the workbook to the specified file in XLSX format.
-                workbook.Save(outputPath, SaveFormat.Xlsx);
+                    // Save bitmap to a memory stream in PNG format
+                    using (var imageStream = new MemoryStream())
+                    {
+                        bitmap.Save(imageStream, ImageFormat.Png);
+                        imageStream.Position = 0; // Reset stream position for reading
+
+                        // Insert the picture into the specified cell range
+                        int pictureIndex = sheet.Pictures.Add(cellRow, cellColumn, cellRow + 1, cellColumn + 1, imageStream);
+                        Picture picture = sheet.Pictures[pictureIndex];
+                        picture.Placement = PlacementType.MoveAndSize; // Ensure picture moves/resizes with the cell
+                    }
+                }
             }
-        }
 
-        // Inform the user where the file was saved.
-        Console.WriteLine($"Excel file with barcode saved to: {outputPath}");
+            // Save the workbook to the temporary path
+            workbook.Save(outputPath, SaveFormat.Xlsx);
+            Console.WriteLine($"Excel file with barcode saved to: {outputPath}");
+        }
     }
 }

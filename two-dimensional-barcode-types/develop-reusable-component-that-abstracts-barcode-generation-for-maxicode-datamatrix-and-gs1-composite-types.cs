@@ -1,114 +1,107 @@
-// Title: Reusable barcode generator for MaxiCode, DataMatrix, and GS1 Composite
-// Description: Demonstrates a simple factory that creates PNG images for three common symbologies using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure and save barcodes with different symbologies. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, typical for developers needing to produce barcode images programmatically for labeling, packaging, or inventory systems.
+// Title: Reusable Barcode Generation Component for MaxiCode, DataMatrix, and GS1 Composite
+// Description: Demonstrates a simple factory that creates PNG images for MaxiCode, DataMatrix, and GS1 Composite barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with different EncodeTypes. Typical use cases include creating product labels, shipping codes, and composite barcodes for retail. Developers often need to generate multiple symbologies programmatically, configure parameters such as version or component types, and save the output in common image formats.
 // Prompt: Develop a reusable component that abstracts barcode generation for MaxiCode, DataMatrix, and GS1 Composite types.
-// Tags: barcode, generation, maxicode, datamatrix, gs1 composite, png, aspose.barcode, csharp
+// Tags: barcode, generation, maximicode, datamatrix, gs1 composite, aspose.barcode, png, factory pattern
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Provides a factory method to generate barcode images for supported symbologies.
+/// Provides static methods to generate different barcode types (MaxiCode, DataMatrix, GS1 Composite) as PNG files.
 /// </summary>
 class BarcodeFactory
 {
     /// <summary>
-    /// Generates a barcode image of the specified symbology and saves it to the given path.
+    /// Generates a MaxiCode barcode image.
     /// </summary>
-    /// <param name="symbology">The barcode type (e.g., "MaxiCode", "DataMatrix", "GS1Composite").</param>
-    /// <param name="codeText">The text or data to encode in the barcode.</param>
-    /// <param name="outputPath">Full file path where the PNG image will be saved.</param>
-    public static void Generate(string symbology, string codeText, string outputPath)
+    /// <param name="codeText">The text to encode in the MaxiCode.</param>
+    /// <param name="outputPath">The full file path where the PNG image will be saved.</param>
+    public static void GenerateMaxiCode(string codeText, string outputPath)
     {
-        // Validate input parameters
-        if (string.IsNullOrWhiteSpace(symbology))
-            throw new ArgumentException("Symbology must be provided.", nameof(symbology));
-        if (string.IsNullOrWhiteSpace(codeText))
-            throw new ArgumentException("Code text must be provided.", nameof(codeText));
-        if (string.IsNullOrWhiteSpace(outputPath))
-            throw new ArgumentException("Output path must be provided.", nameof(outputPath));
-
-        // Map string identifier to Aspose.EncodeTypes value
-        BaseEncodeType encodeType;
-        switch (symbology.Trim().ToLowerInvariant())
+        // Create a generator for MaxiCode with the supplied text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, codeText))
         {
-            case "maxicode":
-                encodeType = EncodeTypes.MaxiCode;
-                break;
-            case "datamatrix":
-                encodeType = EncodeTypes.DataMatrix;
-                break;
-            case "gs1composite":
-                encodeType = EncodeTypes.GS1CompositeBar;
-                break;
-            default:
-                throw new ArgumentException($"Unsupported symbology: {symbology}", nameof(symbology));
+            // Optional: set mode or other parameters if needed.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+    }
 
-        // Create generator with selected type and data
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+    /// <summary>
+    /// Generates a DataMatrix barcode image.
+    /// </summary>
+    /// <param name="codeText">The text to encode in the DataMatrix.</param>
+    /// <param name="outputPath">The full file path where the PNG image will be saved.</param>
+    public static void GenerateDataMatrix(string codeText, string outputPath)
+    {
+        // Create a generator for DataMatrix with the supplied text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Apply common visual settings
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-            generator.Parameters.Resolution = 300f;
+            // Example version; adjust as needed.
+            generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
+    }
 
-            // Additional configuration for GS1 Composite barcodes
-            if (encodeType == EncodeTypes.GS1CompositeBar)
-            {
-                generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
-                generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
-                generator.Parameters.Barcode.Pdf417.Columns = 30;
-                generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
-            }
-
-            // Save the generated barcode as a PNG file
+    /// <summary>
+    /// Generates a GS1 Composite barcode image that combines a linear component and a 2‑D component.
+    /// </summary>
+    /// <param name="linearComponent">The linear component string (e.g., GS1 Code128).</param>
+    /// <param name="twoDComponent">The 2‑D component string (e.g., PDF417).</param>
+    /// <param name="outputPath">The full file path where the PNG image will be saved.</param>
+    public static void GenerateGS1Composite(string linearComponent, string twoDComponent, string outputPath)
+    {
+        // Combine linear and 2‑D components using the pipe separator required by Aspose.
+        string combined = $"{linearComponent}|{twoDComponent}";
+        using (var generator = new BarcodeGenerator(EncodeTypes.GS1CompositeBar, combined))
+        {
+            // Specify the linear component type (GS1 Code128 in this example).
+            generator.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+            // Specify the 2‑D component type (CC_C uses full PDF417).
+            generator.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
+            // Allow non‑GS1 data in the 2‑D component if needed.
+            generator.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
+            // Configure PDF417 columns for the 2‑D part.
+            generator.Parameters.Barcode.Pdf417.Columns = 30;
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
     }
 }
 
+/// <summary>
+/// Demonstrates usage of the <see cref="BarcodeFactory"/> to generate various barcode images.
+/// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates sample barcodes and saves them to the local file system.
+    /// Entry point of the example application.
     /// </summary>
     static void Main()
     {
-        // Determine output directory and ensure it exists
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
-        Directory.CreateDirectory(outputDir);
+        // Determine the base directory for output files.
+        string baseDir = Directory.GetCurrentDirectory();
 
-        // Generate a MaxiCode barcode
-        string maxiCodePath = Path.Combine(outputDir, "maxicode.png");
-        BarcodeFactory.Generate(
-            symbology: "MaxiCode",
-            codeText: "SampleMaxiCode123",
-            outputPath: maxiCodePath);
-        Console.WriteLine($"Generated MaxiCode: {maxiCodePath}");
+        // ---------- MaxiCode example ----------
+        string maxiCodeText = "Sample MaxiCode Text";
+        string maxiCodePath = Path.Combine(baseDir, "maxicode.png");
+        BarcodeFactory.GenerateMaxiCode(maxiCodeText, maxiCodePath);
+        Console.WriteLine($"MaxiCode saved to {maxiCodePath}");
 
-        // Generate a DataMatrix barcode
-        string dataMatrixPath = Path.Combine(outputDir, "datamatrix.png");
-        BarcodeFactory.Generate(
-            symbology: "DataMatrix",
-            codeText: "DM-2023-ABC",
-            outputPath: dataMatrixPath);
-        Console.WriteLine($"Generated DataMatrix: {dataMatrixPath}");
+        // ---------- DataMatrix example ----------
+        string dataMatrixText = "DM1234567890";
+        string dataMatrixPath = Path.Combine(baseDir, "datamatrix.png");
+        BarcodeFactory.GenerateDataMatrix(dataMatrixText, dataMatrixPath);
+        Console.WriteLine($"DataMatrix saved to {dataMatrixPath}");
 
-        // Generate a GS1 Composite barcode
-        // Linear part must contain a valid GTIN-14 AI (01) and 2D part can be any GS1 data.
-        string linearPart = "(01)01234567890128"; // valid GTIN-14
-        string twoDPart = "(21)A12345678";
-        string gs1CompositeCode = $"{linearPart}|{twoDPart}";
-        string gs1CompositePath = Path.Combine(outputDir, "gs1composite.png");
-        BarcodeFactory.Generate(
-            symbology: "GS1Composite",
-            codeText: gs1CompositeCode,
-            outputPath: gs1CompositePath);
-        Console.WriteLine($"Generated GS1 Composite: {gs1CompositePath}");
+        // ---------- GS1 Composite example ----------
+        // Valid GTIN‑14 values (01) with correct check digit.
+        string linear = "(01)01234567890128"; // linear component
+        string twoD = "(01)00123456789012";   // 2D component
+        string gs1CompositePath = Path.Combine(baseDir, "gs1composite.png");
+        BarcodeFactory.GenerateGS1Composite(linear, twoD, gs1CompositePath);
+        Console.WriteLine($"GS1 Composite saved to {gs1CompositePath}");
     }
 }

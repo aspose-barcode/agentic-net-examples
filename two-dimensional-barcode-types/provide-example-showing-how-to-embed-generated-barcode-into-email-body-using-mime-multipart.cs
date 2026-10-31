@@ -1,8 +1,8 @@
-// Title: Embed a generated barcode image into an email body using MIME multipart
-// Description: Demonstrates creating a Code128 barcode, converting it to PNG, and embedding it as an inline image in an HTML email via a linked resource.
-// Category-Description: This example belongs to the Aspose.BarCode generation and email integration category. It shows how to use BarcodeGenerator (Aspose.BarCode.Generation) to produce barcode images and how to incorporate them into System.Net.Mail messages using AlternateView and LinkedResource. Developers often need to send barcodes in transactional emails, reports, or notifications, and this pattern illustrates the typical workflow for embedding images in MIME multipart messages.
+// Title: Embed generated barcode image into an email body using MIME multipart
+// Description: Demonstrates creating a barcode with Aspose.BarCode, storing it in memory, and embedding it as an inline image in an HTML email via MIME multipart.
+// Category-Description: This example belongs to the Aspose.BarCode email integration category, showing how to combine barcode generation (BarcodeGenerator, EncodeTypes) with .NET System.Net.Mail to produce MIME messages containing embedded images. Typical use cases include sending invoices, tickets, or verification codes where the barcode must appear directly in the email body. Developers often need to generate the barcode on the fly, attach it as a LinkedResource, and reference it with a content ID in HTML.
 // Prompt: Provide example showing how to embed generated barcode into an email body using MIME multipart.
-// Tags: barcode, code128, embed, email, mime, multipart, html, linkedresource, aspose.barcode, generation, png
+// Tags: barcode, code128, embed, email, mime, multipart, html, linkedresource, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -10,6 +10,8 @@ using System.Net.Mail;
 using System.Net.Mime;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
 /// Demonstrates embedding a generated barcode image into an email body using MIME multipart.
@@ -17,56 +19,52 @@ using Aspose.BarCode.Generation;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, embeds it in an HTML email, and prepares the message.
+    /// Entry point. Generates a Code128 barcode, embeds it in an HTML email, and writes a summary to the console.
     /// </summary>
     static void Main()
     {
-        // Text to encode in the barcode.
-        string codeText = "1234567890";
-
-        // Initialize the barcode generator with Code128 symbology.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Generate barcode image in memory
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Set image resolution for better quality.
+            // Set high resolution for better quality
             generator.Parameters.Resolution = 300;
 
-            // Stream to hold the generated PNG image.
-            using (MemoryStream barcodeStream = new MemoryStream())
+            // Save barcode to a memory stream in PNG format
+            using (var barcodeStream = new MemoryStream())
             {
-                // Save the barcode image to the memory stream.
                 generator.Save(barcodeStream, BarCodeImageFormat.Png);
-                // Reset stream position to the beginning for reading.
+                // Reset stream position to the beginning for reading
                 barcodeStream.Position = 0;
 
-                // Create the email message.
-                using (MailMessage message = new MailMessage())
+                // Create a new email message
+                var mail = new MailMessage
                 {
-                    message.From = new MailAddress("sender@example.com");
-                    message.To.Add("recipient@example.com");
-                    message.Subject = "Barcode Embedded Email";
+                    From = new MailAddress("sender@example.com"),
+                    Subject = "Barcode Embedded Email"
+                };
+                mail.To.Add("recipient@example.com");
 
-                    // HTML body referencing the embedded image via Content-ID.
-                    string htmlBody = @"<html><body><p>Here is your barcode:</p><img src=""cid:barcodeImage"" alt=""Barcode""/></body></html>";
+                // Build HTML body that references the embedded image via Content-ID
+                string htmlBody = @"<html><body><p>Here is your barcode:</p><img src=""cid:BarcodeImage"" alt=""Barcode""/></body></html>";
+                var htmlView = AlternateView.CreateAlternateViewFromString(htmlBody, null, MediaTypeNames.Text.Html);
 
-                    // Create an alternate view for HTML content.
-                    using (AlternateView htmlView = AlternateView.CreateAlternateViewFromString(htmlBody, null, MediaTypeNames.Text.Html))
-                    {
-                        // Create a linked resource for the barcode image.
-                        LinkedResource barcodeResource = new LinkedResource(barcodeStream, MediaTypeNames.Image.Png)
-                        {
-                            ContentId = "barcodeImage",
-                            TransferEncoding = TransferEncoding.Base64
-                        };
+                // Create a linked resource for the barcode image
+                using (var linkedResource = new LinkedResource(barcodeStream, MediaTypeNames.Image.Png))
+                {
+                    linkedResource.ContentId = "BarcodeImage";
+                    linkedResource.TransferEncoding = TransferEncoding.Base64;
 
-                        // Attach the image resource to the HTML view.
-                        htmlView.LinkedResources.Add(barcodeResource);
+                    // Attach the linked resource to the HTML view
+                    htmlView.LinkedResources.Add(linkedResource);
 
-                        // Add the HTML view to the email message.
-                        message.AlternateViews.Add(htmlView);
+                    // Add the HTML view to the email
+                    mail.AlternateViews.Add(htmlView);
 
-                        // Indicate that the email is ready (sending is out of scope for this example).
-                        Console.WriteLine("Email message prepared with embedded barcode.");
-                    }
+                    // Output summary to console
+                    Console.WriteLine("Email prepared with embedded barcode.");
+                    Console.WriteLine("From: {0}", mail.From);
+                    Console.WriteLine("To: {0}", string.Join(", ", mail.To));
+                    Console.WriteLine("Subject: {0}", mail.Subject);
                 }
             }
         }
