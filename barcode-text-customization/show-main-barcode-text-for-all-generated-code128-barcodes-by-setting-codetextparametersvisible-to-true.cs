@@ -1,8 +1,8 @@
-// Title: Display Human-Readable Text for Code128 Barcodes
-// Description: Generates several Code128 barcodes and saves them as PNG files with the barcode text shown below the bars.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to control human‑readable text visibility using the CodeTextParameters class. Developers commonly need to render barcodes with accompanying text for scanning verification, packaging labels, or inventory systems. The key API classes demonstrated are BarcodeGenerator, EncodeTypes, and CodeTextParameters, which are frequently used in batch barcode creation scenarios.
+// Title: Generate Code128 Barcodes with Visible Text
+// Description: Demonstrates creating Code128 barcodes, placing the human‑readable text below the bars, and saving them as PNG files.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce barcodes for labeling, inventory, and shipping. Developers often need to render barcodes with readable text for scanning devices and visual verification, and this snippet illustrates typical configuration steps.
 // Prompt: Show main barcode text for all generated Code128 barcodes by setting CodetextParameters.Visible to true.
-// Tags: code128, barcode, text-visibility, png, aspose.barcode, generation
+// Tags: code128, barcode, generation, png, aspose.barcode, codetext, visible, textlocation
 
 using System;
 using System.IO;
@@ -11,44 +11,48 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to generate Code128 barcodes with visible human‑readable text using Aspose.BarCode.
+/// Generates a set of Code128 barcodes, displays the main barcode text below each barcode,
+/// and saves the images as PNG files in a temporary directory.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates sample Code128 barcodes, saves them as PNG images, and writes the output paths to the console.
+    /// Entry point of the example. Creates barcodes for predefined texts, configures text visibility,
+    /// and writes the resulting images to disk.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for output images
-        string outputFolder = Path.Combine(Path.GetTempPath(), "Code128Demo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
+        // Create a unique temporary folder for the output images
+        string outputDir = Path.Combine(Path.GetTempPath(), "Code128Demo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Sample Code128 texts to encode
-        string[] texts = { "ABC123", "9876543210", "CODE128-EXAMPLE" };
+        // Sample texts to encode into Code128 barcodes
+        string[] sampleTexts = { "ABC123", "9876543210", "HelloWorld" };
 
-        // Iterate over each sample text and generate a barcode
-        foreach (string text in texts)
+        // Iterate over each sample text and generate a corresponding barcode image
+        for (int i = 0; i < sampleTexts.Length; i++)
         {
-            // Initialize the barcode generator for Code128 with the current text
+            string text = sampleTexts[i];
+            string filePath = Path.Combine(outputDir, $"Code128_{i + 1}.png");
+
+            // Initialize the barcode generator with Code128 symbology and the current text
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
             {
-                // Set the human‑readable text location to Below the barcode.
-                // This makes the main barcode text visible in the generated image.
+                // Position the human‑readable text below the barcode bars
                 generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
 
-                // Build the full file path for the PNG output
-                string filePath = Path.Combine(outputFolder, $"Code128_{text}.png");
+                // Optional: increase the spacing between the barcode and the text for better readability
+                generator.Parameters.Barcode.CodeTextParameters.Space.Point = 5f;
 
-                // Save the barcode image in PNG format
+                // Save the generated barcode as a PNG image
                 generator.Save(filePath, BarCodeImageFormat.Png);
-
-                // Inform the user where the file was saved
-                Console.WriteLine($"Generated barcode saved to: {filePath}");
             }
+
+            // Output the location of the saved image
+            Console.WriteLine($"Generated barcode saved to: {filePath}");
         }
 
-        // Explain why CodetextParameters.Visible is not used
-        Console.WriteLine("Note: CodetextParameters.Visible is not a supported property in the current Aspose.BarCode API. Text visibility is controlled via CodeTextParameters.Location.");
+        // Indicate that all barcodes have been generated successfully
+        Console.WriteLine("All Code128 barcodes generated successfully.");
     }
 }

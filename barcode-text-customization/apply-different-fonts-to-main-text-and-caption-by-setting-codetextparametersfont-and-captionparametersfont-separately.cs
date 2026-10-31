@@ -1,8 +1,8 @@
-// Title: Apply Different Fonts to Barcode Text and Caption
-// Description: Demonstrates creating a Code128 barcode, assigning a custom font to the barcode's code text and a separate font to an above caption, then saving the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize visual appearance using the BarcodeGenerator, CodeTextParameters, and CaptionParameters classes. Typical use cases include branding, readability enhancements, and meeting design guidelines for printed or digital barcodes. Developers often need to set distinct fonts for the barcode data and accompanying captions to match corporate style guides.
+// Title: Apply distinct fonts to barcode text and top caption
+// Description: Demonstrates how to set separate fonts for the main barcode text and a caption using Aspose.BarCode's CodeTextParameters and CaptionParameters.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating font customization for barcode elements. It showcases the use of BarcodeGenerator, CodeTextParameters, and CaptionParameters to control typography, a common requirement when integrating barcodes into printed materials or UI designs. Developers often need to differentiate barcode data from accompanying labels, and this snippet provides a clear pattern for doing so.
 // Prompt: Apply different fonts to main text and caption by setting CodetextParameters.Font and CaptionParameters.Font separately.
-// Tags: code128, font, caption, png, aspose.barcode, generation
+// Tags: barcode, code128, font, caption, generation, png, aspose.barcode, codetextparameters, captionparameters
 
 using System;
 using System.IO;
@@ -11,43 +11,47 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates applying separate fonts to barcode code text and caption using Aspose.BarCode.
+/// Demonstrates setting distinct fonts for barcode code text and a top caption using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode with custom fonts and saves it as PNG.
+    /// Entry point. Generates a Code128 barcode with custom fonts for the code text and caption, then saves it as PNG.
     /// </summary>
     static void Main()
     {
-        // Build the full path for the output PNG file
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "barcode.png");
-        string dir = Path.GetDirectoryName(outputPath);
+        // Define the output file path for the generated barcode image
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "BarcodeWithFonts.png");
 
         // Ensure the output directory exists
-        if (!Directory.Exists(dir))
+        string outputDir = Path.GetDirectoryName(outputPath);
+        if (!Directory.Exists(outputDir))
         {
-            Directory.CreateDirectory(dir);
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Create a barcode generator for Code128 with the specified data
+        // Create a barcode generator for Code128 symbology with the desired data
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Configure the main barcode text font
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Lucida Handwriting";
+            // Enable manual font mode for the barcode's code text
+            generator.Parameters.Barcode.CodeTextParameters.FontMode = FontMode.Manual;
+
+            // Set a custom font for the main barcode text (different from the caption)
+            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
             generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
 
-            // Enable and configure the caption above the barcode
+            // Configure the top caption appearance
             generator.Parameters.CaptionAbove.Visible = true;
-            generator.Parameters.CaptionAbove.Text = "Sample Caption";
-            generator.Parameters.CaptionAbove.Font.FamilyName = "Times New Roman";
-            generator.Parameters.CaptionAbove.Font.Size.Point = 14f;
+            generator.Parameters.CaptionAbove.Text = "Top Caption";
+            generator.Parameters.CaptionAbove.Font.FamilyName = "Courier";
+            generator.Parameters.CaptionAbove.Font.Size.Point = 10f;
+            generator.Parameters.CaptionAbove.Font.Style = FontStyle.Bold;
 
-            // Save the generated barcode image as PNG
+            // Save the generated barcode image to the specified path in PNG format
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"Barcode saved to {outputPath}");
+        // Inform the user where the barcode image has been saved
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

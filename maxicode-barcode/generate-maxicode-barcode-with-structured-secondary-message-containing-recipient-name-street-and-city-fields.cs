@@ -1,12 +1,13 @@
 // Title: Generate MaxiCode barcode with structured secondary message
-// Description: Demonstrates creating a MaxiCode barcode (Mode 2) that includes a structured secondary message containing recipient name, street, and city, and saves the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on MaxiCode symbology. It showcases the use of MaxiCodeCodetextMode2, MaxiCodeStructuredSecondMessage, and ComplexBarcodeGenerator classes to build and render barcodes with detailed secondary data. Developers working with shipping, logistics, or inventory systems often need to embed structured address information in MaxiCode barcodes for automated scanning and processing.
+// Description: Demonstrates creating a MaxiCode barcode (Mode 3) that includes a structured secondary message containing recipient name, street, and city, then saves the image as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of MaxiCodeCodetextMode3, MaxiCodeStructuredSecondMessage, and ComplexBarcodeGenerator classes to produce MaxiCode symbols with detailed secondary data. Typical use cases include shipping labels and logistics where structured address information must be encoded. Developers often need to combine primary data fields with a secondary message for compliance with industry standards.
 // Prompt: Generate a MaxiCode barcode with a structured secondary message containing recipient name, street, and city fields.
-// Tags: maxicode, structured message, barcode generation, aspose.barcode, complexbarcode, png
+// Tags: maxicode, structured message, barcode generation, aspose.barcode, complexbarcode, png output, shipping label
 
 using System;
 using System.IO;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
@@ -16,40 +17,47 @@ using Aspose.BarCode.ComplexBarcode;
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates the barcode and writes the output path to the console.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
+        // ------------------------------------------------------------
         // Prepare the output directory where the barcode image will be saved
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        // ------------------------------------------------------------
+        string outputDir = Path.Combine(Environment.CurrentDirectory, "Output");
         Directory.CreateDirectory(outputDir);
         string outputPath = Path.Combine(outputDir, "MaxiCodeStructured.png");
 
-        // Create MaxiCode codetext for Mode 2 (postal code, country code, service category)
-        var maxiCodeCodetext = new MaxiCodeCodetextMode2
+        // ------------------------------------------------------------
+        // Create MaxiCode codetext for Mode 3 (supports structured secondary message)
+        // ------------------------------------------------------------
+        MaxiCodeCodetextMode3 codetext = new MaxiCodeCodetextMode3
         {
-            PostalCode = "524032140",
-            CountryCode = 56,
-            ServiceCategory = 999
+            PostalCode = "B1050",      // example postal code
+            CountryCode = 56,          // example country code
+            ServiceCategory = 999      // example service category
         };
 
-        // Build the structured secondary message with recipient details
-        var structuredMessage = new MaxiCodeStructuredSecondMessage();
-        structuredMessage.Add("John Doe");        // recipient name
-        structuredMessage.Add("123 Main St");    // street address
-        structuredMessage.Add("Anytown");        // city
-        structuredMessage.Year = 23;             // optional year field
+        // ------------------------------------------------------------
+        // Build the structured secondary message (recipient name, street, city)
+        // ------------------------------------------------------------
+        MaxiCodeStructuredSecondMessage secondMessage = new MaxiCodeStructuredSecondMessage();
+        secondMessage.Add("John Doe");          // recipient name
+        secondMessage.Add("123 Main Street");  // street
+        secondMessage.Add("Anytown");          // city
+        secondMessage.Year = 23;                // optional year (e.g., 2023)
 
         // Attach the secondary message to the MaxiCode codetext
-        maxiCodeCodetext.SecondMessage = structuredMessage;
+        codetext.SecondMessage = secondMessage;
 
-        // Generate the barcode using the complex barcode generator and save it as PNG
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        // ------------------------------------------------------------
+        // Generate the MaxiCode barcode and save it as a PNG image
+        // ------------------------------------------------------------
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(codetext))
         {
             generator.Save(outputPath);
         }
 
-        // Inform the user where the barcode image has been saved
         Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
     }
 }
