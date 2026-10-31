@@ -1,25 +1,25 @@
-// Title: Generate MaxiCode Mode 3 barcode and return PNG data
-// Description: Demonstrates building a MaxiCode Mode 3 codetext from JSON input and producing a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the ComplexBarcodeGenerator with MaxiCodeCodetextMode3. It illustrates typical use cases such as creating shipping labels or logistics tags where MaxiCode is required. Developers often need to construct codetext from structured data, customize visual parameters, and output common image formats like PNG.
+// Title: Generate MaxiCode Mode 3 Barcode and Return PNG as Base64
+// Description: This example demonstrates how to deserialize a JSON request, build a MaxiCode Mode 3 codetext, generate a barcode image in PNG format, and output it as a Base64 string.
+// Category-Description: Aspose.BarCode examples for complex barcode generation, focusing on MaxiCode Mode 3. The sample uses ComplexBarcodeGenerator, MaxiCodeCodetextMode3, and related classes to create shipping‑label barcodes. Developers commonly need to convert JSON payloads into barcode images for logistics, tracking, and packaging applications.
 // Prompt: Develop a Web API endpoint that accepts JSON, builds a MaxiCode Mode 3 codetext, and returns PNG data.
-// Tags: maxicode, barcode generation, png, json, aspose.barcode, complexbarcode
+// Tags: maxicode, barcode generation, png, json, aspose.barcode, complexbarcode, web api, codetext
 
 using System;
 using System.IO;
 using System.Text.Json;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Contains the entry point demonstrating MaxiCode barcode generation from JSON data.
+/// Demonstrates creating a MaxiCode Mode 3 barcode from JSON input and returning the image as a Base64 string.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Represents the JSON payload required to build a MaxiCode Mode 3 codetext.
+    /// Model representing the expected JSON request payload.
     /// </summary>
-    public class MaxiCodeRequest
+    class RequestModel
     {
         public string PostalCode { get; set; }
         public int CountryCode { get; set; }
@@ -28,12 +28,12 @@ class Program
     }
 
     /// <summary>
-    /// Entry point that simulates receiving a JSON payload, creates a MaxiCode Mode 3 codetext,
-    /// generates a PNG barcode, and outputs the image as a Base64 string.
+    /// Entry point of the console application. Simulates a Web API endpoint by processing a JSON payload,
+    /// generating a MaxiCode Mode 3 barcode, and outputting the PNG image as a Base64 string.
     /// </summary>
     static void Main()
     {
-        // Simulated JSON payload that a Web API might receive in the request body
+        // Simulated JSON request payload (in a real API this would come from the HTTP request body)
         string jsonPayload = @"{
             ""PostalCode"": ""B1050"",
             ""CountryCode"": 56,
@@ -41,8 +41,8 @@ class Program
             ""Message"": ""Second message""
         }";
 
-        // Deserialize the JSON into a strongly‑typed request object
-        MaxiCodeRequest request = JsonSerializer.Deserialize<MaxiCodeRequest>(jsonPayload);
+        // Deserialize JSON into a strongly‑typed request object
+        RequestModel request = JsonSerializer.Deserialize<RequestModel>(jsonPayload);
         if (request == null)
         {
             Console.WriteLine("Invalid request payload.");
@@ -57,30 +57,25 @@ class Program
             ServiceCategory = request.ServiceCategory
         };
 
-        // Attach the optional second message part
+        // Attach the optional second message to the codetext
         var secondMessage = new MaxiCodeStandardSecondMessage
         {
             Message = request.Message
         };
         codetext.SecondMessage = secondMessage;
 
-        // Generate the barcode and capture the PNG image bytes
-        byte[] pngBytes;
-        using (var generator = new ComplexBarcodeGenerator(codetext))
+        // Generate the barcode image and store it in a memory stream
+        using (var memoryStream = new MemoryStream())
         {
-            // Optional visual settings: increase module size and set bar color
-            generator.Parameters.Barcode.XDimension.Pixels = 15f;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-
-            using (var ms = new MemoryStream())
+            using (var generator = new ComplexBarcodeGenerator(codetext))
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                pngBytes = ms.ToArray();
+                // Save the barcode as PNG into the memory stream
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
             }
-        }
 
-        // Simulate an HTTP response by outputting the PNG as a Base64‑encoded string
-        string base64Png = Convert.ToBase64String(pngBytes);
-        Console.WriteLine(base64Png);
+            // Convert the PNG byte array to a Base64 string to simulate an API response payload
+            string base64Png = Convert.ToBase64String(memoryStream.ToArray());
+            Console.WriteLine(base64Png);
+        }
     }
 }

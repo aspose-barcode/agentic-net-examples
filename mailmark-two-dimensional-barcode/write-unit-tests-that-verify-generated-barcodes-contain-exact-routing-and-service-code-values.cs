@@ -1,8 +1,8 @@
-// Title: Generate and Verify Swiss Post Parcel Barcodes
-// Description: Demonstrates creating Swiss Post parcel barcodes containing routing and service codes, saving them as PNG images, and reading them back to ensure the encoded text matches the expected values.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing the use of BarcodeGenerator for SwissPostParcel encoding and BarCodeReader for decoding. Developers often need to generate postal barcodes for mailing workflows and validate them programmatically; this snippet illustrates typical API classes and patterns for such scenarios.
+// Title: Swiss Post Parcel Barcode Generation and Verification Example
+// Description: Demonstrates generating Swiss Post Parcel barcodes, saving them as PNG, and reading them back to verify the routing and service code values.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator with EncodeTypes.SwissPostParcel and BarCodeReader with DecodeType.SwissPostParcel to create and validate barcodes. Developers working with postal services often need to generate barcodes containing routing and service codes and then confirm their correctness programmatically. The code illustrates typical steps: setting dimensions, saving images, reading back the code text, and performing simple assertions.
 // Prompt: Write unit tests that verify generated barcodes contain the exact routing and service code values.
-// Tags: swisspost, barcode, generation, recognition, png, unit-test, aspose.barcode
+// Tags: barcode, swisspost, parcel, generation, recognition, png, aspose.barcode, unit-test
 
 using System;
 using System.IO;
@@ -13,95 +13,91 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation and verification of Swiss Post parcel barcodes.
+/// Example program that generates Swiss Post Parcel barcodes, reads them back,
+/// and verifies that the encoded routing and service codes match the expected values.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes for defined test cases, saves them, and validates the encoded text.
+    /// Entry point of the example. Generates a set of barcodes, decodes them,
+    /// and reports pass/fail results based on exact code text matching.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to store generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "SwissPostTest_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for test images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "SwissPostTests_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define test cases: a description and the expected barcode text (routing + service code)
-        var testCases = new List<(string Description, string CodeText)>
+        // Define test cases: each entry is the expected code text
+        var testCases = new List<string>
         {
-            ("International Mail (routing and service code)", "RM999605013CH"),
-            ("Additional Service Code", "0327")
+            "RM999605013CH", // valid international mail with correct checksum
+            "RM999605017CH", // valid international mail with erroneous checksum (still generated)
+            "RM99960501CH"   // without checksum
         };
 
         int passed = 0;
         int failed = 0;
+        int index = 0;
 
-        // Execute each test case and track results
-        foreach (var (description, codeText) in testCases)
+        // Iterate over each test case, generate barcode, read it back, and verify
+        foreach (var codeText in testCases)
         {
-            string imagePath = Path.Combine(tempFolder, $"{Guid.NewGuid()}.png");
-            bool testResult = RunSingleTest(codeText, imagePath);
-            if (testResult)
+            index++;
+            string filePath = Path.Combine(tempFolder, $"barcode_{index}.png");
+
+            // Generate barcode image with specific dimensions
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
             {
-                Console.WriteLine($"PASS: {description}");
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Parameters.Barcode.BarHeight.Pixels = 40f;
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+
+            // Prepare to read the generated barcode
+            BaseDecodeType decodeType = DecodeType.SwissPostParcel;
+            string readText = null;
+            bool readSuccess = false;
+
+            // Decode the barcode from the saved image
+            using (var reader = new BarCodeReader(filePath, decodeType))
+            {
+                BarCodeResult[] results = reader.ReadBarCodes();
+                if (results != null && results.Length > 0)
+                {
+                    readText = results[0].CodeText;
+                    readSuccess = true;
+                }
+            }
+
+            // Verify that the decoded text matches the original expected text
+            if (readSuccess && readText == codeText)
+            {
+                Console.WriteLine($"Test {index}: PASS (CodeText = \"{codeText}\")");
                 passed++;
             }
             else
             {
-                Console.WriteLine($"FAIL: {description}");
+                Console.WriteLine($"Test {index}: FAIL (Expected \"{codeText}\", Got \"{readText ?? "null"}\")");
                 failed++;
             }
         }
 
-        // Output a summary of the test run
-        Console.WriteLine($"Test Summary: {passed} passed, {failed} failed.");
-    }
+        // Output summary of test results
+        Console.WriteLine($"Summary: {passed} passed, {failed} failed.");
 
-    /// <summary>
-    /// Generates a Swiss Post parcel barcode, saves it, reads it back, and verifies the encoded text.
-    /// </summary>
-    /// <param name="codeText">The exact text to encode in the barcode.</param>
-    /// <param name="imagePath">File path where the generated PNG image will be saved.</param>
-    /// <returns>True if the read text matches the original; otherwise, false.</returns>
-    static bool RunSingleTest(string codeText, string imagePath)
-    {
-        // ---------- Barcode Generation ----------
-        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
+        // Cleanup temporary files and folder
+        try
         {
-            // Configure visual parameters
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
-
-            // Save the barcode image to the specified path
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-        }
-
-        // ---------- Barcode Recognition ----------
-        using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
-        {
-            // Generate an in-memory bitmap of the barcode
-            using (var bitmap = generator.GenerateBarCodeImage())
+            foreach (var file in Directory.GetFiles(tempFolder))
             {
-                // Set the decode type to SwissPostParcel
-                BaseDecodeType decodeType = DecodeType.SwissPostParcel;
-
-                // Read the barcode from the bitmap
-                using (var reader = new BarCodeReader(bitmap, decodeType))
-                {
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    // Ensure at least one barcode was detected
-                    if (results.Length == 0)
-                    {
-                        Console.WriteLine($"No barcode detected for code text '{codeText}'.");
-                        return false;
-                    }
-
-                    // Compare the decoded text with the original input
-                    string readText = results[0].CodeText;
-                    return string.Equals(readText, codeText, StringComparison.Ordinal);
-                }
+                File.Delete(file);
             }
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect test result
         }
     }
 }
