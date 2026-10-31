@@ -1,8 +1,8 @@
-// Title: Switching Measurement Units Between Barcode Generations
-// Description: Demonstrates how to generate two barcodes in a single run, first using millimeters and then pixels as the measurement unit.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on configuring measurement units via the XDimension property. It shows how to switch between millimeter and pixel units when creating barcodes, a common requirement for developers who need precise control over barcode size for different output media such as print (millimeters) and screen (pixels). Key API classes include BarcodeGenerator, EncodeTypes, and BarCodeImageFormat.
+// Title: Switch measurement unit from millimeters to pixels for barcode generation
+// Description: Demonstrates how to change the X-dimension measurement unit of a barcode from millimeters to pixels within a single execution.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator and its Parameters to control barcode dimensions. Developers often need to adjust measurement units for different output requirements, such as print (millimeters) versus screen display (pixels). The snippet shows typical API usage for setting XDimension in both units and saving the results.
 // Prompt: Programmatically switch measurement unit from Millimeters to Pixels between two barcode generations in one run.
-// Tags: barcode symbology, measurement unit, generation, png, aspose.barcode, code128
+// Tags: barcode, code128, measurement unit, millimeters, pixels, generation, aspose.barcode, png
 
 using System;
 using System.IO;
@@ -10,49 +10,38 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates two Code128 barcodes using different measurement units:
-/// the first barcode uses millimeters, the second uses pixels.
+/// Demonstrates switching barcode measurement units between millimeters and pixels.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates two barcodes with distinct XDimension units and saves them as PNG files.
+    /// Generates two Code128 barcodes, first using millimeters then pixels, and saves them as PNG files.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary output directory for the generated barcode images.
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeUnitSwitch");
+        // Define output directory and ensure it exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Barcodes");
         Directory.CreateDirectory(outputDir);
 
-        // ------------------------------------------------------------
-        // First barcode: measurement unit set to millimeters.
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "MM_UNIT"))
+        // File paths for the two generated barcodes
+        string pathMillimeters = Path.Combine(outputDir, "barcode_mm.png");
+        string pathPixels = Path.Combine(outputDir, "barcode_px.png");
+
+        // Create a barcode generator for Code128 with the data "123456"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Set the X-dimension (module width) to 2 millimeters.
+            // Set X-dimension measurement unit to millimeters (2 mm per module)
             generator.Parameters.Barcode.XDimension.Millimeters = 2f;
+            // Save the barcode using millimeter settings
+            generator.Save(pathMillimeters, BarCodeImageFormat.Png);
 
-            // Define the file path and save the barcode as a PNG image.
-            string mmPath = Path.Combine(outputDir, "barcode_mm.png");
-            generator.Save(mmPath, BarCodeImageFormat.Png);
-
-            Console.WriteLine($"Saved millimeter-based barcode to: {mmPath}");
-        }
-
-        // ------------------------------------------------------------
-        // Second barcode: measurement unit set to pixels.
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "PX_UNIT"))
-        {
-            // Set the X-dimension (module width) to 3 pixels.
+            // Switch X-dimension measurement unit to pixels (3 pixels per module)
             generator.Parameters.Barcode.XDimension.Pixels = 3f;
-
-            // Define the file path and save the barcode as a PNG image.
-            string pxPath = Path.Combine(outputDir, "barcode_px.png");
-            generator.Save(pxPath, BarCodeImageFormat.Png);
-
-            Console.WriteLine($"Saved pixel-based barcode to: {pxPath}");
+            // Save the barcode using pixel settings
+            generator.Save(pathPixels, BarCodeImageFormat.Png);
         }
+
+        // Inform the user where the barcode images were saved
+        Console.WriteLine($"Barcodes saved to: {outputDir}");
     }
 }

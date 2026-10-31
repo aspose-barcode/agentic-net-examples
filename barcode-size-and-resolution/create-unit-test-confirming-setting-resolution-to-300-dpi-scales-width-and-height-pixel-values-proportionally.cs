@@ -1,6 +1,6 @@
-// Title: Verify resolution scaling of barcode image dimensions
-// Description: Demonstrates how setting the barcode generator resolution to 300 dpi proportionally scales the resulting image width and height compared to a lower resolution.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating the use of BarcodeGenerator, its Parameters.Resolution property, and the resulting Bitmap dimensions. Developers often need to ensure that changing DPI settings scales images correctly for printing or display, making this a common validation scenario.
+// Title: Verify proportional scaling of barcode image dimensions when changing resolution
+// Description: This example generates a DataMatrix barcode at two different DPI settings and checks that the image width and height scale proportionally.
+// Category-Description: Demonstrates Aspose.BarCode resolution handling, part of the barcode generation and image rendering category. It uses BarcodeGenerator, its Parameters (Resolution, XDimension), and Aspose.Drawing.Bitmap to produce images. Developers often need to ensure that changing DPI preserves visual size ratios, especially for printing or high‑resolution output scenarios.
 // Prompt: Create unit test confirming setting resolution to 300 dpi scales width and height pixel values proportionally.
 // Tags: datamatrix, resolution, scaling, unit-test, aspose.barcode, image-generation
 
@@ -8,68 +8,72 @@ using System;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains the entry point for the resolution scaling verification example.
+/// Demonstrates a simple verification that changing the barcode generator resolution
+/// scales the resulting image dimensions proportionally.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates barcode images at two different resolutions and verifies that the dimensions scale proportionally.
+    /// Entry point. Generates barcode images at 96 dpi and 300 dpi, compares their dimensions,
+    /// and reports whether the scaling matches the expected factor within a tolerance.
     /// </summary>
     static void Main()
     {
-        // Define the barcode text and the two resolutions to compare.
-        const string codeText = "ASPOSE";
-        const float resolutionLow = 96f;
-        const float resolutionHigh = 300f;
+        // Define low and high DPI values and an acceptable tolerance (5%).
+        const float lowResolution = 96f;
+        const float highResolution = 300f;
+        const float tolerance = 0.05f; // 5%
 
-        // Generate image dimensions for low and high resolution settings.
-        (int widthLow, int heightLow) = GenerateDimensions(codeText, resolutionLow);
-        (int widthHigh, int heightHigh) = GenerateDimensions(codeText, resolutionHigh);
+        // Generate barcode images at the two resolutions and obtain their pixel sizes.
+        var lowSize = GetBarcodeSize(lowResolution);
+        var highSize = GetBarcodeSize(highResolution);
 
-        // Calculate the expected scaling factor based on DPI values.
-        double expectedFactor = resolutionHigh / resolutionLow;
+        // Expected scaling factor based on DPI change.
+        double expectedFactor = highResolution / lowResolution;
 
-        // Determine the actual scaling factors observed in width and height.
-        double actualFactorW = (double)widthHigh / widthLow;
-        double actualFactorH = (double)heightHigh / heightLow;
+        // Actual scaling factors for width and height.
+        double widthFactor = (double)highSize.width / lowSize.width;
+        double heightFactor = (double)highSize.height / lowSize.height;
 
-        // Allow a small tolerance (5%) for rounding differences.
-        double tolerance = 0.05; // 5%
+        // Verify that actual factors are within the tolerance of the expected factor.
+        bool widthOk = Math.Abs(widthFactor - expectedFactor) / expectedFactor <= tolerance;
+        bool heightOk = Math.Abs(heightFactor - expectedFactor) / expectedFactor <= tolerance;
 
-        // Verify that both width and height factors are within the tolerance.
-        bool widthMatches = Math.Abs(actualFactorW - expectedFactor) / expectedFactor < tolerance;
-        bool heightMatches = Math.Abs(actualFactorH - expectedFactor) / expectedFactor < tolerance;
-        bool testPassed = widthMatches && heightMatches;
-
-        // Output the results.
-        Console.WriteLine($"Low resolution (96 dpi) size: {widthLow}x{heightLow}");
-        Console.WriteLine($"High resolution (300 dpi) size: {widthHigh}x{heightHigh}");
-        Console.WriteLine($"Expected scaling factor: {expectedFactor:F3}");
-        Console.WriteLine($"Actual width factor: {actualFactorW:F3}");
-        Console.WriteLine($"Actual height factor: {actualFactorH:F3}");
-        Console.WriteLine(testPassed ? "TEST PASSED" : "TEST FAILED");
+        // Output test result.
+        if (widthOk && heightOk)
+        {
+            Console.WriteLine("TEST PASSED: Resolution scaling is proportional.");
+        }
+        else
+        {
+            Console.WriteLine("TEST FAILED:");
+            Console.WriteLine($"Low resolution size:  {lowSize.width}x{lowSize.height}");
+            Console.WriteLine($"High resolution size: {highSize.width}x{highSize.height}");
+            Console.WriteLine($"Expected factor: {expectedFactor:F3}");
+            Console.WriteLine($"Actual width factor: {widthFactor:F3} (within tolerance: {widthOk})");
+            Console.WriteLine($"Actual height factor: {heightFactor:F3} (within tolerance: {heightOk})");
+        }
     }
 
     /// <summary>
-    /// Generates a barcode image for the specified text and resolution, returning its pixel dimensions.
+    /// Generates a DataMatrix barcode image at the specified resolution and returns its pixel dimensions.
     /// </summary>
-    /// <param name="text">The data to encode in the barcode.</param>
-    /// <param name="resolution">The desired image resolution (DPI).</param>
+    /// <param name="resolution">The DPI resolution to apply to the barcode generator.</param>
     /// <returns>A tuple containing the image width and height in pixels.</returns>
-    private static (int width, int height) GenerateDimensions(string text, float resolution)
+    private static (int width, int height) GetBarcodeSize(float resolution)
     {
-        // Initialize the barcode generator with DataMatrix symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, text))
+        // Create a barcode generator for DataMatrix with sample text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ASPOSE"))
         {
-            // Set a fixed X-dimension (module size) in millimeters.
-            generator.Parameters.Barcode.XDimension.Millimeters = 1f;
-
-            // Apply the requested resolution.
+            // Set module size (X dimension) to 1 mm for consistency.
+            generator.Parameters.Barcode.XDimension.Millimeters = 1;
+            // Apply the desired resolution.
             generator.Parameters.Resolution = resolution;
 
-            // Generate the bitmap and retrieve its dimensions.
+            // Generate the barcode image and retrieve its dimensions.
             using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
                 return (bitmap.Width, bitmap.Height);

@@ -1,95 +1,103 @@
-// Title: Generate Barcode Image to MemoryStream
-// Description: Demonstrates creating a barcode of a specified symbology, size unit, and resolution, and returning it as a PNG image in a MemoryStream.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator, EncodeTypes, and XDimension classes to produce barcode images. Typical use cases include dynamic barcode creation for invoices, shipping labels, or inventory systems where developers need to control image resolution and measurement units. The pattern is common for generating images on-the-fly and streaming them to web responses or further processing pipelines.
+// Title: Generate barcode image and save to file using Aspose.BarCode
+// Description: Demonstrates creating a barcode of a specified symbology, size unit, and resolution, then returning it as a MemoryStream.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, EncodeTypes, and image format settings. Developers commonly need to generate barcodes dynamically for PDFs, labels, or web responses, adjusting dimensions and resolution to meet printing or display requirements.
 // Prompt: Develop function accepting barcode symbology, size unit, and resolution, returning memory stream with image.
-// Tags: barcode, symbology, generation, png, memorystream, aspose.barcode, xdimension, resolution
+// Tags: barcode, generation, code128, pixel, resolution, memorystream, aspose.barcode, png
 
 using System;
 using System.IO;
 using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation using Aspose.BarCode and returning the image as a MemoryStream.
+/// Demonstrates barcode generation using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a sample barcode, saves it to a file, and writes status to console.
+    /// Entry point. Generates a Code128 barcode, saves it to a temporary PNG file, and writes details to console.
     /// </summary>
     static void Main()
     {
-        // Define sample input parameters
-        string symbology = "Code128";
-        string unit = "Pixels";
-        float resolution = 300f;
-
-        // Generate the barcode image as a memory stream
-        MemoryStream barcodeStream = GenerateBarcode(symbology, unit, resolution);
-
-        // Persist the generated image to a file for verification
-        using (var file = new FileStream("barcode.png", FileMode.Create, FileAccess.Write))
+        try
         {
-            barcodeStream.Position = 0;
-            barcodeStream.CopyTo(file);
-        }
+            // Generate barcode with specified symbology, size unit, and resolution
+            using (MemoryStream barcodeStream = GenerateBarcode("Code128", "Pixel", 300f))
+            {
+                // Define output path in the system's temporary folder
+                string outputPath = Path.Combine(Path.GetTempPath(), "barcode.png");
 
-        // Output information about the generated barcode
-        Console.WriteLine($"Barcode generated with symbology '{symbology}', unit '{unit}', resolution {resolution} DPI.");
-        Console.WriteLine($"Output file: {Path.GetFullPath("barcode.png")}");
+                // Write the memory stream contents to a file
+                using (FileStream file = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                {
+                    barcodeStream.CopyTo(file);
+                }
+
+                // Inform the user where the file was saved and its size
+                Console.WriteLine($"Barcode image saved to: {outputPath}");
+                Console.WriteLine($"Stream length: {barcodeStream.Length} bytes");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Output any errors that occur during generation or file operations
+            Console.WriteLine($"Error: {ex.Message}");
+        }
     }
 
     /// <summary>
-    /// Generates a barcode image based on the specified symbology, measurement unit, and resolution.
+    /// Generates a barcode image based on the provided symbology, size unit, and resolution.
     /// </summary>
     /// <param name="symbologyName">Name of the barcode symbology (e.g., "Code128").</param>
-    /// <param name="unitName">Measurement unit for XDimension ("Pixels", "Millimeters", "Points", or "Inches").</param>
+    /// <param name="sizeUnit">Unit for X-dimension size ("Pixel", "Millimeter", "Point", "Inch").</param>
     /// <param name="resolution">Image resolution in DPI.</param>
-    /// <returns>A MemoryStream containing the barcode image in PNG format.</returns>
-    static MemoryStream GenerateBarcode(string symbologyName, string unitName, float resolution)
+    /// <returns>A MemoryStream containing the generated PNG barcode image.</returns>
+    static MemoryStream GenerateBarcode(string symbologyName, string sizeUnit, float resolution)
     {
-        // Resolve the symbology name to the corresponding BaseEncodeType using reflection
+        // Retrieve the EncodeTypes field that matches the symbology name
         FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
         if (field == null)
             throw new ArgumentException($"Unknown symbology: {symbologyName}");
 
+        // Cast the field value to BaseEncodeType
         BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+        var memoryStream = new MemoryStream();
 
-        // Initialize the barcode generator with sample text
-        var generator = new BarcodeGenerator(encodeType, "Sample");
-
-        // Configure XDimension based on the requested measurement unit
-        switch (unitName)
+        // Initialize the barcode generator with the selected symbology and sample text
+        using (var generator = new BarcodeGenerator(encodeType, "Sample"))
         {
-            case "Pixels":
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                break;
-            case "Millimeters":
-                generator.Parameters.Barcode.XDimension.Millimeters = 2f;
-                break;
-            case "Points":
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                break;
-            case "Inches":
-                generator.Parameters.Barcode.XDimension.Inches = 0.05f;
-                break;
-            default:
-                generator.Dispose();
-                throw new ArgumentException($"Unsupported unit: {unitName}");
+            // Set X-dimension based on the requested size unit
+            switch (sizeUnit.ToLowerInvariant())
+            {
+                case "pixel":
+                case "pixels":
+                    generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                    break;
+                case "millimeter":
+                case "millimeters":
+                    generator.Parameters.Barcode.XDimension.Millimeters = 2f;
+                    break;
+                case "point":
+                    generator.Parameters.Barcode.XDimension.Point = 2f;
+                    break;
+                case "inch":
+                case "inches":
+                    generator.Parameters.Barcode.XDimension.Inches = 0.1f;
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported size unit: {sizeUnit}");
+            }
+
+            // Apply the desired image resolution
+            generator.Parameters.Resolution = resolution;
+
+            // Save the barcode image to the memory stream in PNG format
+            generator.Save(memoryStream, BarCodeImageFormat.Png);
         }
 
-        // Set the image resolution (DPI)
-        generator.Parameters.Resolution = resolution;
-
-        // Save the barcode to a memory stream in PNG format
-        var ms = new MemoryStream();
-        generator.Save(ms, BarCodeImageFormat.Png);
-        generator.Dispose();
-
-        // Reset stream position for downstream consumption
-        ms.Position = 0;
-        return ms;
+        // Reset stream position for reading by the caller
+        memoryStream.Position = 0;
+        return memoryStream;
     }
 }

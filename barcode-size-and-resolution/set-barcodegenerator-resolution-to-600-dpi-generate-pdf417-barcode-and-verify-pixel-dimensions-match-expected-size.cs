@@ -1,66 +1,61 @@
-// Title: Generate PDF417 barcode at 600 dpi and verify image dimensions
-// Description: This example creates a PDF417 barcode with a resolution of 600 dpi, saves it as a PNG, and checks that the generated image matches the expected pixel width and height.
-// Category-Description: Demonstrates Aspose.BarCode generation features, focusing on setting image resolution, defining canvas size, and validating output dimensions. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes—common tools for developers who need high‑resolution barcodes for printing or scanning applications. This snippet belongs to a collection of examples illustrating barcode creation, image manipulation, and quality verification.
+// Title: Generate PDF417 barcode at 600 dpi and verify pixel dimensions
+// Description: This example creates a PDF417 barcode image with a resolution of 600 dpi, forces specific pixel dimensions, and checks that the generated bitmap matches the expected size.
+// Category-Description: Demonstrates Aspose.BarCode generation features, focusing on setting image resolution, controlling pixel dimensions, and validating output size. It uses BarcodeGenerator, EncodeTypes, and image handling classes (Bitmap, ImageFormat) to produce high‑resolution barcodes, a common requirement for printing and scanning applications where precise sizing is critical. Ideal for developers needing to customize barcode appearance and verify rendering results.
 // Prompt: Set BarcodeGenerator resolution to 600 dpi, generate PDF417 barcode, and verify pixel dimensions match expected size.
-// Tags: pdf417, barcode, resolution, image, png, aspose.barcode, generation, verification
+// Tags: pdf417, barcode, resolution, image, generation, aspose.barcode, bitmap, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a PDF417 barcode at 600 dpi, saving it as PNG, and validating its pixel dimensions.
+/// Demonstrates how to generate a PDF417 barcode at 600 dpi, enforce specific pixel dimensions,
+/// and verify that the resulting bitmap matches the expected size.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, saves it, checks dimensions, and cleans up the file.
+    /// Entry point of the example. Creates the output folder, configures the barcode generator,
+    /// validates the image size, and saves the PNG file.
     /// </summary>
     static void Main()
     {
-        // Define temporary output file path
-        string outputPath = Path.Combine(Path.GetTempPath(), "Pdf417_600dpi.png");
+        // Prepare a temporary output directory for the generated image
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+        string imagePath = Path.Combine(outputDir, "Pdf417_600dpi.png");
 
-        // Initialize barcode generator for PDF417 symbology with sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample123"))
+        // Initialize the barcode generator for PDF417 symbology with sample text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleText"))
         {
-            // Set image resolution to 600 dots per inch
+            // Set the image resolution to 600 dots per inch
             generator.Parameters.Resolution = 600f;
 
-            // Specify expected canvas size in pixels (width x height)
-            generator.Parameters.ImageWidth.Pixels = 600f;
-            generator.Parameters.ImageHeight.Pixels = 300f;
+            // Force the barcode image to specific pixel dimensions (300 × 150)
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+            generator.Parameters.ImageWidth.Pixels = 300f;
+            generator.Parameters.ImageHeight.Pixels = 150f;
 
-            // Save the generated barcode image to a PNG file
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-
-            // Generate an in‑memory bitmap to inspect actual dimensions
-            using (var bitmap = generator.GenerateBarCodeImage())
+            // Generate the barcode as a bitmap
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                int actualWidth = bitmap.Width;
-                int actualHeight = bitmap.Height;
+                // Verify that the bitmap dimensions match the expected pixel size
+                bool widthMatch = bitmap.Width == 300;
+                bool heightMatch = bitmap.Height == 150;
 
-                Console.WriteLine($"Generated image size: {actualWidth}x{actualHeight} pixels");
-                Console.WriteLine($"Expected image size: 600x300 pixels");
+                Console.WriteLine($"Generated bitmap size: {bitmap.Width}x{bitmap.Height} pixels");
+                Console.WriteLine($"Resolution set to: {generator.Parameters.Resolution} dpi");
+                Console.WriteLine(widthMatch && heightMatch
+                    ? "Pixel dimensions match expected size."
+                    : "Pixel dimensions do NOT match expected size.");
 
-                // Verify that the actual dimensions match the expected values
-                if (actualWidth == 600 && actualHeight == 300)
-                {
-                    Console.WriteLine("Pixel dimensions match expected size.");
-                }
-                else
-                {
-                    Console.WriteLine("Pixel dimensions do NOT match expected size.");
-                }
+                // Save the bitmap as a PNG file
+                bitmap.Save(imagePath, ImageFormat.Png);
+                Console.WriteLine($"Barcode image saved to: {imagePath}");
             }
-        }
-
-        // Optional clean‑up: delete the temporary PNG file if it exists
-        if (File.Exists(outputPath))
-        {
-            File.Delete(outputPath);
         }
     }
 }
