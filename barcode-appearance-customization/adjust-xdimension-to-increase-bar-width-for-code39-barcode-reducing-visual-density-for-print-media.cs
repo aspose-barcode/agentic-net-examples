@@ -1,8 +1,8 @@
-// Title: Adjust XDimension for Code39 Barcode to Increase Bar Width
-// Description: Demonstrates how to increase the XDimension of a Code39 barcode using Aspose.BarCode, resulting in wider bars and lower visual density suitable for print media.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to customize barcode appearance by modifying size parameters. It uses the BarcodeGenerator class with EncodeTypes and BarCodeImageFormat to create a PNG image. Developers often need to adjust XDimension to meet printing requirements, improve scan reliability, or match branding guidelines.
+// Title: Adjust XDimension for Code39 Barcode to Reduce Visual Density
+// Description: Demonstrates how to increase the XDimension of a Code39 barcode, making the bars wider for better readability in print media.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to customize barcode appearance using the BarcodeGenerator class. It covers typical use cases such as setting symbology, adjusting dimensions, and saving to image formats. Developers often need to modify XDimension to control bar width for various output media, especially when reducing visual density for printing.
 // Prompt: Adjust XDimension to increase bar width for a Code39 barcode, reducing visual density for print media.
-// Tags: code39, xdimension, barwidth, png, aspose.barcode, generation, barcode
+// Tags: code39, barcode, xdimension, barwidth, print, png, aspose.barcode, generation, encode-types
 
 using System;
 using System.IO;
@@ -10,39 +10,31 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a Code39 barcode with an increased XDimension to produce wider bars,
-/// then saves the result as a PNG image.
+/// Generates a Code39 barcode with increased XDimension to produce wider bars,
+/// which reduces visual density and improves print readability.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the output directory, configures the barcode generator,
-    /// adjusts the XDimension, and saves the barcode image.
+    /// Entry point of the example. Creates a temporary directory, generates the barcode,
+    /// saves it as a PNG file, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output directory relative to the current working directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        // Build a unique temporary folder for the output file
+        string outputDir = Path.Combine(Path.GetTempPath(), "Code39Demo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Ensure the output directory exists
-        if (!Directory.Exists(outputDir))
+        // Define the full path for the generated PNG image
+        string outputPath = Path.Combine(outputDir, "code39.png");
+
+        // Initialize the barcode generator with Code39 symbology and the desired text
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "HELLO"))
         {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Full path for the generated PNG file
-        string outputPath = Path.Combine(outputDir, "Code39_XDimension.png");
-
-        // Initialize the barcode generator for Code39 with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "CODE39"))
-        {
-            // Increase XDimension to make bars wider (reduces visual density)
+            // Increase XDimension to make bars wider, reducing visual density
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Ensure AutoSizeMode is set to None so the barcode size adapts to the new XDimension
-            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-
-            // Save the generated barcode as a PNG image
+            // Save the generated barcode image in PNG format
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 

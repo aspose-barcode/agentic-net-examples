@@ -1,109 +1,127 @@
-// Title: Generate barcodes from CSV with padding and rotation
-// Description: Demonstrates reading a CSV file containing barcode text, rotation angles, and padding values, then creating PNG images using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and image saving options. Typical use cases include batch barcode creation for inventory, shipping labels, or marketing materials where each barcode may require custom rotation and padding. Developers often need to automate image output from data sources such as CSV or databases.
+// Title: Generate Barcode Images from CSV with Padding and Rotation
+// Description: This example reads barcode specifications from a CSV file (or uses built‑in sample data) and creates PNG images applying custom padding and rotation.
+// Category-Description: Demonstrates Aspose.BarCode generation workflow, including EncodeTypes resolution, BarcodeGenerator configuration, and image export. Ideal for developers needing batch barcode creation with layout adjustments such as padding and rotation. Covers key classes like EncodeTypes, BarcodeGenerator, and BarCodeImageFormat, typical for inventory, shipping, or labeling solutions.
 // Prompt: Create an app that reads a CSV list of barcode data and generates images with padding and rotation.
-// Tags: barcode generation, csv, padding, rotation, png, aspose.barcode, code128, image output
+// Tags: barcode, symbology, generation, padding, rotation, csv, png, aspose.barcode, aspnet
 
 using System;
 using System.IO;
-using System.Collections.Generic;
+using System.Globalization;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Reads barcode specifications from a CSV file and generates PNG images with custom padding and rotation.
+/// Demonstrates reading barcode definitions from a CSV file and generating PNG images
+/// with custom padding and rotation using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Handles CSV preparation, barcode generation, and output folder management.
+    /// Entry point. Accepts an optional CSV file path argument, processes each line,
+    /// and writes barcode images to a temporary folder.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; first argument may be the CSV file path.</param>
+    static void Main(string[] args)
     {
-        // Determine the path for the CSV file (placed in the system temporary folder)
-        string csvPath = Path.Combine(Path.GetTempPath(), "barcode_data.csv");
+        // Determine CSV source: command‑line argument or fallback to sample data.
+        string csvPath = args.Length > 0 ? args[0] : string.Empty;
+        string[] csvLines;
 
-        // If the CSV does not exist, create a sample file with header-less data rows
-        if (!File.Exists(csvPath))
+        if (!string.IsNullOrEmpty(csvPath) && File.Exists(csvPath))
         {
-            var sampleLines = new List<string>
+            // Load all lines from the provided CSV file.
+            csvLines = File.ReadAllLines(csvPath);
+        }
+        else
+        {
+            // Use built‑in sample CSV data when no valid file is supplied.
+            // Format: Symbology,CodeText,PadLeft,PadTop,PadRight,PadBottom,RotationAngle
+            csvLines = new[]
             {
-                // Format: CodeText,RotationAngle,PadLeft,PadTop,PadRight,PadBottom
-                "ASPOSE,45,10,10,10,10",
-                "12345678,-45,5,5,5,5",
-                "HELLO,90,15,0,15,0"
+                "Code128,Sample123,10,10,10,10,45",
+                "QR,Hello World,5,5,5,5,90",
+                "DataMatrix,ABCDEF,15,0,15,0,-45"
             };
-            File.WriteAllLines(csvPath, sampleLines);
-            Console.WriteLine($"Sample CSV created at: {csvPath}");
         }
 
-        // Prepare a unique output folder for the generated barcode images
+        // Create a unique temporary output folder for the generated barcode images.
         string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputFolder);
+        Console.WriteLine($"Output folder: {outputFolder}");
 
-        // Read all lines from the CSV file
-        string[] lines = File.ReadAllLines(csvPath);
-        int index = 0;
-
-        // Process each non‑empty line
-        foreach (string line in lines)
+        int lineNumber = 0;
+        // Process each CSV line individually.
+        foreach (string rawLine in csvLines)
         {
-            if (string.IsNullOrWhiteSpace(line))
+            lineNumber++;
+            string line = rawLine.Trim();
+
+            // Skip empty lines or lines that start with a comment marker.
+            if (string.IsNullOrEmpty(line) || line.StartsWith("#"))
                 continue;
 
-            // Split the line into individual fields
+            // Split the line into its constituent columns.
             string[] parts = line.Split(',');
-
-            // Validate that at least the code text and rotation are present
-            if (parts.Length < 2)
+            if (parts.Length < 7)
             {
-                Console.WriteLine($"Skipping invalid line {index + 1}");
+                Console.WriteLine($"Line {lineNumber}: insufficient columns, skipping.");
                 continue;
             }
 
-            // Extract barcode text
-            string codeText = parts[0].Trim();
+            // Extract and trim individual values.
+            string symbologyName = parts[0].Trim();
+            string codeText = parts[1].Trim();
 
-            // Parse rotation angle; default to 0 if parsing fails
-            if (!float.TryParse(parts[1].Trim(), out float rotation))
+            // Parse numeric padding and rotation values using invariant culture.
+            if (!float.TryParse(parts[2].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float padLeft) ||
+                !float.TryParse(parts[3].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float padTop) ||
+                !float.TryParse(parts[4].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float padRight) ||
+                !float.TryParse(parts[5].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float padBottom) ||
+                !float.TryParse(parts[6].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float rotationAngle))
             {
-                Console.WriteLine($"Invalid rotation on line {index + 1}, using 0");
-                rotation = 0f;
+                Console.WriteLine($"Line {lineNumber}: invalid numeric values, skipping.");
+                continue;
             }
 
-            // Default padding values (in points)
-            float padLeft = 5f, padTop = 5f, padRight = 5f, padBottom = 5f;
-
-            // If padding values are provided, attempt to parse them
-            if (parts.Length >= 6)
+            // Resolve the symbology enum value via reflection on EncodeTypes.
+            FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+            if (field == null)
             {
-                float.TryParse(parts[2].Trim(), out padLeft);
-                float.TryParse(parts[3].Trim(), out padTop);
-                float.TryParse(parts[4].Trim(), out padRight);
-                float.TryParse(parts[5].Trim(), out padBottom);
+                Console.WriteLine($"Line {lineNumber}: unknown symbology '{symbologyName}', skipping.");
+                continue;
             }
 
-            // Generate the barcode using Aspose.BarCode
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            BaseEncodeType encodeType = field.GetValue(null) as BaseEncodeType;
+            if (encodeType == null)
             {
-                // Apply rotation and padding settings
-                generator.Parameters.RotationAngle = rotation;
+                Console.WriteLine($"Line {lineNumber}: failed to obtain encode type for '{symbologyName}', skipping.");
+                continue;
+            }
+
+            // Build the output file path for the current barcode image.
+            string outputPath = Path.Combine(outputFolder, $"barcode_{lineNumber}.png");
+
+            // Generate the barcode with specified padding and rotation.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Apply custom padding (in points).
                 generator.Parameters.Barcode.Padding.Left.Point = padLeft;
                 generator.Parameters.Barcode.Padding.Top.Point = padTop;
                 generator.Parameters.Barcode.Padding.Right.Point = padRight;
                 generator.Parameters.Barcode.Padding.Bottom.Point = padBottom;
 
-                // Define the output file path
-                string outPath = Path.Combine(outputFolder, $"barcode_{index + 1}.png");
+                // Apply rotation angle.
+                generator.Parameters.RotationAngle = rotationAngle;
 
-                // Save the barcode image as PNG
-                generator.Save(outPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Saved barcode {index + 1} to {outPath}");
+                // Save the barcode image as PNG.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
             }
 
-            index++;
+            Console.WriteLine($"Line {lineNumber}: barcode saved to {outputPath}");
         }
 
-        Console.WriteLine($"All barcodes generated in folder: {outputFolder}");
+        Console.WriteLine("Processing completed.");
     }
 }

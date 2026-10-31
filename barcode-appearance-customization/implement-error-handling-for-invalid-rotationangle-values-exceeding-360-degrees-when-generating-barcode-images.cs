@@ -1,91 +1,83 @@
 // Title: Barcode Generation with Rotation Angle Validation
-// Description: Demonstrates how to generate a barcode image with a specified rotation angle and validates that the angle stays within acceptable bounds.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, rotation settings, and error handling. Developers often need to rotate barcodes for layout purposes while ensuring angles are within -360 to 360 degrees; this snippet illustrates proper validation and exception handling for such scenarios.
+// Description: Demonstrates generating Code128 barcodes with various rotation angles, including handling of invalid angles exceeding 360 degrees.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing how to use BarcodeGenerator, set rotation angles, and save barcodes as PNG files. Developers often need to rotate barcodes for layout purposes while ensuring angle values stay within supported limits. The snippet illustrates validation, error handling, and typical API usage for barcode image creation.
 // Prompt: Implement error handling for invalid RotationAngle values exceeding 360 degrees when generating barcode images.
-// Tags: barcode, rotation, validation, generation, png, aspose.barcode, encode-types, error-handling
+// Tags: barcode symbology, rotation, image generation, error handling, aspose.barcode, code128, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation with rotation angle validation using Aspose.BarCode.
+/// Demonstrates barcode generation with rotation angle validation and error handling.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode with a valid rotation and attempts one with an invalid rotation to show error handling.
+    /// Entry point of the example. Generates barcodes at multiple rotation angles,
+    /// including an invalid angle to showcase validation logic.
     /// </summary>
     static void Main()
     {
-        // Prepare output directory in the temporary folder
+        // Sample barcode text to encode.
+        const string codeText = "ASPOSE";
+
+        // Rotation angles to test; includes an invalid value (400°).
+        int[] angles = { 0, 90, 180, 270, 400 };
+
+        // Create an output directory in the temporary folder.
         string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeRotationDemo");
         Directory.CreateDirectory(outputDir);
 
-        // Generate a barcode with a valid rotation angle (90 degrees)
-        try
+        // Generate a barcode for each specified angle.
+        foreach (int angle in angles)
         {
-            GenerateBarcodeWithRotation(
-                EncodeTypes.Code128,
-                "VALID90",
-                90f,
-                Path.Combine(outputDir, "valid_90.png"));
-            Console.WriteLine("Generated barcode with valid rotation angle 90°.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error generating valid barcode: {ex.Message}");
+            GenerateBarcodeWithRotation(codeText, angle, outputDir);
         }
 
-        // Attempt to generate a barcode with an invalid rotation angle (400 degrees)
-        try
-        {
-            GenerateBarcodeWithRotation(
-                EncodeTypes.Code128,
-                "INVALID400",
-                400f,
-                Path.Combine(outputDir, "invalid_400.png"));
-        }
-        catch (ArgumentOutOfRangeException ex)
-        {
-            Console.WriteLine($"Caught expected exception for invalid rotation angle: {ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Unexpected error: {ex.Message}");
-        }
+        Console.WriteLine("Barcode generation completed.");
     }
 
     /// <summary>
-    /// Generates a barcode image with the specified rotation angle after validating the angle.
+    /// Generates a Code128 barcode with the specified rotation angle and saves it as a PNG file.
+    /// If the angle exceeds the allowed range, it defaults to 0° and logs a warning.
     /// </summary>
-    /// <param name="encodeType">The barcode symbology to use.</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="rotationAngle">The rotation angle in degrees.</param>
-    /// <param name="outputPath">The file path where the image will be saved.</param>
-    static void GenerateBarcodeWithRotation(BaseEncodeType encodeType, string codeText, float rotationAngle, string outputPath)
+    /// <param name="text">The text to encode in the barcode.</param>
+    /// <param name="angleDegrees">Desired rotation angle in degrees.</param>
+    /// <param name="outputDirectory">Directory where the barcode image will be saved.</param>
+    static void GenerateBarcodeWithRotation(string text, int angleDegrees, string outputDirectory)
     {
-        // Ensure the rotation angle is within the allowed range
-        ValidateRotationAngle(rotationAngle);
-
-        // Create the barcode generator, set rotation, and save the image
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Validate rotation angle: allowed range is -360 to 360 degrees.
+        if (Math.Abs(angleDegrees) > 360)
         {
-            generator.Parameters.RotationAngle = rotationAngle;
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Invalid rotation angle {angleDegrees}°. It must be within -360 to 360 degrees. Using 0° instead.");
+            angleDegrees = 0;
         }
-    }
 
-    /// <summary>
-    /// Validates that the rotation angle is between -360 and 360 degrees.
-    /// </summary>
-    /// <param name="angle">The rotation angle to validate.</param>
-    static void ValidateRotationAngle(float angle)
-    {
-        if (angle > 360f || angle < -360f)
+        // Construct the output file name and path.
+        string fileName = $"Barcode_Rotation_{angleDegrees}.png";
+        string filePath = Path.Combine(outputDirectory, fileName);
+
+        // Initialize the barcode generator with Code128 symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, text))
         {
-            throw new ArgumentOutOfRangeException(nameof(angle), "RotationAngle must be between -360 and 360 degrees.");
+            // Apply the validated rotation angle (property expects a float).
+            generator.Parameters.RotationAngle = (float)angleDegrees;
+
+            try
+            {
+                // Save the generated barcode as a PNG image.
+                generator.Save(filePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Saved barcode with rotation {angleDegrees}° to: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                // Log any errors that occur during barcode generation or saving.
+                Console.WriteLine($"Failed to generate barcode with rotation {angleDegrees}°: {ex.Message}");
+            }
         }
     }
 }

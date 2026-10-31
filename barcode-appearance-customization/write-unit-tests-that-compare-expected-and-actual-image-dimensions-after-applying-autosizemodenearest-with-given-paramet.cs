@@ -1,8 +1,8 @@
 // Title: AutoSizeMode.Nearest Barcode Image Dimension Verification
-// Description: Demonstrates generating DataMatrix barcodes with Aspose.BarCode using AutoSizeMode.Nearest and verifies that the resulting image dimensions match the specified width and height.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing how to control barcode image size with AutoSizeMode, set pixel dimensions, and validate output. It uses BarcodeGenerator, AutoSizeMode, and image handling classes, typical for developers needing precise barcode sizing for UI or printing.
+// Description: Demonstrates generating DataMatrix barcodes with AutoSizeMode.Nearest and validates the resulting image dimensions.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing how to configure AutoSizeMode, image size, and X‑Dimension for DataMatrix barcodes. It uses BarcodeGenerator, GenerationParameters, and Aspose.Drawing to create PNG images, a common task for developers needing precise barcode sizing in automated tests or batch processing.
 // Prompt: Write unit tests that compare expected and actual image dimensions after applying AutoSizeMode.Nearest with given parameters.
-// Tags: datamatrix, autosizemode, image-dimensions, png, aspose.barcode, generation, testing
+// Tags: datamatrix, autosizemode, nearest, image-dimensions, barcode-generation, aspose.barcode, png, unit-test
 
 using System;
 using System.IO;
@@ -12,99 +12,102 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates DataMatrix barcodes with specific pixel dimensions
-/// using <c>AutoSizeMode.Nearest</c> and validates the actual image size against the expected values.
+/// Contains a simple console‑based test harness that generates DataMatrix barcodes
+/// with AutoSizeMode.Nearest and verifies the output image dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Executes a series of dimension verification tests.
+    /// Represents a single test case with input parameters and expected output dimensions.
     /// </summary>
-    static void Main()
+    class TestCase
     {
-        // Define test cases: expected width, expected height, XDimension in pixels
-        RunTest("Test1", 300, 300, 3);
-        RunTest("Test2", 200, 150, 2);
-        RunTest("Test3", 500, 400, 5);
+        public string CodeText { get; set; }
+        public int ImageWidthPixels { get; set; }
+        public int ImageHeightPixels { get; set; }
+        public int XDimensionPixels { get; set; }
+        public int ExpectedWidth { get; set; }
+        public int ExpectedHeight { get; set; }
     }
 
     /// <summary>
-    /// Generates a barcode image with the specified parameters, saves it temporarily,
-    /// and checks whether the actual bitmap dimensions match the expected ones.
+    /// Entry point. Generates barcodes for predefined test cases, saves them,
+    /// reads back the image size, and reports pass/fail results.
     /// </summary>
-    /// <param name="testName">Identifier for the test case.</param>
-    /// <param name="expectedWidth">Desired image width in pixels.</param>
-    /// <param name="expectedHeight">Desired image height in pixels.</param>
-    /// <param name="xDimensionPixels">X-dimension (module size) in pixels.</param>
-    static void RunTest(string testName, int expectedWidth, int expectedHeight, int xDimensionPixels)
+    static void Main()
     {
-        // Create a unique temporary folder for this test
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, testName + ".png");
+        // Create a temporary directory to store generated barcode images.
+        string tempDir = Path.Combine(Path.GetTempPath(), "AutoSizeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        try
+        // Define test cases with expected dimensions.
+        var tests = new[]
         {
-            // Initialize the barcode generator for DataMatrix symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ASPOSE"))
+            new TestCase
             {
-                // Configure auto‑size mode and explicit pixel dimensions
+                CodeText = "Test1",
+                ImageWidthPixels = 300,
+                ImageHeightPixels = 300,
+                XDimensionPixels = 3,
+                ExpectedWidth = 300,
+                ExpectedHeight = 300
+            },
+            new TestCase
+            {
+                CodeText = "Sample2",
+                ImageWidthPixels = 200,
+                ImageHeightPixels = 100,
+                XDimensionPixels = 2,
+                ExpectedWidth = 200,
+                ExpectedHeight = 100
+            }
+        };
+
+        int passed = 0;
+        int failed = 0;
+
+        // Iterate over each test case, generate the barcode, and verify dimensions.
+        foreach (var test in tests)
+        {
+            // Build a unique file path for the generated PNG image.
+            string filePath = Path.Combine(tempDir, $"barcode_{Guid.NewGuid().ToString("N")}.png");
+
+            // Configure the barcode generator with AutoSizeMode.Nearest and other parameters.
+            using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, test.CodeText))
+            {
                 generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
-                generator.Parameters.ImageWidth.Pixels = expectedWidth;
-                generator.Parameters.ImageHeight.Pixels = expectedHeight;
-                generator.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;
-
-                // Generate the barcode bitmap
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                {
-                    // Save the bitmap to disk for optional visual verification
-                    using (FileStream fs = new FileStream(barcodePath, FileMode.Create, FileAccess.Write))
-                    {
-                        bitmap.Save(fs, ImageFormat.Png);
-                    }
-
-                    // Retrieve actual dimensions from the generated bitmap
-                    int actualWidth = bitmap.Width;
-                    int actualHeight = bitmap.Height;
-
-                    // Compare actual dimensions with expected values
-                    bool widthMatch = actualWidth == expectedWidth;
-                    bool heightMatch = actualHeight == expectedHeight;
-
-                    if (widthMatch && heightMatch)
-                    {
-                        Console.WriteLine($"{testName}: PASS (Width={actualWidth}, Height={actualHeight})");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"{testName}: FAIL (Expected Width={expectedWidth}, Height={expectedHeight}; Actual Width={actualWidth}, Height={actualHeight})");
-                    }
-                }
+                generator.Parameters.ImageWidth.Pixels = test.ImageWidthPixels;
+                generator.Parameters.ImageHeight.Pixels = test.ImageHeightPixels;
+                generator.Parameters.Barcode.XDimension.Pixels = test.XDimensionPixels;
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
-        }
-        catch (Exception ex)
-        {
-            // Report any unexpected exceptions during generation or validation
-            Console.WriteLine($"{testName}: EXCEPTION - {ex.Message}");
-        }
-        finally
-        {
-            // Cleanup temporary files and folder
-            try
+
+            // Load the saved image to obtain actual dimensions.
+            int actualWidth;
+            int actualHeight;
+            using (var bitmap = new Bitmap(filePath))
             {
-                if (File.Exists(barcodePath))
-                {
-                    File.Delete(barcodePath);
-                }
-                if (Directory.Exists(tempFolder))
-                {
-                    Directory.Delete(tempFolder, true);
-                }
+                actualWidth = bitmap.Width;
+                actualHeight = bitmap.Height;
             }
-            catch
+
+            // Compare actual dimensions with expected values.
+            bool widthMatch = actualWidth == test.ExpectedWidth;
+            bool heightMatch = actualHeight == test.ExpectedHeight;
+
+            if (widthMatch && heightMatch)
             {
-                // Ignored cleanup errors
+                Console.WriteLine($"PASS: {test.CodeText} => Width={actualWidth}, Height={actualHeight}");
+                passed++;
+            }
+            else
+            {
+                Console.WriteLine($"FAIL: {test.CodeText} => Expected ({test.ExpectedWidth}x{test.ExpectedHeight}), Got ({actualWidth}x{actualHeight})");
+                failed++;
             }
         }
+
+        // Output a summary of test results.
+        Console.WriteLine($"Test Summary: {passed} passed, {failed} failed.");
     }
 }

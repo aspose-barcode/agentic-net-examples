@@ -1,45 +1,48 @@
-// Title: Generate low‑resolution Code128 barcode with custom XDimension
-// Description: This example creates a Code128 barcode, disables automatic sizing, sets a specific XDimension, and saves the image as PNG for display on low‑resolution screens.
-// Category-Description: Demonstrates Aspose.BarCode generation techniques, focusing on sizing and resolution control. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce barcodes suitable for web or UI scenarios where screen DPI is limited. Developers often need to fine‑tune XDimension and AutoSizeMode to ensure readability on low‑resolution displays.
+// Title: Generate Low‑Resolution Code128 Barcode with Fixed X‑Dimension
+// Description: Demonstrates how to create a Code128 barcode optimized for low‑resolution screen display by disabling auto‑sizing and setting a specific X‑dimension.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and rendering parameters such as AutoSizeMode, XDimension, and Resolution. Developers often need to produce barcodes that render clearly on low‑dpi displays or screens, requiring explicit control over module size and image resolution. The snippet shows typical steps for configuring these settings and saving the barcode as a PNG image.
 // Prompt: Set AutoSizeMode to None, assign XDimension, and generate a barcode suitable for low‑resolution screen display.
-// Tags: code128, barcode, autosizemode, xdimension, lowresolution, png, aspose.barcode, generation
+// Tags: code128, barcode generation, low resolution, autosizemode, xdimension, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a low‑resolution Code128 barcode with custom sizing settings.
+/// Example program that generates a low‑resolution Code128 barcode with a fixed X‑dimension.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, configures sizing, and saves it as a PNG file.
+    /// Entry point. Creates the output folder, configures the barcode generator, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Determine output file path in the current directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "LowResBarcode.png");
-        // Text to encode in the barcode
-        string codeText = "LOWRES";
+        // Define a temporary directory for the output image.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize generator with Code128 symbology and the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Full path for the generated PNG file.
+        string outputPath = Path.Combine(outputDir, "LowResBarcode.png");
+
+        // Initialize the generator with Code128 symbology and the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "LOWRES"))
         {
-            // Disable automatic sizing; we will define dimensions manually
+            // Disable automatic sizing to allow manual control of dimensions.
             generator.Parameters.AutoSizeMode = AutoSizeMode.None;
-            // Set narrow bar width (XDimension) in pixels for low‑resolution rendering
+
+            // Set the X‑dimension (module width) to 2 pixels for better visibility on low‑dpi screens.
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
-            // Define image resolution (DPI) typical for screen display
+
+            // Define the image resolution (96 DPI) suitable for screen display.
             generator.Parameters.Resolution = 96f;
 
-            // Save the generated barcode as a PNG image
+            // Save the barcode as a PNG image to the specified path.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved
+        // Inform the user where the barcode image was saved.
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
