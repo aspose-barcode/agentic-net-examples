@@ -1,8 +1,8 @@
-// Title: In‑Memory Barcode Generation and Recognition using Aspose.BarCode
-// Description: Demonstrates creating a Code128 barcode, storing it in a MemoryStream, and reading it back without writing to disk.
-// Category-Description: This example belongs to the Aspose.BarCode in‑memory processing category, showcasing how to generate barcodes with BarcodeGenerator, save them to a MemoryStream, and recognize them using BarCodeReader. Typical use cases include transmitting barcode images over network streams, embedding them in documents, or processing them in web services where disk I/O is undesirable. Developers often need to work with ImageFormat, EncodeTypes, and stream‑based APIs for efficient barcode handling.
+// Title: Generate and Decode a Code128 Barcode Using MemoryStream
+// Description: Demonstrates creating a Code128 barcode, saving it to a MemoryStream, and decoding it directly from the stream without writing to disk.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes and BarCodeReader to read them, both operating on in‑memory streams. Developers often need to generate barcodes for web responses, email attachments, or other transient scenarios where persisting to the file system is undesirable.
 // Prompt: Use a MemoryStream to hold the barcode image for in‑memory processing and transmission.
-// Tags: barcode, code128, memorystream, in‑memory, generation, recognition, png, aspose.barcode
+// Tags: code128, barcode generation, barcode recognition, memorystream, png, aspose.barcode, in‑memory processing
 
 using System;
 using System.IO;
@@ -11,51 +11,44 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it to a MemoryStream,
-/// and recognizing it directly from the stream using Aspose.BarCode.
+/// Demonstrates generating a Code128 barcode, storing it in a MemoryStream,
+/// and decoding it directly from the stream using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates, stores, and reads a barcode entirely in memory.
+    /// Entry point of the example. Generates a barcode, saves it to a MemoryStream,
+    /// then reads and decodes the barcode from the same stream.
     /// </summary>
-    static void Main()
+    /// <param name="args">Optional command‑line argument specifying the barcode text.</param>
+    static void Main(string[] args)
     {
-        // Text to encode in the barcode
-        string codeText = "12345678";
+        // Determine the text to encode: use first argument if provided, otherwise default.
+        string codeText = args.Length > 0 ? args[0] : "12345678";
 
-        // Initialize the barcode generator with Code128 symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Choose the barcode symbology (Code128) for encoding.
+        BaseEncodeType encodeType = EncodeTypes.Code128;
+
+        // Create a BarcodeGenerator with the selected type and text.
+        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Set the X-dimension (module width) to 2 points for better readability
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Create a memory stream to hold the generated barcode image
-            using (var ms = new MemoryStream())
+            // Prepare an in‑memory stream to hold the generated image.
+            using (MemoryStream memoryStream = new MemoryStream())
             {
-                // Save the barcode as a PNG image into the memory stream
-                generator.Save(ms, BarCodeImageFormat.Png);
-                Console.WriteLine($"Barcode image saved to memory stream, length = {ms.Length} bytes.");
+                // Save the barcode image as PNG into the MemoryStream.
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode generated and saved to MemoryStream. Size: {memoryStream.Length} bytes.");
 
-                // Reset stream position to the beginning before reading
-                ms.Position = 0;
+                // Reset the stream position to the beginning before reading.
+                memoryStream.Position = 0;
 
-                // Initialize a barcode reader to decode from the memory stream
-                using (var reader = new BarCodeReader(ms))
+                // Initialize a BarCodeReader to decode the barcode from the stream.
+                using (BarCodeReader reader = new BarCodeReader(memoryStream, DecodeType.Code128))
                 {
-                    bool found = false;
-
-                    // Iterate through all detected barcodes in the stream
-                    foreach (var result in reader.ReadBarCodes())
+                    // Iterate through all detected barcodes (should be one in this case).
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        found = true;
-                        Console.WriteLine($"Detected type: {result.CodeTypeName}, text: {result.CodeText}");
-                    }
-
-                    // Inform if no barcode was detected
-                    if (!found)
-                    {
-                        Console.WriteLine("No barcode detected in the memory stream.");
+                        Console.WriteLine($"Decoded barcode type: {result.CodeTypeName}, text: {result.CodeText}");
                     }
                 }
             }

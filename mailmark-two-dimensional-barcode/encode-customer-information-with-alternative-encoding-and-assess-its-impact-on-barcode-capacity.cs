@@ -1,124 +1,83 @@
-// Title: QR Code Encoding Modes – Auto vs UTF‑8 (ECI) and Capacity Impact
-// Description: Demonstrates generating QR barcodes using the default auto encoding and explicit UTF‑8 (ECI) encoding, then evaluates how each mode handles data that exceeds the QR code's maximum capacity.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on QR code creation, encoding selection, and capacity considerations. It showcases key API classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat. Developers commonly use these APIs to produce QR codes for various data payloads, choose appropriate encoding (auto or explicit ECI), and understand size limitations for reliable scanning.
-// Prompt: Encode customer information with an alternative encoding and assess its impact on barcode capacity.
-// Tags: qr code, encoding, capacity, aspose.barcode, generation, png, eci
+// Title: Mailmark 2D Barcode Generation with Customer Content Comparison
+// Description: Demonstrates generating Mailmark 2D barcodes of three different types while encoding customer information, allowing developers to observe the impact of content length on barcode capacity.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator and Mailmark2DCodetext to create Mailmark 2D barcodes, a common requirement in postal and logistics applications. Developers often need to encode various data fields, including customer content, and compare how different DataMatrix types affect the amount of information that can be stored.
+/// Prompt: Encode customer information with an alternative encoding and assess its impact on barcode capacity.
+/// Tags: mailmark, barcode, datamatrix, capacity, customer-content, aspose.barcode, complexbarcode, generation
 
 using System;
 using System.IO;
-using System.Text;
 using Aspose.BarCode;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates encoding customer information using different QR code encoding modes and evaluates barcode capacity.
+/// Generates Mailmark 2D barcodes of three types, encodes customer information,
+/// and saves the resulting images for capacity comparison.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates QR codes with auto and explicit UTF‑8 encoding, and attempts to encode data exceeding QR capacity.
+    /// Entry point of the example. Creates temporary output folder, defines common
+    /// Mailmark fields, iterates over selected DataMatrix types, generates barcodes,
+    /// and writes status information to the console.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary output folder for generated barcode images.
-        // --------------------------------------------------------------------
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeEncodingDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for output files
+        string outputDir = Path.Combine(Path.GetTempPath(), "Mailmark2D_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
 
-        // --------------------------------------------------------------------
-        // Sample short customer information to encode.
-        // --------------------------------------------------------------------
-        string shortInfo = "CustomerInfo123";
+        // Common fields for all Mailmark 2D barcodes
+        const string upuCountryID = "JGB ";
+        const string informationTypeID = "0";
+        const string versionID = "1";
+        const string classID = "1";
+        const int supplyChainID = 123;
+        const int itemID = 1234;
+        const string destinationPostCodeAndDPS = "EF61AH8T "; // exact 9‑char value with trailing space
+        const string customerContent = "CUST01"; // 6 characters, max for type 29
 
-        // --------------------------------------------------------------------
-        // Generate QR barcode using default (Auto) encoding.
-        // --------------------------------------------------------------------
-        GenerateAndReport("Auto", shortInfo, outputDir, useExplicitEncoding: false);
-
-        // --------------------------------------------------------------------
-        // Generate QR barcode using explicit UTF‑8 (ECI) encoding.
-        // --------------------------------------------------------------------
-        GenerateAndReport("ECI", shortInfo, outputDir, useExplicitEncoding: true);
-
-        // --------------------------------------------------------------------
-        // Create a long string that exceeds the maximum QR code capacity (~2953 bytes).
-        // --------------------------------------------------------------------
-        string longInfo = new string('A', 3000); // exceeds QR max capacity
-
-        Console.WriteLine();
-        Console.WriteLine("Attempting to encode long data with default (Auto) mode:");
-        TryEncodeLongData(longInfo, outputDir, useExplicitEncoding: false);
-
-        Console.WriteLine();
-        Console.WriteLine("Attempting to encode long data with explicit UTF‑8 (ECI) mode:");
-        TryEncodeLongData(longInfo, outputDir, useExplicitEncoding: true);
-    }
-
-    /// <summary>
-    /// Generates a QR barcode with the specified encoding mode, saves it, and reports the file size.
-    /// </summary>
-    /// <param name="modeName">Friendly name of the encoding mode (e.g., "Auto" or "ECI").</param>
-    /// <param name="data">The text to encode into the barcode.</param>
-    /// <param name="folder">Folder where the barcode image will be saved.</param>
-    /// <param name="useExplicitEncoding">If true, sets the code text with UTF‑8 encoding; otherwise uses the default auto mode.</param>
-    static void GenerateAndReport(string modeName, string data, string folder, bool useExplicitEncoding)
-    {
-        // Build the output file path.
-        string filePath = Path.Combine(folder, $"QR_{modeName}.png");
-
-        // Create and configure the barcode generator.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+        // Define the three Mailmark 2D types to compare
+        var types = new (Mailmark2DType Type, string Name)[]
         {
-            if (useExplicitEncoding)
-                generator.SetCodeText(data, Encoding.UTF8); // Explicit UTF‑8 (ECI) encoding.
-            else
-                generator.CodeText = data; // Default auto encoding.
+            (Mailmark2DType.Type_7, "Type 7"),
+            (Mailmark2DType.Type_9, "Type 9"),
+            (Mailmark2DType.Type_29, "Type 29")
+        };
 
-            // Save the generated QR code as a PNG image.
-            generator.Save(filePath, BarCodeImageFormat.Png);
-        }
-
-        // Report the size of the saved image file.
-        long fileSize = new FileInfo(filePath).Length;
-        Console.WriteLine($"{modeName} encoding: saved barcode to '{filePath}' (size: {fileSize} bytes)");
-    }
-
-    /// <summary>
-    /// Attempts to encode a long data string into a QR barcode using the specified encoding mode,
-    /// handling any exceptions that arise due to capacity limits.
-    /// </summary>
-    /// <param name="data">The long text to encode.</param>
-    /// <param name="folder">Folder where the barcode image will be saved if encoding succeeds.</param>
-    /// <param name="useExplicitEncoding">If true, uses explicit UTF‑8 (ECI) encoding; otherwise uses auto mode.</param>
-    static void TryEncodeLongData(string data, string folder, bool useExplicitEncoding)
-    {
-        string mode = useExplicitEncoding ? "ECI" : "Auto";
-        string filePath = Path.Combine(folder, $"QR_Long_{mode}.png");
-
-        try
+        // Iterate over each type, generate the barcode, and save it
+        foreach (var (type, name) in types)
         {
-            // Create and configure the barcode generator for the long data.
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR))
+            // Prepare the codetext object with shared fields and the current DataMatrix type
+            var mailmark2D = new Mailmark2DCodetext
             {
-                if (useExplicitEncoding)
-                    generator.SetCodeText(data, Encoding.UTF8);
-                else
-                    generator.CodeText = data;
+                UPUCountryID = upuCountryID,
+                InformationTypeID = informationTypeID,
+                VersionID = versionID,
+                Class = classID,
+                SupplyChainID = supplyChainID,
+                ItemID = itemID,
+                DestinationPostCodeAndDPS = destinationPostCodeAndDPS,
+                DataMatrixType = type,
+                CustomerContent = customerContent
+            };
 
-                // Attempt to save the QR code image.
+            // Generate the barcode using ComplexBarcodeGenerator
+            using (var generator = new ComplexBarcodeGenerator(mailmark2D))
+            {
+                // Build the output file path and save the image as PNG
+                string filePath = Path.Combine(outputDir, $"Mailmark2D_{name}.png");
                 generator.Save(filePath, BarCodeImageFormat.Png);
-            }
 
-            // If successful, report the file size.
-            long size = new FileInfo(filePath).Length;
-            Console.WriteLine($"Successfully encoded long data with {mode} mode. File size: {size} bytes");
+                // Output status information for the current barcode
+                Console.WriteLine($"{name} barcode saved to: {filePath}");
+                Console.WriteLine($"  Customer content length: {mailmark2D.CustomerContent.Length} characters");
+                Console.WriteLine($"  DataMatrix type: {mailmark2D.DataMatrixType}");
+            }
         }
-        catch (Exception ex)
-        {
-            // Report any failure, typically due to exceeding QR capacity.
-            Console.WriteLine($"Failed to encode long data with {mode} mode. Exception: {ex.Message}");
-        }
+
+        // Final message indicating that generation is complete
+        Console.WriteLine("Generation completed. Review the output files to assess capacity differences.");
     }
 }

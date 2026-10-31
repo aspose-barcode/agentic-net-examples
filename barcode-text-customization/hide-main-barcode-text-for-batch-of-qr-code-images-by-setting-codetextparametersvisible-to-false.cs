@@ -1,8 +1,8 @@
-// Title: Batch QR Code Generation with Hidden Text
-// Description: Demonstrates generating multiple QR code images while suppressing the human‑readable text beneath the barcode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and CodeTextParameters to create barcodes in bulk. Typical use cases include batch processing of QR codes for inventory, marketing, or authentication where the visual text is not required. Developers often need to hide the code text to produce cleaner images, and this snippet illustrates the standard approach.
+// Title: Hide QR Code Text in Batch Generation
+// Description: Demonstrates how to generate multiple QR code images while suppressing the human‑readable text using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to customize QR code output. Typical scenarios include creating batches of barcodes for printing or digital distribution where the textual representation should be omitted. Developers often need to adjust barcode appearance, format, and visibility of the code text, making this pattern a common reference for batch processing tasks.
 // Prompt: Hide main barcode text for a batch of QR code images by setting CodetextParameters.Visible to false.
-// Tags: qr, barcode, generation, hide-text, batch, png, aspose.barcode
+// Tags: qr, barcode, hide-text, batch, png, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -11,13 +11,12 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides an example that generates a batch of QR code images with the main barcode text hidden.
+/// Example program that creates a batch of QR code images with the main barcode text hidden.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates QR code images for a predefined list of texts, hides the human‑readable code text,
-    /// and saves the images to a temporary folder.
+    /// Entry point. Generates QR codes, hides the text, saves them, and prints file locations.
     /// </summary>
     static void Main()
     {
@@ -25,34 +24,44 @@ class Program
         string batchFolder = Path.Combine(Path.GetTempPath(), "QRBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(batchFolder);
 
-        // Define the list of QR code texts to encode
-        List<string> codeTexts = new List<string>
+        // Define sample QR code texts
+        List<string> texts = new List<string>
         {
-            "Sample001",
-            "Sample002",
-            "Sample003",
-            "Sample004",
-            "Sample005"
+            "Sample1",
+            "Hello World",
+            "https://example.com",
+            "1234567890",
+            "Aspose.BarCode"
         };
 
-        int index = 1;
-        // Iterate over each text, generate a QR code, hide its text, and save the image
-        foreach (string text in codeTexts)
+        // Collect generated file paths for later reporting
+        List<string> generatedFiles = new List<string>();
+
+        // Iterate over each text value and generate a QR code image
+        for (int i = 0; i < texts.Count; i++)
         {
-            string filePath = Path.Combine(batchFolder, $"qr_{index}.png");
+            string text = texts[i];
+            string filePath = Path.Combine(batchFolder, $"qr_{i + 1}.png");
+
+            // Initialize the barcode generator for QR code with the current text
             using (var generator = new BarcodeGenerator(EncodeTypes.QR, text))
             {
-                // Hide the human‑readable barcode text by setting its location to None
+                // Hide the main barcode text by disabling its location rendering
                 generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
                 // Save the QR code image as PNG
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            Console.WriteLine($"Generated QR code image: {filePath}");
-            index++;
+            generatedFiles.Add(filePath);
         }
 
-        Console.WriteLine($"All QR code images have been saved to: {batchFolder}");
+        // Output the location of the generated images
+        Console.WriteLine("Generated QR code images (text hidden) in folder:");
+        Console.WriteLine(batchFolder);
+        foreach (var file in generatedFiles)
+        {
+            Console.WriteLine(file);
+        }
     }
 }
