@@ -1,50 +1,54 @@
-// Title: In-Memory Barcode Caching Example
-// Description: Demonstrates how to cache generated barcode images in memory to avoid regenerating identical barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, BaseEncodeType, and BarCodeImageFormat. It shows typical use cases such as reducing processing time and resource consumption when the same barcode data is needed multiple times. Developers working with barcode creation often cache images to improve performance in web services, batch processing, or UI rendering scenarios.
+// Title: Barcode generation with in-memory caching
+// Description: Demonstrates generating barcodes using Aspose.BarCode and caching the resulting images in memory to avoid duplicate generation for identical parameters.
+// Category-Description: This example belongs to the Aspose.BarCode generation and caching category. It shows how to use BarcodeGenerator, set basic parameters, and store generated PNG images in a Dictionary for reuse. Developers working with high‑volume barcode creation often need to cache results to improve performance and reduce CPU load.
 // Prompt: Cache generated barcode images in memory to avoid redundant regeneration for identical field sets.
-// Tags: barcode, caching, memory, code128, png, aspnet, aspose.barcode, generation
+// Tags: barcode generation, caching, memory cache, aspnet, aspose.barcode, png, code128, qr, datamatrix
 
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
 /// Provides an in‑memory cache for barcode images generated with Aspose.BarCode.
 /// </summary>
 class BarcodeCache
 {
-    // Internal dictionary stores barcode byte arrays keyed by a unique string.
+    // Internal dictionary that maps a unique key (encode type + text) to the generated PNG bytes.
     private readonly Dictionary<string, byte[]> _cache = new Dictionary<string, byte[]>();
 
     /// <summary>
-    /// Retrieves a barcode image as a byte array, using the cache when possible.
+    /// Retrieves a cached barcode image or generates a new one if it does not exist.
     /// </summary>
-    /// <param name="encodeType">The barcode symbology to use.</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>PNG image data representing the barcode.</returns>
-    public byte[] GetBarcode(BaseEncodeType encodeType, string codeText)
+    /// <param name="encodeType">The barcode symbology to use (e.g., Code128, QR).</param>
+    /// <param name="codeText">The text or data to encode in the barcode.</param>
+    /// <returns>A byte array containing the PNG image of the barcode.</returns>
+    public byte[] GetOrCreateBarcode(BaseEncodeType encodeType, string codeText)
     {
-        // Build a unique cache key from the encode type and the text.
-        string key = $"{encodeType}_{codeText}";
+        // Build a deterministic cache key from the encode type and the text.
+        string key = $"{encodeType.TypeName}|{codeText}";
 
-        // Return cached data if it exists.
-        if (_cache.TryGetValue(key, out var data))
+        // Return the cached image if it already exists.
+        if (_cache.TryGetValue(key, out byte[] cachedData))
         {
-            Console.WriteLine("Cache hit for key: " + key);
-            return data;
+            Console.WriteLine($"Cache hit for key: {key}");
+            return cachedData;
         }
 
         // Cache miss – generate a new barcode.
-        Console.WriteLine("Generating barcode for key: " + key);
+        Console.WriteLine($"Cache miss for key: {key}. Generating barcode.");
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
+            // Set a simple visual property (black barcode on default background).
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+
+            // Save the generated barcode to a memory stream in PNG format.
             using (var ms = new MemoryStream())
             {
-                // Save the barcode as PNG into the memory stream.
                 generator.Save(ms, BarCodeImageFormat.Png);
-                data = ms.ToArray();
+                byte[] data = ms.ToArray();
 
                 // Store the generated image in the cache for future requests.
                 _cache[key] = data;
@@ -55,34 +59,52 @@ class BarcodeCache
 }
 
 /// <summary>
-/// Entry point demonstrating barcode generation and caching.
+/// Demonstrates the use of <see cref="BarcodeCache"/> to generate and cache barcode images.
 /// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point of the demo application. Generates several barcodes, some of which are duplicates,
+    /// and saves them to a temporary directory while leveraging the in‑memory cache.
+    /// </summary>
     static void Main()
     {
-        // Instantiate the cache helper.
+        // Prepare an output directory in the system's temporary folder.
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeCacheDemo");
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Instantiate the cache manager.
         var cache = new BarcodeCache();
 
-        // Define barcode parameters.
-        BaseEncodeType encode = EncodeTypes.Code128;
-        string text = "12345678";
+        // Define a list of field sets (encode type + code text) to process.
+        var fieldSets = new List<(BaseEncodeType encodeType, string codeText)>
+        {
+            (EncodeTypes.Code128, "ABC123"),
+            (EncodeTypes.QR, "https://example.com"),
+            (EncodeTypes.Code128, "ABC123"), // duplicate to test caching
+            (EncodeTypes.DataMatrix, "DataMatrixSample"),
+            (EncodeTypes.QR, "https://example.com") // duplicate
+        };
 
-        // First request – generates the barcode and caches it.
-        byte[] bytes1 = cache.GetBarcode(encode, text);
+        // Iterate over each field set, retrieve or generate the barcode, and write it to disk.
+        for (int i = 0; i < fieldSets.Count; i++)
+        {
+            var (encodeType, codeText) = fieldSets[i];
+            byte[] imageData = cache.GetOrCreateBarcode(encodeType, codeText);
+            string filePath = Path.Combine(outputDir, $"barcode_{i + 1}.png");
 
-        // Second request – retrieves the barcode from the cache.
-        byte[] bytes2 = cache.GetBarcode(encode, text);
+            // Write the PNG bytes to a file.
+            using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+            {
+                fileStream.Write(imageData, 0, imageData.Length);
+            }
 
-        // Determine temporary file paths for the output images.
-        string outPath1 = Path.Combine(Path.GetTempPath(), "barcode1.png");
-        string outPath2 = Path.Combine(Path.GetTempPath(), "barcode2.png");
+            Console.WriteLine($"Saved barcode to: {filePath}");
+        }
 
-        // Write the PNG data to disk.
-        File.WriteAllBytes(outPath1, bytes1);
-        File.WriteAllBytes(outPath2, bytes2);
-
-        // Inform the user where the files were saved.
-        Console.WriteLine($"Barcodes saved to:\n{outPath1}\n{outPath2}");
+        Console.WriteLine("Barcode generation and caching completed.");
     }
 }
