@@ -1,109 +1,91 @@
-// Title: DataMatrix detection accuracy comparison for different XDimension values
-// Description: Demonstrates generating DataMatrix barcodes with XDimension set to 1 and 3 pixels, then measuring detection success using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating DataMatrix symbols and BarCodeReader for decoding them. Typical scenarios include evaluating barcode readability under varying rendering parameters, such as XDimension, which developers often adjust to meet printing or scanning requirements. The code serves as a reference for batch processing and accuracy testing of barcode images.
-/// Prompt: Compare detection accuracy of DataMatrix codes when XDimension is set to 1 versus 3 pixels.
-// Tags: datamatrix, detection, accuracy, xdimension, barcode-generation, barcode-recognition, aspose.barcode
+// Title: Compare DataMatrix XDimension 1px vs 3px detection accuracy
+// Description: Generates two DataMatrix barcodes with XDimension set to 1 and 3 pixels, then reads them to compare detection success and reading quality.
+// Category-Description: This example demonstrates Aspose.BarCode generation and recognition workflows. It uses BarcodeGenerator to create barcodes and BarCodeReader to decode them, showcasing typical scenarios such as quality assessment, parameter tuning, and automated verification of barcode readability. Developers working with barcode imaging often need to experiment with rendering settings to optimize scanner performance.
+// Prompt: Compare detection accuracy of DataMatrix codes when XDimension is set to 1 versus 3 pixels.
+// Tags: datamatrix, xdimension, detection, accuracy, generation, recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that compares detection accuracy of DataMatrix barcodes
-/// generated with XDimension of 1 pixel versus 3 pixels.
+/// Demonstrates how XDimension affects DataMatrix detection by generating two barcodes
+/// (1 px and 3 px) and evaluating their readability using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes, evaluates detection, outputs results, and cleans up.
+    /// Entry point of the example. Generates barcodes, evaluates detection quality,
+    /// and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder to store generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "DMCompare_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary directory for the generated images
+        string tempDir = Path.Combine(Path.GetTempPath(), "DataMatrixXDimTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Sample texts to encode into DataMatrix barcodes
-        string[] sampleTexts = new[] { "ABC123", "HELLO", "1234567890", "DATA", "XYZ" };
+        // Common barcode content
+        string codeText = "ASPOSE123";
 
-        // Dictionary to hold file paths grouped by XDimension value
-        var filesByXDim = new Dictionary<int, List<string>>
+        // Paths for the two test images
+        string file1 = Path.Combine(tempDir, "datamatrix_1.png");
+        string file3 = Path.Combine(tempDir, "datamatrix_3.png");
+
+        // Generate DataMatrix with XDimension = 1 pixel
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            { 1, new List<string>() },
-            { 3, new List<string>() }
-        };
+            generator.Parameters.Barcode.XDimension.Pixels = 1f;
+            generator.Save(file1, BarCodeImageFormat.Png);
+        }
 
-        // Generate DataMatrix barcodes with XDimension = 1 and 3 pixels
-        foreach (int xDim in new[] { 1, 3 })
+        // Generate DataMatrix with XDimension = 3 pixels
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            for (int i = 0; i < sampleTexts.Length; i++)
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;
+            generator.Save(file3, BarCodeImageFormat.Png);
+        }
+
+        // Local function to read a barcode image and report detection results
+        void Evaluate(string path, string label)
+        {
+            if (!File.Exists(path))
             {
-                string text = sampleTexts[i];
-                string filePath = Path.Combine(tempFolder, $"DM_{xDim}_{i}.png");
+                Console.WriteLine($"{label}: File not found.");
+                return;
+            }
 
-                // Create barcode generator, set XDimension, and save as PNG
-                using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, text))
+            using (var reader = new BarCodeReader(path, DecodeType.DataMatrix))
+            {
+                BarCodeResult[] results = reader.ReadBarCodes();
+                if (results.Length > 0 && results[0].CodeText == codeText)
                 {
-                    generator.Parameters.Barcode.XDimension.Pixels = xDim;
-                    generator.Save(filePath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"{label}: Detected successfully. ReadingQuality={results[0].ReadingQuality}");
                 }
-
-                filesByXDim[xDim].Add(filePath);
+                else
+                {
+                    Console.WriteLine($"{label}: Detection failed or mismatched text.");
+                }
             }
         }
 
-        // Local function to evaluate detection accuracy for a given XDimension
-        int Evaluate(int xDim, List<string> files)
-        {
-            int detected = 0;
+        // Evaluate both generated images
+        Evaluate(file1, "XDimension=1px");
+        Evaluate(file3, "XDimension=3px");
 
-            for (int i = 0; i < files.Count; i++)
-            {
-                string file = files[i];
-                string expectedText = sampleTexts[i];
-
-                try
-                {
-                    // Read barcode from image file
-                    using (var reader = new BarCodeReader(file, DecodeType.DataMatrix))
-                    {
-                        var results = reader.ReadBarCodes();
-
-                        // Count as detected if a result matches the expected text
-                        if (results.Length > 0 && results[0].CodeText == expectedText)
-                        {
-                            detected++;
-                        }
-                    }
-                }
-                catch (ArgumentException)
-                {
-                    // Image loading failed; skip this file
-                }
-            }
-
-            return detected;
-        }
-
-        // Perform detection evaluation for both XDimension settings
-        int detected1 = Evaluate(1, filesByXDim[1]);
-        int detected3 = Evaluate(3, filesByXDim[3]);
-
-        // Output detection results to the console
-        Console.WriteLine($"DataMatrix detection with XDimension = 1 pixel: {detected1}/{sampleTexts.Length} detected");
-        Console.WriteLine($"DataMatrix detection with XDimension = 3 pixels: {detected3}/{sampleTexts.Length} detected");
-
-        // Clean up temporary files and folder
+        // Cleanup temporary files and directory
         try
         {
-            Directory.Delete(tempFolder, true);
+            File.Delete(file1);
+            File.Delete(file3);
+            Directory.Delete(tempDir);
         }
         catch
         {
-            // Ignore any errors during cleanup
+            // Suppress any cleanup errors
         }
     }
 }

@@ -1,52 +1,43 @@
-// Title: Record barcode detection counts per image across quality presets
-// Description: Generates sample barcode images and reads them using various quality settings to count detected barcodes, illustrating how to analyze detection consistency.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates creating barcodes with BarcodeGenerator, configuring BarCodeReader quality presets, and counting detected symbols. Developers commonly use these APIs to evaluate detection performance, tune quality settings, and ensure reliable barcode scanning across different image conditions.
+// Title: Barcode detection count per image across quality presets
+// Description: Demonstrates generating sample barcodes, recognizing them with different quality settings, and recording how many barcodes are detected per image.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating images, BarCodeReader for decoding, and QualitySettings presets to control recognition performance and accuracy. Typical use cases include batch processing of scanned documents, quality analysis of barcode scanners, and automated testing of detection consistency across different settings.
 // Prompt: Record the number of barcodes detected per image under each preset to analyze consistency.
-// Tags: barcode, generation, recognition, qualitysettings, count, detection, aspose.barcode
+// Tags: barcode symbology, recognition, quality settings, aspose.barcode, generation, detection, csharp
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating barcodes, reading them with different quality presets,
-/// and recording the number of detected barcodes per image for consistency analysis.
+/// Demonstrates generating barcode images, recognizing them with various quality presets,
+/// and recording detection counts per image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample barcodes, applies various quality
-    /// presets during recognition, and outputs detection counts per image.
+    /// Entry point. Generates sample barcodes, runs recognition with different quality settings,
+    /// and outputs detection counts.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for sample barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define sample barcodes to generate (type, text, file name)
-        var samples = new List<(BaseEncodeType type, string text, string fileName)>
-        {
-            (EncodeTypes.Code128, "Sample128", "code128.png"),
-            (EncodeTypes.QR, "SampleQR", "qr.png"),
-            (EncodeTypes.DataMatrix, "SampleDM", "datamatrix.png")
-        };
+        // Generate sample barcode images and collect their file paths
+        var imageFiles = new List<string>();
+        GenerateBarcodeImage(EncodeTypes.Code128, "CODE128_SAMPLE", Path.Combine(tempFolder, "code128.png"));
+        imageFiles.Add(Path.Combine(tempFolder, "code128.png"));
+        GenerateBarcodeImage(EncodeTypes.QR, "QR_SAMPLE_TEXT", Path.Combine(tempFolder, "qr.png"));
+        imageFiles.Add(Path.Combine(tempFolder, "qr.png"));
+        GenerateBarcodeImage(EncodeTypes.DataMatrix, "DM_SAMPLE", Path.Combine(tempFolder, "datamatrix.png"));
+        imageFiles.Add(Path.Combine(tempFolder, "datamatrix.png"));
 
-        // Generate barcode images and save them as PNG files
-        foreach (var (type, text, fileName) in samples)
-        {
-            string filePath = Path.Combine(tempFolder, fileName);
-            using (var generator = new BarcodeGenerator(type, text))
-            {
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-        }
-
-        // Define the quality presets to test during recognition
+        // Define recognition quality presets to be tested
         var presets = new Dictionary<string, QualitySettings>
         {
             { "HighPerformance", QualitySettings.HighPerformance },
@@ -55,56 +46,97 @@ class Program
             { "MaxQuality", QualitySettings.MaxQuality }
         };
 
-        // Record detection counts per image for each preset
+        // Store detection counts per image for each preset
         var results = new Dictionary<string, Dictionary<string, int>>();
 
-        foreach (var presetKvp in presets)
+        // Iterate over each quality preset
+        foreach (var presetEntry in presets)
         {
-            string presetName = presetKvp.Key;
-            QualitySettings preset = presetKvp.Value;
-            var imageCounts = new Dictionary<string, int>();
+            string presetName = presetEntry.Key;
+            QualitySettings preset = presetEntry.Value;
+            var countsPerImage = new Dictionary<string, int>();
 
-            // Iterate over each generated image
-            foreach (var (_, _, fileName) in samples)
+            // Process each generated image with the current preset
+            foreach (string filePath in imageFiles)
             {
-                string filePath = Path.Combine(tempFolder, fileName);
                 if (!File.Exists(filePath))
                 {
                     Console.WriteLine($"File not found: {filePath}");
+                    countsPerImage[Path.GetFileName(filePath)] = 0;
                     continue;
                 }
 
-                // Read barcodes using the current quality preset
-                using (var reader = new BarCodeReader(filePath))
+                try
                 {
-                    reader.QualitySettings = preset;
-                    int count = reader.ReadBarCodes().Length;
-                    imageCounts[fileName] = count;
+                    // Initialize the reader with all relevant symbologies
+                    using (var reader = new BarCodeReader(
+                        filePath,
+                        DecodeType.Code128,
+                        DecodeType.QR,
+                        DecodeType.DataMatrix,
+                        DecodeType.Aztec,
+                        DecodeType.Pdf417,
+                        DecodeType.Planet,
+                        DecodeType.MicroQR))
+                    {
+                        // Apply the current quality setting
+                        reader.QualitySettings = preset;
+
+                        // Perform recognition and count detected barcodes
+                        var barcodes = reader.ReadBarCodes();
+                        countsPerImage[Path.GetFileName(filePath)] = barcodes.Length;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error reading {filePath} with preset {presetName}: {ex.Message}");
+                    countsPerImage[Path.GetFileName(filePath)] = 0;
                 }
             }
 
-            results[presetName] = imageCounts;
+            // Save the counts for this preset
+            results[presetName] = countsPerImage;
         }
 
-        // Output the recorded detection counts
-        Console.WriteLine("Barcode detection counts per image under each preset:");
-        foreach (var presetKvp in results)
+        // Output the collected detection data
+        Console.WriteLine("Barcode detection counts per image under each quality preset:");
+        foreach (var presetResult in results)
         {
-            Console.WriteLine($"Preset: {presetKvp.Key}");
-            foreach (var imageKvp in presetKvp.Value)
+            Console.WriteLine($"Preset: {presetResult.Key}");
+            foreach (var imageCount in presetResult.Value)
             {
-                Console.WriteLine($"  Image: {imageKvp.Key} => Detected: {imageKvp.Value}");
+                Console.WriteLine($"  Image: {imageCount.Key} - Detected: {imageCount.Value}");
             }
         }
 
-        // Clean up temporary files and folder
+        // Cleanup temporary files and folder
         try
         {
+            foreach (var file in imageFiles)
+            {
+                if (File.Exists(file))
+                    File.Delete(file);
+            }
             Directory.Delete(tempFolder, true);
         }
         catch
         {
             // Ignore cleanup errors
+        }
+    }
+
+    /// <summary>
+    /// Generates a barcode image using the specified encoding type and text.
+    /// </summary>
+    /// <param name="encodeType">The barcode symbology to encode.</param>
+    /// <param name="codeText">The text or data to encode.</param>
+    /// <param name="outputPath">The file path where the image will be saved.</param>
+    static void GenerateBarcodeImage(BaseEncodeType encodeType, string codeText, string outputPath)
+    {
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        {
+            // No additional parameters needed; default sizing adapts to content
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
     }
 }

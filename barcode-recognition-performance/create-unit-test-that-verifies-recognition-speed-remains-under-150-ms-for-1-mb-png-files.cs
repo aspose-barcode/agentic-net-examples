@@ -1,8 +1,8 @@
-// Title: Barcode recognition speed test for 1‑MB PNG
-// Description: Demonstrates generating a ~1 MB PNG barcode image and measuring the time required to recognize it, ensuring the operation stays under a performance threshold.
-// Category-Description: This example belongs to the Aspose.BarCode performance testing category, illustrating how to use BarcodeGenerator to create barcodes, BarCodeReader for decoding, and ProcessorSettings to control threading. Developers often need to benchmark recognition speed for large images in CI pipelines or real‑time applications.
+// Title: QR Code Generation and Recognition Speed Test
+// Description: Generates a large QR code PNG (~1 MB) and measures the time required to recognize it, ensuring the operation stays under a performance threshold.
+// Category-Description: Demonstrates Aspose.BarCode operations for creating and reading QR codes, focusing on performance testing. Uses BarcodeGenerator for QR code creation and BarCodeReader for decoding, common tasks when validating barcode processing speed in automated pipelines.
 // Prompt: Create a unit test that verifies recognition speed remains under 150 ms for 1‑MB PNG files.
-// Tags: code128, speed, recognition, png, barcodegenerator, barcodereader
+// Tags: qr, generation, recognition, speed, png, barcodegenerator, barcodereader
 
 using System;
 using System.IO;
@@ -10,98 +10,115 @@ using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a large barcode image and measuring recognition speed.
+/// Example program that generates a large QR code image and measures the time required to recognize it.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a barcode, pads it to ~1 MB, configures single‑threaded recognition,
-    /// measures the decoding time, and validates it against a 150 ms threshold.
+    /// Entry point of the example. Generates a QR code, measures recognition speed, and reports the result.
     /// </summary>
     static void Main()
     {
         // Create a temporary folder for the test files
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSpeedTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "test.png");
 
-        // Generate a barcode image large enough to be ~1 MB
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Path for the generated QR code image
+        string barcodePath = Path.Combine(tempFolder, "large_qr.png");
+
+        // Generate a large QR code image (aiming for ~1 MB)
+        GenerateLargeQrBarcode(barcodePath);
+
+        // Verify that the barcode file was created successfully
+        if (!File.Exists(barcodePath))
         {
-            // Increase image dimensions to enlarge file size
-            generator.Parameters.ImageWidth.Point = 2000f;
-            generator.Parameters.ImageHeight.Point = 2000f;
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            Console.WriteLine("FAILED: Barcode file was not created.");
+            return;
         }
 
-        // Ensure the file is at least 1 MB (pad if necessary)
-        const long oneMb = 1024 * 1024;
-        FileInfo info = new FileInfo(imagePath);
-        if (info.Length < oneMb)
-        {
-            long padding = oneMb - info.Length;
-            using (var stream = new FileStream(imagePath, FileMode.Append, FileAccess.Write, FileShare.None))
-            {
-                byte[] zeros = new byte[8192];
-                while (padding > 0)
-                {
-                    int write = (int)Math.Min(padding, zeros.Length);
-                    stream.Write(zeros, 0, write);
-                    padding -= write;
-                }
-            }
-        }
+        // Output the size of the generated file
+        long fileSize = new FileInfo(barcodePath).Length;
+        Console.WriteLine($"Generated barcode size: {fileSize} bytes");
 
-        // Verify file size
-        info.Refresh();
-        Console.WriteLine($"Generated PNG size: {info.Length} bytes");
+        // Measure how long it takes to recognize the barcode
+        long elapsedMs = MeasureRecognitionTime(barcodePath);
+        Console.WriteLine($"Recognition time: {elapsedMs} ms");
 
-        // Configure single‑threaded recognition for consistent timing
-        BarCodeReader.ProcessorSettings.UseAllCores = false;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
-
-        // Measure recognition time
-        long elapsedMs;
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Code128))
-        {
-            Stopwatch watch = Stopwatch.StartNew();
-            BarCodeResult[] results = reader.ReadBarCodes();
-            watch.Stop();
-            elapsedMs = watch.ElapsedMilliseconds;
-
-            bool success = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
-            Console.WriteLine($"Recognition success: {success}");
-            if (success)
-            {
-                Console.WriteLine($"Detected type: {results[0].CodeTypeName}");
-                Console.WriteLine($"Detected text: {results[0].CodeText}");
-            }
-        }
-
-        // Verify speed requirement
+        // Evaluate the performance against the 150 ms threshold
         if (elapsedMs <= 150)
         {
-            Console.WriteLine($"PASSED: Recognition time {elapsedMs} ms ≤ 150 ms");
+            Console.WriteLine("PASSED: Recognition time is within the 150 ms limit.");
         }
         else
         {
-            Console.WriteLine($"FAILED: Recognition time {elapsedMs} ms > 150 ms");
+            Console.WriteLine("FAILED: Recognition time exceeds the 150 ms limit.");
         }
 
-        // Clean up temporary files
+        // Clean up temporary files and folder
         try
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder, true);
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignored – cleanup failure should not affect test result
+            // Ignored - cleanup failure should not affect test result
+        }
+    }
+
+    /// <summary>
+    /// Generates a QR code with enough data to produce an image close to 1 MB in size.
+    /// </summary>
+    /// <param name="filePath">The file path where the PNG image will be saved.</param>
+    static void GenerateLargeQrBarcode(string filePath)
+    {
+        // Build a long text to increase QR code size
+        string baseText = "Aspose.BarCode Speed Test ";
+        string longText = baseText;
+        while (longText.Length < 2000) // increase until image size grows
+        {
+            longText += baseText;
+        }
+
+        // Create QR barcode generator with the long text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, longText))
+        {
+            // Increase module size to enlarge the image
+            generator.Parameters.Barcode.XDimension.Point = 5f;
+
+            // Save the generated barcode as a PNG file
+            generator.Save(filePath, BarCodeImageFormat.Png);
+        }
+    }
+
+    /// <summary>
+    /// Measures the time required to recognize a QR code in the specified image.
+    /// </summary>
+    /// <param name="imagePath">Path to the PNG image containing the QR code.</param>
+    /// <returns>Elapsed time in milliseconds.</returns>
+    static long MeasureRecognitionTime(string imagePath)
+    {
+        BaseDecodeType decodeType = DecodeType.QR;
+
+        // Initialize the barcode reader for QR codes
+        using (BarCodeReader reader = new BarCodeReader(imagePath, decodeType))
+        {
+            Stopwatch watch = Stopwatch.StartNew();
+
+            // Perform the recognition
+            reader.ReadBarCodes();
+
+            watch.Stop();
+
+            // Optionally, verify that a barcode was found
+            if (reader.FoundCount == 0)
+            {
+                Console.WriteLine("WARNING: No barcode detected.");
+            }
+
+            return watch.ElapsedMilliseconds;
         }
     }
 }

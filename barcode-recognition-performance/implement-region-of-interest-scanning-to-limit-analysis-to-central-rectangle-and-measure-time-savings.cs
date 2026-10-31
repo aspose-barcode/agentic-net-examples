@@ -1,8 +1,8 @@
-// Title: Region‑of‑Interest Barcode Scanning Benchmark
-// Description: Demonstrates scanning a barcode within a defined central rectangle to reduce processing time compared to scanning the full image.
-// Category-Description: Shows Aspose.BarCode barcode recognition using BarCodeReader with and without a region‑of‑interest. Typical use cases include speeding up scanning in large images or video frames by limiting analysis to a specific area. Developers often work with BarcodeGenerator, BarCodeReader, DecodeType, and Rectangle to generate, embed, and detect barcodes efficiently.
-/// Prompt: Implement region‑of‑interest scanning to limit analysis to a central rectangle and measure time savings.
-/// Tags: barcode, region of interest, scanning, performance, aspose.barcode, qr, decode, benchmark
+// Title: Region‑of‑Interest Barcode Scanning with Performance Timing
+// Description: Demonstrates how to limit barcode recognition to a central rectangle of an image and compares the processing time against a full‑image scan.
+// Category-Description: This example belongs to the Aspose.BarCode image‑processing category, showcasing the BarCodeReader class with region‑of‑interest support. Typical use cases include speeding up recognition in large images by focusing on expected barcode locations. Developers often need to create composite images, define a Rectangle region, and measure performance gains.
+// Prompt: Implement region‑of‑interest scanning to limit analysis to a central rectangle and measure time savings.
+// Tags: barcode, region-of-interest, scanning, performance, timing, aspose.barcode, generation, recognition, png, csharp
 
 using System;
 using System.IO;
@@ -13,126 +13,148 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to generate a QR code, embed it in a larger image,
-/// and compare full‑image barcode scanning with region‑of‑interest scanning
-/// using Aspose.BarCode. The example measures the time saved by limiting the
-/// analysis area to a central rectangle.
+/// Demonstrates region‑of‑interest barcode scanning and performance comparison using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Generates a QR code, creates a composite image,
-    /// runs two scanning benchmarks (full image vs. ROI), outputs the results,
-    /// and cleans up temporary files.
+    /// Entry point. Generates a composite image with multiple barcodes, scans it fully and within a central region,
+    /// and outputs detection counts and elapsed time.
     /// </summary>
     static void Main()
     {
-        // Create a temporary working directory for generated files
-        string workDir = Path.Combine(Path.GetTempPath(), "RegionOfInterestDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workDir);
+        // Prepare a temporary working folder for generated files
+        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeRegionDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
 
-        // Paths for the individual barcode image and the combined canvas image
-        string barcodeFile = Path.Combine(workDir, "barcode.png");
-        string combinedFile = Path.Combine(workDir, "combined.png");
+        // Create a composite image that contains several barcodes at different positions
+        string compositePath = Path.Combine(workFolder, "composite.png");
+        CreateCompositeImage(compositePath);
 
-        // ------------------------------------------------------------
-        // Generate a QR barcode and save it to a PNG file
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
+        // Verify that the image was created successfully
+        if (!File.Exists(compositePath))
         {
-            using (var ms = new MemoryStream())
+            Console.WriteLine("Failed to create the composite image.");
+            return;
+        }
+
+        // Load the composite image into a bitmap for processing
+        using (Bitmap bitmap = new Bitmap(compositePath))
+        {
+            // -------------------------------------------------
+            // Full‑image scan (baseline measurement)
+            // -------------------------------------------------
+            Stopwatch swFull = Stopwatch.StartNew();
+            using (BarCodeReader fullReader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0;
-                using (var barcodeBmp = new Bitmap(ms))
+                BarCodeResult[] fullResults = fullReader.ReadBarCodes();
+                swFull.Stop();
+
+                Console.WriteLine($"Full scan: Detected {fullResults.Length} barcode(s) in {swFull.ElapsedMilliseconds} ms.");
+                foreach (BarCodeResult res in fullResults)
                 {
-                    // Save the barcode image for later composition
-                    barcodeBmp.Save(barcodeFile, ImageFormat.Png);
+                    Console.WriteLine($"  Type: {res.CodeTypeName}, Text: {res.CodeText}");
+                }
+            }
+
+            // Define a central region that is half the width and height of the image, centered
+            Rectangle region = new Rectangle(
+                bitmap.Width / 4,
+                bitmap.Height / 4,
+                bitmap.Width / 2,
+                bitmap.Height / 2);
+
+            // -------------------------------------------------
+            // Region‑limited scan (performance test)
+            // -------------------------------------------------
+            Stopwatch swRegion = Stopwatch.StartNew();
+            using (BarCodeReader regionReader = new BarCodeReader(bitmap, region, DecodeType.AllSupportedTypes))
+            {
+                BarCodeResult[] regionResults = regionReader.ReadBarCodes();
+                swRegion.Stop();
+
+                Console.WriteLine($"Region scan: Detected {regionResults.Length} barcode(s) in {swRegion.ElapsedMilliseconds} ms.");
+                foreach (BarCodeResult res in regionResults)
+                {
+                    Console.WriteLine($"  Type: {res.CodeTypeName}, Text: {res.CodeText}");
                 }
             }
         }
 
-        // ------------------------------------------------------------
-        // Create a larger canvas and draw the barcode at its center
-        // ------------------------------------------------------------
-        const int canvasWidth = 800;
-        const int canvasHeight = 600;
-        using (var canvas = new Bitmap(canvasWidth, canvasHeight))
-        {
-            using (var graphics = Graphics.FromImage(canvas))
-            {
-                graphics.Clear(Color.White);
-                using (var barcodeBmp = new Bitmap(barcodeFile))
-                {
-                    int x = (canvasWidth - barcodeBmp.Width) / 2;
-                    int y = (canvasHeight - barcodeBmp.Height) / 2;
-                    graphics.DrawImage(barcodeBmp, x, y, barcodeBmp.Width, barcodeBmp.Height);
-                }
-            }
-            canvas.Save(combinedFile, ImageFormat.Png);
-        }
-
-        // ------------------------------------------------------------
-        // Define a central rectangle (region of interest) that is half the canvas size
-        // ------------------------------------------------------------
-        int regionWidth = canvasWidth / 2;
-        int regionHeight = canvasHeight / 2;
-        int regionX = (canvasWidth - regionWidth) / 2;
-        int regionY = (canvasHeight - regionHeight) / 2;
-        Rectangle centralRect = new Rectangle(regionX, regionY, regionWidth, regionHeight);
-
-        // ------------------------------------------------------------
-        // Benchmark scanning the full image
-        // ------------------------------------------------------------
-        Stopwatch swFull = new Stopwatch();
-        int fullCount = 0;
-        swFull.Start();
-        using (var readerFull = new BarCodeReader(combinedFile, DecodeType.AllSupportedTypes))
-        {
-            foreach (BarCodeResult result in readerFull.ReadBarCodes())
-            {
-                fullCount++;
-            }
-        }
-        swFull.Stop();
-
-        // ------------------------------------------------------------
-        // Benchmark scanning only the defined region of interest
-        // ------------------------------------------------------------
-        Stopwatch swRegion = new Stopwatch();
-        int regionCount = 0;
-        using (var bmp = new Bitmap(combinedFile))
-        {
-            swRegion.Start();
-            using (var readerRegion = new BarCodeReader(bmp, centralRect, DecodeType.AllSupportedTypes))
-            {
-                foreach (BarCodeResult result in readerRegion.ReadBarCodes())
-                {
-                    regionCount++;
-                }
-            }
-            swRegion.Stop();
-        }
-
-        // ------------------------------------------------------------
-        // Output benchmark results
-        // ------------------------------------------------------------
-        Console.WriteLine($"Full image scan:   Time = {swFull.ElapsedMilliseconds} ms, Barcodes detected = {fullCount}");
-        Console.WriteLine($"Region scan:       Time = {swRegion.ElapsedMilliseconds} ms, Barcodes detected = {regionCount}");
-        Console.WriteLine($"Time saved by ROI: {swFull.ElapsedMilliseconds - swRegion.ElapsedMilliseconds} ms");
-
-        // ------------------------------------------------------------
-        // Clean up temporary files and directory
-        // ------------------------------------------------------------
+        // Cleanup temporary files and folder
         try
         {
-            File.Delete(barcodeFile);
-            File.Delete(combinedFile);
-            Directory.Delete(workDir, true);
+            Directory.Delete(workFolder, true);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect program exit
+            // Ignore any errors during cleanup
+        }
+    }
+
+    /// <summary>
+    /// Creates a composite PNG image containing three different barcodes positioned across the canvas.
+    /// </summary>
+    /// <param name="outputPath">File path where the composite image will be saved.</param>
+    static void CreateCompositeImage(string outputPath)
+    {
+        const int canvasWidth = 800;
+        const int canvasHeight = 600;
+
+        using (Bitmap canvas = new Bitmap(canvasWidth, canvasHeight))
+        {
+            using (Graphics g = Graphics.FromImage(canvas))
+            {
+                // Fill background with white
+                g.Clear(Color.White);
+
+                // Generate and draw a Code128 barcode at the top‑left corner
+                DrawBarcode(g, "CODE128-EXAMPLE", EncodeTypes.Code128, 0, 0, 200, 100);
+
+                // Generate and draw a QR code at the center of the canvas
+                DrawBarcode(g, "QR-EXAMPLE", EncodeTypes.QR, 300, 200, 200, 200);
+
+                // Generate and draw a DataMatrix barcode at the bottom‑right corner
+                DrawBarcode(g, "DM-EXAMPLE", EncodeTypes.DataMatrix, 550, 400, 200, 200);
+            }
+
+            // Save the composed image as PNG
+            using (FileStream fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+            {
+                canvas.Save(fs, ImageFormat.Png);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Generates a barcode image using <see cref="BarcodeGenerator"/> and draws it onto the provided graphics surface.
+    /// </summary>
+    /// <param name="g">Graphics surface to draw the barcode on.</param>
+    /// <param name="text">Text to encode in the barcode.</param>
+    /// <param name="encodeType">Symbology type for the barcode.</param>
+    /// <param name="x">X‑coordinate of the top‑left corner where the barcode will be placed.</param>
+    /// <param name="y">Y‑coordinate of the top‑left corner where the barcode will be placed.</param>
+    /// <param name="width">Width of the drawn barcode image.</param>
+    /// <param name="height">Height of the drawn barcode image.</param>
+    static void DrawBarcode(Graphics g, string text, BaseEncodeType encodeType, int x, int y, int width, int height)
+    {
+        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, text))
+        {
+            // Basic generator settings
+            generator.Parameters.Barcode.XDimension.Point = 2.0f;
+            generator.Parameters.Barcode.FilledBars = false;
+            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = false;
+
+            // Render barcode to a memory stream and draw it onto the canvas
+            using (MemoryStream ms = new MemoryStream())
+            {
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0;
+                using (Bitmap barcodeBmp = new Bitmap(ms))
+                {
+                    g.DrawImage(barcodeBmp, x, y, width, height);
+                }
+            }
         }
     }
 }

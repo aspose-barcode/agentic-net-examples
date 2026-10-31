@@ -1,8 +1,8 @@
-// Title: Detect Large Barcodes in High‑Resolution Scans Using QualitySettings.XDimension
-// Description: Demonstrates how to generate a high‑resolution barcode image and configure the BarCodeReader's QualitySettings to detect large barcodes by setting XDimension mode to Large and MinimalXDimension to 6 pixels.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader and its QualitySettings for fine‑tuning detection of barcodes in high‑resolution images. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and QualitySettings, which developers commonly use when processing scanned documents, invoices, or product labels that contain large or high‑density barcodes. The snippet helps developers understand how to adjust XDimension settings to improve recognition accuracy for large barcodes.
+// Title: Detect Large Barcodes in High‑Resolution Scans Using XDimension Settings
+// Description: This example generates a high‑resolution Code128 barcode, then reads it while configuring QualitySettings.XDimension to a minimal value of 6 pixels to improve detection of large barcodes.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation and recognition with custom quality settings. It covers the BarcodeGenerator, BarCodeReader, and QualitySettings classes, showing how to adjust XDimension for high‑resolution scans—a common requirement when processing large or dense barcodes in industrial or retail applications.
 // Prompt: Set QualitySettings.XDimension to 6 pixels for detecting large barcodes in high‑resolution scans.
-// Tags: barcode, recognition, high-resolution, xdimension, large barcode, aspose.barcode, code128, image processing
+// Tags: barcode, code128, xdimension, qualitysettings, highresolution, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -13,61 +13,51 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a high‑resolution Code128 barcode and reading it with
-/// QualitySettings configured for large barcode detection.
+/// Sample program that creates a high‑resolution barcode image and reads it using
+/// custom XDimension settings to handle large barcodes in high‑resolution scans.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Generates a barcode, reads it with custom QualitySettings,
-    /// and outputs the recognized values.
+    /// Entry point of the sample. Generates a barcode, configures QualitySettings,
+    /// reads the barcode, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a temporary directory for the sample files
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // Create a temporary folder for the sample barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Path for the generated barcode image
-        string barcodePath = Path.Combine(tempDir, "sample.png");
-
-        // Generate a high‑resolution barcode image
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "HIGHRES123"))
+        // Generate a high‑resolution barcode image (300 DPI) using Code128 symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set high resolution (e.g., 300 dpi) to ensure clear bar definition
-            generator.Parameters.Resolution = 300;
-
-            // Optionally set XDimension for clearer bars (2 points ≈ 0.28 mm)
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Save the barcode as a PNG file
+            generator.Parameters.Resolution = 300; // high resolution
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify the image was created before attempting recognition
+        // Verify the file was created successfully
         if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Read the barcode with QualitySettings configured for large barcodes
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // Set up the reader for Code128 barcodes
+        BaseDecodeType decodeType = DecodeType.Code128;
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
         {
-            // Set XDimension mode to Large to enable detection of large barcodes
-            reader.QualitySettings.XDimension = XDimensionMode.Large;
-
-            // Define minimal element size in pixels (6 pixels) as required
+            // Configure QualitySettings to use a minimal XDimension of 6 pixels
+            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
             reader.QualitySettings.MinimalXDimension = 6f;
 
-            // Perform recognition
+            // Read all barcodes from the image
             BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Output the number of barcodes read and their details
             Console.WriteLine($"Barcodes read: {results.Length}");
             foreach (BarCodeResult result in results)
             {
                 Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                Console.WriteLine($"Reading quality: {result.ReadingQuality}");
             }
         }
 
@@ -75,11 +65,11 @@ class Program
         try
         {
             File.Delete(barcodePath);
-            Directory.Delete(tempDir);
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program outcome
+            // Ignore cleanup errors
         }
     }
 }

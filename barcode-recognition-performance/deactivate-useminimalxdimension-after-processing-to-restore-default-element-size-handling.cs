@@ -1,73 +1,76 @@
-// Title: Deactivate UseMinimalXDimension after barcode processing
-// Description: Demonstrates generating a Code128 barcode, reading it with minimal X-dimension mode, then disabling that mode to restore default element size handling.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases how to configure XDimension settings using the QualitySettings API, a common requirement when precise barcode sizing is needed for scanning devices. Developers often generate barcodes, adjust XDimension for minimal width, and later revert to normal handling for subsequent reads.
+// Title: Demonstrate toggling UseMinimalXDimension in barcode reading
+// Description: Shows how to enable UseMinimalXDimension for barcode reading, then reset to normal to restore default element size handling.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates using BarcodeGenerator to create a barcode image and BarCodeReader with QualitySettings to control X-dimension handling. Developers often need to adjust X-dimension for precise scanning or to revert to default behavior after custom processing. The key API classes shown are BarcodeGenerator, BarCodeReader, and QualitySettings, useful for creating, reading, and fine‑tuning barcode images.
 // Prompt: Deactivate UseMinimalXDimension after processing to restore default element size handling.
-// Tags: barcode, code128, generation, recognition, xdimension, minimalxdimension, png, aspose.barcode
+// Tags: barcode, code128, generation, recognition, useminimalxdimension, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode, reads it with minimal X-dimension handling,
-/// then deactivates that mode to use the default X-dimension processing.
+/// Example program that generates a Code128 barcode, reads it with
+/// UseMinimalXDimension enabled, then deactivates the setting to
+/// restore normal X‑dimension handling.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, two-stage reading, and cleanup.
+    /// Entry point of the example. Executes barcode generation,
+    /// reading with custom X‑dimension settings, and cleanup.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary folder and file path for the barcode image
+        // Create a unique temporary folder for the demo files
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+
+        // Define the full path for the generated barcode image
         string barcodePath = Path.Combine(tempFolder, "code128.png");
 
-        // Generate a Code128 barcode with a specific X-dimension
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "AsposeDemo"))
+        // Generate a Code128 barcode and save it as a PNG file
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            generator.Parameters.Barcode.XDimension.Point = 2f;
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully
+        // Verify that the barcode image was successfully created
         if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // First read: enable UseMinimalXDimension to allow smaller element sizes
-        BaseDecodeType decodeType = DecodeType.Code128;
-        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        // Read the barcode with UseMinimalXDimension enabled
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
+            // Enable minimal X‑dimension mode and set a custom minimal value
             reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
             reader.QualitySettings.MinimalXDimension = 1f;
 
-            BarCodeResult[] results = reader.ReadBarCodes();
-            Console.WriteLine($"Read with UseMinimalXDimension: {results.Length} barcode(s) found.");
-            foreach (var result in results)
+            // Perform the read operation under the custom setting
+            var resultsWithMinimal = reader.ReadBarCodes();
+            Console.WriteLine($"Barcodes read with UseMinimalXDimension: {resultsWithMinimal.Length}");
+            foreach (var result in resultsWithMinimal)
             {
                 Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
 
-            // Deactivate UseMinimalXDimension to restore default X-dimension handling
+            // Deactivate UseMinimalXDimension by resetting to Normal mode
             reader.QualitySettings.XDimension = XDimensionMode.Normal;
 
-            // Second read: use default X-dimension settings
-            BarCodeResult[] defaultResults = reader.ReadBarCodes();
-            Console.WriteLine($"Read after deactivating UseMinimalXDimension: {defaultResults.Length} barcode(s) found.");
-            foreach (var result in defaultResults)
+            // Perform the read operation again with default X‑dimension handling
+            var resultsAfterReset = reader.ReadBarCodes();
+            Console.WriteLine($"Barcodes read after deactivating UseMinimalXDimension: {resultsAfterReset.Length}");
+            foreach (var result in resultsAfterReset)
             {
                 Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Clean up temporary files and directory
+        // Clean up temporary files and folder
         try
         {
             File.Delete(barcodePath);

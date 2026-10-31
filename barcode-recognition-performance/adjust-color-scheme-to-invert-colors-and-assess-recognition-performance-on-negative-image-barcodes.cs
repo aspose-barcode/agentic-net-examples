@@ -1,8 +1,8 @@
-// Title: Invert barcode colors and compare recognition with InverseImage setting
-// Description: Demonstrates generating a QR barcode, creating a negative‑image version by inverting colors, and evaluating detection using Aspose.BarCode's InverseImage quality setting.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes, Bitmap manipulation to produce a negative image, and BarCodeReader with QualitySettings.InverseImage to handle inverted color schemes. Developers often need to process scanned documents or photos where barcodes appear as negative images; this pattern illustrates typical API usage for such scenarios.
+// Title: Invert barcode image colors and evaluate recognition performance
+// Description: Demonstrates generating a QR barcode, inverting its colors to create a negative‑image, and comparing recognition results with the InverseImage setting enabled and disabled.
+// Category-Description: This example belongs to the Aspose.BarCode image preprocessing and recognition category. It shows how to use BarcodeGenerator to create barcodes, manipulate images with Aspose.Drawing, and employ BarCodeReader with QualitySettings.InverseImage to handle negative‑image barcodes. Developers often need to assess barcode readability under varying color schemes, especially for scanning printed materials with inverted colors.
 // Prompt: Adjust color scheme to invert colors and assess recognition performance on negative‑image barcodes.
-// Tags: qr, barcode, color inversion, inverseimage, recognition, generation, aspose.barcode, png
+// Tags: qr, barcode, image inversion, inverseimage, recognition, aspose.barcode, asposedrawing
 
 using System;
 using System.IO;
@@ -13,75 +13,78 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates creating a QR barcode, inverting its colors, and comparing recognition results
-/// with the InverseImage quality setting enabled and disabled.
+/// Example program that generates a QR barcode, creates a negative‑image by inverting colors,
+/// and evaluates barcode recognition with different InverseImage settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, creates an inverted image,
-    /// runs recognition with different InverseImage modes, and cleans up temporary files.
+    /// Entry point of the example. Executes the generation, inversion, and recognition steps.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the demo files
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeInvertDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // Create a temporary working folder for generated images
+        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeInv_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
 
-        // Define file paths for the original and inverted barcode images
-        string originalPath = Path.Combine(tempDir, "original.png");
-        string invertedPath = Path.Combine(tempDir, "inverted.png");
+        // Define file paths for the original and inverted images
+        string originalPath = Path.Combine(workFolder, "original.png");
+        string invertedPath = Path.Combine(workFolder, "inverted.png");
 
-        // Generate a QR barcode and save the original image
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose Test"))
+        // Generate a QR barcode and save it as a PNG file
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose.InverseTest"))
         {
             generator.Save(originalPath, BarCodeImageFormat.Png);
+        }
 
-            // Generate a bitmap from the barcode for pixel‑level manipulation
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+        // Invert colors of the generated image to produce a negative‑image
+        using (var bitmap = new Bitmap(originalPath))
+        {
+            int width = bitmap.Width;
+            int height = bitmap.Height;
+
+            for (int y = 0; y < height; y++)
             {
-                // Invert each pixel's RGB values to produce a negative image
-                for (int y = 0; y < bitmap.Height; y++)
+                for (int x = 0; x < width; x++)
                 {
-                    for (int x = 0; x < bitmap.Width; x++)
-                    {
-                        Color pixel = bitmap.GetPixel(x, y);
-                        Color inverted = Color.FromArgb(255 - pixel.R, 255 - pixel.G, 255 - pixel.B);
-                        bitmap.SetPixel(x, y, inverted);
-                    }
+                    Color orig = bitmap.GetPixel(x, y);
+                    Color inv = Color.FromArgb(255 - orig.R, 255 - orig.G, 255 - orig.B);
+                    bitmap.SetPixel(x, y, inv);
                 }
+            }
 
-                // Save the inverted bitmap as a PNG file
-                bitmap.Save(invertedPath, ImageFormat.Png);
+            bitmap.Save(invertedPath, ImageFormat.Png);
+        }
+
+        // Local function to read a barcode from an image with a specified InverseImage mode
+        void ReadAndReport(string imagePath, InverseImageMode mode, string label)
+        {
+            if (!File.Exists(imagePath))
+            {
+                Console.WriteLine($"{label}: File not found -> {imagePath}");
+                return;
+            }
+
+            using (var reader = new BarCodeReader(imagePath, DecodeType.QR))
+            {
+                // Configure the reader to treat the image as inverted or not
+                reader.QualitySettings.InverseImage = mode;
+
+                BarCodeResult[] results = reader.ReadBarCodes();
+                Console.WriteLine($"{label} (InverseImage={mode}): Barcodes read = {results.Length}");
+
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"  {result.CodeTypeName}: {result.CodeText}");
+                }
             }
         }
 
-        // Verify that the inverted image was created successfully
-        if (!File.Exists(invertedPath))
-        {
-            Console.WriteLine("Inverted image was not created.");
-            return;
-        }
+        // Assess recognition on the inverted image with InverseImage disabled and enabled
+        ReadAndReport(invertedPath, InverseImageMode.Disabled, "InvertedImage - Disabled");
+        ReadAndReport(invertedPath, InverseImageMode.Enabled, "InvertedImage - Enabled");
 
-        // Recognize the inverted barcode with InverseImage disabled
-        using (var readerDisabled = new BarCodeReader(invertedPath, DecodeType.QR))
-        {
-            readerDisabled.QualitySettings.InverseImage = InverseImageMode.Disabled;
-            BarCodeResult[] results = readerDisabled.ReadBarCodes();
-            Console.WriteLine($"InverseImage Disabled: {results.Length} barcode(s) detected.");
-        }
-
-        // Recognize the inverted barcode with InverseImage enabled
-        using (var readerEnabled = new BarCodeReader(invertedPath, DecodeType.QR))
-        {
-            readerEnabled.QualitySettings.InverseImage = InverseImageMode.Enabled;
-            BarCodeResult[] results = readerEnabled.ReadBarCodes();
-            Console.WriteLine($"InverseImage Enabled: {results.Length} barcode(s) detected.");
-        }
-
-        // Clean up temporary files and directory
-        try { File.Delete(originalPath); } catch { }
-        try { File.Delete(invertedPath); } catch { }
-        try { Directory.Delete(tempDir, true); } catch { }
+        // Optional cleanup: delete the temporary working folder
+        // Directory.Delete(workFolder, true);
     }
 }

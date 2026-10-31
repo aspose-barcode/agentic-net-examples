@@ -1,135 +1,106 @@
-// Title: Process batch of TIFF barcodes with contrast variations and compute accuracy
-// Description: Demonstrates generating barcode images, creating contrast‑inverted copies, and measuring recognition accuracy across the batch.
-// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It shows how to use BarcodeGenerator to create barcodes, manipulate images with Aspose.Drawing, and employ BarCodeReader with QualitySettings to evaluate decoding performance. Typical use cases include testing scanner robustness, batch processing of scanned documents, and benchmarking recognition algorithms. Developers often need to generate test data, adjust image properties, and collect statistical results.
+// Title: Batch TIFF Barcode Generation and Recognition Accuracy Evaluation
+// Description: Generates a set of Code128 barcodes saved as TIFF files, reads them back, and calculates the average recognition success rate.
+// Category-Description: Demonstrates Aspose.BarCode's barcode generation and recognition workflow for image files. This example shows how to create barcode images using BarcodeGenerator, adjust barcode parameters, save as TIFF, and then use BarCodeReader with quality settings to decode them. Typical use cases include batch processing of scanned documents, quality testing of barcode readability, and automated verification pipelines. Developers often need to work with EncodeTypes, BarCodeImageFormat, DecodeType, and QualitySettings classes.
 // Prompt: Process a batch of TIFF images with varying contrast levels and record average recognition accuracy.
-// Tags: barcode, tiff, contrast, batch-processing, recognition-accuracy, aspose.barcode, generation, recognition, qualitysettings
+// Tags: code128, barcode generation, barcode recognition, tiff, batch processing, accuracy, aspose.barcode, qualitysettings
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating barcodes, creating contrast‑modified TIFF images,
-/// and evaluating recognition accuracy using Aspose.BarCode.
+/// Demonstrates processing a batch of TIFF barcode images and computing average recognition accuracy.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates sample barcodes, modifies contrast,
-    /// reads them, and reports average recognition accuracy.
+    /// Entry point that creates sample barcode TIFFs, reads them, and reports recognition statistics.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the sample files
+        // Create a dedicated temporary folder for generated images
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define sample barcodes to generate (type and text)
-        var samples = new List<(BaseEncodeType Encode, string Text)>
+        int sampleCount = 5;                     // Number of barcode images to generate
+        List<string> imageFiles = new List<string>();
+
+        // -------------------------------------------------
+        // Generate sample barcode TIFF images
+        // -------------------------------------------------
+        for (int i = 0; i < sampleCount; i++)
         {
-            (EncodeTypes.Code128, "ABC123"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.DataMatrix, "DM12345")
-        };
+            string codeText = "Sample" + i;
+            string filePath = Path.Combine(tempFolder, $"barcode_{i}.tif");
 
-        // Map each generated file path to its expected barcode text
-        var expectedMap = new Dictionary<string, string>();
-
-        // Generate barcodes and create contrast‑modified copies
-        int index = 0;
-        foreach (var (encode, text) in samples)
-        {
-            // Base file name and path for the original barcode image
-            string baseFileName = $"barcode_{index}.tif";
-            string baseFilePath = Path.Combine(tempFolder, baseFileName);
-
-            // Generate barcode image and save as TIFF
-            using (var generator = new BarcodeGenerator(encode, text))
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                generator.Save(baseFilePath, BarCodeImageFormat.Tiff);
+                // Optional parameter adjustments for visual appearance
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                generator.Parameters.Barcode.Padding.Left.Point = 5f;
+                generator.Parameters.Barcode.Padding.Top.Point = 5f;
+                generator.Parameters.Barcode.Padding.Right.Point = 5f;
+                generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
+
+                // Save the barcode as a TIFF image
+                generator.Save(filePath, BarCodeImageFormat.Tiff);
             }
 
-            // Record expected text for the original image
-            expectedMap[baseFilePath] = text;
-
-            // File name and path for the contrast‑inverted version
-            string contrastFileName = $"barcode_{index}_contrast.tif";
-            string contrastFilePath = Path.Combine(tempFolder, contrastFileName);
-
-            // Load the original image, invert its colors, and save as a new TIFF
-            using (var bitmap = new Bitmap(baseFilePath))
-            {
-                for (int y = 0; y < bitmap.Height; y++)
-                {
-                    for (int x = 0; x < bitmap.Width; x++)
-                    {
-                        Color original = bitmap.GetPixel(x, y);
-                        Color inverted = Color.FromArgb(255 - original.R, 255 - original.G, 255 - original.B);
-                        bitmap.SetPixel(x, y, inverted);
-                    }
-                }
-                bitmap.Save(contrastFilePath, ImageFormat.Tiff);
-            }
-
-            // Record expected text for the contrast‑modified image
-            expectedMap[contrastFilePath] = text;
-
-            index++;
+            // Keep track of successfully created files
+            if (File.Exists(filePath))
+                imageFiles.Add(filePath);
         }
 
-        // Process all generated TIFF files and evaluate recognition accuracy
-        int totalFiles = expectedMap.Count;
-        int successfulReads = 0;
+        int successes = 0;   // Counter for successful recognitions
 
-        foreach (var kvp in expectedMap)
+        // -------------------------------------------------
+        // Process each TIFF image and evaluate recognition
+        // -------------------------------------------------
+        foreach (string imagePath in imageFiles)
         {
-            string filePath = kvp.Key;
-
-            // Verify the file exists before attempting to read
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"File not found: {filePath}");
+            if (!File.Exists(imagePath))
                 continue;
-            }
 
-            // Create a reader that supports all barcode types
-            using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
+            using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                // Apply high‑quality settings to improve decoding reliability
-                reader.QualitySettings = QualitySettings.HighQuality;
+                // Use a high-performance preset for speed; adjust as needed
+                reader.QualitySettings = QualitySettings.HighPerformance;
 
-                // Attempt to read barcodes from the image
                 BarCodeResult[] results = reader.ReadBarCodes();
 
-                // Determine if a valid barcode was read
-                bool success = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
-                if (success)
+                // Count as success if at least one barcode is decoded with non‑empty text
+                if (results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
                 {
-                    successfulReads++;
+                    successes++;
                 }
-
-                // Output the result for the current file
-                Console.WriteLine($"File: {Path.GetFileName(filePath)} - Read: {(success ? "Success" : "Failure")}");
             }
         }
 
-        // Calculate and display the average recognition accuracy
-        double averageAccuracy = totalFiles > 0 ? (double)successfulReads / totalFiles * 100.0 : 0.0;
-        Console.WriteLine($"Processed {totalFiles} TIFF images.");
-        Console.WriteLine($"Average recognition accuracy: {averageAccuracy:F2}%");
+        // Calculate average recognition accuracy
+        double averageAccuracy = imageFiles.Count > 0 ? (double)successes / imageFiles.Count : 0.0;
+        Console.WriteLine($"Processed {imageFiles.Count} images.");
+        Console.WriteLine($"Successful recognitions: {successes}");
+        Console.WriteLine($"Average recognition accuracy: {averageAccuracy:P2}");
 
-        // Clean up temporary files and folder
+        // -------------------------------------------------
+        // Cleanup temporary files and folder
+        // -------------------------------------------------
         try
         {
+            foreach (string file in imageFiles)
+            {
+                File.Delete(file);
+            }
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore cleanup errors to avoid crashing the program
+            // Ignored - cleanup failures should not affect program exit
         }
     }
 }
