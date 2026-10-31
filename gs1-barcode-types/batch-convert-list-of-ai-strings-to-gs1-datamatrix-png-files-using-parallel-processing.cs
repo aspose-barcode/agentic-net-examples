@@ -1,8 +1,8 @@
-// Title: Batch generate GS1 DataMatrix barcodes from AI strings using parallel processing
-// Description: Demonstrates how to convert a collection of GS1 Application Identifier (AI) strings into PNG images of GS1 DataMatrix barcodes in parallel.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.GS1DataMatrix. It illustrates typical scenarios such as bulk barcode creation for inventory, shipping, or labeling systems, where developers need high‑throughput image output in PNG format using Aspose.BarCode classes like BarcodeGenerator, BarCodeImageFormat, and related parameters.
+// Title: Parallel batch conversion of AI strings to GS1 DataMatrix PNG images
+// Description: Demonstrates how to generate GS1 DataMatrix barcodes from a list of AI strings and save them as PNG files using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on GS1 DataMatrix symbology. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and image saving with BarCodeImageFormat. Typical use cases include bulk creation of GS1‑compliant DataMatrix codes for inventory, shipping, or product labeling, where developers need efficient parallel processing.
 // Prompt: Batch convert a list of AI strings to GS1 DataMatrix PNG files using parallel processing.
-// Tags: gs1 datamatrix, barcode generation, parallel processing, png, aspose.barcode, barcodegenerator
+// Tags: gs1datamatrix, barcode generation, parallel processing, png output, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,46 +10,45 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch conversion of GS1 AI strings to GS1 DataMatrix PNG files using parallel processing.
+/// Provides an entry point to demonstrate parallel generation of GS1 DataMatrix barcodes from AI strings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes for each AI string in parallel and saves them as PNG files.
+    /// Generates GS1 DataMatrix barcodes for each AI string in the list and saves them as PNG files in a temporary directory.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define a sample list of GS1 AI strings to be encoded.
-        List<string> aiStrings = new List<string>
+        // Define a collection of AI (Application Identifier) strings to be encoded.
+        var aiStrings = new List<string>
         {
-            "(01)01234567890128",
-            "(01)00123456789012",
-            "(01)12345678901231(21)ABC123",
-            "(01)12345678901231(10)0010",
-            "(01)12345678901231(30)9876"
+            "(01)00123456789012(21)ABC123",
+            "(01)12345678901231(10)LOT123",
+            "(01)00012345678905(17)250101",
+            "(01)98765432109876(30)9876",
+            "(01)55555555555555(21)XYZ"
         };
 
-        // Create a unique temporary output folder for the generated PNG files.
+        // Create a unique temporary output directory for the generated PNG files.
         string outputDir = Path.Combine(Path.GetTempPath(), "GS1DataMatrixBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
-        Console.WriteLine("Output folder: " + outputDir);
+        Console.WriteLine($"Output directory: {outputDir}");
 
-        // Process each AI string in parallel to generate and save the corresponding barcode image.
+        // Process each AI string in parallel to improve performance on multi‑core systems.
         Parallel.ForEach(aiStrings, (codeText, state, index) =>
         {
+            // Build the full file path for the current barcode image.
+            string filePath = Path.Combine(outputDir, $"barcode_{index + 1}.png");
             try
             {
                 // Initialize the barcode generator for GS1 DataMatrix with the current AI string.
                 using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
                 {
-                    // Set the X-dimension (module size) to 2 pixels for better readability.
-                    generator.Parameters.Barcode.XDimension.Pixels = 2f;
-
-                    // Build the full file path for the PNG output.
-                    string filePath = Path.Combine(outputDir, $"barcode_{index}.png");
+                    // Set the X‑dimension (module size) to 4 pixels for better readability.
+                    generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
                     // Save the generated barcode as a PNG image.
                     generator.Save(filePath, BarCodeImageFormat.Png);
@@ -58,8 +57,8 @@ class Program
             }
             catch (Exception ex)
             {
-                // Log any errors that occur during barcode generation for a specific AI string.
-                Console.WriteLine($"Error generating barcode for '{codeText}': {ex.Message}");
+                // Log any errors that occur during barcode generation or file saving.
+                Console.WriteLine($"Failed for codeText '{codeText}': {ex.Message}");
             }
         });
     }

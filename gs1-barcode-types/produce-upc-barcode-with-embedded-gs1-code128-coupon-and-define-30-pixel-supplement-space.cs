@@ -1,52 +1,43 @@
-// Title: Generate UPC‑A barcode with GS1 Code128 coupon and supplement space
-// Description: Creates a UPC‑A barcode that includes an embedded GS1 Code128 coupon and defines a 30‑pixel supplement area.
-// Category-Description: This example demonstrates Aspose.BarCode barcode generation for retail and promotional use cases. It utilizes the EncodeTypes.UpcaGs1Code128Coupon symbology, the BarcodeGenerator class, and related parameter objects to configure dimensions and supplemental space. Developers often need to embed coupon data within standard product barcodes and control visual layout for printing.
+// Title: Generate UPC-A barcode with GS1 Code128 coupon and supplement space
+// Description: Creates a UPC‑A barcode that includes an embedded GS1 Code128 coupon and sets a 30‑pixel supplement area.
+// Category-Description: This example demonstrates how to use Aspose.BarCode to generate composite barcodes, specifically the UPC‑A with GS1 Code128 coupon symbology. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and barcode parameter settings such as XDimension and Coupon.SupplementSpace. Developers working with retail or promotional barcodes can use this pattern to create composite barcodes for packaging, coupons, and inventory systems.
 // Prompt: Produce a UPC‑A barcode with an embedded GS1 Code128 coupon and define 30‑pixel supplement space.
-// Tags: upc-a, gs1, code128, coupon, supplement-space, barcode-generation, aspose.barcode, png
+// Tags: upc-a,gs1,code128,coupon,barcode,aspnet,aspose.barcode,composite,barcode generation,png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to generate a UPC‑A barcode with an embedded GS1 Code128 coupon
-/// and a custom supplement space using Aspose.BarCode.
+/// Demonstrates generating a UPC‑A barcode with an embedded GS1 Code128 coupon
+/// and a defined supplement space using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the example. Generates the barcode and saves it as a PNG file.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
         // Define the output file path in the current directory.
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "UpcGs1Code128Coupon.png");
+        string outputPath = Path.Combine(Environment.CurrentDirectory, "UpcA_GS1Code128Coupon.png");
 
-        try
+        // Create a BarcodeGenerator for the UPC‑A with GS1 Code128 coupon symbology.
+        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, "123456789012(8102)03"))
         {
-            // Initialize the barcode generator with the UPC‑A GS1 Code128 coupon symbology
-            // and the data string that includes the coupon information.
-            using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, "123456789012(8110)1234"))
-            {
-                // Set the X‑dimension (module width) to 2 pixels.
-                generator.Parameters.Barcode.XDimension.Pixels = 2;
+            // Set the X-dimension (module width) to 2 pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-                // Define a 30‑pixel supplement space for the coupon portion.
-                generator.Parameters.Barcode.Coupon.SupplementSpace.Pixels = 30;
+            // Define a 30‑pixel supplement space for the coupon part of the composite barcode.
+            generator.Parameters.Barcode.Coupon.SupplementSpace.Pixels = 30f;
 
-                // Save the generated barcode as a PNG image.
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-            }
-
-            // Inform the user where the barcode image was saved.
-            Console.WriteLine($"Barcode saved to: {outputPath}");
+            // Save the generated barcode image as PNG.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
-        catch (Exception ex)
-        {
-            // Output any errors that occur during barcode generation.
-            Console.WriteLine($"Error generating barcode: {ex.Message}");
-        }
+
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

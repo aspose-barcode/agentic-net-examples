@@ -1,135 +1,107 @@
-// Title: Batch generate GS1 DataMatrix barcodes from AI strings and store them in a ZIP archive
-// Description: Demonstrates reading GS1 Application Identifier (AI) strings from text files, generating GS1 DataMatrix barcodes with Aspose.BarCode, and packaging the PNG images into a ZIP file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to perform batch barcode creation using the BarcodeGenerator class. Typical use cases include encoding product identifiers, serial numbers, or lot codes into GS1 DataMatrix symbols for inventory and logistics. Developers often need to automate processing of multiple inputs, customize barcode dimensions, and export results in common image formats for downstream systems.
+// Title: Batch generate GS1 DataMatrix barcodes from AI strings and archive them as PNGs in a ZIP file
+// Description: Demonstrates how to read GS1 Application Identifier strings from text files, create GS1 DataMatrix barcodes, and package the resulting PNG images into a ZIP archive.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on batch processing and file output. It showcases the BarcodeGenerator class with EncodeTypes.GS1DataMatrix, configuring XDimension, and saving images using BarCodeImageFormat. Typical use cases include automating label creation, inventory tagging, and bulk barcode production where input data is stored in files.
 // Prompt: Batch process a folder of AI strings, generating GS1 DataMatrix barcodes and storing them in a ZIP archive.
-// Tags: gs1, datamatrix, barcode, generation, batch, zip, aspose.barcode, image, png
+// Tags: gs1datamatrix, batch-processing, zip-archive, png, barcode-generation, aspose.barcode, aspnet
 
 using System;
 using System.IO;
 using System.IO.Compression;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides a console application that reads GS1 AI strings from temporary text files,
-/// generates GS1 DataMatrix barcodes for each string, and saves the resulting PNG images
-/// into a ZIP archive.
+/// Demonstrates batch creation of GS1 DataMatrix barcodes from AI string files
+/// and packaging the resulting PNG images into a ZIP archive.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Executes the batch barcode generation workflow.
+    /// Entry point of the example. Generates sample AI string files, creates barcodes,
+    /// and stores them in a ZIP archive.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Create a unique temporary folder to hold input AI string files.
-        // --------------------------------------------------------------------
-        string inputFolder = Path.Combine(Path.GetTempPath(), "GS1Input_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(inputFolder);
+        // Create a unique temporary folder for the batch process
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // --------------------------------------------------------------------
-        // 2. Define a collection of sample AI strings to be encoded.
-        // --------------------------------------------------------------------
-        List<string> aiStrings = new List<string>
+        // Create sample AI string files (5 items)
+        int sampleCount = 5;
+        var inputFiles = new string[sampleCount];
+        for (int i = 0; i < sampleCount; i++)
         {
-            "(01)12345678901231(21)ASPOSE(30)9876",
-            "(01)98765432109876(10)LOT123",
-            "(01)55555555555555(21)ITEM001",
-            "(01)11111111111111(21)PRODUCTX",
-            "(01)22222222222222(21)ITEMY"
-        };
-
-        // --------------------------------------------------------------------
-        // 3. Write each AI string to an individual .txt file and collect file paths.
-        // --------------------------------------------------------------------
-        List<string> inputFiles = new List<string>();
-        for (int i = 0; i < aiStrings.Count; i++)
-        {
-            string filePath = Path.Combine(inputFolder, $"AIString_{i + 1}.txt");
-            File.WriteAllText(filePath, aiStrings[i]);
-            inputFiles.Add(filePath);
+            string filePath = Path.Combine(batchFolder, $"Item{i + 1}.txt");
+            // Example GS1 DataMatrix code text: GTIN (01) + serial (21)
+            string codeText = $"(01)1234567890123{i}(21)ITEM{i + 1}";
+            File.WriteAllText(filePath, codeText);
+            inputFiles[i] = filePath;
         }
 
-        // --------------------------------------------------------------------
-        // 4. Prepare the output ZIP archive path in the temporary folder.
-        // --------------------------------------------------------------------
-        string zipPath = Path.Combine(Path.GetTempPath(), "GS1Barcodes_" + Guid.NewGuid().ToString("N") + ".zip");
+        // Path for the output ZIP archive
+        string zipPath = Path.Combine(batchFolder, "Barcodes.zip");
 
-        // --------------------------------------------------------------------
-        // 5. Create the ZIP archive and add generated barcode images.
-        // --------------------------------------------------------------------
-        using (FileStream zipStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write))
+        // Create ZIP archive and process each input file
+        using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
         {
-            using (ZipArchive zip = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: true))
+            foreach (string inputFile in inputFiles)
             {
-                foreach (string file in inputFiles)
+                if (!File.Exists(inputFile))
                 {
-                    // Verify that the source file exists.
-                    if (!File.Exists(file))
-                    {
-                        Console.WriteLine($"File not found: {file}");
-                        continue;
-                    }
+                    Console.WriteLine($"Warning: File not found - {inputFile}");
+                    continue;
+                }
 
-                    // Read and trim the AI string from the file.
-                    string codeText = File.ReadAllText(file).Trim();
+                string codeText;
+                try
+                {
+                    // Read and trim the AI string from the file
+                    codeText = File.ReadAllText(inputFile).Trim();
                     if (string.IsNullOrEmpty(codeText))
                     {
-                        Console.WriteLine($"Empty code text in file: {file}");
+                        Console.WriteLine($"Warning: Empty code text in file - {inputFile}");
                         continue;
                     }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Warning: Failed to read file {inputFile}: {ex.Message}");
+                    continue;
+                }
 
-                    try
+                try
+                {
+                    // Initialize the barcode generator for GS1 DataMatrix
+                    using (var generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
                     {
-                        // Initialize the barcode generator for GS1 DataMatrix.
-                        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.GS1DataMatrix, codeText))
+                        // Set module size (XDimension) – using pixels as float
+                        generator.Parameters.Barcode.XDimension.Pixels = 8f;
+
+                        using (var ms = new MemoryStream())
                         {
-                            // Set the X-dimension (module size) to 8 pixels.
-                            generator.Parameters.Barcode.XDimension.Pixels = 8f;
+                            // Save barcode image to memory stream in PNG format
+                            generator.Save(ms, BarCodeImageFormat.Png);
+                            ms.Position = 0;
 
-                            // Render the barcode to a memory stream in PNG format.
-                            using (MemoryStream ms = new MemoryStream())
+                            // Create entry in ZIP archive with the same base name as the input file
+                            string entryName = Path.GetFileNameWithoutExtension(inputFile) + ".png";
+                            var entry = zip.CreateEntry(entryName);
+                            using (var entryStream = entry.Open())
                             {
-                                generator.Save(ms, BarCodeImageFormat.Png);
-                                ms.Position = 0;
-
-                                // Create a ZIP entry named after the source file (with .png extension).
-                                string entryName = Path.GetFileNameWithoutExtension(file) + ".png";
-                                ZipArchiveEntry entry = zip.CreateEntry(entryName);
-
-                                // Copy the PNG data into the ZIP entry.
-                                using (Stream entryStream = entry.Open())
-                                {
-                                    ms.CopyTo(entryStream);
-                                }
+                                ms.CopyTo(entryStream);
                             }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Failed to generate barcode for file '{file}': {ex.Message}");
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Warning: Failed to generate barcode for file {inputFile}: {ex.Message}");
                 }
             }
         }
 
-        // --------------------------------------------------------------------
-        // 6. Report the location of the created ZIP archive.
-        // --------------------------------------------------------------------
         Console.WriteLine($"Barcode ZIP archive created at: {zipPath}");
-
-        // --------------------------------------------------------------------
-        // 7. Clean up the temporary input folder (ignore any errors).
-        // --------------------------------------------------------------------
-        try
-        {
-            Directory.Delete(inputFolder, true);
-        }
-        catch
-        {
-            // Suppress cleanup exceptions to avoid terminating the program.
-        }
     }
 }

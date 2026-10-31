@@ -1,8 +1,8 @@
-// Title: Generate UPC-A barcode with GS1 Code128 coupon and embed in HTML
-// Description: Demonstrates creating a UPC‑A barcode that includes a GS1 Code128 coupon, saving it as a PNG, and embedding the image into a simple HTML page.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.UpcaGs1Code128Coupon. It illustrates typical tasks such as setting barcode dimensions, saving to image formats, and integrating the result into web content—common needs for developers building e‑commerce, inventory, or promotional applications.
+// Title: Generate UPC‑A Barcode with GS1 Code128 Coupon and Embed in HTML
+// Description: This example creates a UPC‑A barcode that includes a GS1 Code128 coupon, saves it as a PNG image, and then generates a simple HTML page that displays the barcode.
+// Category-Description: Demonstrates Aspose.BarCode generation of composite symbologies (UPC‑A with GS1 Code128 coupon) using the BarcodeGenerator class. Typical use cases include retail product labeling with promotional coupons. Developers often need to configure barcode dimensions, coupon spacing, and embed the resulting image into web content; this example shows those steps.
 // Prompt: Produce a UPC‑A barcode with a GS1 Code128 coupon, then embed the image into an HTML page.
-// Tags: upc-a, gs1, code128, coupon, barcode generation, image output, html embedding, aspose.barcode
+// Tags: barcode, upc-a, gs1, code128, coupon, image, html, aspose.barcode, generation, png
 
 using System;
 using System.IO;
@@ -10,42 +10,40 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a UPC‑A barcode with a GS1 Code128 coupon,
-/// saves it as a PNG image, and generates an HTML page that displays the barcode.
+/// Demonstrates generating a UPC‑A barcode with a GS1 Code128 coupon and embedding it into an HTML page.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Generates the barcode image, creates an HTML file, and writes output paths to the console.
     /// </summary>
     static void Main()
     {
-        // Determine the current working directory to store output files.
-        string outputDir = Directory.GetCurrentDirectory();
+        // Define file paths for the barcode image and the resulting HTML page
+        string imagePath = "upc_a_coupon.png";
+        string htmlPath = "barcode.html";
 
-        // Build full file paths for the barcode image and the HTML page.
-        string imagePath = Path.Combine(outputDir, "barcode.png");
-        string htmlPath = Path.Combine(outputDir, "barcode.html");
-
-        // Create a barcode generator for UPC‑A with a GS1 Code128 coupon.
-        // The data string includes the UPC‑A digits and the coupon application identifier (10) followed by the coupon text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, "123456789012(10)ABC"))
+        // Generate UPC‑A barcode with an embedded GS1 Code128 coupon
+        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1Code128Coupon, "123456789012(8102)03"))
         {
-            // Set the X‑dimension (module width) to 2 pixels for better readability.
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Set the X-dimension (module width) to 2 pixels for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
 
-            // Save the generated barcode as a PNG image.
+            // Allocate extra space (30 pixels) for the coupon supplement area
+            generator.Parameters.Barcode.Coupon.SupplementSpace.Pixels = 30;
+
+            // Save the generated barcode as a PNG image
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Prepare a minimal HTML document that references the saved barcode image.
-        string htmlContent = "<!DOCTYPE html>\n<html>\n<head>\n<title>Barcode</title>\n</head>\n<body>\n<h1>UPC-A with GS1 Code128 Coupon</h1>\n<img src=\"barcode.png\" alt=\"Barcode\" />\n</body>\n</html>";
+        // Build a minimal HTML document that references the generated barcode image
+        string htmlContent = $"<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>UPC-A with GS1 Code128 Coupon</title></head><body><h1>UPC-A with GS1 Code128 Coupon</h1><img src=\"{imagePath}\" alt=\"Barcode\"/></body></html>";
 
-        // Write the HTML content to a file in the output directory.
+        // Write the HTML content to a file
         File.WriteAllText(htmlPath, htmlContent);
 
-        // Inform the user where the files have been saved.
-        Console.WriteLine("Barcode image saved to: " + imagePath);
-        Console.WriteLine("HTML page saved to: " + htmlPath);
+        // Output the absolute paths of the created files for user reference
+        Console.WriteLine($"Barcode image saved to: {Path.GetFullPath(imagePath)}");
+        Console.WriteLine($"HTML page saved to: {Path.GetFullPath(htmlPath)}");
     }
 }

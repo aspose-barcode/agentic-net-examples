@@ -1,8 +1,8 @@
 // Title: Generate UPC‑A DataBar Coupon barcode with embedded logo
-// Description: Demonstrates creating a UPC‑A barcode with a DataBar coupon symbology, then overlaying a custom logo using System.Drawing graphics.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use BarcodeGenerator with EncodeTypes.UpcaGs1DatabarCoupon, customize dimensions, and combine the generated image with additional graphics. Typical use cases include adding branding or logos to product barcodes for marketing or compliance. Developers often need to merge barcode images with other visual elements using Aspose.Drawing's Bitmap and Graphics classes.
+// Description: Demonstrates creating a UPC‑A barcode that includes a GS1 DataBar coupon, then overlaying a custom logo using System.Drawing graphics, and saving the result as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on combining generated barcodes with custom graphics. It showcases the BarcodeGenerator class for UPC‑A/GS1 DataBar coupon symbology, the use of XDimension settings, and integration with Aspose.Drawing to composite images such as logos. Developers often need to brand barcodes or add promotional graphics, and this pattern illustrates how to merge barcode images with additional visual elements before exporting to common image formats.
 // Prompt: Generate a UPC‑A barcode with a DataBar coupon, then combine it with a logo using System.Drawing graphics.
-// Tags: upc-a, databar, barcode generation, logo overlay, aspose.barcode, aspose.drawing, png output
+// Tags: upc-a, databar, coupon, logo overlay, png, aspose.barcode, aspose.drawing, barcode generation
 
 using System;
 using System.IO;
@@ -12,71 +12,61 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a UPC‑A DataBar coupon barcode and compositing it with a logo image.
+/// Example program that creates a UPC‑A GS1 DataBar coupon barcode,
+/// overlays a simple logo, and saves the combined image as PNG.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, creates a simple logo, merges them, and saves the result as PNG.
+    /// Entry point. Generates the barcode, composites the logo, and writes the output file.
     /// </summary>
     static void Main()
     {
-        // Determine output file path in current directory
-        string outputPath = Path.Combine(Environment.CurrentDirectory, "UPC_A_With_Logo.png");
-
-        // Initialize barcode generator with UPC‑A DataBar coupon symbology and data string
-        using (var generator = new BarcodeGenerator(EncodeTypes.UpcaGs1DatabarCoupon, "123456789012(8110)ASPOSE"))
+        // Prepare output directory
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+        if (!Directory.Exists(outputDir))
         {
-            // Set X-dimension (module width) to 2 pixels for better readability
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            Directory.CreateDirectory(outputDir);
+        }
 
-            // Generate barcode image as a Bitmap
-            using (Bitmap barcodeBitmap = generator.GenerateBarCodeImage())
+        // Create a simple logo bitmap (red circle on white background)
+        using (Bitmap logoBmp = new Bitmap(100, 100))
+        {
+            using (Graphics logoGraphics = Graphics.FromImage(logoBmp))
             {
-                // Create a placeholder logo bitmap (100x50) with ARGB pixel format
-                using (Bitmap logoBitmap = new Bitmap(100, 50, PixelFormat.Format32bppArgb))
+                // Fill background with white
+                logoGraphics.Clear(Color.White);
+                // Draw a red circle
+                using (SolidBrush brush = new SolidBrush(Color.Red))
                 {
-                    // Draw simple graphics onto the logo bitmap
-                    using (Graphics logoGraphics = Graphics.FromImage(logoBitmap))
+                    logoGraphics.FillEllipse(brush, 10, 10, 80, 80);
+                }
+            }
+
+            // Generate UPC‑A barcode with DataBar coupon
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.UpcaGs1DatabarCoupon, "123456789012(8110)ASPOSE"))
+            {
+                // Set barcode module size (X‑dimension) to 2 pixels
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+                using (Bitmap barcodeBmp = generator.GenerateBarCodeImage())
+                {
+                    // Calculate position to center the logo on the barcode
+                    int x = (barcodeBmp.Width - logoBmp.Width) / 2;
+                    int y = (barcodeBmp.Height - logoBmp.Height) / 2;
+
+                    // Composite logo onto barcode
+                    using (Graphics graphics = Graphics.FromImage(barcodeBmp))
                     {
-                        // Fill background with light gray
-                        logoGraphics.Clear(Color.LightGray);
-                        // Draw a dark blue ellipse as a visual element
-                        using (Pen pen = new Pen(Color.DarkBlue, 2f))
-                        {
-                            logoGraphics.DrawEllipse(pen, 5, 5, 90, 40);
-                        }
+                        graphics.DrawImage(logoBmp, x, y, logoBmp.Width, logoBmp.Height);
                     }
 
-                    // Get dimensions of the generated barcode
-                    int width = barcodeBitmap.Width;
-                    int height = barcodeBitmap.Height;
-
-                    // Create a new bitmap to hold the combined image
-                    using (Bitmap combined = new Bitmap(width, height, PixelFormat.Format32bppArgb))
-                    {
-                        // Render barcode and logo onto the combined bitmap
-                        using (Graphics g = Graphics.FromImage(combined))
-                        {
-                            // Fill background with white
-                            g.Clear(Color.White);
-                            // Draw the barcode at the top‑left corner
-                            g.DrawImage(barcodeBitmap, 0, 0, barcodeBitmap.Width, barcodeBitmap.Height);
-
-                            // Position logo near the bottom‑right corner with a 10‑pixel margin
-                            int logoX = width - logoBitmap.Width - 10;
-                            int logoY = height - logoBitmap.Height - 10;
-                            g.DrawImage(logoBitmap, logoX, logoY, logoBitmap.Width, logoBitmap.Height);
-                        }
-
-                        // Save the combined image as PNG
-                        combined.Save(outputPath, ImageFormat.Png);
-                    }
+                    // Save final image as PNG
+                    string outPath = Path.Combine(outputDir, "UpcA_With_Logo.png");
+                    barcodeBmp.Save(outPath, ImageFormat.Png);
+                    Console.WriteLine($"Barcode with logo saved to: {outPath}");
                 }
             }
         }
-
-        // Inform the user where the file was saved
-        Console.WriteLine($"Barcode with logo saved to: {outputPath}");
     }
 }
