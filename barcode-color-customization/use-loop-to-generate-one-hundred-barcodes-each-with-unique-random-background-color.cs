@@ -1,8 +1,8 @@
 // Title: Generate 100 Barcodes with Random Background Colors
-// Description: Creates 100 Code128 barcodes, each saved as a PNG file with a unique random background color.
-// Category-Description: This example belongs to the Aspose.BarCode batch generation category. It demonstrates how to use the BarcodeGenerator class together with EncodeTypes and BarCodeImageFormat to produce multiple barcodes programmatically. Typical use cases include creating large sets of barcodes for inventory, shipping labels, or promotional materials where visual customization (e.g., background colors) is required. Developers often need to vary appearance attributes while ensuring each barcode remains distinct, and this snippet shows a common pattern for achieving that.
+// Description: Demonstrates creating one hundred Code128 barcodes, each saved as a PNG with a unique random background color. Useful for batch barcode generation with visual differentiation.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce images. Developers often need to generate multiple barcodes programmatically, customize appearance such as background color, and save them in common image formats. The snippet shows typical setup, random color handling, and file output for bulk operations.
 // Prompt: Use a loop to generate one hundred barcodes each with a unique random background color.
-// Tags: barcode, code128, random background color, batch generation, png, aspose.barcode, aspose.drawing, barcodegenerator, encode types
+// Tags: barcode generation, code128, random background color, png, aspose.barcode, aspnet, csharp
 
 using System;
 using System.IO;
@@ -12,63 +12,57 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a batch of Code128 barcodes with unique random background colors using Aspose.BarCode.
+/// Demonstrates generating 100 Code128 barcodes with unique random background colors and saving them as PNG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates 100 barcodes, each saved as a PNG with a distinct background color.
+    /// Entry point that creates the output directory, generates barcodes, and writes the result path to the console.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Number of barcodes to generate
-        const int totalBarcodes = 100;
+        // Create a temporary output folder with a unique name.
+        string outputDir = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Create a temporary output folder with a unique name
-        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
-
-        // Random number generator for background colors
+        // Random number generator for background colors.
         Random rand = new Random();
 
-        // Keep track of already used ARGB values to ensure uniqueness
+        // Keep track of used colors to ensure uniqueness.
         HashSet<int> usedColors = new HashSet<int>();
 
-        // Loop to generate each barcode
-        for (int i = 1; i <= totalBarcodes; i++)
+        // Generate 100 barcodes.
+        for (int i = 0; i < 100; i++)
         {
-            int argb;
+            Color bgColor;
+            int colorKey;
 
-            // Generate a unique random ARGB color (fully opaque)
+            // Find a random color that hasn't been used yet.
             do
             {
-                int r = rand.Next(0, 256);
-                int g = rand.Next(0, 256);
-                int b = rand.Next(0, 256);
-                argb = (255 << 24) | (r << 16) | (g << 8) | b;
-            } while (!usedColors.Add(argb)); // Repeat if color already used
+                int r = rand.Next(256);
+                int g = rand.Next(256);
+                int b = rand.Next(256);
+                bgColor = Color.FromArgb(r, g, b);
+                colorKey = (r << 16) | (g << 8) | b;
+            } while (!usedColors.Add(colorKey));
 
-            // Convert ARGB integer to Aspose.Drawing.Color
-            Color bgColor = Color.FromArgb(argb);
-
-            // Barcode text (e.g., Code001, Code002, ...)
-            string codeText = $"Code{i:D3}";
-
-            // Initialize the barcode generator with Code128 symbology
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Create a barcode generator for Code128 with a unique text value.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Code{i + 1}"))
             {
-                // Apply the unique background color
+                // Apply the unique random background color.
                 generator.Parameters.BackColor = bgColor;
 
-                // Define the output file path
-                string filePath = Path.Combine(outputFolder, $"barcode_{i:D3}.png");
+                // Define the file path for the PNG image.
+                string filePath = Path.Combine(outputDir, $"barcode_{i + 1}.png");
 
-                // Save the barcode as a PNG image
+                // Save the barcode image as PNG.
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
         }
 
-        // Inform the user where the barcodes were saved
-        Console.WriteLine($"Generated {totalBarcodes} barcodes in folder: {outputFolder}");
+        // Inform the user where the barcodes were saved.
+        Console.WriteLine($"Generated 100 barcodes in: {outputDir}");
     }
 }
