@@ -1,73 +1,75 @@
-// Title: Decode MaxiCode barcode with retry mechanism
-// Description: Demonstrates generating a MaxiCode barcode, saving it as PNG, and attempting to decode it up to three times, handling failures gracefully.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating a MaxiCode symbol and BarCodeReader for decoding it. Typical scenarios include automated scanning systems where transient read errors require retry logic. Developers often need to combine these APIs to produce barcodes, store them, and reliably extract data in production environments.
+// Title: MaxiCode barcode generation and retry decoding example
+// Description: Demonstrates generating a MaxiCode barcode, saving it as PNG, and attempting to decode it with up to three retries on failure.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating MaxiCode symbols and BarCodeReader for decoding them. Typical use cases include batch processing of shipping labels or inventory tags where decoding may need retries due to image quality. Developers often need to handle transient read errors and implement retry logic using DecodeType and EncodeTypes classes.
 // Prompt: Implement a retry mechanism that attempts to decode a MaxiCode barcode up to three times on failure.
-// Tags: maxicode, barcode generation, barcode recognition, retry, aspose.barcode, png, c#
+// Tags: maxicode, barcode generation, barcode recognition, retry, aspose.barcode, c#
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that generates a MaxiCode barcode, saves it to a temporary file,
-/// and attempts to decode it with a retry mechanism.
+/// Provides an example of generating a MaxiCode barcode, saving it to a temporary file,
+/// and decoding it with a retry mechanism that attempts up to three times on failure.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the program.
+    /// Entry point of the example. Generates a MaxiCode barcode, then tries to read it
+    /// up to three times, reporting success or failure to the console.
     /// </summary>
     static void Main()
     {
         // Create a temporary folder for the sample barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeSample_" + Guid.NewGuid().ToString("N"));
+        string tempFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeRetry_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
         string imagePath = Path.Combine(tempFolder, "maxicode.png");
 
         // Generate a simple MaxiCode barcode and save it as PNG
         using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Test"))
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 15f;
+            generator.Parameters.Barcode.XDimension.Pixels = 10f;
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Retry decoding up to three times
         const int maxAttempts = 3;
         bool decoded = false;
 
-        for (int attempt = 1; attempt <= maxAttempts && !decoded; attempt++)
+        // Attempt to decode the barcode up to maxAttempts times
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
             try
             {
-                // Attempt to read the barcode from the saved image
                 using (var reader = new BarCodeReader(imagePath, DecodeType.MaxiCode))
                 {
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    var results = reader.ReadBarCodes();
+                    if (results != null && results.Length > 0)
                     {
-                        Console.WriteLine($"Attempt {attempt}: Decoded text: {result.CodeText}");
+                        // Successful decode – output each result
+                        foreach (var result in results)
+                        {
+                            Console.WriteLine($"Decoded on attempt {attempt}: {result.CodeText}");
+                        }
                         decoded = true;
-                        break; // Exit loop after first successful read
+                        break; // Exit the retry loop
                     }
-                }
-
-                if (!decoded)
-                {
-                    Console.WriteLine($"Attempt {attempt}: No barcode detected.");
+                    else
+                    {
+                        Console.WriteLine($"Attempt {attempt}: No barcode detected.");
+                    }
                 }
             }
             catch (Exception ex)
             {
-                // Log any exception that occurs during the read attempt
-                Console.WriteLine($"Attempt {attempt}: Exception - {ex.Message}");
+                // Log exception and continue to next attempt
+                Console.WriteLine($"Attempt {attempt} failed: {ex.Message}");
             }
         }
 
         if (!decoded)
         {
-            Console.WriteLine("Failed to decode MaxiCode after 3 attempts.");
+            Console.WriteLine("Failed to decode the MaxiCode barcode after 3 attempts.");
         }
 
         // Clean up temporary files and folder
@@ -80,7 +82,7 @@ class Program
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program outcome
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

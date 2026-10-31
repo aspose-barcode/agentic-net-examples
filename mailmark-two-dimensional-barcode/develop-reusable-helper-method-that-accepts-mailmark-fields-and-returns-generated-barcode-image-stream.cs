@@ -1,111 +1,100 @@
-// Title: Generate Mailmark 2D Barcode and Return Image Stream
-// Description: Demonstrates how to create a Mailmark 2D barcode using Aspose.BarCode, populate its fields, and obtain the barcode image as a MemoryStream.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on Mailmark 2D symbology. It showcases the use of ComplexBarcodeGenerator, Mailmark2DCodetext, and related parameters to produce PNG images. Developers working with postal services, logistics, or any system requiring Mailmark encoding can reuse the helper method to generate barcode streams for further processing or storage.
+// Title: Generate Mailmark 4‑State Barcode and Save as PNG
+// Description: Demonstrates creating a Mailmark barcode using Aspose.BarCode, converting it to a PNG image stream, and saving it to a temporary file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Mailmark. It shows how to use the MailmarkCodetext class together with ComplexBarcodeGenerator to produce a barcode image. Developers working with postal or logistics solutions often need to generate Mailmark barcodes for tracking and routing; this snippet illustrates the typical workflow of configuring barcode parameters, rendering to a stream, and handling the output.
 // Prompt: Develop a reusable helper method that accepts Mailmark fields and returns a generated barcode image stream.
-// Tags: mailmark, 2d, barcode, generation, png, aspose.barcode, complexbarcode, stream
+// Tags: mailmark, barcode, generation, png, stream, aspose.barcode, complexbarcode, codetext
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Mailmark 2D barcode and saves it as a PNG file.
+/// Demonstrates generating a Mailmark 4‑state barcode and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a sample Mailmark 2D barcode, saves it to disk, and writes the output path.
+    /// Entry point. Creates sample Mailmark data, generates the barcode stream, and writes it to a temporary file.
     /// </summary>
     static void Main()
     {
-        // Sample data for Mailmark 2D barcode
-        string upuCountryID = "JGB ";
-        string informationTypeID = "0";
-        string versionID = "1";
-        string classValue = "1";
-        int supplyChainID = 384224;
-        int itemID = 16563762;
-        string destinationPostCodeAndDPS = "EF61AH8T ";
-        string customerContent = "CUSTOMDATAEXCEEDINGLENGTH";
-        Mailmark2DType dataMatrixType = Mailmark2DType.Type_7;
+        // Sample Mailmark 4‑state fields
+        int format = 4;
+        int versionId = 1;
+        string classValue = "0";
+        int supplyChainId = 384224;
+        int itemId = 16563762;
+        string destinationPostCodePlusDps = "EF61AH8T ";
 
-        // Generate the barcode and obtain it as a memory stream
-        using (MemoryStream barcodeStream = GenerateMailmark2DBarcode(
-            upuCountryID,
-            informationTypeID,
-            versionID,
+        // Generate barcode image stream using the helper method
+        using (MemoryStream barcodeStream = GenerateMailmarkBarcode(
+            format,
+            versionId,
             classValue,
-            supplyChainID,
-            itemID,
-            destinationPostCodeAndDPS,
-            customerContent,
-            dataMatrixType))
+            supplyChainId,
+            itemId,
+            destinationPostCodePlusDps))
         {
-            // Save the generated barcode to a file for verification
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "Mailmark2D.png");
+            // Define a temporary file path for verification
+            string outputPath = Path.Combine(Path.GetTempPath(), "Mailmark4State.png");
+
+            // Write the stream contents to the file
             using (FileStream file = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
             {
                 barcodeStream.CopyTo(file);
             }
 
-            Console.WriteLine($"Barcode image saved to: {outputPath}");
+            Console.WriteLine($"Mailmark barcode saved to: {outputPath}");
         }
     }
 
-    // Helper method that creates a Mailmark 2D barcode and returns the image as a MemoryStream
-    static MemoryStream GenerateMailmark2DBarcode(
-        string upuCountryID,
-        string informationTypeID,
-        string versionID,
+    /// <summary>
+    /// Generates a Mailmark barcode image stream based on the provided field values.
+    /// </summary>
+    /// <param name="format">Mailmark format identifier.</param>
+    /// <param name="versionId">Version identifier for the Mailmark.</param>
+    /// <param name="classValue">Class value (as a string) for the Mailmark.</param>
+    /// <param name="supplyChainId">Supply chain identifier.</param>
+    /// <param name="itemId">Item identifier.</param>
+    /// <param name="destinationPostCodePlusDps">Destination postcode plus DPS.</param>
+    /// <returns>A <see cref="MemoryStream"/> containing the generated PNG barcode image.</returns>
+    static MemoryStream GenerateMailmarkBarcode(
+        int format,
+        int versionId,
         string classValue,
-        int supplyChainID,
-        int itemID,
-        string destinationPostCodeAndDPS,
-        string customerContent,
-        Mailmark2DType dataMatrixType)
+        int supplyChainId,
+        int itemId,
+        string destinationPostCodePlusDps)
     {
-        // Determine the maximum allowed length for CustomerContent based on the selected DataMatrix type
-        int maxLength = dataMatrixType switch
+        // Create Mailmark codetext object and assign fields
+        MailmarkCodetext mailmark = new MailmarkCodetext
         {
-            Mailmark2DType.Type_7 => 6,
-            Mailmark2DType.Type_9 => 12,
-            Mailmark2DType.Type_29 => 30,
-            _ => 6
-        };
-
-        // Truncate CustomerContent if it exceeds the allowed length
-        if (customerContent.Length > maxLength)
-        {
-            customerContent = customerContent.Substring(0, maxLength);
-        }
-
-        // Populate the Mailmark2DCodetext object with provided field values
-        Mailmark2DCodetext mailmark2D = new Mailmark2DCodetext
-        {
-            UPUCountryID = upuCountryID,
-            InformationTypeID = informationTypeID,
-            VersionID = versionID,
+            Format = format,
+            VersionID = versionId,
             Class = classValue,
-            SupplyChainID = supplyChainID,
-            ItemID = itemID,
-            DestinationPostCodeAndDPS = destinationPostCodeAndDPS,
-            CustomerContent = customerContent,
-            DataMatrixType = dataMatrixType
+            SupplychainID = supplyChainId,
+            ItemID = itemId,
+            DestinationPostCodePlusDPS = destinationPostCodePlusDps
         };
 
-        // Generate the barcode image into a memory stream
-        MemoryStream resultStream = new MemoryStream();
-        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark2D))
+        // Prepare an output stream for the barcode image
+        MemoryStream output = new MemoryStream();
+
+        // Generate barcode using ComplexBarcodeGenerator
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
         {
+            // Set module size (optional) – 4 pixels per module
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Save(resultStream, BarCodeImageFormat.Png);
+
+            // Save barcode image to the provided stream in PNG format
+            generator.Save(output, BarCodeImageFormat.Png);
         }
 
-        // Reset stream position for downstream consumers
-        resultStream.Position = 0;
-        return resultStream;
+        // Reset stream position for reading by the caller
+        output.Position = 0;
+        return output;
     }
 }
