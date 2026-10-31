@@ -1,89 +1,59 @@
-// Title: Import Barcode Generator Settings from XML with Error Handling
-// Description: Demonstrates exporting a barcode generator configuration to XML, deliberately corrupting the XML by removing a required property, and handling the resulting error when importing the malformed XML.
-// Category-Description: This example belongs to the Aspose.BarCode XML serialization category, illustrating the use of BarcodeGenerator.ExportToXml and BarcodeGenerator.ImportFromXml. Developers commonly need to persist barcode settings, transfer them between applications, or modify them programmatically; handling missing or invalid XML elements is essential for robust implementations. The snippet shows typical error‑handling patterns for import operations.
+// Title: Import BarcodeGenerator from XML with error handling for missing properties
+// Description: Demonstrates importing a BarcodeGenerator from an XML file and handling errors when required barcode properties are absent.
+// Category-Description: This example belongs to the Aspose.BarCode import/export operations collection. It showcases the use of BarcodeGenerator.ImportFromXml to deserialize barcode settings from XML. Typical scenarios include loading saved barcode configurations or migrating settings between environments. Developers often need to validate XML content and catch exceptions when mandatory properties like CodeText are missing.
 // Prompt: Implement error handling for ImportFromXml when the XML file is missing required barcode properties.
-// Tags: barcode, symbology, import, export, xml, error handling, aspose.barcode, qr, png
+// Tags: barcode symbology, import, xml, error handling, aspose.barcode, generation, png
 
 using System;
 using System.IO;
-using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates exporting a barcode configuration to XML, corrupting the XML,
-/// and handling errors when importing the corrupted XML using Aspose.BarCode.
+/// Example program that shows how to import a BarcodeGenerator from an XML file
+/// and gracefully handle errors caused by missing required barcode properties.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the export, corruption, import,
-    /// and cleanup steps while handling potential errors.
+    /// Entry point of the example. Creates a temporary folder, writes an invalid XML,
+    /// attempts to import a BarcodeGenerator, and handles any import errors.
     /// </summary>
     static void Main()
     {
         // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "ImportXmlDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        string tempDir = Path.Combine(Path.GetTempPath(), "ImportXmlDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define paths for the XML configuration and the resulting barcode image
-        string xmlPath = Path.Combine(tempFolder, "generator.xml");
-        string outputPath = Path.Combine(tempFolder, "result.png");
+        // Define the path for the intentionally invalid XML file
+        string xmlPath = Path.Combine(tempDir, "invalidGenerator.xml");
 
-        // Step 1: Create a barcode generator and export its configuration to XML
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
-        {
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.ExportToXml(xmlPath);
-        }
+        // Write an XML that lacks required barcode properties (e.g., missing CodeText)
+        string invalidXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><BarcodeGenerator><Parameters></Parameters></BarcodeGenerator>";
+        File.WriteAllText(xmlPath, invalidXml);
 
-        // Step 2: Corrupt the XML by removing the required <CodeText> element
-        if (File.Exists(xmlPath))
-        {
-            string xmlContent = File.ReadAllText(xmlPath, Encoding.UTF8);
-            int start = xmlContent.IndexOf("<CodeText>", StringComparison.Ordinal);
-            int end = xmlContent.IndexOf("</CodeText>", StringComparison.Ordinal);
-            if (start != -1 && end != -1 && end > start)
-            {
-                string toRemove = xmlContent.Substring(start, end - start + "</CodeText>".Length);
-                xmlContent = xmlContent.Replace(toRemove, string.Empty);
-                File.WriteAllText(xmlPath, xmlContent, Encoding.UTF8);
-                Console.WriteLine("Modified XML: removed required CodeText element.");
-            }
-            else
-            {
-                Console.WriteLine("CodeText element not found; XML left unchanged.");
-            }
-        }
-        else
-        {
-            Console.WriteLine("XML file was not created.");
-            return;
-        }
-
-        // Step 3: Attempt to import the corrupted XML and handle any errors that occur
+        // Attempt to import the generator from the malformed XML
         try
         {
-            using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+            // Verify that the XML file exists before attempting import
+            if (!File.Exists(xmlPath))
             {
-                // This should fail because the required CodeText property is missing
-                importedGenerator.Save(outputPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Barcode generated successfully and saved to: {outputPath}");
+                Console.WriteLine($"XML file not found: {xmlPath}");
+                return;
             }
+
+            // ImportFromXml will throw if required properties are missing
+            BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(xmlPath);
+
+            // If import succeeds (unlikely), generate a barcode image
+            string outPath = Path.Combine(tempDir, "output.png");
+            generator.Save(outPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Barcode generated successfully: {outPath}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error during ImportFromXml or barcode generation: {ex.Message}");
-        }
-
-        // Cleanup: delete the temporary folder and its contents
-        try
-        {
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignored - cleanup failure should not affect program exit
+            // Handle errors such as missing required properties and report them
+            Console.WriteLine($"Error importing BarcodeGenerator from XML: {ex.Message}");
         }
     }
 }

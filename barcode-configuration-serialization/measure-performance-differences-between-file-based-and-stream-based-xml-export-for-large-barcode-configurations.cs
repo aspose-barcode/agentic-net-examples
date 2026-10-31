@@ -1,83 +1,76 @@
-// Title: Measure performance of XML export for large barcode configurations
-// Description: Demonstrates how to compare the execution time of file‑based and stream‑based ExportToXml methods when exporting a complex barcode configuration.
-// Category-Description: This example belongs to the Aspose.BarCode performance testing category, illustrating the use of BarcodeGenerator, its Parameters, and the ExportToXml API for persisting barcode settings. Developers often need to evaluate serialization speed for large configurations, choosing between file paths and streams to optimize I/O in batch processing or server‑side scenarios. The snippet shows typical setup, timing with Stopwatch, and cleanup, serving as a reference for performance‑critical barcode applications.
+// Title: Performance Comparison of File‑Based vs Stream‑Based XML Export for Barcode Configurations
+// Description: Demonstrates how to measure and compare the execution time of exporting a large barcode generator configuration to XML using a file path versus a memory stream.
+// Category-Description: This example belongs to the Aspose.BarCode configuration export category, illustrating how to serialize barcode generator settings to XML. It uses the BarcodeGenerator class and its ExportToXml methods, which are commonly employed when persisting or sharing barcode configurations across applications or for backup purposes. Developers often need to evaluate performance of file‑based versus stream‑based serialization for large configurations.
 // Prompt: Measure performance differences between file‑based and stream‑based XML export for large barcode configurations.
-// Tags: barcode symbology, performance, xml export, file stream, aspose.barcode, stopwatch, qr code
+// Tags: barcode, pdf417, xml export, performance, file export, stream export, aspose.barcode, configuration serialization
 
 using System;
-using System.IO;
 using System.Diagnostics;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that measures and compares the time required to export a
-/// barcode configuration to XML using a file path versus a memory stream.
+/// Shows how to compare the performance of file‑based and stream‑based XML export
+/// for a barcode generator with a large configuration.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Sets up a barcode generator with a rich
-    /// configuration, exports the settings to XML via file and stream, and
+    /// Entry point of the example. Creates a barcode generator, configures it,
+    /// exports its settings to XML using both a file and a memory stream, and
     /// reports the elapsed times.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary directory for the file‑based export
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodePerf_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary directory for the XML file output.
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeXmlPerf_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
 
-        // Define the full path for the XML file that will be created
-        string xmlFilePath = Path.Combine(tempDir, "barcode_config.xml");
-
-        // Create a barcode generator with a complex set of parameters
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "PerformanceTest"))
+        // Initialize a BarcodeGenerator with Pdf417 symbology and sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleDataForPerformanceTest"))
         {
-            // Configure visual and technical properties of the QR code
+            // ----- Appearance settings -----
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
+
+            // ----- Size and resolution settings -----
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
-            generator.Parameters.Barcode.QR.Version = QRVersion.Version05;
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-            generator.Parameters.RotationAngle = 0f;
             generator.Parameters.Resolution = 300f;
+            generator.Parameters.RotationAngle = 0f;
+
+            // ----- Padding settings -----
             generator.Parameters.Barcode.Padding.Left.Point = 5f;
             generator.Parameters.Barcode.Padding.Top.Point = 5f;
             generator.Parameters.Barcode.Padding.Right.Point = 5f;
             generator.Parameters.Barcode.Padding.Bottom.Point = 5f;
 
-            // -------------------- File‑based ExportToXml --------------------
-            var swFile = Stopwatch.StartNew();               // Start timing
-            generator.ExportToXml(xmlFilePath);               // Export configuration to a physical XML file
-            swFile.Stop();                                    // Stop timing
+            // ----- Pdf417‑specific settings -----
+            generator.Parameters.Barcode.Pdf417.Columns = 10;
+            generator.Parameters.Barcode.Pdf417.IsCode128Emulation = true;
 
-            // -------------------- Stream‑based ExportToXml --------------------
-            long streamExportTicks;
+            // ----- Measure file‑based XML export -----
+            string xmlFilePath = Path.Combine(tempDir, "generator_config.xml");
+            var swFile = Stopwatch.StartNew();
+            generator.ExportToXml(xmlFilePath);
+            swFile.Stop();
+
+            // ----- Measure stream‑based XML export -----
             using (var ms = new MemoryStream())
             {
-                var swStream = Stopwatch.StartNew();          // Start timing for stream export
-                generator.ExportToXml(ms);                    // Export configuration to an in‑memory stream
-                swStream.Stop();                               // Stop timing
-                streamExportTicks = swStream.ElapsedTicks;    // Capture elapsed ticks
-                ms.Position = 0;                               // Reset stream position (optional for timing)
+                var swStream = Stopwatch.StartNew();
+                generator.ExportToXml(ms);
+                swStream.Stop();
+
+                // Output the measured times and the location of the saved XML file.
+                Console.WriteLine($"File‑based ExportToXml time: {swFile.Elapsed.TotalMilliseconds} ms");
+                Console.WriteLine($"Stream‑based ExportToXml time: {swStream.Elapsed.TotalMilliseconds} ms");
+                Console.WriteLine($"XML file saved to: {xmlFilePath}");
             }
-
-            // Output the measured times to the console
-            Console.WriteLine("File‑based ExportToXml time:   {0} ms", swFile.ElapsedMilliseconds);
-            Console.WriteLine("Stream‑based ExportToXml time: {0} ms", streamExportTicks * 1000 / Stopwatch.Frequency);
         }
 
-        // Clean up temporary files and directory
-        try
-        {
-            if (File.Exists(xmlFilePath))
-                File.Delete(xmlFilePath);
-            Directory.Delete(tempDir, true);
-        }
-        catch
-        {
-            // Suppress any exceptions during cleanup to avoid breaking the example
-        }
+        // Optional: clean up the temporary directory.
+        // Directory.Delete(tempDir, true);
     }
 }
