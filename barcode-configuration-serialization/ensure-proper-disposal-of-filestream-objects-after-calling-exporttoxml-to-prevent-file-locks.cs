@@ -1,56 +1,50 @@
-// Title: Export Barcode Generator Configuration to XML with Proper FileStream Disposal
-// Description: Demonstrates exporting a barcode generator's settings to an XML file using both a direct path and a FileStream, ensuring the stream is disposed to avoid file locks.
-// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It showcases the use of BarcodeGenerator, ExportToXml, ImportFromXml, and Save methods to configure, persist, and render barcodes. Developers commonly need to serialize barcode settings for reuse, versioning, or sharing across applications, and proper resource management (e.g., disposing FileStream) is essential to prevent file access issues.
+// Title: Export barcode to XML and PNG with proper resource disposal
+// Description: Demonstrates generating a Code128 barcode, exporting its definition to an XML file, and saving the barcode image as PNG while ensuring FileStream objects are correctly disposed.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use BarcodeGenerator, set barcode parameters, and export to XML and image formats. Developers often need to create barcodes programmatically, customize dimensions, and persist definitions without locking files, which this sample illustrates. Ideal for CI pipelines and automated reporting scenarios.
 // Prompt: Ensure proper disposal of FileStream objects after calling ExportToXml to prevent file locks.
-// Tags: barcode symbology, export, xml, file stream disposal, aspose.barcode, generation, image output
+// Tags: barcode, code128, export, xml, png, filestream, disposal, aspose.barcode, generation
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates exporting a barcode generator's configuration to XML,
-/// importing it back, and saving the resulting barcode image while
-/// correctly disposing file streams to avoid file locks.
+/// Demonstrates barcode generation, XML export, and image saving with proper disposal of resources.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs the export, import, and image generation steps.
+    /// Entry point of the example. Generates a Code128 barcode, exports its XML definition, and saves a PNG image.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary output directory for the generated files
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeExportDemo");
-        Directory.CreateDirectory(outputDir);
+        // Create a unique temporary directory for the output files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Define file paths for the XML configuration and the barcode image
-        string xmlPath = Path.Combine(outputDir, "generator.xml");
-        string imagePath = Path.Combine(outputDir, "barcode.png");
+        // Define file paths for the XML definition and the barcode image
+        string xmlPath = Path.Combine(tempDir, "generator.xml");
+        string imagePath = Path.Combine(tempDir, "barcode.png");
 
-        // Create a barcode generator with Code128 symbology and sample data
-        BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678");
-        // Adjust the X-dimension (module width) for better visual quality
-        generator.Parameters.Barcode.XDimension.Pixels = 2f;
-
-        // Export the generator's configuration directly to an XML file (no stream needed)
-        generator.ExportToXml(xmlPath);
-
-        // Export the same configuration using a FileStream wrapped in a using statement
-        // The using block guarantees the stream is disposed, preventing file locks
-        using (FileStream fileStream = new FileStream(xmlPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        // Initialize the barcode generator with Code128 symbology and the data to encode
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            generator.ExportToXml(fileStream);
+            // Adjust the X-dimension (module width) of the barcode in pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Export the barcode definition to an XML file.
+            // The FileStream is wrapped in a using block to guarantee disposal and release the file lock.
+            using (FileStream fs = new FileStream(xmlPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                generator.ExportToXml(fs);
+            }
+
+            // Save the rendered barcode image as a PNG file.
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Import the generator state from the previously saved XML file
-        BarcodeGenerator loadedGenerator = BarcodeGenerator.ImportFromXml(xmlPath);
-
-        // Save the barcode image to verify that the imported configuration works correctly
-        loadedGenerator.Save(imagePath, BarCodeImageFormat.Png);
-
-        // Inform the user where the output files are located
-        Console.WriteLine($"Exported XML and generated image are located in: {outputDir}");
+        // Inform the user where the files have been written
+        Console.WriteLine("Exported XML to: " + xmlPath);
+        Console.WriteLine("Saved barcode image to: " + imagePath);
     }
 }

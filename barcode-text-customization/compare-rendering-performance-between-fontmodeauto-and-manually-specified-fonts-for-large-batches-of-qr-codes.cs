@@ -1,6 +1,6 @@
-// Title: QR Code FontMode Performance Benchmark
-// Description: Demonstrates measuring rendering time of QR codes using FontMode.Auto versus manually specified fonts.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to configure barcode text rendering via FontMode (Auto or Manual). It illustrates typical use cases such as batch barcode creation, performance comparison, and font customization using the BarcodeGenerator, CodeTextParameters, and BarCodeImageFormat classes. Developers often need to benchmark rendering speed when switching between automatic font handling and explicit font settings for large barcode batches.
+// Title: Benchmark FontMode.Auto vs Manual for QR code generation
+// Description: Demonstrates measuring rendering performance when using FontMode.Auto versus manually specified fonts while generating a batch of QR codes.
+// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, illustrating how to use BarcodeGenerator, EncodeTypes, and FontMode settings. Developers often need to compare automatic font handling with explicit font specifications to optimize rendering speed for large barcode batches. The snippet shows typical usage of barcode parameters, image saving, and timing with Stopwatch, useful for performance testing scenarios.
 // Prompt: Compare rendering performance between FontMode.Auto and manually specified fonts for large batches of QR codes.
 // Tags: qr code, fontmode, performance, benchmark, aspose.barcode, generation, png
 
@@ -9,85 +9,78 @@ using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Provides a simple benchmark comparing QR code rendering performance
-/// when using FontMode.Auto versus manually specified fonts.
+/// Demonstrates performance comparison between automatic and manual font modes when generating QR codes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the benchmark application.
-    /// Generates two batches of QR codes with different FontMode settings
-    /// and reports the elapsed time for each batch.
+    /// Entry point. Generates two batches of QR codes using different FontMode settings and measures the elapsed time.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for output images
-        string basePath = Path.Combine(Path.GetTempPath(), "QrFontModeBenchmark_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(basePath);
+        // Define the number of QR codes to generate in each batch
+        const int batchSize = 5;
 
-        // Prepare sample texts for the QR codes
-        int batchSize = 5;
-        string[] texts = new string[batchSize];
+        // Create a temporary folder to store generated images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "FontModeBenchmark_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+
+        Console.WriteLine($"Benchmark folder: {tempFolder}");
+        Console.WriteLine();
+
+        // ------------------------------
+        // Auto font mode benchmark
+        // ------------------------------
+        Stopwatch swAuto = Stopwatch.StartNew(); // start timing for Auto mode
         for (int i = 0; i < batchSize; i++)
         {
-            texts[i] = "SampleText_" + i;
-        }
+            // Prepare unique text and output path for each QR code
+            string codeText = $"AutoMode_{i}";
+            string filePath = Path.Combine(tempFolder, $"Auto_{i}.png");
 
-        // -------------------- Auto FontMode --------------------
-        Stopwatch swAuto = Stopwatch.StartNew();
+            // Generate QR code with FontMode.Auto
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+            {
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+                generator.Parameters.Barcode.CodeTextParameters.FontMode = FontMode.Auto;
+                generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Lucida Handwriting";
+                generator.Parameters.Barcode.CodeTextParameters.Font.Style = FontStyle.Underline;
+                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f; // ignored in Auto mode
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+        }
+        swAuto.Stop(); // stop timing for Auto mode
+
+        // ------------------------------
+        // Manual font mode benchmark
+        // ------------------------------
+        Stopwatch swManual = Stopwatch.StartNew(); // start timing for Manual mode
         for (int i = 0; i < batchSize; i++)
         {
-            string filePath = Path.Combine(basePath, $"Auto_{i}.png");
-            GenerateQr(texts[i], FontMode.Auto, filePath);
-        }
-        swAuto.Stop();
+            // Prepare unique text and output path for each QR code
+            string codeText = $"ManualMode_{i}";
+            string filePath = Path.Combine(tempFolder, $"Manual_{i}.png");
 
-        // -------------------- Manual FontMode --------------------
-        Stopwatch swManual = Stopwatch.StartNew();
-        for (int i = 0; i < batchSize; i++)
-        {
-            string filePath = Path.Combine(basePath, $"Manual_{i}.png");
-            GenerateQr(texts[i], FontMode.Manual, filePath);
+            // Generate QR code with FontMode.Manual
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+            {
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+                generator.Parameters.Barcode.CodeTextParameters.FontMode = FontMode.Manual;
+                generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Lucida Handwriting";
+                generator.Parameters.Barcode.CodeTextParameters.Font.Style = FontStyle.Underline;
+                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f; // manual size
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
         }
-        swManual.Stop();
+        swManual.Stop(); // stop timing for Manual mode
 
         // Output benchmark results
         Console.WriteLine($"Generated {batchSize} QR codes with FontMode.Auto in {swAuto.ElapsedMilliseconds} ms");
         Console.WriteLine($"Generated {batchSize} QR codes with FontMode.Manual in {swManual.ElapsedMilliseconds} ms");
-        Console.WriteLine($"Output folder: {basePath}");
-    }
-
-    /// <summary>
-    /// Generates a QR code image with the specified text, font mode, and output path.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the QR code.</param>
-    /// <param name="mode">The FontMode to apply to the code text.</param>
-    /// <param name="outputPath">The file path where the PNG image will be saved.</param>
-    static void GenerateQr(string codeText, FontMode mode, string outputPath)
-    {
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
-        {
-            // Set common barcode parameters
-            generator.Parameters.Barcode.XDimension.Pixels = 4;
-            generator.Parameters.Barcode.CodeTextParameters.FontMode = mode;
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Lucida Handwriting";
-
-            if (mode == FontMode.Manual)
-            {
-                // Explicitly set font size for manual mode
-                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
-            }
-            else // Auto mode
-            {
-                // Font size is ignored in Auto mode; set a placeholder value
-                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 10f;
-            }
-
-            // Save the generated QR code as a PNG image
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-        }
+        Console.WriteLine();
+        Console.WriteLine("Benchmark completed.");
     }
 }

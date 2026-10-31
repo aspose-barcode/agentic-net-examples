@@ -1,8 +1,8 @@
-// Title: Reset barcode background color to default white
-// Description: This example generates a Code128 barcode with a gray background, then resets the background to white and saves both images.
-// Category-Description: Demonstrates Aspose.BarCode generation features, focusing on the Parameters.BackColor property to control barcode background colors. Common scenarios include customizing barcode appearance for branding or UI themes and then reverting to default colors for standard printing. Developers working with barcode image creation, color customization, and format export will find this pattern useful.
+// Title: Resetting Barcode Background Color to Default White
+// Description: Demonstrates how to generate a barcode with a custom gray background and then reset the background to the default white using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to manipulate the barcode appearance via the BarcodeGenerator class. It covers setting the background color, a common requirement for branding or visual integration, and resetting it to the default white. Developers often need to customize colors for UI consistency and then revert to defaults for standard outputs.
 // Prompt: Reset the barcode background to default white after previously setting it to gray.
-// Tags: barcode, code128, background color, reset, aspose.barcode, image generation, png, color customization
+// Tags: barcode symbology, background color, reset, png, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -11,39 +11,43 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Illustrates resetting the barcode background color from gray to white using Aspose.BarCode.
+/// Example program that creates two barcode images: one with a gray background
+/// and another with the default white background, demonstrating how to reset
+/// the background color using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode with a gray background, then changes the background to white and saves both images.
+    /// Entry point of the application. Generates barcode images with different
+    /// background colors and saves them to a temporary directory.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for output files
+        // Create a unique temporary folder for the output files
         string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeBgDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
 
-        // Define file paths for the gray and white background images
+        // Define file paths for the gray and white barcode images
         string grayPath = Path.Combine(outputDir, "barcode_gray.png");
         string whitePath = Path.Combine(outputDir, "barcode_white.png");
 
-        // Generate barcode with gray background
+        // Generate barcode with a custom gray background
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            // Set background color to gray
-            generator.Parameters.BackColor = Color.Gray;
-            // Save the gray-background barcode image
-            generator.Save(grayPath, BarCodeImageFormat.Png);
+            generator.Parameters.BackColor = Color.Gray; // set background to gray
+            generator.Save(grayPath, BarCodeImageFormat.Png); // save as PNG
+        }
 
-            // Reset background to default white
-            generator.Parameters.BackColor = Color.White;
-            // Save the white-background barcode image
-            generator.Save(whitePath, BarCodeImageFormat.Png);
+        // Generate barcode with the default white background (reset)
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        {
+            generator.Parameters.BackColor = Color.White; // reset to default white
+            generator.Save(whitePath, BarCodeImageFormat.Png); // save as PNG
         }
 
         // Output the locations of the generated images
-        Console.WriteLine($"Gray background barcode saved to: {grayPath}");
-        Console.WriteLine($"White background barcode saved to: {whitePath}");
+        Console.WriteLine("Generated barcode images:");
+        Console.WriteLine(grayPath);
+        Console.WriteLine(whitePath);
     }
 }

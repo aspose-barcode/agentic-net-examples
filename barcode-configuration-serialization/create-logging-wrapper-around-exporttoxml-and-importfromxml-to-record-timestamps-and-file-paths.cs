@@ -1,154 +1,149 @@
-// Title: Logging Wrapper for Barcode XML Export/Import
+// Title: Logging wrapper for BarcodeGenerator and BarCodeReader XML export/import
 // Description: Demonstrates how to wrap Aspose.BarCode ExportToXml and ImportFromXml calls with logging that records timestamps and file paths.
-// Category-Description: This example belongs to the Aspose.BarCode XML serialization category, showing how to persist and restore barcode generator and reader configurations using ExportToXml/ImportFromXml. It highlights key API classes such as BarcodeGenerator, BarCodeReader, and the Export/Import methods, which developers commonly use for saving settings, sharing configurations, or automating batch processing.
+// Category-Description: This example belongs to the Aspose.BarCode XML serialization category, showcasing the use of BarcodeGenerator, BarCodeReader, and their ExportToXml/ImportFromXml methods. Developers often need to persist barcode configurations to XML for later reuse, and logging these operations aids debugging and audit trails. The snippet illustrates typical export, import, and image generation workflows.
 // Prompt: Create a logging wrapper around ExportToXml and ImportFromXml to record timestamps and file paths.
-// Tags: barcode, xml, export, import, logging, qrcode, generation, recognition, aspose.barcode
+// Tags: barcode, xml, export, import, logging, aspose.barcode, generator, reader, serialization
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates logging of barcode generator and reader XML export/import operations.
+/// Demonstrates logging of XML export/import operations for Aspose.BarCode generators and readers.
 /// </summary>
 class Program
 {
+    // Path to the log file; set at runtime.
+    static string LogFilePath;
+
     /// <summary>
-    /// Entry point of the demo. Generates a QR code, exports/imports configurations to XML with logging, and reads the barcode.
+    /// Appends a timestamped message to the log file.
     /// </summary>
-    static void Main()
+    /// <param name="message">The message to log.</param>
+    static void Log(string message)
     {
-        // Define a temporary working directory for all demo files
-        string basePath = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(basePath);
-
-        // Paths for generator XML, generated image, reader XML, and log file
-        string generatorXmlPath = Path.Combine(basePath, "generator.xml");
-        string generatorImagePath = Path.Combine(basePath, "generated.png");
-        string readerXmlPath = Path.Combine(basePath, "reader.xml");
-        string logPath = Path.Combine(basePath, "log.txt");
-
-        // Clean up any leftover files from previous runs
-        foreach (var file in new[] { generatorXmlPath, generatorImagePath, readerXmlPath, logPath })
-        {
-            if (File.Exists(file))
-                File.Delete(file);
-        }
-
-        // -------------------------------------------------
-        // Create and configure a QR code generator
-        // -------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample123"))
-        {
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Helvetica";
-            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Pixels = 12f;
-
-            // Export generator state to XML with logging
-            ExportGeneratorToXml(generator, generatorXmlPath, logPath);
-
-            // Save the generated barcode image
-            generator.Save(generatorImagePath, BarCodeImageFormat.Png);
-        }
-
-        // -------------------------------------------------
-        // Import generator state from XML and generate a second image
-        // -------------------------------------------------
-        using (var importedGenerator = ImportGeneratorFromXml(generatorXmlPath, logPath))
-        {
-            string importedImagePath = Path.Combine(basePath, "imported.png");
-            importedGenerator.Save(importedImagePath, BarCodeImageFormat.Png);
-        }
-
-        // -------------------------------------------------
-        // Create a barcode reader for the generated image
-        // -------------------------------------------------
-        using (var reader = new BarCodeReader(generatorImagePath, DecodeType.QR))
-        {
-            // Export reader state to XML with logging
-            ExportReaderToXml(reader, readerXmlPath, logPath);
-        }
-
-        // -------------------------------------------------
-        // Import reader state from XML and read the barcode again
-        // -------------------------------------------------
-        using (var importedReader = ImportReaderFromXml(readerXmlPath, logPath))
-        {
-            importedReader.SetBarCodeImage(generatorImagePath);
-            importedReader.SetBarCodeReadType(DecodeType.QR);
-            var results = importedReader.ReadBarCodes();
-
-            // Output read results to console
-            foreach (var result in results)
-            {
-                Console.WriteLine($"Read Code: {result.CodeText} Type: {result.CodeTypeName}");
-            }
-        }
-
-        Console.WriteLine("Demo completed. Logs written to: " + logPath);
+        File.AppendAllText(LogFilePath, $"{DateTime.Now:O} {message}{Environment.NewLine}");
     }
 
     /// <summary>
-    /// Exports a BarcodeGenerator configuration to XML and logs the operation.
+    /// Exports a BarcodeGenerator configuration to XML while logging the operation.
     /// </summary>
-    static void ExportGeneratorToXml(BarcodeGenerator generator, string xmlPath, string logPath)
+    /// <param name="generator">The generator to export.</param>
+    /// <param name="xmlPath">Destination XML file path.</param>
+    static void ExportGeneratorToXml(BarcodeGenerator generator, string xmlPath)
     {
-        Log($"Exporting BarcodeGenerator to XML. Path: {xmlPath}", logPath);
+        Log($"ExportGenerator start: {xmlPath}");
         generator.ExportToXml(xmlPath);
-        Log($"Export completed. Path: {xmlPath}", logPath);
+        Log($"ExportGenerator completed: {xmlPath}");
     }
 
     /// <summary>
-    /// Imports a BarcodeGenerator configuration from XML and logs the operation.
+    /// Imports a BarcodeGenerator configuration from XML while logging the operation.
     /// </summary>
-    static BarcodeGenerator ImportGeneratorFromXml(string xmlPath, string logPath)
+    /// <param name="xmlPath">Source XML file path.</param>
+    /// <returns>The imported BarcodeGenerator instance.</returns>
+    static BarcodeGenerator ImportGeneratorFromXml(string xmlPath)
     {
-        Log($"Importing BarcodeGenerator from XML. Path: {xmlPath}", logPath);
-        if (!File.Exists(xmlPath))
-        {
-            Log($"File not found: {xmlPath}", logPath);
-            throw new FileNotFoundException("XML file not found.", xmlPath);
-        }
+        Log($"ImportGenerator start: {xmlPath}");
         var gen = BarcodeGenerator.ImportFromXml(xmlPath);
-        Log($"Import completed. Path: {xmlPath}", logPath);
+        Log($"ImportGenerator completed: {xmlPath}");
         return gen;
     }
 
     /// <summary>
-    /// Exports a BarCodeReader configuration to XML and logs the operation.
+    /// Exports a BarCodeReader configuration to XML while logging the operation.
     /// </summary>
-    static void ExportReaderToXml(BarCodeReader reader, string xmlPath, string logPath)
+    /// <param name="reader">The reader to export.</param>
+    /// <param name="xmlPath">Destination XML file path.</param>
+    static void ExportReaderToXml(BarCodeReader reader, string xmlPath)
     {
-        Log($"Exporting BarCodeReader to XML. Path: {xmlPath}", logPath);
+        Log($"ExportReader start: {xmlPath}");
         reader.ExportToXml(xmlPath);
-        Log($"Export completed. Path: {xmlPath}", logPath);
+        Log($"ExportReader completed: {xmlPath}");
     }
 
     /// <summary>
-    /// Imports a BarCodeReader configuration from XML and logs the operation.
+    /// Imports a BarCodeReader configuration from XML while logging the operation.
     /// </summary>
-    static BarCodeReader ImportReaderFromXml(string xmlPath, string logPath)
+    /// <param name="xmlPath">Source XML file path.</param>
+    /// <returns>The imported BarCodeReader instance.</returns>
+    static BarCodeReader ImportReaderFromXml(string xmlPath)
     {
-        Log($"Importing BarCodeReader from XML. Path: {xmlPath}", logPath);
-        if (!File.Exists(xmlPath))
-        {
-            Log($"File not found: {xmlPath}", logPath);
-            throw new FileNotFoundException("XML file not found.", xmlPath);
-        }
+        Log($"ImportReader start: {xmlPath}");
         var reader = BarCodeReader.ImportFromXml(xmlPath);
-        Log($"Import completed. Path: {xmlPath}", logPath);
+        Log($"ImportReader completed: {xmlPath}");
         return reader;
     }
 
     /// <summary>
-    /// Appends a timestamped log entry to the specified log file.
+    /// Executes the demonstration: creates temporary files, performs export/import with logging, and writes results.
     /// </summary>
-    static void Log(string message, string logPath)
+    static void Main()
     {
-        string entry = $"[{DateTime.Now:O}] {message}{Environment.NewLine}";
-        File.AppendAllText(logPath, entry);
+        // Create a dedicated temporary folder for all demo artifacts.
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeLogDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        LogFilePath = Path.Combine(tempDir, "log.txt");
+
+        // ---------- BarcodeGenerator Export/Import ----------
+        string generatorXml = Path.Combine(tempDir, "generator.xml");
+        string generatorImageOriginal = Path.Combine(tempDir, "barcode_original.png");
+        string generatorImageImported = Path.Combine(tempDir, "barcode_imported.png");
+
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
+        {
+            // Configure barcode appearance.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+
+            // Export configuration to XML with logging.
+            ExportGeneratorToXml(generator, generatorXml);
+
+            // Save the generated barcode image.
+            generator.Save(generatorImageOriginal, BarCodeImageFormat.Png);
+        }
+
+        using (var importedGenerator = ImportGeneratorFromXml(generatorXml))
+        {
+            // Save image generated from imported configuration.
+            importedGenerator.Save(generatorImageImported, BarCodeImageFormat.Png);
+        }
+
+        // ---------- BarCodeReader Export/Import ----------
+        string readerXml = Path.Combine(tempDir, "reader.xml");
+        string readerImagePath = generatorImageOriginal; // Reuse the previously generated image.
+        string readerResultLog = Path.Combine(tempDir, "reader_results.txt");
+
+        using (var reader = new BarCodeReader(readerImagePath, DecodeType.QR))
+        {
+            // Adjust reader settings.
+            reader.BarcodeSettings.StripFNC = true;
+
+            // Export reader configuration to XML with logging.
+            ExportReaderToXml(reader, readerXml);
+
+            // Perform initial read and log result count.
+            var results = reader.ReadBarCodes();
+            File.AppendAllText(readerResultLog, $"Initial read count: {results.Length}{Environment.NewLine}");
+        }
+
+        using (var importedReader = ImportReaderFromXml(readerXml))
+        {
+            // Apply the same image and decode type to the imported reader.
+            importedReader.SetBarCodeImage(readerImagePath);
+            importedReader.SetBarCodeReadType(DecodeType.QR);
+
+            // Perform read with imported configuration and log result count.
+            var results = importedReader.ReadBarCodes();
+            File.AppendAllText(readerResultLog, $"Imported read count: {results.Length}{Environment.NewLine}");
+        }
+
+        // Output locations for user reference.
+        Console.WriteLine($"Temporary folder: {tempDir}");
+        Console.WriteLine($"Log file: {LogFilePath}");
+        Console.WriteLine($"Generator XML: {generatorXml}");
+        Console.WriteLine($"Reader XML: {readerXml}");
+        Console.WriteLine($"Reader results logged to: {readerResultLog}");
     }
 }

@@ -1,74 +1,120 @@
-// Title: Export barcode generation settings to XML for multiple symbologies
-// Description: Demonstrates how to generate QR, Code128, Pdf417, and DataMatrix barcodes, export their configuration to XML files, and save PNG images.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, ExportToXml, and image saving. Developers often need to persist barcode generation settings for version control, automated testing, or reuse across projects. The snippet illustrates typical workflows for creating configuration files and visual assets for various barcode standards.
-/// Prompt: Use ExportToXml to generate configuration files for different barcode standards and store them in version control.
-/// Tags: barcode, symbology, export, xml, configuration, aspose.barcode, generation, qr, code128, pdf417, datamatrix, png
+// Title: Export barcode configurations to XML for version control
+// Description: Demonstrates how to generate barcodes of various symbologies, export their configuration to XML files, and save PNG images.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showcasing the use of BarcodeGenerator, ExportToXml, and image saving APIs. Developers often need to store barcode generation settings in source control to ensure reproducible builds and easy updates across environments.
+// Prompt: Use ExportToXml to generate configuration files for different barcode standards and store them in version control.
+// Tags: barcode, configuration, exporttoxml, png, qrcode, datamatrix, code128, pdf417, gs1composite, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates exporting barcode generation configurations to XML and saving barcode images.
+/// Demonstrates exporting barcode generation settings to XML files and saving barcode images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a temporary folder, generates barcodes, exports configs, and saves images.
+    /// Entry point. Generates barcodes for several symbologies, saves PNG images, and exports configuration XML files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory to store generated XML and PNG files
-        string basePath = Path.Combine(Path.GetTempPath(), "BarcodeConfigs_" + Guid.NewGuid().ToString("N"));
+        // Define base directory for all generated configuration files and images
+        string basePath = Path.Combine(Directory.GetCurrentDirectory(), "BarcodeConfigs");
         Directory.CreateDirectory(basePath);
 
-        // Generate and export configurations for various barcode symbologies
-        GenerateBarcode(basePath, "QR", EncodeTypes.QR, "Sample QR");
-        GenerateBarcode(basePath, "Code128", EncodeTypes.Code128, "Sample128");
-        GenerateBarcode(basePath, "Pdf417", EncodeTypes.Pdf417, "Sample Pdf417");
-        GenerateBarcode(basePath, "DataMatrix", EncodeTypes.DataMatrix, "Sample DM");
+        // QR Code configuration and export
+        GenerateAndExport(
+            Path.Combine(basePath, "qr"),
+            EncodeTypes.QR,
+            "QR Sample",
+            gen =>
+            {
+                gen.Parameters.Barcode.XDimension.Pixels = 3f;
+                gen.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            });
 
-        Console.WriteLine("Barcode generation and export completed.");
+        // DataMatrix configuration and export
+        GenerateAndExport(
+            Path.Combine(basePath, "datamatrix"),
+            EncodeTypes.DataMatrix,
+            "DM12345",
+            gen =>
+            {
+                gen.Parameters.Barcode.XDimension.Pixels = 2f;
+                gen.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
+                gen.Parameters.Barcode.DataMatrix.EccType = DataMatrixEccType.Ecc200;
+                gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.DarkBlue;
+            });
+
+        // Code128 configuration and export
+        GenerateAndExport(
+            Path.Combine(basePath, "code128"),
+            EncodeTypes.Code128,
+            "CODE128-TEST",
+            gen =>
+            {
+                gen.Parameters.Barcode.XDimension.Pixels = 2f;
+                gen.Parameters.Barcode.BarHeight.Point = 50f;
+                gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.DarkGreen;
+            });
+
+        // PDF417 configuration and export
+        GenerateAndExport(
+            Path.Combine(basePath, "pdf417"),
+            EncodeTypes.Pdf417,
+            "PDF417 Sample Text",
+            gen =>
+            {
+                gen.Parameters.Barcode.XDimension.Pixels = 2f;
+                gen.Parameters.Barcode.Pdf417.Columns = 5;
+                gen.Parameters.Barcode.Pdf417.IsCode128Emulation = true;
+                gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Purple;
+            });
+
+        // GS1 Composite Bar (linear + 2D) configuration and export
+        GenerateAndExport(
+            Path.Combine(basePath, "gs1composite"),
+            EncodeTypes.GS1CompositeBar,
+            "(01)01234567890128|HelloWorld",
+            gen =>
+            {
+                gen.Parameters.Barcode.XDimension.Pixels = 2f;
+                gen.Parameters.Barcode.GS1CompositeBar.LinearComponentType = EncodeTypes.GS1Code128;
+                gen.Parameters.Barcode.GS1CompositeBar.TwoDComponentType = TwoDComponentType.CC_C;
+                gen.Parameters.Barcode.Pdf417.Columns = 30;
+                gen.Parameters.Barcode.GS1CompositeBar.AllowOnlyGS1Encoding = false;
+                gen.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Brown;
+            });
+
+        Console.WriteLine("Barcode configuration files and images have been generated.");
     }
 
     /// <summary>
-    /// Generates a barcode, exports its configuration to an XML file, and saves the barcode image as PNG.
+    /// Generates a barcode image, saves it as PNG, and exports the generator's configuration to an XML file.
     /// </summary>
-    /// <param name="folder">The folder where XML and PNG files will be saved.</param>
-    /// <param name="name">Base name for the output files (without extension).</param>
-    /// <param name="encodeType">The barcode symbology to use.</param>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    static void GenerateBarcode(string folder, string name, BaseEncodeType encodeType, string codeText)
+    /// <param name="baseFilePath">Base file path without extension; .png and .xml will be appended.</param>
+    /// <param name="encodeType">The barcode symbology to generate.</param>
+    /// <param name="codeText">The text/value encoded in the barcode.</param>
+    /// <param name="configure">An action that customizes the BarcodeGenerator settings.</param>
+    static void GenerateAndExport(string baseFilePath, BaseEncodeType encodeType, string codeText, Action<BarcodeGenerator> configure)
     {
-        // Determine file paths for XML configuration and PNG image
-        string xmlPath = Path.Combine(folder, name + ".xml");
-        string pngPath = Path.Combine(folder, name + ".png");
+        // Determine full file paths for image and XML
+        string imagePath = baseFilePath + ".png";
+        string xmlPath = baseFilePath + ".xml";
 
-        // Initialize the barcode generator with the specified symbology and text
+        // Create and configure the barcode generator
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            // Common visual settings
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Symbology‑specific tweaks (optional)
-            if (encodeType == EncodeTypes.Pdf417)
-            {
-                generator.Parameters.Barcode.Pdf417.Columns = 4;
-            }
-
-            // Export the generator's configuration to an XML file
-            generator.ExportToXml(xmlPath);
+            configure?.Invoke(generator);
 
             // Save the generated barcode as a PNG image
-            generator.Save(pngPath, BarCodeImageFormat.Png);
-        }
+            generator.Save(imagePath, BarCodeImageFormat.Png);
 
-        // Output the locations of the generated files
-        Console.WriteLine($"{name} XML: {xmlPath}");
-        Console.WriteLine($"{name} PNG: {pngPath}");
+            // Export the generator's configuration to an XML file for version control
+            generator.ExportToXml(xmlPath);
+        }
     }
 }

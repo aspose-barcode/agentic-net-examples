@@ -1,98 +1,115 @@
-// Title: Barcode Generation Round‑Trip XML Serialization Test
-// Description: Demonstrates generating a barcode, exporting its configuration to XML, re‑importing it, and verifying that the resulting image matches the original.
-// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It showcases the BarcodeGenerator class, XML export/import methods, and image comparison techniques. Developers often need to persist barcode settings, transfer them between services, or validate serialization integrity, making this pattern useful for unit testing and CI pipelines.
+// Title: Barcode XML Serialization Round‑Trip Validation
+// Description: Generates barcodes, serializes the generator to XML, deserializes it, and verifies that the resulting image matches the original.
+// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It demonstrates how to use BarcodeGenerator to create various symbologies, export the generator's state to XML, import it back, and compare the output images. Developers often need to persist barcode settings, exchange them between services, or ensure that serialization does not alter the visual result. The key API classes shown are BarcodeGenerator, BaseEncodeType, and BarCodeImageFormat, useful for unit testing and integration scenarios.
 // Prompt: Write unit tests that compare generated barcode images before and after XML serialization round‑trip.
-// Tags: barcode, symbology, xml-serialization, roundtrip, generation, png, aspose.barcode, aspose.drawing
+// Tags: barcode, serialization, xml, roundtrip, image comparison, aspose.barcode, qrcode, code128, datamatrix, pdf417, png
 
 using System;
 using System.IO;
-using System.Linq;
-using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains the entry point and helper methods for running barcode round‑trip serialization tests.
+/// Demonstrates barcode generation, XML export/import, and image comparison to validate a round‑trip serialization.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Executes a series of barcode generation tests, comparing original and deserialized images.
+    /// Entry point that runs a series of round‑trip tests for different barcode symbologies.
     /// </summary>
     static void Main()
     {
-        // Define test cases: each tuple contains the barcode symbology and the text to encode.
-        var tests = new List<(BaseEncodeType Encode, string Text)>
+        // Counters for test results
+        int totalTests = 0;
+        int failedTests = 0;
+
+        // Define test cases: each tuple contains the barcode type and the text to encode
+        var testCases = new (BaseEncodeType encodeType, string codeText)[]
         {
-            (EncodeTypes.Code128, "Test123"),
-            (EncodeTypes.QR, "https://example.com")
+            (EncodeTypes.QR, "Hello World"),
+            (EncodeTypes.Code128, "1234567890"),
+            (EncodeTypes.DataMatrix, "Aspose"),
+            (EncodeTypes.Pdf417, "Sample PDF417 Text")
         };
 
-        // Counters for passed and failed tests.
-        int passed = 0;
-        int failed = 0;
-
-        // Iterate over each test case and run the round‑trip comparison.
-        foreach (var (encode, text) in tests)
+        // Execute each test case
+        foreach (var (encodeType, codeText) in testCases)
         {
-            bool result = RunRoundTripTest(encode, text);
-            if (result)
+            totalTests++;
+            bool passed = RunRoundTripTest(encodeType, codeText);
+            if (!passed)
             {
-                passed++;
-                Console.WriteLine($"PASS: {encode.GetType().Name}.{encode} with text \"{text}\"");
+                failedTests++;
+                Console.WriteLine($"FAILED: EncodeType={encodeType}, CodeText=\"{codeText}\"");
             }
             else
             {
-                failed++;
-                Console.WriteLine($"FAIL: {encode.GetType().Name}.{encode} with text \"{text}\"");
+                Console.WriteLine($"PASSED: EncodeType={encodeType}, CodeText=\"{codeText}\"");
             }
         }
 
-        // Output a summary of the test results.
-        Console.WriteLine($"Summary: {passed} passed, {failed} failed.");
+        // Summary of results
+        Console.WriteLine($"TOTAL: {totalTests}, FAILED: {failedTests}");
     }
 
     /// <summary>
-    /// Generates a barcode, serializes its configuration to XML, re‑imports it, and compares the resulting images.
+    /// Generates a barcode, exports the generator to XML, re‑imports it, and compares the two PNG images.
     /// </summary>
     /// <param name="encodeType">The barcode symbology to use.</param>
     /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <returns>True if the original and re‑generated images are identical; otherwise, false.</returns>
+    /// <returns>True if the images are identical; otherwise, false.</returns>
     static bool RunRoundTripTest(BaseEncodeType encodeType, string codeText)
     {
-        // Generate original barcode and capture image bytes.
-        byte[] originalBytes;
+        byte[] originalImageBytes;
+        byte[] roundTripImageBytes;
+
+        // Generate the original barcode and capture its PNG bytes
         using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
-            using (var msOriginal = new MemoryStream())
+            using (var originalStream = new MemoryStream())
             {
-                generator.Save(msOriginal, BarCodeImageFormat.Png);
-                originalBytes = msOriginal.ToArray();
+                generator.Save(originalStream, BarCodeImageFormat.Png);
+                originalImageBytes = originalStream.ToArray();
             }
 
-            // Export generator state to XML.
-            using (var msXml = new MemoryStream())
+            // Export the generator's configuration to an XML stream
+            using (var xmlStream = new MemoryStream())
             {
-                generator.ExportToXml(msXml);
-                msXml.Position = 0;
+                generator.ExportToXml(xmlStream);
+                xmlStream.Position = 0; // Reset stream position for reading
 
-                // Import generator from XML.
-                using (var importedGenerator = BarcodeGenerator.ImportFromXml(msXml))
+                // Import a new generator instance from the XML data
+                using (var importedGenerator = BarcodeGenerator.ImportFromXml(xmlStream))
                 {
-                    // Generate barcode from imported generator and capture image bytes.
-                    using (var msImported = new MemoryStream())
+                    // Generate the barcode from the imported configuration
+                    using (var roundTripStream = new MemoryStream())
                     {
-                        importedGenerator.Save(msImported, BarCodeImageFormat.Png);
-                        byte[] importedBytes = msImported.ToArray();
-
-                        // Compare image bytes for equality.
-                        return originalBytes.SequenceEqual(importedBytes);
+                        importedGenerator.Save(roundTripStream, BarCodeImageFormat.Png);
+                        roundTripImageBytes = roundTripStream.ToArray();
                     }
                 }
             }
         }
+
+        // Compare the two image byte arrays for equality
+        return CompareByteArrays(originalImageBytes, roundTripImageBytes);
+    }
+
+    /// <summary>
+    /// Performs a byte‑wise comparison of two arrays.
+    /// </summary>
+    /// <param name="a">First byte array.</param>
+    /// <param name="b">Second byte array.</param>
+    /// <returns>True if arrays are non‑null, same length, and contain identical bytes.</returns>
+    static bool CompareByteArrays(byte[] a, byte[] b)
+    {
+        if (a == null || b == null) return false;
+        if (a.Length != b.Length) return false;
+        for (int i = 0; i < a.Length; i++)
+        {
+            if (a[i] != b[i]) return false;
+        }
+        return true;
     }
 }

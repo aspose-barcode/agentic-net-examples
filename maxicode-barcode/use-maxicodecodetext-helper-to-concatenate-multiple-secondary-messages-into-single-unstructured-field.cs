@@ -1,59 +1,62 @@
 // Title: Generate MaxiCode barcode with concatenated secondary messages
-// Description: Demonstrates creating a MaxiCode (Mode 3) barcode and merging several secondary messages into one unstructured field using the MaxiCodeCodetext helper.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on MaxiCode symbology. It showcases key API classes such as ComplexBarcodeGenerator, MaxiCodeCodetextMode3, and MaxiCodeStandardSecondMessage. Typical use cases include shipping labels and logistics where MaxiCode encodes address and service data. Developers often need to combine multiple text fragments into the secondary message field for compliance with industry standards.
+// Description: Demonstrates how to combine multiple secondary messages into a single unstructured field for a MaxiCode barcode using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, focusing on MaxiCode symbology. It showcases the use of MaxiCodeCodetextMode3, MaxiCodeStandardSecondMessage, and ComplexBarcodeGenerator to create a barcode with custom postal, country, and service data, plus an unstructured secondary message. Developers often need to embed multiple text fragments into a single field for logistics and shipping applications.
 // Prompt: Use the MaxiCodeCodetext helper to concatenate multiple secondary messages into a single unstructured field.
-// Tags: maxicode, barcode generation, png, complexbarcodegenerator, maxicodecodetextmode3, maxicodestandardsecondmessage
+// Tags: maxicode, secondarymessage, concatenation, complexbarcode, aspnet, csharp, barcode generation
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a MaxiCode barcode with concatenated secondary messages.
+/// Demonstrates creating a MaxiCode barcode (Mode 3) with concatenated secondary messages.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode and saves it as a PNG file.
+    /// Entry point. Builds the combined secondary message, configures MaxiCode codetext, generates and saves the barcode.
     /// </summary>
     static void Main()
     {
-        // Prepare output directory
-        string outputDir = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo");
-        Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "MaxiCode_Unstructured.png");
+        // Define sample secondary messages to concatenate
+        List<string> secondaryMessages = new List<string>
+        {
+            "First part of message",
+            "Second part of message",
+            "Third part of message"
+        };
 
-        // Define multiple secondary messages to concatenate
-        string[] secondaryMessages = new[] { "First part", "Second part", "Third part" };
-        // Combine messages into a single string separated by spaces
-        string concatenatedMessage = string.Join(" ", secondaryMessages);
+        // Concatenate all messages into a single unstructured string
+        string combinedMessage = string.Concat(secondaryMessages);
 
-        // Build MaxiCode codetext with an unstructured second message
-        var codetext = new MaxiCodeCodetextMode3
+        // Initialize MaxiCode codetext for Mode 3 with required fields
+        var maxiCodeCodetext = new MaxiCodeCodetextMode3
         {
             PostalCode = "B1050",
             CountryCode = 56,
-            ServiceCategory = 999,
-            SecondMessage = new MaxiCodeStandardSecondMessage
-            {
-                Message = concatenatedMessage
-            }
+            ServiceCategory = 999
         };
 
-        // Generate the barcode using the complex barcode generator
-        using (var generator = new ComplexBarcodeGenerator(codetext))
+        // Assign the concatenated secondary message to the standard second message object
+        var secondMessage = new MaxiCodeStandardSecondMessage
         {
-            // Set MaxiCode mode to 3 (required for this codetext structure)
-            generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode3;
-            // Optional: adjust module size for better readability
-            generator.Parameters.Barcode.XDimension.Pixels = 10f;
+            Message = combinedMessage
+        };
+        maxiCodeCodetext.SecondMessage = secondMessage;
 
-            // Save the generated barcode as a PNG image
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+        // Prepare the output directory and file path
+        string outputFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo");
+        Directory.CreateDirectory(outputFolder);
+        string outputPath = Path.Combine(outputFolder, "MaxiCodeUnstructured.png");
+
+        // Generate the MaxiCode barcode and save it to the specified path
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        {
+            generator.Save(outputPath);
         }
 
+        // Inform the user where the barcode image was saved
         Console.WriteLine($"MaxiCode barcode saved to: {outputPath}");
     }
 }
