@@ -1,61 +1,60 @@
-// Title: Demonstrate DotCode generation and QR Code error correction configuration
-// Description: Shows how to generate a DotCode barcode (where error correction is automatic) and how to configure the error correction level for a QR Code using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of the BarcodeGenerator class with different EncodeTypes. It covers creating barcodes, adjusting parameters such as module size and QR error correction levels, and saving images. Developers working with barcode creation, especially those needing to control data integrity via error correction, will find these patterns useful.
+// Title: Demonstrate DotCode barcode generation and error‑correction handling
+// Description: Shows how to generate a DotCode barcode (error correction is automatic) and a QR Code barcode with an explicit error‑correction level.
+// Category-Description: This example is part of the Aspose.BarCode barcode generation collection, focusing on creating DotCode and QR Code symbols using the BarcodeGenerator class. It highlights key API classes such as EncodeTypes, BarcodeGenerator, and BarCodeImageFormat, typical use cases like setting layout parameters and error‑correction levels, and common developer needs for saving barcodes as images.
 // Prompt: Provide configuration to set DotCode error correction level for improved data integrity.
-// Tags: dotcode, qrcode, error-correction, barcode-generation, aspose.barcode, image-output
+// Tags: dotcode, barcode, error correction, qrcode, generation, aspose.barcode, image output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains the entry point for the barcode generation example.
-/// Demonstrates DotCode creation (with automatic error correction) and QR Code error correction configuration.
+/// Generates sample DotCode and QR Code barcodes, demonstrating error‑correction handling.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a DotCode barcode and a QR Code with high error correction, then saves them as PNG files.
+    /// Entry point of the example. Creates a temporary output folder, generates barcodes, and saves them as PNG images.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for output images
-        string outputFolder = Path.Combine(Path.GetTempPath(), "DotCodeExample_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for output images
+        string outputFolder = Path.Combine(Path.GetTempPath(), "AsposeBarCodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputFolder);
 
         // ------------------------------------------------------------
-        // Example 1: Generate a DotCode barcode (error correction is automatic and not configurable)
+        // Generate a DotCode barcode.
+        // Note: DotCode error correction is applied automatically and cannot be set via the API.
         // ------------------------------------------------------------
-        using (var dotGen = new BarcodeGenerator(EncodeTypes.DotCode, "Aspose"))
+        using (var dotCodeGenerator = new BarcodeGenerator(EncodeTypes.DotCode, "Aspose"))
         {
-            // Optional: set the size of each module (pixel dimension)
-            dotGen.Parameters.Barcode.XDimension.Pixels = 10;
+            // Optional: adjust layout if desired
+            dotCodeGenerator.Parameters.Barcode.DotCode.Columns = 18; // set number of columns
+            dotCodeGenerator.Parameters.Barcode.DotCode.Rows = -1;   // rows auto‑calculated
 
-            // Define the output file path for the DotCode image
-            string dotPath = Path.Combine(outputFolder, "DotCode.png");
-
-            // Save the generated DotCode barcode as a PNG image
-            dotGen.Save(dotPath, BarCodeImageFormat.Png);
-            Console.WriteLine("DotCode barcode saved to: " + dotPath);
+            // Save the DotCode image
+            string dotCodePath = Path.Combine(outputFolder, "DotCode.png");
+            dotCodeGenerator.Save(dotCodePath, BarCodeImageFormat.Png);
+            Console.WriteLine($"DotCode barcode saved to: {dotCodePath}");
         }
 
         // ------------------------------------------------------------
-        // Example 2: Generate a QR Code barcode with configurable error correction level
+        // Generate a QR Code barcode with explicit high error correction level (for comparison).
         // ------------------------------------------------------------
-        using (var qrGen = new BarcodeGenerator(EncodeTypes.QR, "Aspose QR"))
+        using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, "Aspose QR"))
         {
-            // Set error correction level to High (Level H) for maximum data integrity
-            qrGen.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+            // Set error correction level to High (approximately 30% data recovery)
+            qrGenerator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-            // Define the output file path for the QR Code image
-            string qrPath = Path.Combine(outputFolder, "QrCode_HighErrorCorrection.png");
-
-            // Save the QR Code barcode as a PNG image
-            qrGen.Save(qrPath, BarCodeImageFormat.Png);
-            Console.WriteLine("QR Code with high error correction saved to: " + qrPath);
+            // Save the QR Code image
+            string qrPath = Path.Combine(outputFolder, "QR_HighErrorCorrection.png");
+            qrGenerator.Save(qrPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"QR barcode with high error correction saved to: {qrPath}");
         }
 
-        Console.WriteLine("Processing completed.");
+        Console.WriteLine("Barcode generation completed.");
     }
 }

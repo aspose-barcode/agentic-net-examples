@@ -1,8 +1,8 @@
 // Title: Convert QR Code Image to DataMatrix Barcode
-// Description: Demonstrates generating a QR code, reading its encoded text, and creating an equivalent DataMatrix barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create QR and DataMatrix barcodes, and BarCodeReader to extract data from an existing barcode image. Developers often need to convert between symbologies while preserving the encoded information, such as migrating legacy QR codes to DataMatrix for higher data density or specific scanner requirements.
+// Description: Demonstrates how to read a QR code from an image, extract its encoded text, and generate an equivalent DataMatrix barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode conversion category, showing how to use the BarCodeReader for decoding and BarcodeGenerator for encoding. Typical use cases include migrating legacy QR code assets to DataMatrix for higher data density or specific scanning requirements. Developers often need to read existing barcodes, preserve the data, and re‑encode it in a different symbology using the EncodeTypes and DecodeType APIs.
 // Prompt: Create utility that converts existing QR code images to DataMatrix format while preserving encoded data.
-// Tags: barcode symbology, conversion, datamatrix, qr, generation, recognition, aspose.barcode
+// Tags: barcode, conversion, qrcode, datamatrix, decoding, encoding, aspnet, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,76 +11,96 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that generates a QR code, reads its data, and creates a DataMatrix barcode with the same content.
+/// Demonstrates conversion of a QR code image to a DataMatrix barcode while preserving the encoded data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Performs QR code generation, data extraction, and DataMatrix creation.
+    /// Entry point. Generates a sample QR code, then converts it to DataMatrix.
     /// </summary>
     static void Main()
     {
-        // Sample data to encode in the QR code
-        const string sampleText = "Hello Aspose";
+        // Prepare a temporary working directory for generated files
+        string workDir = Path.Combine(Path.GetTempPath(), "QrToDataMatrix_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // Create a unique temporary folder to store generated images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "QrToDataMatrix_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Define file paths for the sample QR code and the resulting DataMatrix image
+        string qrPath = Path.Combine(workDir, "sample_qr.png");
+        string dmPath = Path.Combine(workDir, "sample_datamatrix.png");
 
-        // Define file paths for the QR code and the resulting DataMatrix images
-        string qrPath = Path.Combine(tempFolder, "qr.png");
-        string dmPath = Path.Combine(tempFolder, "datamatrix.png");
+        // Generate a sample QR code to demonstrate the conversion process
+        string sampleText = "https://example.com/aspnet";
+        GenerateQrCode(sampleText, qrPath);
+        Console.WriteLine($"Sample QR code generated at: {qrPath}");
 
-        // -------------------------------------------------
-        // Generate QR Code image
-        // -------------------------------------------------
-        using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, sampleText))
+        // Convert the generated QR code image to a DataMatrix barcode
+        ConvertQrToDataMatrix(qrPath, dmPath);
+        Console.WriteLine($"Converted DataMatrix saved at: {dmPath}");
+    }
+
+    /// <summary>
+    /// Generates a QR code image from the specified text.
+    /// </summary>
+    /// <param name="text">The text to encode in the QR code.</param>
+    /// <param name="outputPath">The file path where the QR code image will be saved.</param>
+    static void GenerateQrCode(string text, string outputPath)
+    {
+        // Use BarcodeGenerator with QR encode type
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, text))
         {
-            // Configure QR code to use ECI encoding with UTF-8 character set
-            qrGenerator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
-            qrGenerator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
-            // Set module size (pixel dimension) for better readability
-            qrGenerator.Parameters.Barcode.XDimension.Pixels = 8f;
-            // Save QR code as PNG
-            qrGenerator.Save(qrPath, BarCodeImageFormat.Png);
+            // Set a reasonable module size for readability
+            generator.Parameters.Barcode.XDimension.Pixels = 8f;
+            // Save the QR code as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
+    }
 
-        // Verify that the QR code image was successfully created
-        if (!File.Exists(qrPath))
+    /// <summary>
+    /// Reads a QR code image, extracts its encoded text, and creates a DataMatrix barcode with the same data.
+    /// </summary>
+    /// <param name="inputPath">Path to the source QR code image.</param>
+    /// <param name="outputPath">Path where the generated DataMatrix image will be saved.</param>
+    static void ConvertQrToDataMatrix(string inputPath, string outputPath)
+    {
+        // Verify that the input file exists before attempting to read it
+        if (!File.Exists(inputPath))
         {
-            Console.WriteLine("Failed to create QR code image.");
+            Console.WriteLine($"Input file does not exist: {inputPath}");
             return;
         }
 
-        // -------------------------------------------------
-        // Read QR Code to obtain the encoded text
-        // -------------------------------------------------
-        string decodedText;
-        using (var reader = new BarCodeReader(qrPath, DecodeType.QR))
+        // Decode the QR code using BarCodeReader
+        BaseDecodeType decodeType = DecodeType.QR;
+        string codeText = null;
+
+        using (var reader = new BarCodeReader(inputPath, decodeType))
         {
             var results = reader.ReadBarCodes();
             if (results == null || results.Length == 0)
             {
-                Console.WriteLine("No QR code detected in the image.");
+                Console.WriteLine("No barcode detected in the input image.");
                 return;
             }
-            // Extract the first detected barcode's text
-            decodedText = results[0].CodeText;
+
+            // Assume the first detected barcode is the QR code we need
+            codeText = results[0].CodeText;
+            Console.WriteLine($"Decoded QR code text: {codeText}");
         }
 
-        // -------------------------------------------------
-        // Generate DataMatrix barcode using the decoded data
-        // -------------------------------------------------
-        using (var dmGenerator = new BarcodeGenerator(EncodeTypes.DataMatrix, decodedText))
+        // Ensure that decoded text is not empty before proceeding
+        if (string.IsNullOrEmpty(codeText))
         {
-            // Set module size for the DataMatrix barcode
-            dmGenerator.Parameters.Barcode.XDimension.Pixels = 8f;
-            // Save DataMatrix as PNG
-            dmGenerator.Save(dmPath, BarCodeImageFormat.Png);
+            Console.WriteLine("Decoded QR code text is empty.");
+            return;
         }
 
-        // Output the file locations of the generated barcodes
-        Console.WriteLine($"QR code saved to: {qrPath}");
-        Console.WriteLine($"DataMatrix saved to: {dmPath}");
+        // Generate a DataMatrix barcode using the extracted text
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+        {
+            // Set module size for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 8f;
+            // Save the DataMatrix as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
     }
 }

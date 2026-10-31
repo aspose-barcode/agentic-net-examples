@@ -1,8 +1,8 @@
-// Title: Generate QR Code with custom margin padding
-// Description: Demonstrates creating a QR Code barcode, adjusting module size, and adding a two‑module margin for visual padding.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters such as XDimension and Padding using the BarcodeGenerator class. Typical use cases include creating QR codes for marketing, product labeling, or authentication where visual spacing is required. Developers often need to control module size and margins to meet design guidelines or scanning requirements.
+// Title: Generate QR Code with Custom Margin
+// Description: Demonstrates creating a QR Code barcode, adjusting the module size, and applying a two‑module margin to provide visual padding around the code.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use BarcodeGenerator, EncodeTypes, and the Parameters.Barcode properties to customize QR Code appearance. Typical scenarios include generating QR codes for marketing, product labeling, or authentication where extra whitespace is required for scanning reliability. Developers often need to control module size, padding, and output format, making this pattern a common reference for barcode creation tasks.
 // Prompt: Generate QR Code barcode and set margin to two modules for visual padding.
-// Tags: qr code, barcode generation, margin, padding, png, aspose.barcode, aspose.barcode.generation
+// Tags: qr code, barcode generation, margin, padding, aspose.barcode, png, c#
 
 using System;
 using System.IO;
@@ -10,42 +10,40 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Entry point for the QR Code generation example.
+/// Example program that generates a QR Code with a two‑module margin for visual padding.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a QR Code with a two‑module margin and saves it as a PNG file.
+    /// Entry point of the application.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine a temporary output directory and ensure it exists.
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        // Define the output directory and ensure it exists.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
         Directory.CreateDirectory(outputDir);
-
-        // Full path for the generated PNG image.
-        string outputPath = Path.Combine(outputDir, "qr_margin.png");
+        string outputPath = Path.Combine(outputDir, "QrCodeWithMargin.png");
 
         // Create a QR Code generator with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose QR"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
         {
-            // Define the size of a single QR module (pixel per module).
-            float moduleSize = 4f;
-            generator.Parameters.Barcode.XDimension.Pixels = moduleSize;
+            // Set the module size (XDimension) to 2 points.
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Calculate margin equal to two modules and apply to all sides.
-            float margin = 2 * moduleSize;
-            generator.Parameters.Barcode.Padding.Left.Pixels = margin;
-            generator.Parameters.Barcode.Padding.Top.Pixels = margin;
-            generator.Parameters.Barcode.Padding.Right.Pixels = margin;
-            generator.Parameters.Barcode.Padding.Bottom.Pixels = margin;
+            // Calculate margin as two modules (2 * XDimension).
+            float margin = 2f * generator.Parameters.Barcode.XDimension.Point;
 
-            // Save the barcode image as PNG.
+            // Apply the calculated margin to all sides of the barcode.
+            generator.Parameters.Barcode.Padding.Left.Point = margin;
+            generator.Parameters.Barcode.Padding.Top.Point = margin;
+            generator.Parameters.Barcode.Padding.Right.Point = margin;
+            generator.Parameters.Barcode.Padding.Bottom.Point = margin;
+
+            // Save the generated QR Code as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved.
-        Console.WriteLine($"QR code saved to: {outputPath}");
+        // Inform the user where the QR Code image was saved.
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

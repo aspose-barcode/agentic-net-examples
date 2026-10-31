@@ -1,114 +1,120 @@
-// Title: Generate QR Code barcodes from CSV and compile into PDF report
-// Description: Demonstrates reading values from a CSV file, creating QR Code barcodes for each entry, and assembling them into a single PDF document.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, illustrating how to use BarcodeGenerator (Aspose.BarCode.Generation) to produce QR codes, and Aspose.Pdf to embed images into a PDF report. Typical use cases include generating barcode catalogs, inventory sheets, or QR code based marketing materials where multiple barcodes need to be compiled into one document. Developers often need to read data sources, generate barcodes in memory, and combine them into PDFs for distribution.
+// Title: Batch QR Code Generation from CSV and PDF Report
+// Description: Demonstrates reading a CSV file, generating QR code images for each entry, and compiling them into a single PDF document.
+// Category-Description: This example belongs to the Aspose.BarCode generation and Aspose.Pdf composition category. It showcases how to use BarcodeGenerator (Aspose.BarCode.Generation) to create QR codes, configure their appearance, and embed the resulting images into a PDF (Aspose.Pdf) as separate pages with captions. Developers often need to automate barcode creation from data sources and produce printable reports, making this pattern common for inventory, marketing, or tracking solutions.
 // Prompt: Generate QR Code barcodes in batch from CSV file and compile them into a single PDF report.
-// Tags: qr code, batch generation, csv, pdf, aspose.barcode, aspose.pdf, barcode generation
+// Tags: qr code, batch generation, csv, pdf, aspose.barcode, aspose.pdf, barcode generation, image export
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Pdf;
 using Aspose.Pdf.Text;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that reads a CSV file, generates QR Code barcodes for each row,
-/// and creates a PDF report containing the barcode images.
+/// Demonstrates batch creation of QR code barcodes from a CSV file and assembling them into a PDF report.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point for the QR Code batch generation example.
+    /// Entry point of the example. Reads sample CSV data, generates QR codes, and creates a PDF document.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary working folder
-        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workFolder);
+        // Create a temporary working directory for intermediate files
+        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // Prepare a sample CSV file
-        string csvPath = Path.Combine(workFolder, "data.csv");
-        string[] csvLines = new[]
+        // Prepare a sample CSV file (Id,Text) in the working directory
+        string csvPath = Path.Combine(workDir, "data.csv");
+        var sampleData = new[]
         {
-            "Id,Value",
-            "1,Hello World",
-            "2,https://example.com",
-            "3,Sample QR Code",
-            "4,Extra Item"
+            "1,https://example.com/item1",
+            "2,https://example.com/item2",
+            "3,https://example.com/item3",
+            "4,https://example.com/item4",
+            "5,https://example.com/item5"
         };
-        File.WriteAllLines(csvPath, csvLines);
+        File.WriteAllLines(csvPath, sampleData);
 
-        // Read values from CSV (skip header)
-        List<string> values = new List<string>();
+        // Read CSV lines and parse them into (Id, Text) tuples
+        var rows = new List<(string Id, string Text)>();
         foreach (var line in File.ReadAllLines(csvPath))
         {
-            // Ignore empty lines and the header row
-            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("Id,"))
-                continue;
-
-            string[] parts = line.Split(',');
-            if (parts.Length >= 2)
-                values.Add(parts[1]);
+            var parts = line.Split(new[] { ',' }, 2);
+            if (parts.Length == 2)
+            {
+                rows.Add((parts[0].Trim(), parts[1].Trim()));
+            }
         }
 
-        // Limit to maximum 4 items for evaluation mode
-        int count = Math.Min(values.Count, 4);
-        List<MemoryStream> barcodeStreams = new List<MemoryStream>();
+        // Limit to the first 4 rows for PDF evaluation mode
+        var limitedRows = rows.Take(4).ToList();
 
-        // Generate QR code images in memory
-        for (int i = 0; i < count; i++)
+        // Generate QR code images and store them in memory streams
+        var imageStreams = new List<MemoryStream>();
+        foreach (var row in limitedRows)
         {
-            string text = values[i];
-            var ms = new MemoryStream();
-
-            // Use BarcodeGenerator to create a QR code for the current text
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, text))
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, row.Text))
             {
-                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                // Configure QR code error correction level
                 generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                // Set module (pixel) size
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                // Define foreground and background colors
                 generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
                 generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Save(ms, BarCodeImageFormat.Png);
-            }
 
-            ms.Position = 0; // Reset stream position for later reading
-            barcodeStreams.Add(ms);
+                var ms = new MemoryStream();
+                generator.Save(ms, BarCodeImageFormat.Png);
+                ms.Position = 0; // Reset stream position for later reading
+                imageStreams.Add(ms);
+            }
         }
 
-        // Create PDF report and embed barcode images
-        string pdfPath = Path.Combine(workFolder, "BarcodeReport.pdf");
+        // Create a PDF document and add each QR code image on a separate page
+        string pdfPath = Path.Combine(workDir, "BarcodesReport.pdf");
         using (var pdfDoc = new Document())
         {
-            for (int i = 0; i < barcodeStreams.Count; i++)
+            for (int i = 0; i < imageStreams.Count; i++)
             {
                 var page = pdfDoc.Pages.Add();
 
-                // Add the barcode image to the page, centered with a margin
-                var img = new Aspose.Pdf.Image
+                // Insert the QR code image
+                var pdfImage = new Aspose.Pdf.Image
                 {
-                    ImageStream = barcodeStreams[i],
-                    FixWidth = 200,
-                    FixHeight = 200,
+                    ImageStream = imageStreams[i],
+                    FixWidth = 200.0,
+                    FixHeight = 200.0,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                     Margin = new MarginInfo { Top = 20 }
                 };
-                page.Paragraphs.Add(img);
+                page.Paragraphs.Add(pdfImage);
+
+                // Add a caption below the image showing the item Id
+                var caption = new TextFragment($"Item ID: {limitedRows[i].Id}")
+                {
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new MarginInfo { Top = 10 }
+                };
+                page.Paragraphs.Add(caption);
             }
 
-            // Save the assembled PDF document
+            // Save the assembled PDF report to disk
             pdfDoc.Save(pdfPath);
         }
 
-        // Dispose barcode streams after PDF is saved
-        foreach (var ms in barcodeStreams)
+        // Release memory streams after the PDF has been saved
+        foreach (var ms in imageStreams)
         {
             ms.Dispose();
         }
 
-        // Output file locations for verification
-        Console.WriteLine("CSV file: " + csvPath);
-        Console.WriteLine("Generated PDF report: " + pdfPath);
+        Console.WriteLine($"PDF report generated at: {pdfPath}");
     }
 }

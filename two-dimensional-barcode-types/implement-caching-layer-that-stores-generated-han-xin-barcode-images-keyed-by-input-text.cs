@@ -1,8 +1,8 @@
-// Title: Han Xin Barcode Image Caching Example
-// Description: Demonstrates generating Han Xin barcodes, caching the PNG images in memory, and saving them to disk.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator (EncodeTypes.HanXin) and BarCodeReader (DecodeType.HanXin) to create and decode barcodes, while introducing an in‑memory caching layer (Dictionary<string, byte[]>) to avoid redundant image generation. Developers working with high‑throughput barcode creation or needing repeatable outputs will find this pattern useful for performance optimization.
+// Title: Han Xin Barcode Generation with In-Memory Caching
+// Description: Demonstrates generating Han Xin barcodes, storing the PNG bytes in an in‑memory cache keyed by the input text, and reusing cached images to avoid regeneration.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create barcodes using the BarcodeGenerator class, cache the resulting image bytes, and efficiently retrieve them for repeated use. Typical scenarios include high‑throughput applications, web services, or desktop tools where the same barcode data may be requested multiple times. Developers often need to minimize redundant processing and I/O, making in‑memory caching a common pattern.
 // Prompt: Implement caching layer that stores generated Han Xin barcode images keyed by input text.
-// Tags: hanxin, barcode, caching, generation, recognition, png, aspose.barcode, c#
+// Tags: hanxin,barcode,generation,caching,aspose.barcode,png,bytearray
 
 using System;
 using System.Collections.Generic;
@@ -13,94 +13,100 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Provides an in‑memory cache for Han Xin barcode images.
-/// </summary>
-class HanXinBarcodeCache
-{
-    // Internal dictionary that maps the input text to the generated PNG byte array.
-    private readonly Dictionary<string, byte[]> _cache = new Dictionary<string, byte[]>();
-
-    /// <summary>
-    /// Retrieves a cached barcode image for the specified text, or generates and caches it if not present.
-    /// </summary>
-    /// <param name="text">The text to encode into a Han Xin barcode.</param>
-    /// <returns>A byte array containing the PNG image of the barcode.</returns>
-    public byte[] GetOrAdd(string text)
-    {
-        // Return the cached image if it already exists.
-        if (_cache.TryGetValue(text, out var data))
-            return data;
-
-        // Create a new barcode generator for Han Xin symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, text))
-        {
-            // Optional: configure error correction level (L2 provides moderate redundancy).
-            generator.Parameters.Barcode.HanXin.ErrorLevel = HanXinErrorLevel.L2;
-            // EncodeMode defaults to Auto; set explicitly for clarity.
-            generator.Parameters.Barcode.HanXin.EncodeMode = HanXinEncodeMode.Auto;
-
-            // Save the generated barcode to a memory stream in PNG format.
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                data = ms.ToArray();
-
-                // Store the generated image in the cache for future requests.
-                _cache[text] = data;
-                return data;
-            }
-        }
-    }
-}
-
-/// <summary>
-/// Demonstrates the use of <see cref="HanXinBarcodeCache"/> to generate, cache, save, and verify Han Xin barcodes.
+/// Provides functionality to generate Han Xin barcodes, cache the generated images,
+/// and write them to disk. Demonstrates reuse of cached data to avoid redundant generation.
 /// </summary>
 class Program
 {
+    // In‑memory cache mapping input text to the generated PNG byte array.
+    private static readonly Dictionary<string, byte[]> _cache = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+
     /// <summary>
-    /// Entry point of the demo application.
+    /// Retrieves a Han Xin barcode image for the specified text.
+    /// If the image is already cached, returns the cached bytes; otherwise generates,
+    /// caches, and returns the new image bytes.
+    /// </summary>
+    /// <param name="text">The text to encode in the barcode.</param>
+    /// <returns>PNG image bytes representing the barcode.</returns>
+    private static byte[] GetHanXinBarcode(string text)
+    {
+        // Check cache first.
+        if (_cache.TryGetValue(text, out var cachedBytes))
+        {
+            Console.WriteLine($"Cache hit for \"{text}\".");
+            return cachedBytes;
+        }
+
+        // Not cached – generate a new barcode.
+        Console.WriteLine($"Generating barcode for \"{text}\".");
+        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, text))
+        {
+            // Example of setting a parameter (optional)
+            // generator.Parameters.Barcode.HanXin.EncodeMode = HanXinEncodeMode.Auto;
+
+            using (var ms = new MemoryStream())
+            {
+                // Save the barcode as PNG into the memory stream.
+                generator.Save(ms, BarCodeImageFormat.Png);
+                var bytes = ms.ToArray();
+
+                // Store the generated bytes in the cache for future reuse.
+                _cache[text] = bytes;
+                return bytes;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Replaces characters that are invalid in file names with an underscore.
+    /// </summary>
+    /// <param name="name">Original file name string.</param>
+    /// <returns>Sanitized file name safe for the file system.</returns>
+    private static string SanitizeFileName(string name)
+    {
+        foreach (char c in Path.GetInvalidFileNameChars())
+        {
+            name = name.Replace(c, '_');
+        }
+        return name;
+    }
+
+    /// <summary>
+    /// Entry point of the program. Generates barcodes for a set of sample texts,
+    /// writes them to a temporary directory, and demonstrates cache reuse.
     /// </summary>
     static void Main()
     {
         // Sample texts to encode as Han Xin barcodes.
-        var texts = new[]
+        var sampleTexts = new List<string>
         {
-            "HelloWorld",
             "1234567890",
-            "abc全漢",
+            "ABCDEF",
             "https://example.com",
-            "ΑΒΓΔΕ"
+            "全汉字测试",
+            "Mixed123全汉"
         };
 
-        // Initialize the caching helper.
-        var cache = new HanXinBarcodeCache();
-
-        // Prepare a temporary directory for output files.
-        string tempDir = Path.Combine(Path.GetTempPath(), "HanXinCacheDemo");
-        Directory.CreateDirectory(tempDir);
-
-        // Process each text, generate (or retrieve) the barcode image, and write it to disk.
-        for (int i = 0; i < texts.Length; i++)
+        // Prepare output directory.
+        string outputDir = Path.Combine(Path.GetTempPath(), "HanXinCache");
+        if (!Directory.Exists(outputDir))
         {
-            string txt = texts[i];
-            byte[] imgBytes = cache.GetOrAdd(txt);
-            string filePath = Path.Combine(tempDir, $"barcode_{i}.png");
-            File.WriteAllBytes(filePath, imgBytes);
-            Console.WriteLine($"Saved barcode for \"{txt}\" to {filePath}");
-
-            // Verify the generated barcode by decoding it from the in‑memory image.
-            using (var ms = new MemoryStream(imgBytes))
-            using (var reader = new BarCodeReader(ms, DecodeType.HanXin))
-            {
-                var results = reader.ReadBarCodes();
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"  Decoded text: {result.CodeText}");
-                }
-            }
+            Directory.CreateDirectory(outputDir);
         }
 
-        Console.WriteLine("Demo completed.");
+        // Generate (or retrieve from cache) and save each barcode image.
+        foreach (var text in sampleTexts)
+        {
+            byte[] imageBytes = GetHanXinBarcode(text);
+            string fileName = SanitizeFileName(text) + ".png";
+            string filePath = Path.Combine(outputDir, fileName);
+            File.WriteAllBytes(filePath, imageBytes);
+            Console.WriteLine($"Saved barcode to {filePath}");
+        }
+
+        // Demonstrate cache reuse by requesting the first text again.
+        Console.WriteLine("\nRe-accessing first text to show cache hit:");
+        byte[] cachedImage = GetHanXinBarcode(sampleTexts[0]);
+        Console.WriteLine($"Retrieved {cachedImage.Length} bytes from cache.");
     }
 }

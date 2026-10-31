@@ -1,54 +1,51 @@
-// Title: Generate QR Code with fallback ECI encoding
-// Description: Demonstrates generating a QR Code barcode using Aspose.BarCode, first attempting automatic encoding mode and falling back to ECI mode when auto selection fails.
-// Category-Description: This example belongs to the Aspose.BarCode QR Code generation and encoding category. It showcases the use of BarcodeGenerator, QREncodeMode, ECIEncodings, and BarCodeReader to create QR codes that contain characters outside the default range, handle auto‑mode failures by switching to explicit ECI encoding, and optionally decode the generated barcode. Developers commonly need these patterns when working with international text, custom encoding requirements, or robust barcode creation workflows.
+// Title: Generate QR Code with fallback encoding modes
+// Description: Demonstrates creating a QR Code barcode, first using automatic encoding selection, then falling back to binary or ECI modes when auto selection fails.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to work with QR Code symbology using the BarcodeGenerator class. It shows typical use cases such as setting X-dimension, handling encoding mode selection, and providing fallback strategies for characters that may not be supported by automatic mode. Developers often need these patterns when generating QR codes with mixed-language content or when ensuring compatibility across different scanning devices.
 // Prompt: Generate a QR Code barcode and provide fallback encoding mode when auto selection fails.
-// Tags: qr code, barcode generation, eci encoding, fallback mode, aspose.barcode, png output, barcode reading
+// Tags: qr code, fallback encoding, auto mode, binary mode, eci mode, aspose.barcode, c#, barcode generation, png output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a QR Code, falls back to ECI encoding if auto mode fails,
-/// and optionally reads back the generated barcode.
+/// Example program that generates a QR Code barcode and demonstrates fallback encoding strategies
+/// when automatic mode selection cannot encode the provided text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates output directory, generates the QR Code,
-    /// applies fallback encoding when necessary, and reads the barcode to verify the content.
+    /// Entry point of the application. Generates QR codes using auto mode and, if needed,
+    /// binary or ECI fallback modes, saving the results as PNG files.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Prepare the output directory where the barcode image will be saved
-        // ------------------------------------------------------------
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Prepare output directory in the temporary folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeQrDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Sample QR code text containing Greek letters, which may cause auto mode failure
-        string codeText = "ΑΒΓΔΕ";
+        // Define file paths for the auto-generated and fallback QR code images
+        string autoPath = Path.Combine(outputDir, "qr_auto.png");
+        string fallbackPath = Path.Combine(outputDir, "qr_fallback.png");
 
-        // Full path for the generated PNG image
-        string outputPath = Path.Combine(outputDir, "QrCode.png");
+        // Text containing mixed characters that may require special encoding
+        string codeText = "Sample文字";
 
-        // ------------------------------------------------------------
-        // Attempt to generate the QR Code using the default (Auto) encoding mode
-        // ------------------------------------------------------------
-        bool generated = false;
+        bool autoSucceeded = false;
+
+        // Attempt to generate QR code using automatic encoding selection (default mode)
         try
         {
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+            using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.QR, codeText))
             {
-                // Auto mode is applied automatically by the generator
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-                generated = true;
-                Console.WriteLine($"QR Code generated with Auto mode: {outputPath}");
+                // Set the size of a single QR module (pixel dimension)
+                gen.Parameters.Barcode.XDimension.Pixels = 4f;
+                // Auto mode is default; no need to set EncodeMode explicitly
+                gen.Save(autoPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"QR generated with auto mode saved to: {autoPath}");
+                autoSucceeded = true;
             }
         }
         catch (Exception ex)
@@ -56,45 +53,41 @@ class Program
             Console.WriteLine($"Auto mode generation failed: {ex.Message}");
         }
 
-        // ------------------------------------------------------------
-        // If Auto mode failed, fall back to explicit ECI encoding (UTF‑8)
-        // ------------------------------------------------------------
-        if (!generated)
+        // If auto mode failed, try binary encoding as a fallback
+        if (!autoSucceeded)
         {
             try
             {
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+                using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.QR))
                 {
-                    generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
-                    generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"QR Code generated with ECI fallback mode: {outputPath}");
+                    gen.Parameters.Barcode.XDimension.Pixels = 4f;
+                    // Convert the text to a UTF-8 byte array for binary mode
+                    byte[] data = System.Text.Encoding.UTF8.GetBytes(codeText);
+                    gen.SetCodeText(data);
+                    gen.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Binary;
+                    gen.Save(fallbackPath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"QR generated with binary fallback saved to: {fallbackPath}");
                 }
             }
-            catch (Exception ex)
+            catch (Exception exBinary)
             {
-                Console.WriteLine($"ECI fallback generation failed: {ex.Message}");
-            }
-        }
-
-        // ------------------------------------------------------------
-        // Optional: read and display the decoded text from the generated barcode
-        // ------------------------------------------------------------
-        if (File.Exists(outputPath))
-        {
-            try
-            {
-                using (BarCodeReader reader = new BarCodeReader(outputPath, DecodeType.QR))
+                Console.WriteLine($"Binary fallback failed: {exBinary.Message}");
+                // If binary fallback also fails, try ECI (Extended Channel Interpretation) mode
+                try
                 {
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.QR, codeText))
                     {
-                        Console.WriteLine($"Decoded text: {result.CodeText}");
+                        gen.Parameters.Barcode.XDimension.Pixels = 4f;
+                        gen.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
+                        gen.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.UTF8;
+                        gen.Save(fallbackPath, BarCodeImageFormat.Png);
+                        Console.WriteLine($"QR generated with ECI fallback saved to: {fallbackPath}");
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Reading barcode failed: {ex.Message}");
+                catch (Exception exEci)
+                {
+                    Console.WriteLine($"ECI fallback also failed: {exEci.Message}");
+                }
             }
         }
     }

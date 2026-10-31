@@ -1,11 +1,10 @@
-// Title: Encode Unicode text in a Han Xin barcode with UTF‑8 ECI and verify decoding
-// Description: Demonstrates generating a Han Xin barcode that contains Unicode characters (including Chinese and emoji) using UTF‑8 ECI encoding, then reads the barcode back to confirm the text is correctly decoded.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator with EncodeTypes.HanXin, setting HanXinEncodeMode to ECI and specifying ECIEncodings.UTF8, followed by BarCodeReader for decoding. Developers working with multi‑language or Unicode data often need to embed such text in barcodes and ensure accurate round‑trip conversion, making this pattern essential for internationalized applications.
+// Title: Encode Unicode Text in Han Xin Barcode with UTF‑8 ECI and Verify Decoding
+// Description: Demonstrates generating a Han Xin barcode that encodes Unicode characters using UTF‑8 ECI mode, then reads the barcode back to confirm the decoded text matches the original.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator with EncodeTypes.HanXin, setting HanXinEncodeMode to ECI and specifying ECIEncodings.UTF8, followed by BarCodeReader for decoding. Developers working with multi‑language or special‑character barcodes often need to encode Unicode data reliably and verify round‑trip accuracy.
 // Prompt: Encode Unicode text in Han Xin barcode using UTF‑8 ECI and verify correct decoding.
-// Tags: hanxin, unicode, eci, utf-8, barcode generation, barcode recognition, aspnet, aspose.barcode
+// Tags: hanxin, barcode, eci, utf8, unicode, generation, recognition, c#, aspose.barcode
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
@@ -13,51 +12,53 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates encoding Unicode text into a Han Xin barcode using UTF‑8 ECI and verifying the decoded result.
+/// Example program that creates a Han Xin barcode containing Unicode text,
+/// encodes it using UTF‑8 ECI, and then reads it back to verify the content.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the barcode, saves it to a temporary PNG file, and reads it back to confirm the text.
+    /// Entry point of the example. Generates the barcode, decodes it, and prints the results.
     /// </summary>
     static void Main()
     {
-        // Define the text containing ASCII, Chinese characters, and an emoji
-        string codeText = "Hello 你好 🌍";
+        // Unicode text containing multiple languages and symbols.
+        string unicodeText = "abcd АБВ ıntəˈnæʃənəl 语言语言 แผ่นดินฮั่นเสื่ ∑ f(i) = ∏ 🖨 🚘✉🥇⚽ 你好測試測試 こんにちは テスト テスト 안녕하세요 테스트 테스트";
 
-        // Initialize the barcode generator for Han Xin symbology with the given text
-        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, codeText))
+        // Create a barcode generator for Han Xin symbology with the specified text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.HanXin, unicodeText))
         {
-            // Set encoding mode to ECI and specify UTF‑8 encoding
+            // Configure the generator to use ECI mode with UTF‑8 encoding.
             generator.Parameters.Barcode.HanXin.EncodeMode = HanXinEncodeMode.ECI;
             generator.Parameters.Barcode.HanXin.ECIEncoding = ECIEncodings.UTF8;
 
-            // Generate the barcode image as a bitmap
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Generate the barcode image.
+            using (Bitmap barcodeImage = generator.GenerateBarCodeImage())
             {
-                // Determine a temporary file path and save the bitmap as PNG
-                string imagePath = Path.Combine(Path.GetTempPath(), "HanXinBarcode.png");
-                using (var fileStream = new FileStream(imagePath, FileMode.Create, FileAccess.Write))
-                {
-                    bitmap.Save(fileStream, ImageFormat.Png);
-                }
-
-                // Prepare a reader for Han Xin barcode decoding
+                // Set up a reader for Han Xin barcodes.
                 BaseDecodeType decodeType = DecodeType.HanXin;
-                using (var reader = new BarCodeReader(bitmap, decodeType))
+                using (var reader = new BarCodeReader(barcodeImage, decodeType))
                 {
-                    // Read all barcodes from the image
+                    // Read all barcodes found in the image.
                     BarCodeResult[] results = reader.ReadBarCodes();
 
-                    // If a result is found, output original and decoded text; otherwise report failure
-                    if (results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
+                    if (results.Length > 0)
                     {
-                        Console.WriteLine($"Original text: {codeText}");
-                        Console.WriteLine($"Decoded text : {results[0].CodeText}");
+                        // Retrieve the decoded text from the first result.
+                        string decodedText = results[0].CodeText;
+
+                        // Compare the original and decoded texts for an exact match.
+                        bool match = string.Equals(unicodeText, decodedText, StringComparison.Ordinal);
+
+                        // Output the comparison results.
+                        Console.WriteLine($"Original: {unicodeText}");
+                        Console.WriteLine($"Decoded : {decodedText}");
+                        Console.WriteLine($"Match   : {match}");
                     }
                     else
                     {
-                        Console.WriteLine("Failed to decode the Han Xin barcode.");
+                        // No barcode was detected in the image.
+                        Console.WriteLine("No barcode detected.");
                     }
                 }
             }

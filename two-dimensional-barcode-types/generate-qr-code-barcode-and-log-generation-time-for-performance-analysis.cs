@@ -1,58 +1,42 @@
-// Title: Generate QR Code and Measure Generation Time
-// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, saving it as a PNG file, and logging the time taken for generation.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of the BarcodeGenerator class together with EncodeTypes, BarCodeImageFormat, and QR-specific parameters such as XDimension and ErrorLevel. Typical scenarios include generating barcodes for web/mobile applications, batch processing, and performance benchmarking where developers need to measure generation speed.
-// Prompt: Generate a QR Code barcode and log generation time for performance analysis.
-// Tags: qr, barcode, generation, performance, png, aspose.barcode
-
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
-/// <summary>
-/// Example program that generates a QR Code barcode and logs the generation time.
-/// </summary>
 class Program
 {
-    /// <summary>
-    /// Entry point of the application. Creates a QR Code, saves it as PNG, and outputs the elapsed time.
-    /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define a temporary output directory and ensure it exists.
-        string outputDirectory = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDirectory);
+        // Define output file path
+        string outputPath = Path.Combine(Path.GetTempPath(), "qr_generated.png");
 
-        // Build the full path for the generated QR Code image.
-        string outputPath = Path.Combine(outputDirectory, "qr.png");
-
-        // Text to encode in the QR Code.
-        string codeText = "Performance test QR code";
-
-        // Start measuring the generation time.
-        Stopwatch stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        // Create and configure the QR Code generator.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Ensure the directory exists
+        string directory = Path.GetDirectoryName(outputPath);
+        if (!Directory.Exists(directory))
         {
-            // Set the size of a single QR module (X dimension) in points.
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-
-            // Choose the error correction level (Level M provides a good balance).
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
-
-            // Save the generated QR Code as a PNG image.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            Directory.CreateDirectory(directory);
         }
 
-        // Stop the timer after generation completes.
-        stopwatch.Stop();
+        // Prepare stopwatch for performance measurement
+        Stopwatch stopwatch = new Stopwatch();
 
-        // Output the location of the saved image and the elapsed time.
-        Console.WriteLine($"QR Code saved to: {outputPath}");
-        Console.WriteLine($"Generation time: {stopwatch.ElapsedMilliseconds} ms");
+        // Generate QR Code
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code Text"))
+        {
+            // Optional: set module size
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            // Optional: set error correction level
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+
+            // Measure generation and saving time
+            stopwatch.Start();
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+            stopwatch.Stop();
+        }
+
+        // Log the generation time
+        Console.WriteLine($"QR Code generated in {stopwatch.ElapsedMilliseconds} ms.");
+        Console.WriteLine($"Saved to: {outputPath}");
     }
 }

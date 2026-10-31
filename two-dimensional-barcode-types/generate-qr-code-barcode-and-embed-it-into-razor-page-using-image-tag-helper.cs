@@ -1,52 +1,68 @@
-// Title: Generate QR Code and embed in Razor page using image tag helper
-// Description: This example creates a QR Code barcode image and writes a simple Razor view that displays the image using the ASP.NET Core image tag helper.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation for web applications. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat to produce a QR Code, then embeds the resulting PNG in a Razor page. Developers building ASP.NET Core sites often need to generate barcodes on‑the‑fly and render them in views; this snippet provides a clear, reusable pattern for that scenario.
+// Title: Generate QR Code and embed it into a Razor page using Aspose.BarCode
+// Description: Demonstrates creating a QR Code image with Aspose.BarCode and writing a Razor view that displays the image via the ASP.NET Core image tag helper.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category. It showcases the use of the BarcodeGenerator class together with EncodeTypes.QR to produce QR Code images, a common requirement for web applications that need to display scannable data. Typical scenarios include embedding QR codes in Razor pages, emails, or PDFs, where developers often rely on the BarCodeImageFormat and QR error‑level settings.
 // Prompt: Generate QR Code barcode and embed it into a Razor page using image tag helper.
-// Tags: qr code, barcode generation, aspnet core, razor, image tag helper, aspose.barcode, png
+// Tags: qr code, barcode generation, aspnet core, razor, image tag helper, png, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates how to generate a QR Code barcode image and embed it into a Razor page.
+/// Example program that creates a QR Code image and writes a Razor page referencing the image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR Code, saves it as PNG, and creates a Razor view that references the image.
+    /// Entry point of the example. Generates a QR Code, saves it as PNG, and creates a Razor view that displays the image using the ASP.NET Core image tag helper.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to store generated files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeQrDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-
-        // Define file paths for the QR image and the Razor page
-        string qrImagePath = Path.Combine(tempFolder, "qr.png");
-        string razorPagePath = Path.Combine(tempFolder, "qrPage.cshtml");
-
-        // Generate QR Code barcode and save it as a PNG image
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // --------------------------------------------------------------------
+        // 1. Prepare the output directory where the image and Razor file will be saved.
+        // --------------------------------------------------------------------
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+        if (!Directory.Exists(outputDir))
         {
-            // Set the size of each module (pixel) in the QR code
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // --------------------------------------------------------------------
+        // 2. Define the full file path for the QR Code image.
+        // --------------------------------------------------------------------
+        string qrImagePath = Path.Combine(outputDir, "qr.png");
+
+        // --------------------------------------------------------------------
+        // 3. Generate the QR Code barcode using Aspose.BarCode.
+        //    - EncodeTypes.QR specifies the QR symbology.
+        //    - "Hello, Aspose QR!" is the data encoded in the QR Code.
+        //    - XDimension.Pixels controls the module size.
+        //    - QRErrorLevel.LevelM sets a medium error correction level.
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello, Aspose QR!"))
+        {
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
             generator.Save(qrImagePath, BarCodeImageFormat.Png);
         }
 
-        // Build Razor page content that displays the QR image using the image tag helper
-        string razorContent = @"@{
-    Layout = null;
-}
-<img src=""qr.png"" alt=""QR Code"" />";
+        // --------------------------------------------------------------------
+        // 4. Create Razor page content that references the generated QR image.
+        //    The asp-append-version attribute enables cache busting in ASP.NET Core.
+        // --------------------------------------------------------------------
+        string razorContent = @"@page
+<img src=""~/images/qr.png"" asp-append-version=""true"" />";
 
-        // Write the Razor page to the temporary folder
-        File.WriteAllText(razorPagePath, razorContent);
+        // --------------------------------------------------------------------
+        // 5. Write the Razor page to the output directory.
+        // --------------------------------------------------------------------
+        string razorPath = Path.Combine(outputDir, "qrPage.cshtml");
+        File.WriteAllText(razorPath, razorContent);
 
-        // Output the locations of the generated files
-        Console.WriteLine("QR code image saved to: " + qrImagePath);
-        Console.WriteLine("Razor page saved to: " + razorPagePath);
+        // --------------------------------------------------------------------
+        // 6. Inform the user where the files have been saved.
+        // --------------------------------------------------------------------
+        Console.WriteLine($"QR code image saved to: {qrImagePath}");
+        Console.WriteLine($"Razor page saved to: {razorPath}");
     }
 }

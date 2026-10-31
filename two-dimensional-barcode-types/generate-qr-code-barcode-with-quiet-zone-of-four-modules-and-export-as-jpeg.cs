@@ -1,8 +1,8 @@
-// Title: Generate QR Code with Custom Quiet Zone and Save as JPEG
-// Description: This example creates a QR Code barcode, configures a quiet zone of four modules, and exports the result as a JPEG image.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class with EncodeTypes.QR. Typical scenarios include creating QR codes for URLs, product information, or contact data, where developers need to control module size, quiet zone, and output image format. This example belongs to the barcode creation and image export category, showcasing common API members such as Parameters.Barcode.XDimension, Padding, and Save.
+// Title: Generate QR Code with custom quiet zone and export as JPEG
+// Description: Demonstrates creating a QR Code barcode, configuring a quiet zone of four modules, and saving the result as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code barcodes. Typical use cases include generating QR codes for URLs, contact information, or product data, where developers often need to control module size and quiet zone padding before exporting to common image formats such as JPEG or PNG.
 // Prompt: Generate a QR Code barcode with quiet zone of four modules and export as JPEG.
-// Tags: qr code, quiet zone, jpeg, aspose.barcode, barcode generation, encode types
+// Tags: qr code, quiet zone, jpeg, aspose.barcode, barcode generation
 
 using System;
 using System.IO;
@@ -10,41 +10,43 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates how to generate a QR Code with a specific quiet zone and save it as a JPEG file using Aspose.BarCode.
+/// Demonstrates generating a QR Code barcode with a custom quiet zone and saving it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the QR Code and writes the output path to the console.
+    /// Entry point of the example. Creates output directory, configures barcode parameters, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path in the current working directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr.jpeg");
+        // Define a temporary output directory and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Text to encode in the QR Code (e.g., a URL).
-        string codeText = "https://example.com";
+        // Full path for the resulting JPEG file
+        string outputPath = Path.Combine(outputDir, "qrcode.jpg");
 
-        // Initialize the barcode generator for QR Code symbology.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Initialize the barcode generator for QR Code with the desired text
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
         {
-            // Set the module (X) dimension to 2 pixels.
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Set the module (X) dimension to 2 points
+            generator.Parameters.Barcode.XDimension.Point = 2f;
 
-            // Calculate quiet zone size: four modules * X dimension.
-            float quietZone = 4f * generator.Parameters.Barcode.XDimension.Pixels;
+            // Calculate padding to achieve a quiet zone of four modules on each side
+            float quietModules = 4f;
+            float padding = quietModules * generator.Parameters.Barcode.XDimension.Point;
 
-            // Apply the calculated quiet zone to all sides of the barcode.
-            generator.Parameters.Barcode.Padding.Left.Pixels = quietZone;
-            generator.Parameters.Barcode.Padding.Right.Pixels = quietZone;
-            generator.Parameters.Barcode.Padding.Top.Pixels = quietZone;
-            generator.Parameters.Barcode.Padding.Bottom.Pixels = quietZone;
+            // Apply the calculated padding to all sides of the barcode
+            generator.Parameters.Barcode.Padding.Left.Point = padding;
+            generator.Parameters.Barcode.Padding.Right.Point = padding;
+            generator.Parameters.Barcode.Padding.Top.Point = padding;
+            generator.Parameters.Barcode.Padding.Bottom.Point = padding;
 
-            // Save the generated barcode as a JPEG image.
+            // Save the generated barcode as a JPEG image
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user where the QR Code image was saved.
-        Console.WriteLine($"QR Code saved to: {outputPath}");
+        // Inform the user where the QR code image was saved
+        Console.WriteLine($"QR code saved to {outputPath}");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Barcode Generation with Rotation Based on Metadata
-// Description: Demonstrates generating a Code128 barcode image rotated to a specified orientation angle and reading back its detected orientation.
-// Category-Description: This example belongs to the Aspose.BarCode image generation and recognition category. It shows how to use BarcodeGenerator to set RotationAngle, save the image, and then use BarCodeReader to decode and retrieve the Region.Angle. Developers working with barcode imaging often need to rotate barcodes to match physical orientation metadata, and this snippet illustrates the typical API workflow for such scenarios.
+// Title: Barcode Generation with Automatic Rotation Based on Detected Orientation
+// Description: Demonstrates generating a barcode, rotating it, detecting its orientation, and then creating a new barcode automatically rotated to match the detected angle.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for extracting orientation metadata, and the RotationAngle parameter to control image rotation. Developers working with barcode imaging often need to align barcodes to physical media or match existing orientation data, making this pattern a common requirement.
 // Prompt: Implement feature to automatically rotate generated barcode image to match specified orientation metadata.
-// Tags: barcode, rotation, code128, image generation, image recognition, aspose.barcode, png, metadata
+// Tags: barcode symbology, rotation, generation, recognition, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,50 +10,70 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a rotated barcode image and reading its orientation.
+/// Demonstrates generating a barcode, rotating it, detecting its orientation,
+/// and automatically rotating a new barcode to match the detected angle.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a rotated Code128 barcode, saves it, and reads back its orientation.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Define the orientation angle (in degrees) that should be applied to the barcode image.
-        float metadataAngle = 90f;
+        // Create a unique temporary output folder for the demo files.
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeRotateDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Create a unique temporary folder to store the generated barcode image.
-        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeRotationDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
-        string barcodePath = Path.Combine(outputFolder, "rotated_barcode.png");
+        string codeText = "1234567890";
 
-        // Generate the barcode with the specified rotation angle and save it as a PNG file.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ASPOSE"))
+        // ------------------------------------------------------------
+        // 1. Generate the original (non‑rotated) barcode image.
+        // ------------------------------------------------------------
+        string originalPath = Path.Combine(outputDir, "original.png");
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            generator.Parameters.RotationAngle = metadataAngle;
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            generator.Save(originalPath, BarCodeImageFormat.Png);
         }
+        Console.WriteLine($"Original barcode saved to: {originalPath}");
 
-        // Verify that the barcode image file was successfully created.
-        if (!File.Exists(barcodePath))
+        // ------------------------------------------------------------
+        // 2. Generate a barcode rotated by 90 degrees.
+        // ------------------------------------------------------------
+        string rotatedPath = Path.Combine(outputDir, "rotated.png");
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            Console.WriteLine("Failed to generate barcode image.");
-            return;
+            generator.Parameters.RotationAngle = 90f;
+            generator.Save(rotatedPath, BarCodeImageFormat.Png);
         }
+        Console.WriteLine($"Rotated barcode saved to: {rotatedPath}");
 
-        // Read the generated barcode and output the detected code text and orientation angle.
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // ------------------------------------------------------------
+        // 3. Read the orientation metadata from the rotated image.
+        // ------------------------------------------------------------
+        float detectedAngle = 0f;
+        using (var reader = new BarCodeReader(rotatedPath, DecodeType.Code128))
         {
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Detected CodeText: {result.CodeText}");
-                Console.WriteLine($"Detected Orientation Angle: {result.Region.Angle}");
+                // The Region.Angle property provides the detected rotation angle.
+                detectedAngle = (float)result.Region.Angle;
+                Console.WriteLine($"Detected orientation angle: {detectedAngle} degrees");
+                break; // Only need the first result.
             }
         }
 
-        // Optional clean‑up: delete the temporary folder and its contents.
-        // Directory.Delete(outputFolder, true);
+        // ------------------------------------------------------------
+        // 4. Generate a new barcode automatically rotated to match the detected angle.
+        // ------------------------------------------------------------
+        string autoRotatedPath = Path.Combine(outputDir, "auto_rotated.png");
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        {
+            generator.Parameters.RotationAngle = detectedAngle;
+            generator.Save(autoRotatedPath, BarCodeImageFormat.Png);
+        }
+        Console.WriteLine($"Auto-rotated barcode saved to: {autoRotatedPath}");
     }
 }

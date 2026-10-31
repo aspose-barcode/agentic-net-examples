@@ -1,12 +1,11 @@
 // Title: Asynchronous Barcode Generation Example
-// Description: Demonstrates generating a barcode image asynchronously using Aspose.BarCode to avoid blocking the UI thread.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with async/await for non‑blocking operations. Developers often need to create barcodes in background tasks for desktop or web applications without freezing the UI, and this snippet shows the typical pattern of retrieving an EncodeTypes value via reflection and saving the image in PNG format.
+// Description: Demonstrates generating a barcode image using Aspose.BarCode with async/await to avoid blocking the UI thread.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create barcodes asynchronously. It uses the BarcodeGenerator class and related parameters to configure and save a barcode image. Developers often need non‑blocking barcode creation in UI or server applications, making async patterns essential.
 // Prompt: Provide example code using async/await pattern to generate barcode without blocking UI thread.
-// Tags: barcode, async, await, code128, png, aspose.barcode, generation, background-task
+// Tags: barcode generation, async await, code128, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Aspose.BarCode;
@@ -18,50 +17,51 @@ using Aspose.BarCode.Generation;
 class Program
 {
     /// <summary>
-    /// Entry point. Parses arguments, invokes asynchronous barcode generation, and reports the output path.
+    /// Entry point. Generates a barcode asynchronously and writes the output path.
     /// </summary>
-    /// <param name="args">Command‑line arguments: optional symbology name and code text.</param>
+    /// <param name="args">Command‑line arguments; first argument is optional barcode text.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     static async Task Main(string[] args)
     {
-        // Determine symbology and code text from command‑line arguments or use defaults.
-        string symbology = args.Length > 0 ? args[0] : "Code128";
-        string codeText = args.Length > 1 ? args[1] : "123456789";
+        // Determine barcode text: use first argument if provided, otherwise default.
+        string codeText = args.Length > 0 ? args[0] : "1234567890";
 
-        // Build a temporary file path for the generated PNG barcode image.
-        string outputPath = Path.Combine(Path.GetTempPath(), "barcode.png");
+        // Build a temporary file path for the generated PNG image.
+        string outputPath = Path.Combine(Path.GetTempPath(), "barcode_async.png");
 
-        // Generate the barcode asynchronously.
-        await GenerateBarcodeAsync(symbology, codeText, outputPath);
-
-        // Inform the user where the barcode image was saved.
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        try
+        {
+            // Generate the barcode without blocking the calling thread.
+            await GenerateBarcodeAsync(codeText, outputPath);
+            Console.WriteLine($"Barcode generated asynchronously at: {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            // Report any errors that occur during generation.
+            Console.WriteLine($"Error: {ex.Message}");
+        }
     }
 
     /// <summary>
-    /// Generates a barcode image asynchronously based on the specified symbology and text.
+    /// Generates a barcode image on a background thread.
     /// </summary>
-    /// <param name="symbologyName">Name of the barcode symbology (e.g., "Code128").</param>
-    /// <param name="codeText">The data to encode in the barcode.</param>
+    /// <param name="text">The text to encode in the barcode.</param>
     /// <param name="outputPath">File path where the PNG image will be saved.</param>
-    static async Task GenerateBarcodeAsync(string symbologyName, string codeText, string outputPath)
+    /// <returns>A task representing the asynchronous generation operation.</returns>
+    static async Task GenerateBarcodeAsync(string text, string outputPath)
     {
-        // Use reflection to obtain the EncodeTypes field matching the symbology name.
-        var field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
-        if (field == null)
-        {
-            // Symbology not found; report and exit.
-            Console.WriteLine($"Unknown symbology: {symbologyName}");
-            return;
-        }
-
-        // Cast the reflected value to BaseEncodeType.
-        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
-
-        // Run the barcode generation on a background thread to avoid blocking.
+        // Offload the CPU‑bound barcode creation to a thread pool thread.
         await Task.Run(() =>
         {
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            // Initialize the generator with Code128 symbology.
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, string.Empty))
             {
+                // Set the barcode text using UTF‑8 encoding.
+                generator.SetCodeText(text, Encoding.UTF8);
+
+                // Adjust the X‑dimension (module width) for better readability.
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+
                 // Save the generated barcode as a PNG file.
                 generator.Save(outputPath, BarCodeImageFormat.Png);
             }

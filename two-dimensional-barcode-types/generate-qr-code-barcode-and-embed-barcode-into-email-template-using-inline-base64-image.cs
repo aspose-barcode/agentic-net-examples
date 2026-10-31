@@ -1,52 +1,55 @@
-// Title: Generate QR Code and embed as Base64 image in email HTML
-// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, converting it to a PNG, encoding it to Base64, and inserting it inline into an HTML email template.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and image handling category. It shows how to use BarcodeGenerator, set QR code parameters, save the barcode to a memory stream in PNG format, and embed the resulting image as a data URI. Developers often need to embed barcodes directly into HTML emails or web pages without external image files, and this pattern illustrates the typical workflow using Aspose.BarCode and Aspose.Drawing.Imaging.
+// Title: Generate QR Code and embed as base64 image in email template
+// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, converting it to a PNG, encoding it as a base64 string, and inserting it inline into an HTML email body.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and image handling category. It shows how to use BarcodeGenerator, set QR code parameters, save the barcode to a memory stream in PNG format, and embed the resulting image using a data URI. Typical use cases include generating dynamic QR codes for marketing emails, invoices, or authentication links where the barcode must be displayed directly in HTML without external image files.
 // Prompt: Generate QR Code barcode and embed barcode into an email template using inline base64 image.
-// Tags: qr code, barcode generation, base64, html email, aspose.barcode, png, memorystream
+// Tags: qr code, barcode generation, base64, email template, html, aspnet, aspose.barcode, png
 
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode and embedding it as a Base64‑encoded PNG image within an HTML email template.
+/// Example program that creates a QR Code barcode, converts it to a Base64‑encoded PNG,
+/// and embeds the image directly into an HTML email template using a data URI.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the QR code, converts it to Base64, and prints the resulting HTML.
+    /// Entry point of the example. Generates the QR Code, encodes it, builds the email HTML,
+    /// and writes the result to the console.
     /// </summary>
     static void Main()
     {
-        // Text to encode in the QR code
-        string codeText = "https://example.com";
+        // Define the content that the QR code will encode.
+        string qrText = "https://example.com";
 
-        // Initialize the barcode generator for QR code symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Generate the QR code and obtain its PNG representation as a Base64 string.
+        string base64Image;
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
         {
-            // Set the size of each QR module (pixel dimension)
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-
-            // Configure error correction level (Level M provides a good balance of data capacity and resilience)
+            // Optional appearance settings: set module size and error correction level.
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
             generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
 
-            // Save the generated barcode to a memory stream in PNG format
+            // Save the barcode to a memory stream in PNG format.
             using (var ms = new MemoryStream())
             {
                 generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading
-
-                // Convert the PNG image bytes to a Base64 string
-                string base64 = Convert.ToBase64String(ms.ToArray());
-
-                // Build an HTML email body with the barcode embedded as a data URI
-                string emailHtml = $"<html><body><p>Hello, see QR code:</p><img src=\"data:image/png;base64,{base64}\" alt=\"QR Code\"/></body></html>";
-
-                // Output the HTML to the console (could be sent as email body)
-                Console.WriteLine(emailHtml);
+                ms.Position = 0; // Reset stream position before reading.
+                base64Image = Convert.ToBase64String(ms.ToArray());
             }
         }
+
+        // Build a simple HTML email body that includes the QR code as an inline image.
+        string emailHtml = $"<html><body><p>Hello, here is your QR code:</p>" +
+                           $"<img src=\"data:image/png;base64,{base64Image}\" alt=\"QR Code\"/>" +
+                           $"</body></html>";
+
+        // Output the generated email template to the console.
+        Console.WriteLine(emailHtml);
     }
 }

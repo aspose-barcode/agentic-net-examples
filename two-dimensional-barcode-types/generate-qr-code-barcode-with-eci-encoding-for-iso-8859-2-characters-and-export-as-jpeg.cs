@@ -1,8 +1,8 @@
-// Title: Generate QR Code with ECI ISO‑8859‑2 Encoding and Save as JPEG
-// Description: Demonstrates creating a QR Code barcode using ECI encoding for ISO‑8859‑2 characters and exporting it as a JPEG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to configure QR Code parameters such as EncodeMode and ECIEncoding. It uses the BarcodeGenerator class along with EncodeTypes, QREncodeMode, and ECIEncodings to produce barcodes for international character sets. Developers often need these settings when generating QR codes that must represent non‑ASCII text for multilingual applications.
+// Title: Generate QR Code with ISO‑8859‑2 ECI and save as JPEG
+// Description: This example creates a QR Code containing characters from the ISO‑8859‑2 (Central European) character set using ECI encoding, then saves the barcode as a JPEG image.
+// Category-Description: Demonstrates how to generate barcodes with Aspose.BarCode, specifically using the BarcodeGenerator class to configure QR Code parameters such as EncodeMode and ECIEncoding. Typical use cases include creating machine‑readable codes for multilingual data and exporting them to common image formats. Developers often need to set ECI to support non‑UTF‑8 character sets and then save the result as PNG, JPEG, or other image types.
 // Prompt: Generate a QR Code barcode with ECI encoding for ISO‑8859‑2 characters and export as JPEG.
-// Tags: qr code, eci encoding, iso-8859-2, jpeg, aspose.barcode, barcode generation
+// Tags: qr code, eci encoding, iso-8859-2, jpeg, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -10,40 +10,42 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a QR Code with ECI encoding for ISO‑8859‑2 characters
-/// and saves the result as a JPEG image using Aspose.BarCode.
+/// Demonstrates generating a QR Code with ISO‑8859‑2 ECI encoding and saving it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point of the example. Creates output directory, generates the QR Code, and saves it.
     /// </summary>
     static void Main()
     {
-        // Create a temporary directory to store the generated barcode image.
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(tempDir);
+        // Determine the output directory path relative to the current working directory
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
 
-        // Define the full path for the output JPEG file.
-        string outputPath = Path.Combine(tempDir, "qr_eci.jpg");
+        // Ensure the output directory exists; create it if it does not
+        if (!Directory.Exists(outputDir))
+        {
+            Directory.CreateDirectory(outputDir);
+        }
 
-        // Text containing ISO‑8859‑2 characters to encode in the QR Code.
+        // Define the full path for the resulting JPEG file and the text to encode
+        string outputPath = Path.Combine(outputDir, "QrCode_ECI_ISO8859_2.jpg");
         string codeText = "ĄĆĘŁŃÓŚŹŻ";
 
-        // Initialize the barcode generator for QR Code with the specified text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Initialize the barcode generator for a QR Code with the specified text
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Set QR Code to use ECI (Extended Channel Interpretation) mode.
+            // Configure the QR Code to use ECI (Extended Channel Interpretation) encoding mode
             generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.ECI;
 
-            // Specify the ECI encoding as ISO‑8859‑2.
+            // Set the specific ECI encoding to ISO‑8859‑2 (Central European)
             generator.Parameters.Barcode.QR.ECIEncoding = ECIEncodings.ISO_8859_2;
 
-            // Save the generated QR Code as a JPEG image.
+            // Save the generated barcode as a JPEG image to the defined path
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user where the QR code image has been saved.
-        Console.WriteLine($"QR code saved to: {outputPath}");
+        // Output the location of the saved QR Code image
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

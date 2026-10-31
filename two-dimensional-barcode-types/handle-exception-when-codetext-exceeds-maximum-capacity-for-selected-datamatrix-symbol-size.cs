@@ -1,6 +1,6 @@
 // Title: DataMatrix barcode generation with exception handling for oversized CodeText
-// Description: Demonstrates how to generate DataMatrix barcodes and catch exceptions when the provided CodeText exceeds the capacity of the selected symbol size.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on DataMatrix symbology. It showcases the use of BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and DataMatrixVersion classes to create barcodes, adjust symbol versions, and handle errors when the input text is too long for a chosen symbol. Developers often need to validate CodeText length against symbol capacity and gracefully handle generation failures.
+// Description: Demonstrates how to catch an exception when the provided CodeText exceeds the capacity of a selected DataMatrix symbol size and fallback to a larger symbol.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on DataMatrix symbology. It showcases the use of BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and DataMatrixVersion to create barcodes, while handling capacity limits that developers often encounter when encoding large amounts of data. Typical scenarios include generating DataMatrix codes for inventory, packaging, or tracking where the data size may vary.
 // Prompt: Handle exception when CodeText exceeds maximum capacity for the selected DataMatrix symbol size.
 // Tags: datamatrix, barcode, exception handling, aspose.barcodes, generation, png, c#
 
@@ -8,78 +8,63 @@ using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates DataMatrix barcode generation with explicit exception handling
-/// for cases where the CodeText exceeds the capacity of the selected symbol version.
+/// Demonstrates generating a DataMatrix barcode and handling the case where the
+/// supplied CodeText is too large for the chosen symbol size. If the first attempt
+/// fails, the code falls back to a larger DataMatrix version.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates two DataMatrix barcodes using different
-    /// symbol versions and captures any exceptions caused by oversized CodeText.
+    /// Entry point of the example. Generates a DataMatrix barcode, catches capacity
+    /// exceptions, and retries with a larger symbol size.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a temporary output directory for the generated images
+        // Prepare a unique temporary output directory.
         string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "datamatrix.png");
 
-        // Define file paths for the small and large barcode images
-        string smallVersionPath = Path.Combine(outputDir, "DataMatrixSmall.png");
-        string largeVersionPath = Path.Combine(outputDir, "DataMatrixLarge.png");
+        // Create a CodeText that exceeds the capacity of a small DataMatrix symbol (200 characters).
+        string longCodeText = new string('A', 200);
 
-        // Prepare a CodeText that is longer than what a small DataMatrix symbol can hold
-        string longText = new string('A', 50);
-
-        // ------------------------------------------------------------
-        // Attempt generation with a small DataMatrix version (10x10)
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, longText))
+        // Attempt to generate the barcode using a small 10x10 DataMatrix version.
+        try
         {
-            // Set the symbol version to the smallest ECC200 size
-            generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_10x10;
-            // Enable throwing an exception when the CodeText does not fit the symbol
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
-
-            try
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, longCodeText))
             {
-                // Try to save the barcode; this is expected to fail
-                generator.Save(smallVersionPath, BarCodeImageFormat.Png);
-                Console.WriteLine("Barcode generated with small version (unexpected).");
-            }
-            catch (Exception ex)
-            {
-                // Capture and display the exception message
-                Console.WriteLine($"Exception for small version: {ex.Message}");
+                // Enable exception throwing when the CodeText does not fit the selected symbol.
+                generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+                // Set the specific DataMatrix version (10x10).
+                generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_10x10;
+                // Save the generated barcode as a PNG file.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine("Barcode generated successfully with version ECC200_10x10.");
             }
         }
-
-        // ------------------------------------------------------------
-        // Attempt generation with a large DataMatrix version (144x144)
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, longText))
+        catch (Exception ex)
         {
-            // Set the symbol version to a size that can accommodate the long text
-            generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_144x144;
-            // Keep exception throwing enabled for consistency
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+            Console.WriteLine($"Failed with ECC200_10x10: {ex.Message}");
 
+            // Fallback: try generating with a larger 32x32 DataMatrix version.
             try
             {
-                // Save the barcode; this should succeed
-                generator.Save(largeVersionPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Barcode generated with large version at {largeVersionPath}");
+                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, longCodeText))
+                {
+                    generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+                    generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
+                    generator.Save(outputPath, BarCodeImageFormat.Png);
+                    Console.WriteLine("Barcode generated successfully with version ECC200_32x32.");
+                }
             }
-            catch (Exception ex)
+            catch (Exception ex2)
             {
-                // If an unexpected error occurs, display it
-                Console.WriteLine($"Exception for large version: {ex.Message}");
+                Console.WriteLine($"Failed with ECC200_32x32 as well: {ex2.Message}");
             }
         }
-
-        // Indicate that the process has completed
-        Console.WriteLine("Done.");
     }
 }

@@ -1,8 +1,8 @@
 // Title: Generate QR Code at 200 DPI and Save as JPEG
-// Description: This example creates a QR Code barcode with a resolution of 200 DPI and saves it as a JPEG image.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class. It shows how to configure encoding type, set image resolution, and export the barcode to a common image format. Developers working with QR codes for URLs, product tracking, or mobile scanning often need to control DPI for print quality and choose JPEG for web-friendly distribution.
+// Description: This example creates a QR Code barcode with a resolution of 200 DPI and saves it as a JPEG image file.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation for QR Code symbology, focusing on image resolution settings and JPEG output. Uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Typical use cases include creating high‑resolution QR codes for print media, marketing materials, or product labeling where precise DPI control is required.
 // Prompt: Generate a QR Code barcode scaled to two hundred DPI and save as JPEG.
-// Tags: qr code, barcode generation, resolution, jpeg, aspose.barcode, encode types, image output
+// Tags: qr code, barcode generation, resolution, dpi, jpeg, aspose.barcode, encode types, image format
 
 using System;
 using System.IO;
@@ -10,38 +10,32 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode with a specific DPI and saving it as a JPEG file using Aspose.BarCode.
+/// Example program that generates a QR Code barcode at 200 DPI and saves it as a JPEG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates an output folder, generates a QR Code, sets resolution, saves the image, and writes the result path to the console.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Determine the output directory relative to the current working directory.
+        // Define the output directory path.
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-
-        // Ensure the output directory exists; create it if it does not.
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Build the full file path for the resulting JPEG image.
+        // Ensure the output directory exists.
+        Directory.CreateDirectory(outputDir);
+        // Build the full output file path.
         string outputPath = Path.Combine(outputDir, "qr_200dpi.jpg");
 
-        // Initialize the barcode generator for a QR code with the desired text.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Initialize the barcode generator for QR Code with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello, QR!"))
         {
             // Set the image resolution to 200 DPI.
             generator.Parameters.Resolution = 200f;
-
             // Save the generated barcode as a JPEG file.
             generator.Save(outputPath, BarCodeImageFormat.Jpeg);
         }
 
-        // Inform the user where the QR Code image has been saved.
-        Console.WriteLine($"QR Code saved to {outputPath}");
+        // Inform the user where the QR Code image was saved.
+        Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }

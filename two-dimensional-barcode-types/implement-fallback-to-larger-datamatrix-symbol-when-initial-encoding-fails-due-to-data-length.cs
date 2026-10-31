@@ -1,8 +1,8 @@
-// Title: DataMatrix Symbol Fallback Based on Data Length
-// Description: Demonstrates how to automatically select a larger DataMatrix symbol when the initial encoding fails because the payload exceeds the capacity of smaller symbols.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes.DataMatrix, and DataMatrixVersion to handle variable‑length data. Developers often need to choose an appropriate DataMatrix size for dynamic content; this snippet shows a practical fallback loop that tries successive symbol versions until the data fits, a common pattern in inventory, logistics, and manufacturing applications.
+// Title: DataMatrix Symbol Fallback Example
+// Description: Demonstrates generating a DataMatrix barcode and automatically falling back to larger symbol versions when the data exceeds the capacity of smaller sizes.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on DataMatrix symbology. It shows how to use BarcodeGenerator, EncodeTypes, and DataMatrixVersion to select appropriate symbol sizes. Developers often need to handle variable data lengths and ensure successful encoding by iterating through available symbol versions.
 // Prompt: Implement fallback to larger DataMatrix symbol when initial encoding fails due to data length.
-// Tags: datamatrix, fallback, barcode generation, aspose.barcode, png, data length handling
+// Tags: datamatrix, fallback, barcode, generation, aspose.barcode, png, encoding
 
 using System;
 using System.IO;
@@ -11,35 +11,24 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates automatic fallback to larger DataMatrix symbols when the supplied text does not fit in smaller versions.
+/// Generates a DataMatrix barcode, trying progressively larger symbol versions until the data fits.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Generates a DataMatrix barcode using a fallback strategy.
+    /// Entry point of the example. Creates a DataMatrix barcode with automatic version fallback.
     /// </summary>
     static void Main()
     {
-        // Sample long text that may not fit in the smallest DataMatrix symbol
-        string longText = new string('A', 200);
+        // Sample data that may not fit into the smallest DataMatrix sizes (200 characters of 'A')
+        string codeText = new string('A', 200);
 
-        // Create a temporary directory to store generated images
-        string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixFallbackDemo");
+        // Prepare a unique temporary output directory and file path
+        string outputDir = Path.Combine(Path.GetTempPath(), "DataMatrixFallback_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "DataMatrix.png");
 
-        // Generate the barcode, trying larger versions until it succeeds
-        GenerateDataMatrixWithFallback(longText, outputDir);
-    }
-
-    /// <summary>
-    /// Attempts to generate a DataMatrix barcode using a list of versions ordered from smallest to largest.
-    /// Stops at the first version that can encode the supplied text.
-    /// </summary>
-    /// <param name="codeText">The text to encode into the barcode.</param>
-    /// <param name="outputDirectory">Folder where the generated PNG files will be saved.</param>
-    static void GenerateDataMatrixWithFallback(string codeText, string outputDirectory)
-    {
-        // Ordered list of DataMatrix versions from smallest to larger (including rectangular and DMRE extensions)
+        // List of DataMatrix versions ordered from smallest to largest
         DataMatrixVersion[] versions = new DataMatrixVersion[]
         {
             DataMatrixVersion.ECC200_10x10,
@@ -65,67 +54,49 @@ class Program
             DataMatrixVersion.ECC200_104x104,
             DataMatrixVersion.ECC200_120x120,
             DataMatrixVersion.ECC200_132x132,
-            DataMatrixVersion.ECC200_144x144,
-            // Rectangular ECC200
-            DataMatrixVersion.ECC200_8x18,
-            DataMatrixVersion.ECC200_8x32,
-            DataMatrixVersion.ECC200_12x26,
-            DataMatrixVersion.ECC200_12x36,
-            DataMatrixVersion.ECC200_16x36,
-            DataMatrixVersion.ECC200_16x48,
-            // DMRE (rectangular extensions)
-            DataMatrixVersion.DMRE_8x48,
-            DataMatrixVersion.DMRE_8x64,
-            DataMatrixVersion.DMRE_8x80,
-            DataMatrixVersion.DMRE_8x96,
-            DataMatrixVersion.DMRE_8x120,
-            DataMatrixVersion.DMRE_8x144,
-            DataMatrixVersion.DMRE_12x64,
-            DataMatrixVersion.DMRE_12x88,
-            DataMatrixVersion.DMRE_16x64,
-            DataMatrixVersion.DMRE_20x36,
-            DataMatrixVersion.DMRE_20x44,
-            DataMatrixVersion.DMRE_20x64,
-            DataMatrixVersion.DMRE_22x48,
-            DataMatrixVersion.DMRE_24x48,
-            DataMatrixVersion.DMRE_24x64,
-            DataMatrixVersion.DMRE_26x40,
-            DataMatrixVersion.DMRE_26x48,
-            DataMatrixVersion.DMRE_26x64
+            DataMatrixVersion.ECC200_144x144
         };
 
-        bool generated = false;
+        bool success = false;                                 // Tracks whether barcode generation succeeded
+        DataMatrixVersion usedVersion = DataMatrixVersion.ECC200_10x10; // Will hold the version that succeeded
 
-        // Iterate through the versions, attempting to generate the barcode with each one
+        // Iterate through each version, attempting to generate the barcode
         foreach (DataMatrixVersion version in versions)
         {
-            string filePath = Path.Combine(outputDirectory, $"DataMatrix_{version}.png");
-            try
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
             {
-                // Create a generator for the current version
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
-                {
-                    generator.Parameters.Barcode.DataMatrix.Version = version;
-                    generator.Parameters.Barcode.DataMatrix.EccType = DataMatrixEccType.Ecc200;
-                    // Optional: set module size (pixel density)
-                    generator.Parameters.Barcode.XDimension.Point = 2f;
-                    generator.Save(filePath, BarCodeImageFormat.Png);
-                }
+                // Set the current DataMatrix version and error correction type
+                generator.Parameters.Barcode.DataMatrix.Version = version;
+                generator.Parameters.Barcode.DataMatrix.EccType = DataMatrixEccType.Ecc200;
 
-                Console.WriteLine($"Successfully generated DataMatrix with version {version} at: {filePath}");
-                generated = true;
-                break; // Exit loop once a suitable version is found
-            }
-            catch (Exception ex)
-            {
-                // Log the failure and continue to the next larger version
-                Console.WriteLine($"Failed with version {version}: {ex.Message}");
+                // Optional: define module (pixel) size for better readability
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+
+                try
+                {
+                    // Attempt to save the barcode image; if data fits, this succeeds
+                    generator.Save(outputPath, BarCodeImageFormat.Png);
+                    usedVersion = version;
+                    success = true;
+                    Console.WriteLine($"Successfully generated DataMatrix with version {version}.");
+                    break; // Exit loop on first successful generation
+                }
+                catch (Exception ex)
+                {
+                    // Generation failed (likely due to insufficient symbol size); log and continue
+                    Console.WriteLine($"Failed with version {version}: {ex.Message}");
+                }
             }
         }
 
-        if (!generated)
+        // Report final outcome to the user
+        if (!success)
         {
-            Console.WriteLine("Unable to generate DataMatrix barcode with the provided text using all available versions.");
+            Console.WriteLine("Failed to generate DataMatrix barcode with all attempted versions.");
+        }
+        else
+        {
+            Console.WriteLine($"Barcode saved to: {outputPath}");
         }
     }
 }

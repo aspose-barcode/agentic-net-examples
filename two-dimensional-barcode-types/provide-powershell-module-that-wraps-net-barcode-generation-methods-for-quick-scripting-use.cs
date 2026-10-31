@@ -1,58 +1,64 @@
-// Title: Generate PowerShell module for Aspose.BarCode barcode creation
-// Description: This example creates a PowerShell module that exposes a New-Barcode function, allowing scripts to generate barcodes with Aspose.BarCode and save them as PNG images.
-// Category-Description: Demonstrates how to use the Aspose.BarCode.Generation API (BarcodeGenerator, EncodeTypes, BarCodeImageFormat) to produce barcodes programmatically. Typical scenarios include automating label creation, integrating barcode generation into CI pipelines, or providing scripting access via PowerShell. Developers often need a simple wrapper to call .NET barcode methods from PowerShell scripts.
+// Title: Generate a temporary PowerShell module that wraps Aspose.BarCode for barcode creation
+// Description: Demonstrates how to programmatically create a PowerShell module which exposes a New-Barcode function that uses Aspose.BarCode to generate PNG barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showing how to integrate the Aspose.BarCode .NET API into scripting environments. It highlights key classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, which developers commonly use to produce barcodes in various formats for automation, CI pipelines, or quick prototyping.
 // Prompt: Provide a PowerShell module that wraps .NET barcode generation methods for quick scripting use.
-// Tags: barcode, symbology, generation, powershell, aspose.barcode, png
+// Tags: barcode, symbology, generation, powershell, module, aspose.barcode
 
 using System;
 using System.IO;
-using System.Reflection;
-using Aspose.BarCode;
-using Aspose.BarCode.Generation;
+using System.Text;
 
 /// <summary>
-/// Demonstrates creating a PowerShell module that wraps Aspose.BarCode generation methods for easy scripting.
+/// Demonstrates creating a temporary PowerShell module that wraps Aspose.BarCode generation methods.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that writes the PowerShell module file and displays usage instructions.
+    /// Entry point that builds the PowerShell script file and writes it to a temporary folder.
     /// </summary>
     static void Main()
     {
-        // Determine the full path for the PowerShell module file in the current working directory
-        string modulePath = Path.Combine(Directory.GetCurrentDirectory(), "BarcodeModule.psm1");
+        // Create a unique temporary folder for the PowerShell module
+        string moduleFolder = Path.Combine(Path.GetTempPath(), "PsBarcodeModule_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(moduleFolder);
 
-        // PowerShell script content that defines the New-Barcode function
-        string moduleContent = @"
+        // Define the full path for the module file
+        string modulePath = Path.Combine(moduleFolder, "BarcodeModule.psm1");
+
+        // PowerShell script content that wraps Aspose.BarCode generation
+        string psScript = @"
+# PowerShell module for barcode generation using Aspose.BarCode
 function New-Barcode {
     param(
         [Parameter(Mandatory=$true)][string]$Symbology,
         [Parameter(Mandatory=$true)][string]$CodeText,
         [Parameter(Mandatory=$true)][string]$OutputPath
     )
-    $field = [Aspose.BarCode.Generation.EncodeTypes].GetField($Symbology)
+    # Load Aspose.BarCode assembly if not already loaded
+    if (-not ([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object { $_.GetName().Name -eq 'Aspose.BarCode' })) {
+        $assemblyPath = Join-Path -Path $PSScriptRoot -ChildPath 'Aspose.BarCode.dll'
+        Add-Type -Path $assemblyPath
+    }
+
+    # Resolve symbology name to EncodeTypes field via reflection
+    $type = [Aspose.BarCode.Generation.EncodeTypes]
+    $field = $type.GetField($Symbology)
     if ($null -eq $field) {
         throw ""Unknown symbology: $Symbology""
     }
     $encodeType = $field.GetValue($null)
+
+    # Create generator and save barcode
     $generator = New-Object Aspose.BarCode.Generation.BarcodeGenerator($encodeType, $CodeText)
-    try {
-        $generator.Save($OutputPath, [Aspose.BarCode.Generation.BarCodeImageFormat]::Png)
-    }
-    finally {
-        $generator.Dispose()
-    }
+    $generator.Save($OutputPath, [Aspose.BarCode.Generation.BarCodeImageFormat]::Png)
+    $generator.Dispose()
 }
 ";
 
-        // Write the module script to the file system
-        File.WriteAllText(modulePath, moduleContent);
+        // Write the PowerShell module file to disk using UTF-8 encoding
+        File.WriteAllText(modulePath, psScript, Encoding.UTF8);
 
-        // Output the location of the created module and a short usage example
-        Console.WriteLine($"PowerShell module created at: {modulePath}");
-        Console.WriteLine("Example usage in PowerShell:");
-        Console.WriteLine("Import-Module -Path \"{0}\"", modulePath);
-        Console.WriteLine("New-Barcode -Symbology \"Code128\" -CodeText \"Sample123\" -OutputPath \"sample.png\"");
+        // Inform the user where the module was created
+        Console.WriteLine("PowerShell module created at: " + modulePath);
     }
 }

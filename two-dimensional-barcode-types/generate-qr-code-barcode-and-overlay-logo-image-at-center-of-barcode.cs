@@ -1,8 +1,8 @@
 // Title: Generate QR Code with Centered Logo Overlay
-// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode, overlaying a custom logo image at the center, and saving the result as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and image manipulation category. It showcases the use of BarcodeGenerator to produce a QR Code, Aspose.Drawing.Bitmap and Graphics for image processing, and typical steps for adding visual elements such as logos. Developers working on branding, marketing materials, or custom scanning solutions often need to embed logos into barcodes while preserving scanability.
+// Description: Demonstrates creating a QR Code barcode and overlaying a logo image at its center, then saving the result as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, showcasing how to use BarcodeGenerator, QR encoding, and Aspose.Drawing to customize barcode appearance. Typical use cases include branding QR codes with company logos or adding visual identifiers to barcodes. Developers often need to combine barcode creation with graphic manipulation to produce marketing‑ready images.
 // Prompt: Generate QR Code barcode and overlay a logo image at center of barcode.
-// Tags: qr code, barcode generation, logo overlay, png, aspose.barcode, aspose.drawing
+// Tags: qr code, logo overlay, barcode generation, png output, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,57 +12,64 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a QR Code, adds a centered logo, and saves the image.
+/// Demonstrates generating a QR Code barcode and overlaying a logo image at its center.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a QR Code, draws a red square logo at its center, and writes the image to disk.
+    /// Entry point. Creates output folder, ensures a placeholder logo, generates QR code, draws logo, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the final image.
-        string outputPath = "qr_with_logo.png";
+        // Prepare a temporary output directory for generated files
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Text to encode in the QR Code.
-        string qrText = "https://www.example.com";
+        // Define file paths for the logo image and the final barcode image
+        string logoPath = Path.Combine(outputDir, "logo.png");
+        string barcodePath = Path.Combine(outputDir, "qr_with_logo.png");
 
-        // Initialize the QR Code generator with the desired text.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, qrText))
+        // Ensure a logo image exists; create a simple red square placeholder if missing
+        if (!File.Exists(logoPath))
         {
-            // Optional: set the size of each QR module (pixel dimension).
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-
-            // Generate the QR Code as a bitmap image.
-            using (Bitmap barcodeBmp = generator.GenerateBarCodeImage())
+            using (var placeholder = new Bitmap(100, 100))
             {
-                // Create a simple logo bitmap (80x80 red square) to overlay.
-                int logoSize = 80;
-                using (Bitmap logoBmp = new Bitmap(logoSize, logoSize, PixelFormat.Format32bppArgb))
+                using (var g = Graphics.FromImage(placeholder))
                 {
-                    // Fill the logo bitmap with a solid red color.
-                    using (Graphics gLogo = Graphics.FromImage(logoBmp))
-                    {
-                        gLogo.Clear(Color.Red);
-                    }
+                    g.Clear(Color.Red);
+                }
+                placeholder.Save(logoPath, ImageFormat.Png);
+            }
+        }
 
-                    // Compute coordinates to center the logo on the QR Code.
+        // Generate a QR Code barcode with high error correction level
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        {
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
+
+            // Render the barcode to a bitmap
+            using (var barcodeBmp = generator.GenerateBarCodeImage())
+            {
+                // Load the logo image to be overlaid
+                using (var logoBmp = new Bitmap(logoPath))
+                {
+                    // Calculate coordinates to center the logo on the barcode
                     int x = (barcodeBmp.Width - logoBmp.Width) / 2;
                     int y = (barcodeBmp.Height - logoBmp.Height) / 2;
 
-                    // Draw the logo onto the QR Code bitmap at the calculated position.
-                    using (Graphics g = Graphics.FromImage(barcodeBmp))
+                    // Draw the logo onto the barcode bitmap
+                    using (var graphics = Graphics.FromImage(barcodeBmp))
                     {
-                        g.DrawImage(logoBmp, x, y, logoBmp.Width, logoBmp.Height);
+                        graphics.DrawImage(logoBmp, x, y, logoBmp.Width, logoBmp.Height);
                     }
 
-                    // Save the combined image as a PNG file.
-                    barcodeBmp.Save(outputPath, ImageFormat.Png);
+                    // Save the combined image as PNG
+                    barcodeBmp.Save(barcodePath, ImageFormat.Png);
                 }
             }
         }
 
-        // Output the full path of the saved image for verification.
-        Console.WriteLine($"QR code with logo saved to: {Path.GetFullPath(outputPath)}");
+        Console.WriteLine($"QR code with logo saved to: {barcodePath}");
     }
 }

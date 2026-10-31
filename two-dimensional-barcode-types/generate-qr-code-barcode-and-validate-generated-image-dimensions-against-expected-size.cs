@@ -1,8 +1,8 @@
 // Title: Generate QR Code and Verify Image Dimensions
-// Description: This example creates a QR Code barcode, saves it as a PNG file, and checks that the generated image matches the expected width and height.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation (BarcodeGenerator) with QR symbology, configuring image size, error correction level, and exporting to PNG. Typical for developers needing to produce QR codes for marketing, authentication, or data transfer and verify output dimensions using Aspose.Drawing imaging classes. Part of a collection of barcode creation and validation examples.
+// Description: Creates a QR Code barcode, saves it as PNG, and checks that the generated image dimensions match the expected size for the specified QR version and X-dimension.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, demonstrating how to configure QR Code parameters such as X-dimension and version, generate the barcode image, and validate its pixel dimensions. It uses the BarcodeGenerator class together with EncodeTypes, QRVersion, and BarCodeImageFormat. Developers often need to ensure generated barcodes meet size requirements for downstream processing or printing.
 // Prompt: Generate a QR Code barcode and validate generated image dimensions against expected size.
-// Tags: qr code, barcode generation, image validation, aspose.barcode, png, dimensions
+// Tags: qr code, barcode generation, image validation, aspose.barcode, png, dimensions, encode types, qr version
 
 using System;
 using System.IO;
@@ -12,57 +12,48 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode, saving it to a file, and validating the image dimensions.
+/// Demonstrates QR Code generation with Aspose.BarCode and validates the resulting image dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates QR Code, saves it, and validates size.
+    /// Entry point of the example. Generates a QR Code, saves it, and checks its width and height.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Create a temporary directory to store the generated QR code image.
-        string tempDir = Path.Combine(Path.GetTempPath(), "QrDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string imagePath = Path.Combine(tempDir, "qr.png");
+        // Define the output file path in the temporary directory.
+        string outputPath = Path.Combine(Path.GetTempPath(), "qr.png");
 
-        // Expected image dimensions in pixels.
-        const int expectedWidth = 200;
-        const int expectedHeight = 200;
-
-        // Initialize the barcode generator for QR code with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose QR Test"))
+        // Initialize the barcode generator for QR Code with the desired text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test QR"))
         {
-            // Configure auto-sizing to use the nearest size that fits the specified dimensions.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+            // Set the X-dimension (module size) to 4 pixels.
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Set the target image width and height.
-            generator.Parameters.ImageWidth.Pixels = expectedWidth;
-            generator.Parameters.ImageHeight.Pixels = expectedHeight;
+            // Choose QR Code version 5 (Version05) which determines the matrix size.
+            generator.Parameters.Barcode.QR.Version = QRVersion.Version05;
 
-            // Set module (dot) size and error correction level.
-            generator.Parameters.Barcode.XDimension.Pixels = 4;
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+            // Save the generated QR Code as a PNG file.
+            generator.Save(outputPath, BarCodeImageFormat.Png);
 
-            // Save the barcode image directly to a file in PNG format.
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-
-            // Also save the barcode to a memory stream to validate dimensions without reloading from disk.
-            using (var ms = new MemoryStream())
+            // Generate the barcode image in memory for dimension validation.
+            using (var bitmap = generator.GenerateBarCodeImage())
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // Reset stream position for reading.
+                int width = bitmap.Width;
+                int height = bitmap.Height;
+                int expectedSize = 180; // Expected size for Version05 with 4px XDimension
 
-                // Load the image from the memory stream.
-                using (var img = Image.FromStream(ms))
+                Console.WriteLine($"Generated QR Code dimensions: {width}x{height}");
+
+                // Compare actual dimensions with the expected size.
+                if (width == expectedSize && height == expectedSize)
                 {
-                    int actualWidth = img.Width;
-                    int actualHeight = img.Height;
-
-                    // Output the actual dimensions and whether they match the expectations.
-                    Console.WriteLine($"Generated image size: {actualWidth}x{actualHeight}");
-                    bool sizeMatch = actualWidth == expectedWidth && actualHeight == expectedHeight;
-                    Console.WriteLine($"Size matches expected: {sizeMatch}");
+                    Console.WriteLine($"Dimensions match expected size: {expectedSize}x{expectedSize}");
+                }
+                else
+                {
+                    Console.WriteLine($"Dimensions do NOT match expected size: {expectedSize}x{expectedSize}");
                 }
             }
         }

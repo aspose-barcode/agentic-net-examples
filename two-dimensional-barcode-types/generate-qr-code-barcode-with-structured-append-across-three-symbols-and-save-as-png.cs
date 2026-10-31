@@ -1,69 +1,92 @@
-// Title: Generate QR Code with Structured Append (3 symbols) and save as PNG
-// Description: Demonstrates creating a QR Code barcode split into three structured‑append symbols and saving each part as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation with Structured Append. It showcases the use of BarcodeGenerator, EncodeTypes, and QR‑specific parameters such as StructuredAppend.TotalCount, SequenceIndicator, and ParityByte. Developers often need to split large data across multiple QR symbols while preserving a single logical message, and this snippet illustrates the typical workflow for that scenario.
+// Title: Generate QR Code with Structured Append (3 symbols) and Save as PNG
+// Description: Demonstrates how to create a QR Code barcode split across three structured‑append symbols and save each part as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on QR Code creation with Structured Append. It showcases the use of BarcodeGenerator, EncodeTypes.QR, and QR‑specific parameters (StructuredAppend) to split data across multiple symbols. Developers working with large data payloads, multi‑page QR codes, or need to concatenate QR symbols will find this pattern useful.
 // Prompt: Generate a QR Code barcode with structured append across three symbols and save as PNG.
-// Tags: qr code, structured append, barcode generation, png, aspose.barcode, encode types, barcodegenerator
+// Tags: qr code, structured append, barcode generation, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
 /// Example program that creates three QR Code symbols using Structured Append
-/// and saves each symbol as a separate PNG file.
+/// and saves each symbol as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates QR Code parts, calculates parity,
-    /// configures Structured Append parameters, and writes PNG files to disk.
+    /// Entry point. Generates QR Code parts, computes parity, and writes PNG files.
     /// </summary>
     static void Main()
     {
-        // Define the three data fragments that will be combined via Structured Append.
+        // Prepare a unique temporary output folder
+        string outputFolder = Path.Combine(Path.GetTempPath(), "QrStructuredAppend_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+
+        // Data fragments to be encoded in separate QR symbols
         string[] messages = new string[]
         {
-            "First part of the data",
-            "Second part of the data",
-            "Third part of the data"
+            "First part of data",
+            "Second part of data",
+            "Third part of data"
         };
 
-        // Calculate the parity byte required by Structured Append (XOR of UTF‑16BE bytes).
-        byte parity = 0;
-        foreach (string msg in messages)
-        {
-            foreach (char ch in msg)
-            {
-                // Split each character into low and high bytes (UTF‑16BE order) and XOR them.
-                byte low = (byte)ch;
-                byte high = (byte)(ch >> 8);
-                parity ^= (byte)(low ^ high);
-            }
-        }
+        // Compute a single parity byte for all fragments (required by Structured Append)
+        byte parity = ComputeParity(messages);
 
-        // Generate each QR Code part with the appropriate Structured Append settings.
+        // Generate each QR symbol with appropriate Structured Append settings
         for (int i = 0; i < messages.Length; i++)
         {
+            string filePath = Path.Combine(outputFolder, $"qr_part{i}.png");
+
+            // Create a barcode generator for QR encoding with the current fragment
             using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, messages[i]))
             {
-                // Set module size (pixel dimension) for better readability.
-                generator.Parameters.Barcode.XDimension.Pixels = 4;
+                // Set module size (pixel dimension) for better readability
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-                // Configure Structured Append: total parts, sequence index, and parity byte.
-                generator.Parameters.Barcode.QR.StructuredAppend.TotalCount = 3;
-                generator.Parameters.Barcode.QR.StructuredAppend.SequenceIndicator = i;
-                generator.Parameters.Barcode.QR.StructuredAppend.ParityByte = parity;
+                // Configure Structured Append parameters
+                generator.Parameters.Barcode.QR.StructuredAppend.TotalCount = messages.Length; // total symbols
+                generator.Parameters.Barcode.QR.StructuredAppend.SequenceIndicator = i;        // position of this symbol (0‑based)
+                generator.Parameters.Barcode.QR.StructuredAppend.ParityByte = parity;        // shared parity byte
 
-                // Build the output file path (qr_part1.png, qr_part2.png, ...).
-                string fileName = Path.Combine(Directory.GetCurrentDirectory(), $"qr_part{i + 1}.png");
+                // Save the generated QR symbol as a PNG image
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
 
-                // Save the QR Code part as a PNG image.
-                generator.Save(fileName, BarCodeImageFormat.Png);
+            Console.WriteLine($"Generated QR part {i}: {filePath}");
+        }
+    }
 
-                // Inform the user about the saved file.
-                Console.WriteLine($"Saved QR part {i + 1} to {fileName}");
+    /// <summary>
+    /// Calculates the parity byte required for Structured Append by XOR‑ing all bytes of the input strings.
+    /// </summary>
+    /// <param name="parts">Array of string fragments to be encoded.</param>
+    /// <returns>Computed parity byte.</returns>
+    static byte ComputeParity(string[] parts)
+    {
+        byte parity = 0;
+        foreach (string part in parts)
+        {
+            foreach (char ch in part)
+            {
+                if (ch <= 255)
+                {
+                    // Single‑byte character: XOR directly
+                    parity ^= (byte)ch;
+                }
+                else
+                {
+                    // Multi‑byte character: split into low and high bytes before XOR
+                    int val = ch;
+                    byte low = (byte)val;
+                    byte high = (byte)(val >> 8);
+                    parity ^= (byte)(low ^ high);
+                }
             }
         }
+        return parity;
     }
 }

@@ -1,63 +1,95 @@
-// Title: Generate Barcode Image and Return as Base64 Stream
-// Description: Demonstrates creating a barcode with Aspose.BarCode, encoding it as PNG, and outputting the image as a Base64 string, mimicking a RESTful service response.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce barcode images on the fly. Typical scenarios include web APIs that generate barcodes for inventory, shipping, or ticketing systems, where developers need to return the image as a byte stream or Base64 payload. The snippet shows common configuration steps such as setting dimensions and colors, useful for developers building REST endpoints that serve barcode graphics.
+// Title: Generate Barcode Image from Command-Line Arguments
+// Description: Demonstrates creating a barcode image using Aspose.BarCode based on supplied symbology and code text, then saving it to a file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce barcode images. Typical use cases include generating barcodes for inventory, shipping labels, or QR codes in desktop or server applications. Developers often need to configure dimensions, resolution, and output formats, making this pattern a common starting point for barcode creation tasks.
 // Prompt: Develop a RESTful endpoint that accepts multipart/form-data and returns generated barcode image stream.
-// Tags: barcode, symbology, generation, png, base64, aspose.barcode, rest, multipart, image
+// Tags: barcode, generation, png, command-line, aspose.barcode, encode-types
 
 using System;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation using Aspose.BarCode and outputs the image as a Base64 string.
+/// Example program that generates a barcode image using Aspose.BarCode based on command‑line parameters.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that simulates receiving barcode parameters from a multipart/form-data request,
-    /// generates the barcode, and writes the PNG image as a Base64 string to the console.
+    /// Entry point of the application.
+    /// Expects at least two arguments: the symbology name and the code text.
+    /// An optional third argument specifies the output file path (defaults to "barcode.png").
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments.</param>
+    static void Main(string[] args)
     {
-        // Simulated input that would come from a multipart/form-data request
-        string symbologyName = "Code128";
-        string codeText = "12345678";
-
-        // Resolve the symbology name to the corresponding BaseEncodeType using reflection
-        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
-        if (field == null)
+        // Validate that the required arguments are present.
+        if (args.Length < 2)
         {
-            Console.WriteLine($"Unknown symbology: {symbologyName}");
+            Console.WriteLine("Usage: <SymbologyName> <CodeText> [OutputPath]");
             return;
         }
-        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Create a BarcodeGenerator with the resolved encode type and the provided code text
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Parse arguments.
+        string symbologyName = args[0];
+        string codeText = args[1];
+        string outputPath = args.Length >= 3 ? args[2] : "barcode.png";
+
+        // Resolve the requested symbology to a concrete EncodeType.
+        BaseEncodeType encodeType;
+        try
         {
-            // Optional: customize barcode appearance
-            generator.Parameters.Barcode.XDimension.Pixels = 4f; // Set module width
-            generator.Parameters.Barcode.BarColor = Color.Black; // Set bar color
-            generator.Parameters.BackColor = Color.White; // Set background color
-
-            // Save the generated barcode to a memory stream in PNG format
-            using (var ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] imageBytes = ms.ToArray();
-
-                // Convert the PNG byte array to a Base64 string for easy transport
-                string base64 = Convert.ToBase64String(imageBytes);
-                Console.WriteLine("Generated barcode image (Base64 PNG):");
-                Console.WriteLine(base64);
-            }
+            encodeType = ResolveEncodeType(symbologyName);
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine(ex.Message);
+            return;
         }
 
-        // In a real RESTful service, the imageBytes would be written directly to the HTTP response stream.
+        try
+        {
+            // Create a BarcodeGenerator with the resolved type and provided text.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            {
+                // Configure barcode appearance and image resolution.
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                generator.Parameters.Resolution = 300f;
+
+                // Save the generated barcode to a memory stream in PNG format.
+                using (var ms = new MemoryStream())
+                {
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for reading.
+
+                    // Write the memory stream contents to the target file.
+                    using (var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+                    {
+                        ms.CopyTo(fileStream);
+                    }
+                }
+            }
+
+            Console.WriteLine($"Barcode generated and saved to '{Path.GetFullPath(outputPath)}'.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error generating barcode: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Resolves a symbology name to the corresponding <see cref="BaseEncodeType"/> using reflection.
+    /// </summary>
+    /// <param name="symbologyName">The name of the symbology (e.g., "Code128").</param>
+    /// <returns>The matching <see cref="BaseEncodeType"/>.</returns>
+    /// <exception cref="ArgumentException">Thrown when the symbology name is not found.</exception>
+    static BaseEncodeType ResolveEncodeType(string symbologyName)
+    {
+        // Look for a public static field on EncodeTypes that matches the provided name.
+        var field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
+        if (field == null)
+            throw new ArgumentException($"Unknown symbology: {symbologyName}");
+        return (BaseEncodeType)field.GetValue(null);
     }
 }

@@ -1,69 +1,103 @@
-// Title: Dynamic MaxiCode Mode Configuration Based on Input Parameter
-// Description: Demonstrates how to set the MaxiCode barcode mode at runtime using a value supplied via command‑line arguments, mimicking an API request.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on MaxiCode symbology. It showcases the use of EncodeTypes, BarcodeGenerator, and MaxiCodeParameters to create barcodes. Typical scenarios include e‑commerce shipping labels and logistics where MaxiCode mode must be chosen dynamically based on external data. Developers often need to parse input, validate enum values, and fall back to safe defaults when generating barcodes.
+// Title: Dynamic MaxiCode Mode Selection Based on Input Parameter
+// Description: Demonstrates how to set the MaxiCode barcode mode at runtime using a command‑line argument that simulates an API request.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with MaxiCodeCodetext classes and the MaxiCodeParameters.Mode property. Typical scenarios include shipping label creation, parcel tracking, and logistics applications where different MaxiCode modes (Mode 2, Mode 3) are required. Developers often need to choose the appropriate mode dynamically based on external data such as API request parameters.
 // Prompt: Configure MaxiCodeParameters.Mode property dynamically based on an API request input parameter.
-// Tags: maxicode, barcode, generation, dynamic, mode, aspose.barcode, png, encode types
+// Tags: maxicode, barcode, generation, complexbarcode, aspnet, c#, aspose.barcode, mode selection
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Generates a MaxiCode barcode whose mode is selected at runtime based on a supplied argument.
+/// Generates a MaxiCode barcode with a mode selected at runtime based on a supplied argument.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the demo. Accepts an optional command‑line argument that represents the desired MaxiCode mode.
+    /// Entry point of the example. Accepts an optional command‑line argument that determines the MaxiCode mode.
     /// </summary>
-    /// <param name="args">Command‑line arguments; the first argument is interpreted as the requested MaxiCode mode.</param>
+    /// <param name="args">Command‑line arguments; the first argument represents the desired MaxiCode mode (e.g., "2" or "3").</param>
     static void Main(string[] args)
     {
         // ------------------------------------------------------------
-        // Simulate receiving a mode value from an external API request.
+        // Simulate receiving an API request parameter that specifies the MaxiCode mode.
+        // If no argument is provided, default to Mode 3.
         // ------------------------------------------------------------
-        string requestedMode = args.Length > 0 ? args[0] : "Mode4";
+        string modeParam = args.Length > 0 ? args[0] : "3";
 
         // ------------------------------------------------------------
-        // Try to convert the supplied string to the MaxiCodeMode enum.
-        // If conversion fails, fall back to a safe default (Mode4).
+        // Map the string parameter to the corresponding MaxiCodeMode enum value.
         // ------------------------------------------------------------
-        if (!Enum.TryParse<MaxiCodeMode>(requestedMode, true, out MaxiCodeMode mode))
+        MaxiCodeMode selectedMode;
+        if (modeParam == "2")
+            selectedMode = MaxiCodeMode.Mode2;
+        else if (modeParam == "3")
+            selectedMode = MaxiCodeMode.Mode3;
+        else
         {
-            Console.WriteLine($"Invalid MaxiCode mode '{requestedMode}'. Falling back to Mode4.");
-            mode = MaxiCodeMode.Mode4;
+            Console.WriteLine("Unsupported mode parameter. Defaulting to Mode3.");
+            selectedMode = MaxiCodeMode.Mode3;
         }
 
         // ------------------------------------------------------------
-        // Modes 2 and 3 require structured codetext that this demo does not provide.
-        // Replace them with Mode4 to ensure successful generation.
+        // Build the appropriate codetext object for the selected mode.
         // ------------------------------------------------------------
-        if (mode == MaxiCodeMode.Mode2 || mode == MaxiCodeMode.Mode3)
+        IComplexCodetext codetext;
+        if (selectedMode == MaxiCodeMode.Mode2)
         {
-            Console.WriteLine($"Mode '{mode}' requires structured codetext. Using Mode4 instead.");
-            mode = MaxiCodeMode.Mode4;
+            // Mode 2 requires a 9‑digit postal code and supports a structured second message.
+            var ct = new MaxiCodeCodetextMode2
+            {
+                PostalCode = "524032140", // 9 digits required for Mode2
+                CountryCode = 56,
+                ServiceCategory = 999
+            };
+
+            var second = new MaxiCodeStructuredSecondMessage();
+            second.Add("634 ALPHA DRIVE");
+            second.Add("PITTSBURGH");
+            second.Add("PA");
+            second.Year = 99;
+            ct.SecondMessage = second;
+
+            codetext = ct;
+        }
+        else // Mode3
+        {
+            // Mode 3 uses an alphanumeric postal code and a simple second message.
+            var ct = new MaxiCodeCodetextMode3
+            {
+                PostalCode = "B1050",
+                CountryCode = 56,
+                ServiceCategory = 999
+            };
+
+            var second = new MaxiCodeStandardSecondMessage
+            {
+                Message = "Second message"
+            };
+            ct.SecondMessage = second;
+
+            codetext = ct;
         }
 
         // ------------------------------------------------------------
-        // Prepare a unique temporary folder to store the generated image.
+        // Generate the barcode image using the selected mode and save it to a temporary file.
         // ------------------------------------------------------------
-        string outputFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
-        string outputPath = Path.Combine(outputFolder, "maxicode.png");
-
-        // ------------------------------------------------------------
-        // Create the barcode generator, assign the selected mode, and save as PNG.
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode"))
+        string outputPath = Path.Combine(Path.GetTempPath(), $"MaxiCode_Mode{selectedMode}.png");
+        using (var generator = new ComplexBarcodeGenerator(codetext))
         {
-            generator.Parameters.Barcode.MaxiCode.Mode = mode;
+            // Apply the dynamically determined mode to the generator parameters.
+            generator.Parameters.Barcode.MaxiCode.Mode = selectedMode;
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
         // ------------------------------------------------------------
-        // Inform the user about the result.
+        // Inform the user where the barcode image has been saved.
         // ------------------------------------------------------------
-        Console.WriteLine($"MaxiCode barcode generated with mode '{mode}'. Saved to: {outputPath}");
+        Console.WriteLine($"MaxiCode barcode generated with mode {selectedMode} at:");
+        Console.WriteLine(outputPath);
     }
 }

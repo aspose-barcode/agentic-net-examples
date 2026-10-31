@@ -1,52 +1,53 @@
 // Title: Generate QR Code with Transparent Background
-// Description: Demonstrates creating a QR Code barcode and setting its background to fully transparent so it can be overlaid on colored images.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes.QR to produce QR Code images. It covers configuring barcode colors, applying a transparent background, and saving the result in PNG format to preserve alpha channel data. Developers often need these steps when integrating barcodes into UI designs, reports, or marketing materials that require seamless blending with existing graphics.
+// Description: Demonstrates creating a QR Code barcode and saving it as a PNG with a fully transparent background, suitable for overlay on colored images.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on image formatting and visual customization. It showcases the use of BarcodeGenerator, EncodeTypes, and image format classes to produce QR Code barcodes with transparent backgrounds, a common requirement when integrating barcodes into UI designs or marketing materials. Developers often need to adjust colors, dimensions, and transparency to blend barcodes seamlessly with existing graphics.
 // Prompt: Generate QR Code barcode and set background transparency to allow overlay on colored backgrounds.
-// Tags: qr code, barcode generation, transparent background, png, aspose.barcode, encoding, image output
+// Tags: qr code, barcode generation, transparent background, png, aspose.barcode, encoding, image formatting
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that creates a QR Code barcode with a fully transparent background.
+/// Example program that generates a QR Code barcode with a transparent background
+/// and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates the QR Code and saves it as a PNG file.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory for the generated image.
+        // Define a temporary output directory for the generated image
         string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
         if (!Directory.Exists(outputDir))
         {
-            // Create the directory if it does not already exist.
             Directory.CreateDirectory(outputDir);
         }
 
-        // Full path for the resulting PNG file.
+        // Set the full path for the resulting PNG file
         string outputPath = Path.Combine(outputDir, "qr_transparent.png");
-        // Text to encode in the QR Code.
-        string codeText = "Transparent QR Example";
+        string codeText = "Hello, World!";
 
-        // Initialize the barcode generator for QR Code symbology.
+        // Initialize the barcode generator for QR Code with the desired text
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Optional: set the barcode's foreground (bars) color to black.
-            generator.Parameters.Barcode.BarColor = Color.Black;
-
-            // Set the background color to fully transparent (alpha = 0).
+            // Set a fully transparent background (alpha = 0)
             generator.Parameters.BackColor = Color.FromArgb(0, 255, 255, 255);
+            // Optional: set the barcode (foreground) color to black
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            // Optional: adjust the size of each QR module (pixel dimension)
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Save the barcode as a PNG image to retain the transparency information.
+            // Save the generated barcode as a PNG image with transparency preserved
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the image has been saved.
-        Console.WriteLine($"QR code with transparent background saved to: {outputPath}");
+        // Inform the user where the QR code image has been saved
+        Console.WriteLine($"QR code saved to: {outputPath}");
     }
 }

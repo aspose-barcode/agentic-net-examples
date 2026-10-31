@@ -1,64 +1,54 @@
 // Title: Generate QR Code and Log Encoding Exceptions
-// Description: Demonstrates creating a QR Code barcode with Aspose.BarCode, intentionally causing an encoding error, and logging the exception for audit purposes.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation and error handling. It showcases the use of BarcodeGenerator, EncodeTypes, and QR-specific parameters such as QREncodeMode and ThrowExceptionWhenCodeTextIncorrect. Developers often need to capture generation failures to maintain audit trails or troubleshoot invalid input data.
+// Description: Demonstrates creating a QR Code barcode using Aspose.BarCode, handling encoding errors, and writing audit logs.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on QR Code creation and exception handling. It showcases the BarcodeGenerator class, EncodeTypes, and QR encoding settings, which developers use to produce QR images and maintain audit trails for failures. Ideal for scenarios requiring reliable barcode output with error logging for compliance or debugging.
 // Prompt: Generate QR Code barcode and catch and log encoding exceptions for audit trail.
-// Tags: qr, barcode, generation, exception handling, logging, aspose.barcode, qrcode, binary mode
+// Tags: qr code, barcode generation, exception handling, logging, aspose.barcode, png output
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates QR Code generation with forced encoding error and logs exceptions for audit.
+/// Demonstrates QR Code generation with exception handling and audit logging using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a QR Code, forces an encoding exception, and writes details to a log file.
+    /// Entry point. Generates a QR Code, saves it as PNG, and logs any encoding errors.
     /// </summary>
     static void Main()
     {
-        // Define output directory in the temporary folder and ensure it exists
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeQrDemo");
-        Directory.CreateDirectory(outputDir);
-
-        // Paths for the generated barcode image and the audit log file
-        string barcodePath = Path.Combine(outputDir, "qr_invalid_binary.png");
-        string logPath = Path.Combine(outputDir, "audit.log");
+        // Define paths for the output image and the audit log file in the temporary directory.
+        string outputPath = Path.Combine(Path.GetTempPath(), "qr_code.png");
+        string logPath = Path.Combine(Path.GetTempPath(), "qr_audit_log.txt");
 
         try
         {
-            // Initialize the barcode generator for QR Code with Unicode text
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "テスト"))
+            // Create a BarcodeGenerator for QR encoding with the specified text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "こんにちは"))
             {
-                // Configure generator to throw an exception when the code text is invalid for the selected mode
+                // Enable exception throwing for invalid code text.
                 generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
 
-                // Set QR encoding mode to Binary, which will cause an exception for Unicode characters
+                // Set QR encoding mode to binary to handle non‑ASCII characters.
                 generator.Parameters.Barcode.QR.EncodeMode = QREncodeMode.Binary;
 
-                // Attempt to save the barcode image; this will trigger the exception
-                generator.Save(barcodePath, BarCodeImageFormat.Png);
-                Console.WriteLine($"QR code generated successfully: {barcodePath}");
+                // Save the generated QR code as a PNG image.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"QR code saved to {outputPath}");
             }
         }
         catch (Exception ex)
         {
-            // Build a timestamped error message
-            string message = $"[{DateTime.UtcNow:u}] QR generation error: {ex.Message}{Environment.NewLine}";
-            Console.WriteLine(message);
+            // Build a log entry with UTC timestamp and error details.
+            string logEntry = $"[{DateTime.UtcNow:u}] QR generation error: {ex.Message}{Environment.NewLine}";
 
-            // Attempt to append the error details to the audit log; suppress any logging failures
-            try
-            {
-                File.AppendAllText(logPath, message);
-            }
-            catch
-            {
-                // Intentionally ignore logging errors to avoid secondary failures
-            }
+            // Append the log entry to the audit log file.
+            File.AppendAllText(logPath, logEntry);
+            Console.WriteLine("An error occurred during QR code generation. Details logged.");
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate Fixed-Size QR Code Barcode
-// Description: Demonstrates how to create a QR Code barcode with a fixed image size by disabling automatic sizing.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and AutoSizeMode to produce barcodes with custom dimensions. Developers often need to generate barcodes that fit specific layout constraints, such as fixed-width images for UI elements or printed materials. The snippet shows setting image width, height, and module size while turning off auto‑size, a common requirement in UI design and reporting scenarios.
+// Title: Generate QR Code with Fixed Dimensions
+// Description: Demonstrates how to create a QR Code barcode using Aspose.BarCode, disable automatic sizing, and enforce specific image dimensions.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and image parameter settings. Developers often need to produce QR codes of exact pixel size for UI layout, printing, or embedding in documents, requiring control over AutoSizeMode, ImageWidth, ImageHeight, and XDimension. The snippet shows typical steps for configuring these properties and saving the barcode as a PNG image.
 // Prompt: Generate QR Code barcode and disable automatic size to enforce fixed dimensions.
-// Tags: qr code, barcode generation, fixed size, autosizemode, aspose.barcode, png output
+// Tags: qr code, barcode generation, fixed dimensions, autosizemode, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,42 +10,38 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a QR Code barcode with a fixed image size using Aspose.BarCode.
+/// Demonstrates generating a QR Code barcode with fixed dimensions using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the output directory, generates the QR Code, and saves it as a PNG file.
+    /// Entry point that creates the output folder, configures the barcode generator, and saves the QR Code image.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory for the generated barcode image
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        if (!Directory.Exists(outputDir))
-        {
-            // Create the directory if it does not already exist
-            Directory.CreateDirectory(outputDir);
-        }
+        // Define and create the output directory
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
 
-        // Full path for the resulting PNG file
-        string outputPath = Path.Combine(outputDir, "FixedSizeQRCode.png");
+        // Full path for the generated PNG file
+        string outputPath = Path.Combine(outputDir, "qr_fixed.png");
 
         // Initialize the barcode generator for a QR Code with the desired text
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Disable automatic sizing by selecting a fixed canvas size
+            // Disable automatic sizing and enforce fixed dimensions
             generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
-            generator.Parameters.ImageWidth.Pixels = 300f;   // Set fixed image width
-            generator.Parameters.ImageHeight.Pixels = 300f;  // Set fixed image height
+            generator.Parameters.ImageWidth.Pixels = 300f;
+            generator.Parameters.ImageHeight.Pixels = 300f;
 
-            // Optionally adjust the module (dot) size within the QR Code
+            // Optional: set the module (dot) size for the QR Code
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
 
-            // Save the generated barcode as a PNG image to the specified path
+            // Save the barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the QR Code image has been saved
+        // Inform the user where the file was saved
         Console.WriteLine($"QR Code saved to: {outputPath}");
     }
 }
