@@ -1,62 +1,66 @@
-// Title: Generate and Resize a Barcode Image Using Aspose.BarCode and System.Drawing
-// Description: This example creates a Code128 barcode, converts it to a bitmap, enlarges it using System.Drawing, and saves the result as a PNG file.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation combined with System.Drawing image manipulation. The example uses BarcodeGenerator (Aspose.BarCode.Generation) to produce a bitmap, then employs Bitmap, Graphics, and ImageFormat (Aspose.Drawing) to resize and export the image. Typical scenarios include preparing high‑resolution barcodes for printing, UI display, or further graphic processing.
+// Title: Generate and Resize a Barcode Image using Aspose.BarCode and System.Drawing
+// Description: This example creates a Code128 barcode, saves it as a PNG bitmap, enlarges it using System.Drawing, and writes both original and resized images to disk.
+// Category-Description: Demonstrates Aspose.BarCode image generation and manipulation. The sample uses BarcodeGenerator to produce a bitmap, then employs Aspose.Drawing (System.Drawing compatible) classes such as Bitmap, Graphics, and ImageFormat to resize and save the image. Typical use cases include creating printable barcodes, adjusting image dimensions for UI display, or preparing assets for further processing. Developers working with barcode generation and .NET image handling will find this pattern useful.
 // Prompt: Create a barcode as a Bitmap, resize it with System.Drawing, then save the image.
-// Tags: barcode, code128, generation, resize, system.drawing, bitmap, png, aspose.barcode, image-processing
+// Tags: code128, barcode generation, image resize, bitmap, aspose.barcode, aspose.drawing, png, csharp
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates how to generate a barcode, resize it using System.Drawing, and save it as a PNG file.
+/// Demonstrates how to generate a barcode, resize it using System.Drawing, and save both versions as PNG files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, doubles its dimensions, and writes the result to disk.
+    /// Entry point of the example. Generates a Code128 barcode, saves the original bitmap,
+    /// creates a resized version, and writes both images to the output folder.
     /// </summary>
     static void Main()
     {
-        // Define the full path for the output PNG file.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "resized_barcode.png");
+        // Define the output directory and ensure it exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
 
-        // Ensure the output directory exists; create it if necessary.
-        string outputDir = Path.GetDirectoryName(outputPath);
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Paths for the original and resized barcode images
+        string originalPath = Path.Combine(outputDir, "barcode_original.png");
+        string resizedPath = Path.Combine(outputDir, "barcode_resized.png");
 
-        // Initialize the barcode generator with Code128 symbology and the desired data.
+        // Generate barcode as Aspose.Drawing.Bitmap
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Generate the barcode as a bitmap image.
             using (Bitmap originalBitmap = generator.GenerateBarCodeImage())
             {
-                // Calculate new dimensions (double the original width and height).
+                // Save the original barcode image
+                originalBitmap.Save(originalPath, ImageFormat.Png);
+
+                // Calculate new dimensions (double the size)
                 int newWidth = originalBitmap.Width * 2;
                 int newHeight = originalBitmap.Height * 2;
 
-                // Create a new bitmap with the calculated size.
+                // Create a new bitmap with the desired size
                 using (Bitmap resizedBitmap = new Bitmap(newWidth, newHeight))
                 {
-                    // Obtain a graphics object to draw onto the new bitmap.
+                    // Draw the original bitmap onto the resized canvas
                     using (Graphics graphics = Graphics.FromImage(resizedBitmap))
                     {
-                        // Render the original barcode onto the resized bitmap, scaling it to fill the new dimensions.
-                        graphics.DrawImage(originalBitmap, new Rectangle(0, 0, newWidth, newHeight));
+                        graphics.DrawImage(
+                            originalBitmap,
+                            new Aspose.Drawing.Rectangle(0, 0, newWidth, newHeight));
                     }
 
-                    // Save the resized bitmap as a PNG file to the specified path.
-                    resizedBitmap.Save(outputPath, ImageFormat.Png);
+                    // Save the resized barcode image
+                    resizedBitmap.Save(resizedPath, ImageFormat.Png);
                 }
             }
         }
 
-        // Inform the user where the resized barcode image has been saved.
-        Console.WriteLine($"Resized barcode saved to: {outputPath}");
+        // Output the locations of the saved files
+        Console.WriteLine($"Original barcode saved to: {originalPath}");
+        Console.WriteLine($"Resized barcode saved to: {resizedPath}");
     }
 }
