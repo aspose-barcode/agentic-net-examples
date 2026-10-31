@@ -1,73 +1,111 @@
-// Title: Extract Aztec Code layer count and compact mode flag
-// Description: Demonstrates how to read an Aztec barcode from an image and retrieve its layer count and compact mode flag using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader, DecodeType, and the Extended Aztec properties to obtain detailed symbology information. Typical use cases include analyzing Aztec codes for metadata such as layers and compact mode, which developers often need when processing scanned documents or validating barcode specifications. The snippet serves as a reference for extracting low‑level Aztec parameters in .NET applications.
+// Title: Extract Aztec barcode layer count and compact mode flag
+// Description: Demonstrates how to generate an Aztec barcode, read it, and retrieve the layer count and compact mode flag using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows usage of BarcodeGenerator for creating Aztec symbols and BarCodeReader with reflection to access extended Aztec properties such as LayersCount and SymbolMode. Developers working with Aztec symbology often need to verify encoding parameters after scanning, making this pattern useful for debugging and validation scenarios.
 // Prompt: Extract Aztec Code layer count and compact mode flag from an image containing Aztec barcodes.
-// Tags: aztec, barcode, recognition, layerscount, iscompact, aspose.barcode, csharp, .net
+// Tags: aztec, barcode, generation, recognition, layerscount, symbolmode, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using System.Reflection;
 using Aspose.BarCode;
+using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Program to read Aztec barcode from an image and display its layer count and compact mode flag.
+/// Sample program that creates an Aztec barcode, reads it back, and extracts
+/// the LayersCount and SymbolMode (compact/full‑range) using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Accepts optional image path argument, reads Aztec barcode, and prints details.
+    /// Entry point. Generates a temporary Aztec barcode, reads it, prints
+    /// extended properties, and cleans up temporary files.
     /// </summary>
-    /// <param name="args">Command‑line arguments; first argument may be the image file path.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine image path: use first argument if provided, otherwise default to "aztec.png"
-        string imagePath = args.Length > 0 ? args[0] : "aztec.png";
+        // --------------------------------------------------------------------
+        // Prepare a temporary directory and file path for the generated barcode
+        // --------------------------------------------------------------------
+        string tempDir = Path.Combine(Path.GetTempPath(), "AztecSample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "aztec.png");
 
-        // Verify that the file exists before attempting to read
-        if (!File.Exists(imagePath))
+        // --------------------------------------------------------------
+        // Generate a sample Aztec barcode with known settings (compact mode, 3 layers)
+        // --------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Aztec, "Sample"))
         {
-            Console.WriteLine($"File not found: {imagePath}");
+            generator.Parameters.Barcode.XDimension.Pixels = 5;
+            generator.Parameters.Barcode.Aztec.SymbolMode = AztecSymbolMode.Compact;
+            generator.Parameters.Barcode.Aztec.LayersCount = 3; // valid for compact mode (max 3)
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the barcode image was created successfully
+        if (!File.Exists(barcodePath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Initialize BarCodeReader for Aztec symbology
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Aztec))
+        // --------------------------------------------------------------
+        // Read the Aztec barcode and extract extended properties via reflection
+        // --------------------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Aztec))
         {
-            // Iterate through all detected barcodes in the image
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Output basic barcode information
                 Console.WriteLine($"CodeType: {result.CodeTypeName}");
                 Console.WriteLine($"CodeText: {result.CodeText}");
 
-                // Access extended Aztec-specific properties via reflection
-                var aztecExt = result.Extended.Aztec;
+                // Access the extended Aztec object (may contain additional metadata)
+                object extAztec = result.Extended.Aztec;
+                Type extType = extAztec.GetType();
 
-                var layersProp = aztecExt.GetType().GetProperty("LayersCount");
-                var compactProp = aztecExt.GetType().GetProperty("IsCompact");
-
-                // Retrieve and display LayersCount if available
-                if (layersProp != null && layersProp.PropertyType == typeof(int))
+                // Retrieve LayersCount property if it exists
+                PropertyInfo layersProp = extType.GetProperty("LayersCount");
+                if (layersProp != null)
                 {
-                    int layers = (int)layersProp.GetValue(aztecExt);
-                    Console.WriteLine($"LayersCount: {layers}");
+                    object layersValue = layersProp.GetValue(extAztec);
+                    Console.WriteLine($"LayersCount: {layersValue}");
                 }
                 else
                 {
                     Console.WriteLine("LayersCount: not available");
                 }
 
-                // Retrieve and display IsCompact flag if available
-                if (compactProp != null && compactProp.PropertyType == typeof(bool))
+                // Retrieve SymbolMode property (compact / full‑range) if it exists
+                PropertyInfo modeProp = extType.GetProperty("SymbolMode");
+                if (modeProp != null)
                 {
-                    bool isCompact = (bool)compactProp.GetValue(aztecExt);
-                    Console.WriteLine($"IsCompact: {isCompact}");
+                    object modeValue = modeProp.GetValue(extAztec);
+                    Console.WriteLine($"SymbolMode: {modeValue}");
                 }
                 else
                 {
-                    Console.WriteLine("IsCompact: not available");
+                    Console.WriteLine("SymbolMode: not available");
                 }
+
+                // Additional known metadata for completeness
+                Console.WriteLine($"IsReaderInitialization: {result.Extended.Aztec.IsReaderInitialization}");
+                Console.WriteLine($"StructuredAppendBarcodeId: {result.Extended.Aztec.StructuredAppendBarcodeId}");
+                Console.WriteLine($"StructuredAppendBarcodesCount: {result.Extended.Aztec.StructuredAppendBarcodesCount}");
+                Console.WriteLine($"StructuredAppendFileId: {result.Extended.Aztec.StructuredAppendFileId}");
             }
+        }
+
+        // --------------------------------------------------------------
+        // Cleanup temporary files and directory
+        // --------------------------------------------------------------
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignore any cleanup errors (e.g., file still in use)
         }
     }
 }

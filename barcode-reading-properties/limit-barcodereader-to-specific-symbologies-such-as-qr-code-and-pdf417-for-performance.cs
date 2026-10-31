@@ -1,59 +1,53 @@
 // Title: Limit BarCodeReader to Specific Symbologies (QR Code and PDF417)
-// Description: Demonstrates generating QR and PDF417 barcodes, then reading them while restricting the BarCodeReader to those symbologies for improved performance.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcode images and BarCodeReader with a symbology filter to efficiently decode them. Developers commonly need to generate barcodes for various data formats and then recognize only the required types to reduce processing time, especially in high‑throughput scenarios.
+// Description: Demonstrates generating QR Code and PDF417 barcodes, then reading them while restricting the BarCodeReader to those symbologies for improved performance.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader with DecodeType filters to read only selected symbologies. Developers often need to limit recognition to specific types such as QR Code or PDF417 to reduce processing time and resource usage in high‑throughput scenarios.
 // Prompt: Limit BarCodeReader to specific symbologies such as QR Code and PDF417 for performance.
-// Tags: barcode symbology, generation, recognition, performance, qrcode, pdf417, aspose.barcode
+// Tags: barcode, symbology, generation, recognition, qr, pdf417, performance, aspose.barcode
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates limiting barcode recognition to specific symbologies (QR Code and PDF417) to improve performance.
+/// Demonstrates limiting barcode recognition to specific symbologies (QR Code and PDF417) for performance optimization.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample QR and PDF417 barcodes, reads them using a filtered BarCodeReader, and cleans up temporary files.
+    /// Entry point. Generates sample QR and PDF417 barcodes, reads them with a filtered BarCodeReader, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for sample barcodes
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder to store generated barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Prepare sample barcode data (encode type, text, output file name)
-        var samples = new (BaseEncodeType Encode, string Text, string FileName)[]
-        {
-            (EncodeTypes.QR, "Hello QR", "qr.png"),
-            (EncodeTypes.Pdf417, "Hello PDF417", "pdf417.png")
-        };
+        var barcodeFiles = new List<string>();
 
-        // Generate barcode images and save them as PNG files
-        foreach (var (encode, text, fileName) in samples)
+        // -------------------- Generate QR Code --------------------
+        string qrPath = Path.Combine(tempFolder, "qr.png");
+        using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR"))
         {
-            string filePath = Path.Combine(tempFolder, fileName);
-            using (var generator = new BarcodeGenerator(encode, text))
-            {
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
+            // Save QR Code as PNG
+            qrGenerator.Save(qrPath, BarCodeImageFormat.Png);
         }
+        barcodeFiles.Add(qrPath);
 
-        // List of generated files to be read
-        var filesToRead = new string[]
+        // -------------------- Generate PDF417 --------------------
+        string pdfPath = Path.Combine(tempFolder, "pdf417.png");
+        using (var pdfGenerator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample PDF417"))
         {
-            Path.Combine(tempFolder, "qr.png"),
-            Path.Combine(tempFolder, "pdf417.png")
-        };
+            // Save PDF417 as PNG
+            pdfGenerator.Save(pdfPath, BarCodeImageFormat.Png);
+        }
+        barcodeFiles.Add(pdfPath);
 
-        // Define target symbologies for recognition (QR and PDF417 only)
-        BaseDecodeType[] targetTypes = new BaseDecodeType[] { DecodeType.QR, DecodeType.Pdf417 };
-
-        // Read each file using BarCodeReader limited to the specified symbologies
-        foreach (string file in filesToRead)
+        // -------------------- Read barcodes with limited symbologies --------------------
+        foreach (string file in barcodeFiles)
         {
             if (!File.Exists(file))
             {
@@ -61,28 +55,32 @@ class Program
                 continue;
             }
 
-            using (var reader = new BarCodeReader(file, targetTypes))
+            // Limit recognition to QR and PDF417 only
+            using (var reader = new BarCodeReader(file, DecodeType.QR, DecodeType.Pdf417))
             {
-                // Apply a high‑performance preset to speed up recognition
-                reader.QualitySettings = QualitySettings.HighPerformance;
-
                 BarCodeResult[] results = reader.ReadBarCodes();
-                Console.WriteLine($"Reading '{Path.GetFileName(file)}' - found {results.Length} barcode(s):");
                 foreach (BarCodeResult result in results)
                 {
-                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    Console.WriteLine($"{Path.GetFileName(file)} - Detected {result.CodeTypeName}: {result.CodeText}");
                 }
             }
         }
 
-        // Clean up temporary files and folder
+        // -------------------- Clean up temporary files (optional) --------------------
         try
         {
-            Directory.Delete(tempFolder, true);
+            foreach (string file in barcodeFiles)
+            {
+                if (File.Exists(file))
+                    File.Delete(file);
+            }
+
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore cleanup errors
+            Console.WriteLine($"Cleanup error: {ex.Message}");
         }
     }
 }

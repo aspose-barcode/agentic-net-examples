@@ -1,57 +1,65 @@
-// Title: Extract barcode region coordinates from a PNG and store them as JSON
-// Description: Demonstrates reading a PNG image, detecting barcodes, extracting their placement region coordinates, and persisting the data for later use.
-// Category-Description: This example belongs to the Aspose.BarCode reading and generation category. It showcases the BarCodeReader, BarcodeGenerator, and related classes to locate barcodes within images, retrieve geometric information (position, size, angle), and serialize results. Developers working with inventory, document processing, or quality control often need to capture barcode locations for analytics or database storage.
+// Title: Extract barcode region coordinates from a PNG and save to JSON (as DB placeholder)
+// Description: Demonstrates how to read barcodes from a PNG image using Aspose.BarCode, retrieve each barcode's placement region (position, size, angle), and store the data in a JSON file that can be used as a simple database.
+// Category-Description: This example belongs to the Aspose.BarCode recognition category, illustrating the use of BarCodeReader, DecodeType, and BarCodeResult to locate barcodes within images. Typical scenarios include inventory scanning, document processing, and quality control where developers need to capture barcode geometry for further analysis or storage. The code shows how to extract region information and serialize it for persistence.
 // Prompt: Extract barcode placement region coordinates from a PNG file and store them in a database.
-// Tags: barcode, region, extraction, png, json, aspose.barcode, generation, recognition
+// Tags: barcode, recognition, png, region, coordinates, json, aspose.barcode, csharp
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Sample console application that generates a QR code (if needed), reads barcodes from a PNG file,
-/// extracts their placement region data, and writes the information to a JSON file.
+/// Demonstrates barcode detection and region extraction from a PNG image, storing results in JSON.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Simple DTO for persisting barcode metadata and its placement region.
+    /// </summary>
+    class BarcodeRecord
+    {
+        public string CodeType { get; set; }
+        public string CodeText { get; set; }
+        public float X { get; set; }
+        public float Y { get; set; }
+        public float Width { get; set; }
+        public float Height { get; set; }
+        public double Angle { get; set; }
+    }
+
+    /// <summary>
+    /// Entry point. Reads barcodes from the specified PNG, logs details, and writes region data to a JSON file.
     /// </summary>
     static void Main()
     {
-        // Define the temporary PNG file path.
-        string imagePath = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
+        // Path to the sample PNG file that contains one or more barcodes.
+        string imagePath = "sample_barcode.png";
 
-        // If the PNG does not exist, generate a sample QR code image.
+        // Verify that the image file exists before attempting to read it.
         if (!File.Exists(imagePath))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample123"))
-            {
-                generator.Save(imagePath, BarCodeImageFormat.Png);
-            }
+            Console.WriteLine($"Image file not found: {imagePath}");
+            return;
         }
 
-        // Collection to hold extracted barcode region records.
-        var records = new List<BarcodeRegionRecord>();
+        // Collection to hold extracted barcode region information.
+        var records = new List<BarcodeRecord>();
 
-        // Open the image with BarCodeReader to detect all supported barcode types.
+        // Initialize the barcode reader to detect all supported barcode types.
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            // Iterate through each detected barcode result.
+            // Iterate through each detected barcode in the image.
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Retrieve the rectangle that defines the barcode's placement region.
-                var rect = result.Region.Rectangle; // Aspose.Drawing.RectangleF
+                // Retrieve the rectangular region that encloses the barcode.
+                var rect = result.Region.Rectangle; // RectangleF returned by the API
 
-                // Populate a record with file and barcode details.
-                var record = new BarcodeRegionRecord
+                // Populate a record with barcode data and its geometric properties.
+                var record = new BarcodeRecord
                 {
-                    FileName = Path.GetFileName(imagePath),
                     CodeType = result.CodeTypeName,
                     CodeText = result.CodeText,
                     X = rect.X,
@@ -60,36 +68,21 @@ class Program
                     Height = rect.Height,
                     Angle = result.Region.Angle
                 };
-
-                // Add the record to the collection.
                 records.Add(record);
+
+                // Output details to the console for immediate feedback.
+                Console.WriteLine($"Found {record.CodeType}: {record.CodeText}");
+                Console.WriteLine($"Region - X:{record.X}, Y:{record.Y}, W:{record.Width}, H:{record.Height}, Angle:{record.Angle}");
             }
         }
 
-        // Serialize the collection to a formatted JSON file.
-        string jsonPath = Path.Combine(Path.GetTempPath(), "barcode_regions.json");
+        // Serialize the collected records to a formatted JSON file (acting as a simple database).
+        string jsonPath = "barcode_regions.json";
         string json = JsonSerializer.Serialize(records, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(jsonPath, json);
+        Console.WriteLine($"Barcode region data saved to {jsonPath}");
 
-        // Inform the user where the results were saved.
-        Console.WriteLine($"Extraction complete. Results saved to: {jsonPath}");
-
-        // In a real application, the data could be stored in a database (e.g., SQLite, SQL Server).
-        // Database code is omitted here because the required packages are not available in the snippet runner.
+        // In a real application, replace the JSON file with database storage logic,
+        // e.g., using SQLite or SQL Server to insert records into a table.
     }
-}
-
-/// <summary>
-/// Data model representing the extracted region information for a single barcode.
-/// </summary>
-class BarcodeRegionRecord
-{
-    public string FileName { get; set; }
-    public string CodeType { get; set; }
-    public string CodeText { get; set; }
-    public float X { get; set; }
-    public float Y { get; set; }
-    public float Width { get; set; }
-    public float Height { get; set; }
-    public double Angle { get; set; }
 }

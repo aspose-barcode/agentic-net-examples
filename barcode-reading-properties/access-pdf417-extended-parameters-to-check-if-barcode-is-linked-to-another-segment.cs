@@ -1,53 +1,56 @@
-// Title: Check PDF417 IsLinked extended parameter
-// Description: Demonstrates generating a PDF417 barcode with the IsLinked flag set and reading the barcode to verify the extended IsLinked property.
-// Category-Description: This example belongs to the Aspose.BarCode PDF417 barcode manipulation category. It shows how to use BarcodeGenerator to set PDF417-specific parameters and BarCodeReader with DecodeType.Pdf417 to access extended PDF417 properties such as IsLinked. Developers working with PDF417 symbology often need to control segment linking for multi‑segment barcodes and validate those settings during scanning.
+// Title: PDF417 Barcode Linked Segment Detection Example
+// Description: Demonstrates how to generate a PDF417 barcode with the IsLinked flag set and then read the barcode to verify the linked state.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating PDF417 barcodes and BarCodeReader for extracting extended PDF417 parameters such as IsLinked. Developers working with PDF417 symbology often need to control and inspect linking between barcode segments, making this pattern useful for batch processing, document scanning, and data validation scenarios.
 // Prompt: Access PDF417 extended parameters to check if the barcode is linked to another segment.
-// Tags: pdf417, barcode, extended-parameters, islinked, generation, recognition, png, aspose.barcode
+// Tags: pdf417, barcode, linked, generation, recognition, extended-parameters, csharp, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating and reading a PDF417 barcode with the IsLinked extended parameter.
+/// Provides a simple console demonstration of generating a PDF417 barcode with the IsLinked flag
+/// and reading the barcode to inspect the linked state using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a PDF417 barcode with IsLinked=true, saves it, and reads back the IsLinked state.
+    /// Entry point of the example. Generates a PDF417 barcode, reads it back, and outputs the
+    /// extended IsLinked property to the console.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary output directory and define the barcode image path
-        string outputDir = Path.Combine(Path.GetTempPath(), "Pdf417LinkedDemo");
-        Directory.CreateDirectory(outputDir);
-        string barcodePath = Path.Combine(outputDir, "linkedPdf417.png");
+        // Create a unique temporary folder for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "Pdf417LinkedDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Generate a PDF417 barcode and set the IsLinked flag to true
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Pdf417, "Sample linked barcode"))
+        // Define the full path for the generated barcode image
+        string barcodePath = Path.Combine(tempDir, "linked.png");
+
+        // Generate a PDF417 barcode with the IsLinked property set to true
+        using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, "SampleData"))
         {
-            // Set barcode dimensions (pixel size of X dimension)
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Set the X-dimension (module width) to 2 pixels for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
 
-            // Enable linking of this PDF417 segment
+            // Enable the linked segment flag in the PDF417 extended parameters
             generator.Parameters.Barcode.Pdf417.IsLinked = true;
 
-            // Save the generated barcode as a PNG image
+            // Save the barcode as a PNG image
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created
+        // Verify that the barcode image was created successfully
         if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Read the barcode from the saved image and output the extended IsLinked property
-        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Pdf417))
+        // Read the barcode image and output the extended IsLinked state
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Pdf417))
         {
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
@@ -55,6 +58,17 @@ class Program
                 Console.WriteLine($"CodeText: {result.CodeText}");
                 Console.WriteLine($"IsLinked: {result.Extended.Pdf417.IsLinked}");
             }
+        }
+
+        // Optional cleanup of temporary files and folder
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Suppress any errors that occur during cleanup
         }
     }
 }

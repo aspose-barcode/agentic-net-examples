@@ -1,8 +1,8 @@
 // Title: Read QR Code version and error correction level from detected barcodes
-// Description: Demonstrates how to generate QR codes with specific versions and error correction levels, then read those images to extract the version and error correction information.
-// Category-Description: This example belongs to the Aspose.BarCode QR code generation and recognition category. It showcases the use of BarcodeGenerator for creating QR codes with custom QRVersion and QRErrorLevel settings, and BarCodeReader for decoding QR symbols and accessing extended QR metadata such as version and error correction level. Developers working with QR code customization, validation, or analytics will find these APIs essential for controlling QR code parameters and retrieving detailed decoding information.
+// Description: Demonstrates generating QR codes with specific version and error correction level, then reading those properties from each detected QR barcode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create QR codes with custom QRVersion and QRErrorLevel settings, and BarCodeReader to decode QR symbols and retrieve extended QR metadata such as version and error correction level. Developers working with QR code customization, validation, or analytics commonly use these APIs to control QR encoding parameters and extract detailed information during scanning.
 // Prompt: Read QR Code version and error correction level from each detected QR barcode.
-// Tags: qr code, version, error correction, barcode generation, barcode recognition, aspose.barcode, csharp
+// Tags: qr code, version, error correction level, barcode generation, barcode recognition, aspose.barcode, c#
 
 using System;
 using System.IO;
@@ -14,8 +14,8 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates QR code images with various versions and error correction levels,
-/// then reads each image to display the detected QR version and error correction level.
+/// Generates sample QR codes with specific versions and error correction levels,
+/// then reads each code to display its version and error correction level.
 /// </summary>
 class Program
 {
@@ -25,46 +25,37 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for generated QR images
+        // Create a temporary folder for sample QR codes
         string tempFolder = Path.Combine(Path.GetTempPath(), "QrSample_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define sample QR versions to generate
-        var versions = new List<QRVersion>
+        // Define sample data: text, version, error correction level
+        var samples = new List<(string Text, QRVersion Version, QRErrorLevel ErrorLevel)>
         {
-            QRVersion.Version05,
-            QRVersion.Version10,
-            QRVersion.Version20
+            ("Sample QR 1", QRVersion.Version05, QRErrorLevel.LevelL),
+            ("Sample QR 2", QRVersion.Version10, QRErrorLevel.LevelM),
+            ("Sample QR 3", QRVersion.Version15, QRErrorLevel.LevelQ),
+            ("Sample QR 4", QRVersion.Version20, QRErrorLevel.LevelH)
         };
 
-        // Define sample error correction levels to generate
-        var errorLevels = new List<QRErrorLevel>
-        {
-            QRErrorLevel.LevelL,
-            QRErrorLevel.LevelM,
-            QRErrorLevel.LevelQ,
-            QRErrorLevel.LevelH
-        };
+        var filePaths = new List<string>();
 
-        // Generate QR code images for each combination of version and error level
-        var generatedFiles = new List<string>();
-        foreach (var version in versions)
+        // Generate QR codes with specified version and error correction level
+        for (int i = 0; i < samples.Count; i++)
         {
-            foreach (var errorLevel in errorLevels)
+            var (text, version, errorLevel) = samples[i];
+            string filePath = Path.Combine(tempFolder, $"qr_{i + 1}.png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, text))
             {
-                string filePath = Path.Combine(tempFolder, $"QR_V{version}_E{errorLevel}.png");
-                using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
-                {
-                    generator.Parameters.Barcode.QR.Version = version;
-                    generator.Parameters.Barcode.QR.ErrorLevel = errorLevel;
-                    generator.Save(filePath, BarCodeImageFormat.Png);
-                }
-                generatedFiles.Add(filePath);
+                generator.Parameters.Barcode.QR.Version = version;
+                generator.Parameters.Barcode.QR.ErrorLevel = errorLevel;
+                generator.Save(filePath, BarCodeImageFormat.Png);
             }
+            filePaths.Add(filePath);
         }
 
-        // Read each generated QR code and output version and error correction level
-        foreach (string file in generatedFiles)
+        // Read each QR code and output its version and error correction level
+        foreach (string file in filePaths)
         {
             if (!File.Exists(file))
             {
@@ -72,49 +63,24 @@ class Program
                 continue;
             }
 
-            using (var reader = new BarCodeReader(file, DecodeType.QR))
+            using (BarCodeReader reader = new BarCodeReader(file, DecodeType.QR))
             {
                 foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
+                    var qrExt = result.Extended.QR;
                     Console.WriteLine($"File: {Path.GetFileName(file)}");
-                    Console.WriteLine($"  Detected Symbology: {result.CodeTypeName}");
-                    Console.WriteLine($"  Code Text: {result.CodeText}");
-
-                    // Extended QR information contains version and error correction level
-                    if (result.Extended?.QR != null)
-                    {
-                        Console.WriteLine($"  QR Version: {result.Extended.QR.Version}");
-                        Console.WriteLine($"  Error Correction Level: {result.Extended.QR.ErrorLevel}");
-                    }
-                    else
-                    {
-                        Console.WriteLine("  No extended QR information available.");
-                    }
+                    Console.WriteLine($"  CodeText: {result.CodeText}");
+                    Console.WriteLine($"  Version: {qrExt.Version}");
+                    Console.WriteLine($"  ErrorLevel: {qrExt.ErrorLevel}");
                 }
             }
         }
 
-        // Clean up generated files
-        foreach (string file in generatedFiles)
+        // Clean up temporary files
+        foreach (string file in filePaths)
         {
-            try
-            {
-                File.Delete(file);
-            }
-            catch
-            {
-                // Ignored – best effort cleanup
-            }
+            try { File.Delete(file); } catch { }
         }
-
-        // Remove the temporary folder
-        try
-        {
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignored – best effort cleanup
-        }
+        try { Directory.Delete(tempFolder, true); } catch { }
     }
 }
