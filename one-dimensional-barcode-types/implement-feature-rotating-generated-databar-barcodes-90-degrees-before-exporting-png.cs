@@ -1,8 +1,8 @@
-// Title: Rotate DataBar Omni-Directional Barcode 90 Degrees and Export as PNG
-// Description: Demonstrates how to generate a DataBar Omni‑Directional barcode, rotate it 90 degrees clockwise, and save the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating barcode creation, transformation, and image export. It uses the BarcodeGenerator class with EncodeTypes.DatabarOmniDirectional, modifies the RotationAngle parameter, and saves the image via BarCodeImageFormat. Developers often need to rotate barcodes for specific layout requirements, such as fitting rotated labels or integrating with existing graphics.
+// Title: Rotating DataBar Omnidirectional Barcode 90 Degrees and Exporting to PNG
+// Description: Demonstrates generating a GS1‑formatted DataBar Omnidirectional barcode, rotating it 90° clockwise, and saving as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters such as X‑dimension, bar height, and rotation angle using the BarcodeGenerator class. Typical use cases include creating rotated barcodes for label designs, packaging, or UI components where orientation matters. Developers often need to adjust rotation, size, and output format when integrating barcode generation into automated workflows.
 // Prompt: Implement feature rotating generated DataBar barcodes 90 degrees before exporting PNG.
-// Tags: databar, rotation, png, aspose.barcode, barcode generation, image export
+// Tags: databar, rotation, png, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -10,43 +10,45 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a DataBar Omni-Directional barcode, rotates it 90 degrees, and saves it as a PNG file.
+/// Generates a DataBar Omnidirectional barcode, rotates it 90 degrees, and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the example. Creates the output directory, configures the barcode generator,
-    /// applies a 90‑degree rotation, and writes the PNG image to disk.
+    /// applies rotation, and writes the resulting image to disk.
     /// </summary>
     static void Main()
     {
-        // Determine the output folder relative to the current working directory
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-
-        // Ensure the output directory exists
+        // Determine a temporary folder for the output image.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarCodeDemo");
         if (!Directory.Exists(outputDir))
         {
+            // Create the directory if it does not already exist.
             Directory.CreateDirectory(outputDir);
         }
 
-        // Full path for the resulting PNG file
+        // Full path for the generated PNG file.
         string outputPath = Path.Combine(outputDir, "DatabarRotated90.png");
 
-        // Initialize the barcode generator with DataBar Omni-Directional symbology and sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.DatabarOmniDirectional, "(01)12345678901231"))
+        // DataBar Omnidirectional requires a GS1‑formatted code text.
+        string codeText = "(01)12345678901231";
+
+        // Initialize the barcode generator with the desired symbology and data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.DatabarOmniDirectional, codeText))
         {
-            // Rotate the barcode 90 degrees clockwise
+            // Optional appearance settings: set module size and bar height.
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
+            generator.Parameters.Barcode.BarHeight.Pixels = 30;
+
+            // Rotate the barcode 90 degrees clockwise.
             generator.Parameters.RotationAngle = 90f;
 
-            // Optional: adjust barcode dimensions for better visual quality
-            generator.Parameters.Barcode.XDimension.Pixels = 2;
-            generator.Parameters.Barcode.BarHeight.Pixels = 60;
-
-            // Save the rotated barcode as a PNG image
+            // Save the rotated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"Rotated DataBar barcode saved to: {outputPath}");
+        // Inform the user where the file was saved.
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

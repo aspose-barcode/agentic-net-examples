@@ -1,8 +1,8 @@
-// Title: Generate DataBar barcodes from JSON specifications and save as PNG images
-// Description: This example reads a JSON file containing barcode type and text specifications, creates DataBar barcodes using Aspose.BarCode, and saves the images to an output folder.
-// Category-Description: Demonstrates Aspose.BarCode generation workflow for DataBar symbologies. It covers reading configuration data (JSON), mapping symbology names to EncodeTypes via reflection, configuring barcode parameters, and exporting images. Ideal for developers needing batch barcode creation, automated report generation, or integration with data pipelines.
+// Title: Generate DataBar barcodes from JSON specifications
+// Description: This example reads barcode parameters from a JSON file, creates DataBar barcode images using Aspose.BarCode, and saves them to a temporary folder.
+// Category-Description: Demonstrates Aspose.BarCode generation of DataBar symbologies. It covers reading configuration data, using EncodeTypes via reflection, setting barcode parameters (XDimension, BarHeight, AspectRatio, GS1 encoding, composite component), and exporting PNG images. Ideal for developers needing batch barcode creation or dynamic barcode generation based on external data sources.
 // Prompt: Develop script reading barcode specs from JSON, creating DataBar images, saving to folder.
-// Tags: databar, barcode generation, json, png, aspose.barcode, encode types, reflection
+// Tags: databar, barcode generation, json, aspose.barcode, png, encode types, batch processing
 
 using System;
 using System.IO;
@@ -11,115 +11,132 @@ using System.Text.Json;
 using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
-namespace BarcodeGeneratorApp
+/// <summary>
+/// Represents a barcode specification loaded from JSON.
+/// </summary>
+class BarcodeSpec
+{
+    public string Symbology { get; set; }
+    public string CodeText { get; set; }
+    public float? XDimension { get; set; }
+    public float? BarHeight { get; set; }
+    public int? AspectRatio { get; set; }
+    public bool? AllowOnlyGS1Encoding { get; set; }
+    public bool? Is2DCompositeComponent { get; set; }
+}
+
+/// <summary>
+/// Demonstrates reading barcode specifications from JSON, generating DataBar barcodes, and saving them as PNG files.
+/// </summary>
+class Program
 {
     /// <summary>
-    /// Represents a single barcode specification read from the JSON input.
+    /// Entry point. Prepares sample JSON if missing, reads specifications, generates barcodes, and writes them to an output directory.
     /// </summary>
-    public class BarcodeSpec
+    static void Main()
     {
-        /// <summary>
-        /// The name of the DataBar symbology (e.g., "DatabarOmniDirectional").
-        /// </summary>
-        public string Type { get; set; } = "";
-
-        /// <summary>
-        /// The text to encode in the barcode.
-        /// </summary>
-        public string CodeText { get; set; } = "";
-    }
-
-    /// <summary>
-    /// Main program class that reads barcode specifications, generates barcodes, and saves them as PNG files.
-    /// </summary>
-    class Program
-    {
-        /// <summary>
-        /// Entry point of the application. Executes the barcode generation workflow.
-        /// </summary>
-        static void Main()
+        // --------------------------------------------------------------------
+        // Prepare a JSON specification file in the temp folder (create sample if absent)
+        // --------------------------------------------------------------------
+        string jsonPath = Path.Combine(Path.GetTempPath(), "databar_specs.json");
+        if (!File.Exists(jsonPath))
         {
-            // -----------------------------------------------------------------
-            // Step 1: Ensure a JSON file with barcode specifications exists.
-            // -----------------------------------------------------------------
-            string jsonPath = Path.Combine(Directory.GetCurrentDirectory(), "specs.json");
-            if (!File.Exists(jsonPath))
+            var sampleSpecs = new List<BarcodeSpec>
             {
-                // Create sample specifications if the file is missing.
-                var sampleSpecs = new List<BarcodeSpec>
+                new BarcodeSpec
                 {
-                    new BarcodeSpec { Type = "DatabarOmniDirectional", CodeText = "(01)12345678901231" },
-                    new BarcodeSpec { Type = "DatabarExpanded", CodeText = "(01)12345678901231(21)ABC" },
-                    new BarcodeSpec { Type = "DatabarStackedOmniDirectional", CodeText = "(01)12345678901231" }
-                };
-                string sampleJson = JsonSerializer.Serialize(sampleSpecs, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(jsonPath, sampleJson);
-                Console.WriteLine($"Sample JSON created at: {jsonPath}");
-            }
-
-            // -----------------------------------------------------------------
-            // Step 2: Read and deserialize the JSON content into a list of specs.
-            // -----------------------------------------------------------------
-            string jsonContent = File.ReadAllText(jsonPath);
-            List<BarcodeSpec>? specs = JsonSerializer.Deserialize<List<BarcodeSpec>>(jsonContent);
-            if (specs == null || specs.Count == 0)
-            {
-                Console.WriteLine("No barcode specifications found.");
-                return;
-            }
-
-            // -----------------------------------------------------------------
-            // Step 3: Prepare the output directory for generated barcode images.
-            // -----------------------------------------------------------------
-            string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "BarcodesOutput");
-            if (!Directory.Exists(outputDir))
-            {
-                Directory.CreateDirectory(outputDir);
-            }
-
-            // -----------------------------------------------------------------
-            // Step 4: Iterate over each specification, generate the barcode, and save it.
-            // -----------------------------------------------------------------
-            int index = 0;
-            foreach (var spec in specs)
-            {
-                index++;
-
-                // Resolve the symbology name to the corresponding BaseEncodeType using reflection.
-                FieldInfo? field = typeof(EncodeTypes).GetField(spec.Type);
-                if (field == null)
+                    Symbology = "DatabarExpanded",
+                    CodeText = "(01)12345678901231",
+                    XDimension = 2f,
+                    BarHeight = 30f,
+                    AllowOnlyGS1Encoding = true
+                },
+                new BarcodeSpec
                 {
-                    Console.WriteLine($"[{index}] Unknown symbology: {spec.Type}");
-                    continue;
+                    Symbology = "DatabarStackedOmniDirectional",
+                    CodeText = "(01)12345678901231",
+                    XDimension = 2f,
+                    AspectRatio = 15,
+                    BarHeight = 40f,
+                    AllowOnlyGS1Encoding = false
+                },
+                new BarcodeSpec
+                {
+                    Symbology = "DatabarOmniDirectional",
+                    CodeText = "(01)12345678901231",
+                    XDimension = 2f,
+                    BarHeight = 30f,
+                    Is2DCompositeComponent = true
                 }
-
-                BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null)!;
-
-                // Create a BarcodeGenerator instance for the resolved type and provided text.
-                using (var generator = new BarcodeGenerator(encodeType, spec.CodeText))
-                {
-                    // Optional: increase X-dimension for better visual clarity.
-                    generator.Parameters.Barcode.XDimension.Pixels = 2f;
-
-                    // Build the output file name and path.
-                    string fileName = $"{spec.Type}_{index}.png";
-                    string filePath = Path.Combine(outputDir, fileName);
-
-                    // Attempt to save the barcode image as PNG.
-                    try
-                    {
-                        generator.Save(filePath, BarCodeImageFormat.Png);
-                        Console.WriteLine($"[{index}] Saved: {filePath}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[{index}] Failed to generate {spec.Type}: {ex.Message}");
-                    }
-                }
-            }
-
-            Console.WriteLine("Barcode generation completed.");
+            };
+            string json = JsonSerializer.Serialize(sampleSpecs, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(jsonPath, json);
         }
+
+        // --------------------------------------------------------------------
+        // Read the JSON specifications into a list of BarcodeSpec objects
+        // --------------------------------------------------------------------
+        string jsonContent = File.ReadAllText(jsonPath);
+        List<BarcodeSpec> specs = JsonSerializer.Deserialize<List<BarcodeSpec>>(jsonContent);
+
+        // --------------------------------------------------------------------
+        // Create a unique output folder for the generated barcode images
+        // --------------------------------------------------------------------
+        string outputDir = Path.Combine(Path.GetTempPath(), "DataBarOutput_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+
+        int index = 0;
+        foreach (var spec in specs)
+        {
+            index++;
+
+            // Resolve the symbology name to the corresponding EncodeTypes field via reflection
+            FieldInfo field = typeof(EncodeTypes).GetField(spec.Symbology);
+            if (field == null)
+            {
+                Console.WriteLine($"[Warning] Unknown symbology: {spec.Symbology}. Skipping.");
+                continue;
+            }
+            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+            // ----------------------------------------------------------------
+            // Generate the barcode using the resolved encode type and supplied text
+            // ----------------------------------------------------------------
+            using (var generator = new BarcodeGenerator(encodeType, spec.CodeText))
+            {
+                // Apply optional parameters if they are present in the JSON spec
+                if (spec.XDimension.HasValue)
+                {
+                    generator.Parameters.Barcode.XDimension.Pixels = spec.XDimension.Value;
+                }
+                if (spec.BarHeight.HasValue)
+                {
+                    generator.Parameters.Barcode.BarHeight.Pixels = spec.BarHeight.Value;
+                }
+                if (spec.AspectRatio.HasValue)
+                {
+                    generator.Parameters.Barcode.DataBar.AspectRatio = spec.AspectRatio.Value;
+                }
+                if (spec.AllowOnlyGS1Encoding.HasValue)
+                {
+                    generator.Parameters.Barcode.DataBar.AllowOnlyGS1Encoding = spec.AllowOnlyGS1Encoding.Value;
+                }
+                if (spec.Is2DCompositeComponent.HasValue)
+                {
+                    generator.Parameters.Barcode.DataBar.Is2DCompositeComponent = spec.Is2DCompositeComponent.Value;
+                }
+
+                // Save the generated barcode as a PNG file
+                string fileName = $"{spec.Symbology}_{index}.png";
+                string filePath = Path.Combine(outputDir, fileName);
+                generator.Save(filePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated: {filePath}");
+            }
+        }
+
+        Console.WriteLine($"All barcodes saved to: {outputDir}");
     }
 }

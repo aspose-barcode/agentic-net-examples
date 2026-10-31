@@ -1,71 +1,106 @@
-// Title: Batch barcode generation from Excel rows
-// Description: Demonstrates reading an Excel spreadsheet, using each row's value as the barcode text, and exporting PNG images.
-// Category-Description: This example belongs to the Aspose.BarCode for .NET batch processing category. It shows how to combine Aspose.Cells to read spreadsheet data with Aspose.BarCode's BarcodeGenerator to create Code128 barcodes. Typical use cases include mass‑producing product labels, inventory tags, or QR codes from data sources. Developers often need to iterate rows, configure barcode parameters, and save images in various formats.
+// Title: Batch barcode generation from Excel to PNG files
+// Description: Demonstrates reading an Excel file row‑by‑row, using each cell value as the barcode text, and saving each barcode as a PNG image.
+// Category-Description: Shows how to use Aspose.Cells to read spreadsheet data together with Aspose.BarCode to generate barcodes. Typical use cases include bulk creation of product labels, inventory tags, or QR codes from a data source. Developers often work with Workbook, Worksheet, BarcodeGenerator, and image export APIs to automate barcode production.
 // Prompt: Batch generate barcodes from an Excel spreadsheet, using each row’s value as CodeText and exporting PNG files.
-// Tags: barcode, batch, excel, code128, png, generation, aspose.barcode, aspose.cells
+// Tags: barcode, batch, excel, code128, png, aspose.barcode, aspose.cells, generation
 
 using System;
 using System.IO;
+using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Cells;
-using Aspose.Cells.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation of Code128 barcodes from an Excel file, saving each as a PNG image.
+/// Example program that creates a temporary Excel file, reads each row,
+/// generates a Code128 barcode for the cell value, and saves the barcode as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a sample Excel file, reads each data row, generates a barcode, and saves it as PNG.
+    /// Entry point of the example. Performs the end‑to‑end barcode generation workflow.
     /// </summary>
     static void Main()
     {
-        // Create a temporary Excel file with sample data
-        string excelPath = Path.Combine(Path.GetTempPath(), "SampleData_" + Guid.NewGuid().ToString("N") + ".xlsx");
-        using (Workbook wbCreate = new Workbook())
+        // Create a unique temporary folder for the generated barcode images.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+
+        // Create a temporary Excel file containing sample barcode texts.
+        string excelPath = Path.Combine(Path.GetTempPath(), "BarcodesInput_" + Guid.NewGuid().ToString("N") + ".xlsx");
+        CreateSampleExcel(excelPath);
+
+        // Open the Excel workbook for reading.
+        using (Workbook workbook = new Workbook(excelPath))
         {
-            Worksheet wsCreate = wbCreate.Worksheets[0];
-            wsCreate.Cells[0, 0].PutValue("CodeText");   // Header
-            wsCreate.Cells[1, 0].PutValue("ABC123");     // Sample row 1
-            wsCreate.Cells[2, 0].PutValue("XYZ789");     // Sample row 2
-            wsCreate.Cells[3, 0].PutValue("1234567890"); // Sample row 3
-            wbCreate.Save(excelPath, SaveFormat.Xlsx);
-        }
+            var worksheet = workbook.Worksheets[0];
+            int rowCount = worksheet.Cells.MaxDataRow + 1; // Total rows with data.
 
-        // Prepare output folder for generated PNG files
-        string outputDir = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-
-        // Load the Excel file and generate barcodes for each non‑header row
-        using (Workbook wb = new Workbook(excelPath))
-        {
-            Worksheet ws = wb.Worksheets[0];
-            int maxRow = ws.Cells.MaxDataRow;
-
-            for (int row = 0; row <= maxRow; row++)
+            // Iterate through each row and generate a barcode if the cell contains text.
+            for (int row = 0; row < rowCount; row++)
             {
-                string codeText = ws.Cells[row, 0].StringValue;
+                var cell = worksheet.Cells[row, 0];
+                string codeText = cell.StringValue?.Trim();
 
-                // Skip header row and any empty rows
-                if (string.IsNullOrWhiteSpace(codeText) || row == 0)
+                // Skip empty cells.
+                if (string.IsNullOrEmpty(codeText))
                     continue;
 
-                // Build file name and path for the PNG image
-                string fileName = $"Barcode_{row}.png";
-                string filePath = Path.Combine(outputDir, fileName);
+                // Build a safe file name for the PNG image.
+                string safeFileName = MakeSafeFileName(codeText);
+                string outputPath = Path.Combine(outputFolder, $"{safeFileName}_{row}.png");
 
-                // Generate Code128 barcode and save as PNG
-                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+                // Generate the barcode using Code128 symbology.
+                using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
                 {
+                    // Adjust barcode dimensions for better readability.
                     generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                    generator.Save(filePath, BarCodeImageFormat.Png);
+                    // Save the barcode image as PNG.
+                    generator.Save(outputPath, BarCodeImageFormat.Png);
                 }
 
-                Console.WriteLine($"Generated: {filePath}");
+                // Inform the user about the generated file.
+                Console.WriteLine($"Generated barcode for '{codeText}' at '{outputPath}'");
             }
         }
 
-        Console.WriteLine("Barcode generation completed.");
+        // Final summary of the output location.
+        Console.WriteLine($"All barcodes saved to: {outputFolder}");
+    }
+
+    /// <summary>
+    /// Creates a simple Excel workbook with a single column of sample barcode texts.
+    /// </summary>
+    /// <param name="path">Full path where the workbook will be saved.</param>
+    static void CreateSampleExcel(string path)
+    {
+        using (Workbook wb = new Workbook())
+        {
+            var ws = wb.Worksheets[0];
+            string[] samples = new string[] { "ABC123", "987654321", "HelloWorld", "2023-10-29", "Sample5" };
+            for (int i = 0; i < samples.Length; i++)
+            {
+                ws.Cells[i, 0].PutValue(samples[i]);
+            }
+            wb.Save(path, SaveFormat.Xlsx);
+        }
+    }
+
+    /// <summary>
+    /// Sanitizes a string to be used safely as a file name by replacing invalid characters with underscores.
+    /// </summary>
+    /// <param name="name">Original string.</param>
+    /// <returns>Sanitized file‑name‑compatible string.</returns>
+    static string MakeSafeFileName(string name)
+    {
+        var sb = new StringBuilder();
+        foreach (char c in name)
+        {
+            if (char.IsLetterOrDigit(c) || c == '_' || c == '-')
+                sb.Append(c);
+            else
+                sb.Append('_');
+        }
+        return sb.ToString();
     }
 }

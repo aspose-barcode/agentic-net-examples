@@ -1,8 +1,8 @@
-// Title: Generate Barcode with Transparent Background for Image Overlay
-// Description: Creates a Code128 barcode with a transparent background and overlays it onto a base image, then saves the result as a PNG.
-// Category-Description: This example demonstrates Aspose.BarCode image generation and manipulation, focusing on setting a transparent background for barcodes and compositing them onto existing graphics. It uses BarcodeGenerator, BarcodeParameters, and Aspose.Drawing classes such as Bitmap, Graphics, and ImageFormat. Typical use cases include adding barcodes to photos, PDFs, or UI elements without obscuring the underlying content. Developers often need to control barcode colors, background transparency, and positioning when integrating barcodes into custom visuals.
+// Title: Generate Barcode with Transparent Background and Overlay on Image
+// Description: Demonstrates creating a barcode with a transparent background, compositing it onto an existing image, and saving the combined result as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation and image manipulation category. It showcases the use of BarcodeGenerator to produce a barcode image, configuring its background to be transparent, and then using Aspose.Drawing's Bitmap and Graphics classes to overlay the barcode onto another image. Typical use cases include adding barcodes to product photos, documents, or UI elements without obscuring the underlying graphics. Developers often need to combine barcode generation with custom graphics workflows, and this snippet illustrates the essential API calls for such scenarios.
 // Prompt: Configure barcode to use a transparent background for overlay on existing images.
-// Tags: code128, transparent background, image overlay, png, aspose.barcode, aspose.drawing, barcode generation
+// Tags: barcode, code128, transparent background, overlay, image composition, png, aspose.barcode, aspose.drawing, generation
 
 using System;
 using System.IO;
@@ -12,52 +12,63 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a barcode with a transparent background and overlaying it onto a base image.
+/// Example program that creates a barcode with a transparent background,
+/// overlays it onto a base image, and saves the combined image as PNG.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates the base image, generates the barcode, overlays it, and saves the result.
+    /// Entry point of the example. Generates the images and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the final PNG image.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode_overlay.png");
+        // Define dimensions for the base image (200x200 pixels)
+        int baseWidth = 200;
+        int baseHeight = 200;
 
-        // Create a base bitmap (400x300) with 32bpp ARGB pixel format to support transparency.
-        using (var baseBitmap = new Bitmap(400, 300, PixelFormat.Format32bppArgb))
+        // Create a bitmap that will serve as the background canvas
+        using (Bitmap baseImage = new Bitmap(baseWidth, baseHeight))
         {
-            // Fill the base image with a solid gray background.
-            using (var graphicsBase = Graphics.FromImage(baseBitmap))
+            // Fill the base image with a light gray color
+            using (Graphics gBase = Graphics.FromImage(baseImage))
             {
-                graphicsBase.Clear(Color.FromArgb(200, 200, 200));
+                gBase.Clear(Color.FromArgb(200, 200, 200));
             }
 
-            // Initialize the barcode generator for Code128 with the desired text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+            // Text to encode in the barcode
+            string codeText = "1234567890";
+
+            // Initialize the barcode generator for Code128 symbology
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Set the barcode background to transparent and the bar color to black.
+                // Configure the barcode to have a transparent background
                 generator.Parameters.BackColor = Color.Transparent;
+
+                // Optional: set the color of the bars to black
                 generator.Parameters.Barcode.BarColor = Color.Black;
 
-                // Generate the barcode image as a bitmap.
-                using (Bitmap barcodeBitmap = generator.GenerateBarCodeImage())
+                // Generate the barcode image as a bitmap
+                using (Bitmap barcodeBmp = generator.GenerateBarCodeImage())
                 {
-                    // Overlay the barcode bitmap onto the base image at position (50,50).
-                    using (var graphicsOverlay = Graphics.FromImage(baseBitmap))
+                    // Overlay the barcode onto the base image at coordinates (50, 50)
+                    using (Graphics gOverlay = Graphics.FromImage(baseImage))
                     {
-                        graphicsOverlay.DrawImage(
-                            barcodeBitmap,
-                            new Rectangle(50, 50, barcodeBitmap.Width, barcodeBitmap.Height));
+                        gOverlay.DrawImage(barcodeBmp, new Point(50, 50));
                     }
                 }
             }
 
-            // Save the combined image as a PNG file, preserving transparency.
-            baseBitmap.Save(outputPath, ImageFormat.Png);
-        }
+            // Determine the output file path in the current working directory
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "output.png");
 
-        // Inform the user where the image was saved.
-        Console.WriteLine($"Barcode overlay image saved to: {outputPath}");
+            // Save the combined image as a PNG file
+            using (FileStream fs = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+            {
+                baseImage.Save(fs, ImageFormat.Png);
+            }
+
+            // Inform the user where the file was saved
+            Console.WriteLine($"Combined image saved to: {outputPath}");
+        }
     }
 }

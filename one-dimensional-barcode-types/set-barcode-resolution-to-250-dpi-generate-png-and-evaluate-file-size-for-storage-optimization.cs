@@ -1,8 +1,8 @@
-// Title: Generate high‑resolution Code128 barcode PNG and check file size
-// Description: Demonstrates setting barcode resolution to 250 DPI, creating a PNG image, and retrieving its file size for storage optimization.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to configure barcode rendering parameters such as resolution, select a symbology (Code128), and save the result in PNG format. Developers commonly use these APIs (BarcodeGenerator, EncodeTypes, BarCodeImageFormat) to produce barcodes for packaging, inventory, or mobile scanning, and often need to assess file size for efficient storage or transmission.
+// Title: Generate Code128 barcode PNG at 250 DPI and check file size
+// Description: Demonstrates setting barcode resolution to 250 DPI, creating a Code128 barcode, saving it as a PNG image, and measuring the resulting file size for storage considerations.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode image resolution using the BarcodeGenerator class, select an output format (PNG) via BarCodeImageFormat, and retrieve file information with System.IO. Developers working on barcode creation, image quality tuning, and storage optimization commonly use these APIs to produce high‑resolution barcodes suitable for printing or digital use.
 // Prompt: Set barcode resolution to 250 DPI, generate PNG, and evaluate file size for storage optimization.
-// Tags: code128, resolution, png, file size, barcode generation, aspose.barcode
+// Tags: code128, barcode, resolution, png, file size, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -10,42 +10,40 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode PNG with a custom resolution and reporting its file size.
+/// Example program that generates a Code128 barcode image at 250 DPI,
+/// saves it as PNG, and reports the file size for storage optimization.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a temporary folder, generates the barcode image, and outputs its location and size.
+    /// Entry point. Accepts optional barcode text argument, creates a temporary
+    /// output folder, generates the barcode, and prints the file location and size.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments; first argument is used as barcode text.</param>
+    static void Main(string[] args)
     {
-        // Create a unique temporary directory for the barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Determine barcode text: use first argument if provided, otherwise default.
+        string codeText = args.Length > 0 ? args[0] : "12345678";
 
-        // Define the full path for the output PNG file
-        string filePath = Path.Combine(tempFolder, "barcode.png");
+        // Create a unique temporary folder for the generated image.
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // Initialize the barcode generator with Code128 symbology and sample data
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
+        // Build the full path for the PNG output file.
+        string outputPath = Path.Combine(outputFolder, "barcode.png");
+
+        // Generate the barcode with 250 DPI resolution and save it as PNG.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Set the rendering resolution to 250 DPI for higher quality output
-            generator.Parameters.Resolution = 250f;
-
-            // Save the generated barcode as a PNG image
-            generator.Save(filePath, BarCodeImageFormat.Png);
+            generator.Parameters.Resolution = 250f;               // Set image resolution.
+            generator.Save(outputPath, BarCodeImageFormat.Png);   // Save as PNG.
         }
 
-        // Verify that the file was created and report its size
-        if (File.Exists(filePath))
-        {
-            long fileSize = new FileInfo(filePath).Length;
-            Console.WriteLine($"Generated barcode saved to: {filePath}");
-            Console.WriteLine($"File size: {fileSize} bytes");
-        }
-        else
-        {
-            Console.WriteLine("Failed to generate barcode image.");
-        }
+        // Evaluate the size of the generated file.
+        long fileSize = new FileInfo(outputPath).Length;
+
+        // Output the results to the console.
+        Console.WriteLine($"Barcode generated at: {outputPath}");
+        Console.WriteLine($"File size: {fileSize} bytes");
     }
 }

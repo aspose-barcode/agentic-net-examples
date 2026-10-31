@@ -1,68 +1,77 @@
-// Title: Generate Code 16K barcode with custom XDimension and quiet‑zone scaling
-// Description: Demonstrates how to set the XDimension to 0.33 mm for a Code 16K barcode, adjust quiet‑zone coefficients, save the image as PNG, and verify the result by reading the barcode back.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Typical scenarios include customizing barcode dimensions, quiet‑zone handling, and validating output in automated pipelines. Developers often need to fine‑tune XDimension and quiet‑zone settings to meet printing specifications and ensure reliable scanning.
+// Title: Code 16K Barcode Generation with Custom XDimension and Quiet Zone Scaling
+// Description: Demonstrates how to set the XDimension to 0.33 mm for a Code 16K barcode and adjust quiet zone coefficients to observe image width changes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and barcode parameter settings such as XDimension and quiet zone coefficients. Developers creating high‑density linear barcodes often need to control module size and quiet zone scaling to meet printing specifications. The snippet shows typical steps: configure parameters, generate PNG images, and compare dimensions.
 // Prompt: Set XDimension to 0.33 mm for Code 16K generation, verify quiet zone scaling.
-// Tags: code16k, xdimension, quietzone, barcode-generation, barcode-recognition, aspose.barcode, png
+// Tags: code16k, xdimension, quietzone, barcode, generation, png, aspose.barcode, c#
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code 16K barcode with a specific XDimension,
-/// custom quiet‑zone coefficients, saves it as a PNG file, and then reads it back
-/// to verify the encoding.
+/// Demonstrates setting XDimension and quiet zone coefficients for Code 16K barcodes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, saving, and verification.
+    /// Entry point that creates two Code 16K barcodes with different quiet zone scaling,
+    /// saves them as PNG files, and prints their image widths.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary output folder for the generated barcode image.
-        // --------------------------------------------------------------------
-        string outputFolder = Path.Combine(Path.GetTempPath(), "Code16K_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
-        string barcodePath = Path.Combine(outputFolder, "code16k.png");
+        // Create a unique temporary directory for output images
+        string outputDir = Path.Combine(Path.GetTempPath(), "Code16K_XDimDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // --------------------------------------------------------------------
-        // Generate a Code 16K barcode with XDimension set to 0.33 mm.
-        // Adjust quiet‑zone coefficients to demonstrate scaling behavior.
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, "Aspose16K"))
+        // Define file paths for the two generated images
+        string path10 = Path.Combine(outputDir, "Code16K_QZ10.png");
+        string path20 = Path.Combine(outputDir, "Code16K_QZ20.png");
+
+        // Generate Code 16K barcode with quiet zone coefficient 10
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, "Aspose.Barcode"))
         {
-            // Set the module width (XDimension) in millimeters.
+            // Set module size to 0.33 mm
             generator.Parameters.Barcode.XDimension.Millimeters = 0.33f;
-
-            // Configure quiet‑zone scaling coefficients (default minimum values).
+            // Apply quiet zone scaling (left and right) of 10
             generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = 10;
-            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = 1;
-
-            // Save the generated barcode as a PNG image.
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = 10;
+            // Save the barcode image as PNG
+            generator.Save(path10, BarCodeImageFormat.Png);
         }
 
-        // Output information about the generated barcode.
-        Console.WriteLine($"Barcode saved to: {barcodePath}");
-        Console.WriteLine($"XDimension set to: {0.33f} mm");
-        Console.WriteLine($"QuietZoneLeftCoef: 10, QuietZoneRightCoef: 1");
-
-        // --------------------------------------------------------------------
-        // Verify the barcode by reading it back using BarCodeReader.
-        // --------------------------------------------------------------------
-        BaseDecodeType decodeType = DecodeType.Code16K;
-        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        // Generate Code 16K barcode with quiet zone coefficient 20
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, "Aspose.Barcode"))
         {
-            var results = reader.ReadBarCodes();
-            Console.WriteLine($"Barcodes read: {results.Length}");
-            foreach (var result in results)
-            {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
-            }
+            // Set module size to 0.33 mm (same as above)
+            generator.Parameters.Barcode.XDimension.Millimeters = 0.33f;
+            // Apply quiet zone scaling (left and right) of 20
+            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = 20;
+            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = 20;
+            // Save the barcode image as PNG
+            generator.Save(path20, BarCodeImageFormat.Png);
         }
+
+        // Variables to hold image widths for comparison
+        int width10;
+        int width20;
+
+        // Load the first image and retrieve its width
+        using (var bmp10 = new Bitmap(path10))
+        {
+            width10 = bmp10.Width;
+        }
+
+        // Load the second image and retrieve its width
+        using (var bmp20 = new Bitmap(path20))
+        {
+            width20 = bmp20.Width;
+        }
+
+        // Output the measured widths and the difference caused by larger quiet zones
+        Console.WriteLine($"Image width with quiet zone coefficient 10: {width10} px");
+        Console.WriteLine($"Image width with quiet zone coefficient 20: {width20} px");
+        Console.WriteLine($"Width increase due to larger quiet zones: {width20 - width10} px");
     }
 }

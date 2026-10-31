@@ -1,8 +1,8 @@
-// Title: Create DataBar Expanded Stacked barcode and save as BMP
-// Description: Demonstrates generating a DataBar Expanded Stacked barcode with three columns and an aspect ratio of eight, then saving it as a BMP image file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure DataBar symbologies using the BarcodeGenerator class. It shows setting X‑dimension, column count, and aspect ratio for DataBar Expanded Stacked barcodes, a common requirement for retail and logistics applications where high‑density, stacked linear barcodes are needed. Developers can use similar code to create other DataBar variants and export them to various image formats.
+// Title: Generate DataBar Expanded Stacked barcode with three columns and aspect ratio 8, saved as BMP
+// Description: This example creates a DataBar Expanded Stacked barcode with three columns and an aspect ratio of eight, then saves it as a BMP image file.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class with EncodeTypes.DatabarExpandedStacked. Typical scenarios include encoding GS1-128 data for retail or logistics applications where DataBar symbols are required. Developers often need to customize dimensions, column count, and aspect ratio before exporting to common image formats such as BMP, PNG, or JPEG.
 // Prompt: Create DataBar Expanded Stacked barcode with three columns, aspect ratio eight, save BMP image.
-// Tags: databar, expandedstacked, barcode, generation, bmp, aspnet, aspose.barcode
+// Tags: databar, expanded stacked, barcode, generation, bmp, aspose.barcode, encode types, csharp
 
 using System;
 using System.IO;
@@ -10,41 +10,38 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates creating a DataBar Expanded Stacked barcode and saving it as a BMP image.
+/// Example program that generates a DataBar Expanded Stacked barcode and saves it as a BMP image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates the barcode and writes it to disk.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Determine the full path for the output BMP file
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "DatabarExpandedStacked.bmp");
+        // Define the output file path in the current working directory.
+        string outputFile = Path.Combine(Directory.GetCurrentDirectory(), "DatabarExpandedStacked_3Columns_Aspect8.bmp");
 
-        try
+        // The data to encode; includes an Application Identifier (01) followed by a 14‑digit GTIN.
+        string codeText = "(01)12345678901231";
+
+        // Initialize the barcode generator with the desired symbology and data.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DatabarExpandedStacked, codeText))
         {
-            // Initialize the barcode generator with the DataBar Expanded Stacked symbology and sample data
-            using (var generator = new BarcodeGenerator(EncodeTypes.DatabarExpandedStacked, "(01)12345678901231"))
-            {
-                // Set the X-dimension (module width) in pixels
-                generator.Parameters.Barcode.XDimension.Pixels = 2;
+            // Set the X-dimension (module width) to 2 pixels for better readability.
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
 
-                // Configure DataBar-specific parameters: three columns and an aspect ratio of eight
-                generator.Parameters.Barcode.DataBar.Columns = 3;
-                generator.Parameters.Barcode.DataBar.AspectRatio = 8;
+            // Configure the DataBar symbol to use three columns.
+            generator.Parameters.Barcode.DataBar.Columns = 3;
 
-                // Save the generated barcode as a BMP image to the specified path
-                generator.Save(outputPath, BarCodeImageFormat.Bmp);
-            }
+            // Set the aspect ratio of the DataBar symbol to eight.
+            generator.Parameters.Barcode.DataBar.AspectRatio = 8;
 
-            // Inform the user that the barcode was saved successfully
-            Console.WriteLine($"Barcode saved to: {outputPath}");
+            // Save the generated barcode as a BMP image to the specified file.
+            generator.Save(outputFile, BarCodeImageFormat.Bmp);
         }
-        catch (Exception ex)
-        {
-            // Output any errors that occurred during barcode generation
-            Console.WriteLine($"Error generating barcode: {ex.Message}");
-        }
+
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to: {outputFile}");
     }
 }

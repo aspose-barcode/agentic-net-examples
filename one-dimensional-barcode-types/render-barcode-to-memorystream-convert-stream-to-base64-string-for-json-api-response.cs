@@ -1,8 +1,8 @@
-// Title: Render Barcode to Base64 String via MemoryStream
-// Description: Generates a Code128 barcode, saves it as a PNG image in a MemoryStream, and converts the image data to a Base64 string for inclusion in JSON API responses.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to use BarcodeGenerator to create barcodes, save them directly to streams, and transform the binary output for web services. Key API classes include BarcodeGenerator, BarCodeImageFormat, and EncodeTypes. Typical use cases involve returning barcode images from REST endpoints without writing temporary files.
+// Title: Render Barcode to Base64 String for JSON API Response
+// Description: Generates a Code128 barcode, saves it to a memory stream as PNG, and converts the image to a Base64 string suitable for inclusion in a JSON API response.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, demonstrating how to use the BarcodeGenerator class with EncodeTypes and BarCodeImageFormat to create barcode images in memory. Typical use cases include generating barcodes on-the-fly for web services, embedding them in JSON payloads, or returning them to client applications without writing to disk. Developers often need to render barcodes to streams, convert them to Base64, and integrate with REST APIs.
 // Prompt: Render barcode to a MemoryStream, convert the stream to a Base64 string for JSON API response.
-// Tags: barcode, code128, base64, memorystream, json, aspose.barcode, png
+// Tags: code128, barcode generation, base64, memorystream, json, aspnet, aspose.barcode, image format png
 
 using System;
 using System.IO;
@@ -10,35 +10,31 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates rendering a barcode to a MemoryStream and converting it to a Base64 string for JSON responses.
+/// Demonstrates rendering a barcode to a memory stream and converting it to a Base64 string for JSON responses.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Code128 barcode, saves it as PNG to a MemoryStream,
-    /// converts the stream to a Base64 string, and writes the result to the console.
+    /// Entry point of the example. Generates a Code128 barcode, encodes it as PNG in memory, and outputs the Base64 representation.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode in the barcode.
+        // Define the data to encode in the barcode.
         string codeText = "12345678";
 
-        // Choose the barcode symbology (Code128 in this case).
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-
-        // Create a BarcodeGenerator with the specified symbology and text.
-        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+        // Initialize the barcode generator with the desired symbology (Code128) and data.
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
-            // Prepare a memory stream to hold the generated PNG image.
-            using (MemoryStream stream = new MemoryStream())
+            // Create a memory stream to hold the generated PNG image.
+            using (MemoryStream memoryStream = new MemoryStream())
             {
-                // Save the barcode image to the memory stream in PNG format.
-                generator.Save(stream, BarCodeImageFormat.Png);
+                // Save the barcode image into the memory stream in PNG format.
+                generator.Save(memoryStream, BarCodeImageFormat.Png);
 
-                // Convert the stream's byte array to a Base64 string for JSON transport.
-                string base64 = Convert.ToBase64String(stream.ToArray());
+                // Convert the image bytes from the memory stream to a Base64 string.
+                string base64 = Convert.ToBase64String(memoryStream.ToArray());
 
-                // Output the Base64 string (e.g., to be captured by a calling service).
+                // Write the Base64 string to the console (simulating a JSON API response payload).
                 Console.WriteLine(base64);
             }
         }

@@ -1,8 +1,8 @@
-// Title: Center-aligned Code128 barcode with auto-scaling for receipt printing
-// Description: Demonstrates how to generate a Code128 barcode with centered human‑readable text, automatic scaling, and a small image size suitable for narrow receipt printers.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and image format classes to create customized barcodes. Typical use cases include generating compact barcodes for point‑of‑sale receipts, tickets, or labels where space is limited. Developers often need to adjust text alignment, scaling modes, and dimensions to fit specific hardware constraints.
+// Title: Generate Center-Aligned Code128 Barcode for Receipt Printing
+// Description: Creates a Code128 barcode with centered human‑readable text, automatic scaling, and high resolution suitable for narrow receipt printers.
+// Category-Description: This example demonstrates basic barcode generation using Aspose.BarCode. It shows how to configure barcode parameters such as text alignment, X‑dimension, and image resolution, then save the result as a PNG. Developers working with point‑of‑sale or receipt printing often need to produce compact, high‑quality barcodes; the BarcodeGenerator class and its Parameters property provide the necessary controls.
 // Prompt: Align barcode text to center, enable automatic scaling, and generate image suitable for narrow receipt printing.
-// Tags: code128, barcode generation, autoscaling, receipt printing, image output, aspose.barcode, barcodegenerator, png
+// Tags: code128, barcode generation, receipt printing, text alignment, scaling, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -11,40 +11,39 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Code128 barcode with centered text, automatic scaling, and saves it as a PNG image.
+/// Demonstrates generating a Code128 barcode with centered text for narrow receipt printing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates output directory, configures the barcode generator,
-    /// and saves the resulting image to disk.
+    /// Entry point that creates the barcode, configures parameters, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Determine and create the output folder
+        // Determine output directory and ensure it exists
         string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
         Directory.CreateDirectory(outputDir);
+
+        // Full path for the resulting PNG file
         string outPath = Path.Combine(outputDir, "receipt_barcode.png");
 
         // Initialize the barcode generator with Code128 symbology and sample data
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Center the human‑readable text beneath the barcode
+            // Center align the human‑readable text beneath the barcode
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
 
-            // Enable automatic scaling to fit a narrow receipt width
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
-            generator.Parameters.ImageWidth.Pixels = 200f;   // Desired image width in pixels
-            generator.Parameters.ImageHeight.Pixels = 100f;  // Desired image height in pixels
-
-            // Use a small X‑dimension for higher barcode density
+            // Set a small XDimension (pixel width of the narrowest bar) for narrow receipt printing
             generator.Parameters.Barcode.XDimension.Pixels = 1f;
 
-            // Save the generated barcode as a PNG file
+            // Use a high resolution to ensure crisp output on printers
+            generator.Parameters.Resolution = 300f;
+
+            // Save the generated barcode as a PNG image
             generator.Save(outPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"Barcode saved to {outPath}");
+        // Inform the user where the image was saved
+        Console.WriteLine($"Barcode image saved to: {outPath}");
     }
 }

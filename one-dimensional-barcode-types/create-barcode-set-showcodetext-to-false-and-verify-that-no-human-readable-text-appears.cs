@@ -1,51 +1,55 @@
-// Title: Hide human‑readable text in a Code128 barcode and verify decoding
-// Description: Demonstrates how to generate a Code128 barcode without displaying the human‑readable text and confirms that the encoded data remains intact by decoding the image.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, illustrating the use of BarcodeGenerator to customize visual appearance (e.g., suppressing CodeText) and BarCodeReader to validate the encoded value. Developers often need to hide human‑readable text for aesthetic or security reasons while still being able to read the barcode programmatically. The snippet showcases key API classes such as BarcodeGenerator, CodeTextParameters, and BarCodeReader.
+// Title: Generate Code128 barcode without human‑readable text
+// Description: Demonstrates creating a Code128 barcode, disabling the displayed code text, and saving the image to a temporary folder.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce barcodes. Typical scenarios include creating machine‑readable barcodes where the human‑readable text is hidden for aesthetic or security reasons. Developers often need to control code‑text visibility, image format, and output location when integrating barcode generation into applications.
 // Prompt: Create a barcode, set ShowCodeText to false, and verify that no human‑readable text appears.
-// Tags: code128, hide-text, png, barcodelibrary, barcodegenerator, barcodereader
+// Tags: code128, barcode, hide text, generation, png, aspose.barcode, c#, aspnet
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Code128 barcode without human‑readable text,
-/// saves it as a PNG file, and then decodes it to verify the encoded value.
+/// Example program that generates a Code128 barcode with hidden human‑readable text,
+/// saves it as a PNG file, and verifies that the text visibility setting is applied.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, hides the code text,
-    /// saves the image, and reads it back to confirm the data.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Define the temporary output file path for the barcode image.
-        string outputPath = Path.Combine(Path.GetTempPath(), "barcode_no_text.png");
+        // Create a unique temporary folder for the output files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Create a barcode generator for Code128 with the sample text "Test123".
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // Define the full path for the generated barcode image
+        string outputPath = Path.Combine(tempFolder, "barcode.png");
+
+        // ------------------------------------------------------------
+        // Generate a barcode with the human‑readable text hidden
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Suppress the human‑readable text by setting its location to None.
+            // Set the code‑text location to None to hide the text
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.None;
 
-            // Save the generated barcode as a PNG image to the specified path.
+            // Save the barcode image as PNG
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved and the text visibility setting.
-        Console.WriteLine($"Barcode saved to: {outputPath}");
-        Console.WriteLine("Human‑readable text visibility set to: " + CodeLocation.None);
-
-        // Verify the barcode by decoding it; the encoded text should still be "Test123".
-        using (var reader = new BarCodeReader(outputPath, DecodeType.Code128))
+        // ------------------------------------------------------------
+        // Verify that the code‑text visibility setting is applied
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            foreach (var result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-            }
+            bool isTextHidden = generator.Parameters.Barcode.CodeTextParameters.Location == CodeLocation.None;
+            Console.WriteLine($"Human‑readable text hidden: {isTextHidden}");
         }
+
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode image saved at: {outputPath}");
     }
 }

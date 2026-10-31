@@ -1,8 +1,8 @@
-// Title: Validate DataBar Stacked Aspect Ratio Height Calculations
-// Description: Demonstrates how to generate DataBar Stacked barcodes with varying aspect ratios and verifies that the resulting image heights are positive and increase monotonically.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DataBar (GS1 DataBar) symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and the DataBar parameters to control aspect ratio, a common requirement when fine‑tuning barcode size for printing or scanning. Developers often need to validate that aspect‑ratio settings produce expected dimensions, especially for stacked variants used on small items.
+// Title: DataBar Stacked Aspect Ratio Height Validation
+// Description: Generates DataBar stacked barcodes for aspect ratios 8‑15 and verifies that the resulting image height grows with the aspect ratio.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on the DataBar stacked symbology. It demonstrates using BarcodeGenerator, setting XDimension and DataBar.AspectRatio, and rendering the barcode to a Bitmap. Developers often need to adjust aspect ratios to meet size requirements for packaging or retail labeling, and this pattern shows how to programmatically test those settings.
 // Prompt: Write unit tests validating DataBar stacked aspect ratio calculations for values eight to fifteen.
-// Tags: databar, stacked, aspectratio, barcode, generation, aspose.barcode, validation
+// Tags: barcode, databar, stacked, aspectratio, generation, aspose.barcode, testing
 
 using System;
 using System.Collections.Generic;
@@ -11,68 +11,72 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates DataBar Stacked barcodes for a range of aspect ratios
-/// and checks that the generated image heights are positive and increase monotonically.
+/// Demonstrates generating DataBar stacked barcodes with varying aspect ratios
+/// and validates that image height increases as the aspect ratio grows.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Iterates over aspect ratios 8‑15, creates a barcode for each,
-    /// records the image height, and validates monotonic growth.
+    /// Entry point that creates barcodes for aspect ratios 8‑15, records image heights,
+    /// and verifies monotonic increase.
     /// </summary>
     static void Main()
     {
         // Define the aspect ratios to test.
-        int[] aspectRatios = { 8, 9, 10, 11, 12, 13, 14, 15 };
-        // Store the resulting heights for later comparison.
-        List<int> heights = new List<int>();
-        // Flag indicating whether all checks have passed.
-        bool passed = true;
+        List<int> aspectRatios = new List<int> { 8, 9, 10, 11, 12, 13, 14, 15 };
 
-        // Generate a barcode for each aspect ratio and capture its height.
-        foreach (int ratio in aspectRatios)
+        // Dictionary to store the resulting image heights keyed by aspect ratio.
+        Dictionary<int, int> heights = new Dictionary<int, int>();
+
+        // Iterate over each aspect ratio, generate a barcode, and capture its height.
+        foreach (int aspect in aspectRatios)
         {
-            // Create a generator for the DataBar Stacked symbology with a sample GS1-128 payload.
-            using (var generator = new BarcodeGenerator(EncodeTypes.DatabarStacked, "(01)12345678901231"))
+            // Create a generator for the DataBar stacked symbology with a sample GTIN.
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DatabarStacked, "(01)12345678901231"))
             {
-                // Set a fixed X‑dimension (module width) in pixels.
+                // Set the module size (X dimension) in pixels.
                 generator.Parameters.Barcode.XDimension.Pixels = 2;
-                // Apply the current aspect ratio.
-                generator.Parameters.Barcode.DataBar.AspectRatio = ratio;
+
+                // Apply the current aspect ratio to the DataBar settings.
+                generator.Parameters.Barcode.DataBar.AspectRatio = aspect;
 
                 // Generate the barcode image.
                 using (Bitmap bitmap = generator.GenerateBarCodeImage())
                 {
-                    // Verify that the generated image has a positive height.
-                    if (bitmap.Height <= 0)
-                    {
-                        Console.WriteLine($"FAILED: Height non-positive for aspect ratio {ratio}");
-                        passed = false;
-                    }
-                    // Record the height for monotonicity check.
-                    heights.Add(bitmap.Height);
+                    // Record the image height for later verification.
+                    int height = bitmap.Height;
+                    heights[aspect] = height;
+                    Console.WriteLine($"Aspect Ratio {aspect}: Image Height = {height}");
                 }
             }
         }
 
-        // Ensure that each subsequent height is greater than the previous one.
-        for (int i = 1; i < heights.Count; i++)
+        // Verify that the recorded heights increase monotonically with the aspect ratio.
+        bool allIncreasing = true;
+        int previousHeight = -1;
+
+        foreach (int aspect in aspectRatios)
         {
-            if (heights[i] <= heights[i - 1])
+            int currentHeight = heights[aspect];
+
+            // If the current height is not greater than the previous, flag a failure.
+            if (previousHeight != -1 && currentHeight <= previousHeight)
             {
-                Console.WriteLine($"FAILED: Height not increasing from ratio {aspectRatios[i - 1]} to {aspectRatios[i]} (heights {heights[i - 1]} -> {heights[i]})");
-                passed = false;
+                allIncreasing = false;
+                Console.WriteLine($"FAILED: Height for aspect {aspect} ({currentHeight}) is not greater than previous height ({previousHeight}).");
             }
+
+            previousHeight = currentHeight;
         }
 
-        // Output the overall result.
-        if (passed)
+        // Output the overall test result.
+        if (allIncreasing)
         {
-            Console.WriteLine("PASSED: All aspect ratio height calculations are monotonic and positive.");
+            Console.WriteLine("ALL TESTS PASSED: Image heights increase with aspect ratio from 8 to 15.");
         }
         else
         {
-            Console.WriteLine("FAILED: One or more aspect ratio height checks failed.");
+            Console.WriteLine("ONE OR MORE TESTS FAILED: Height monotonicity check failed.");
         }
     }
 }

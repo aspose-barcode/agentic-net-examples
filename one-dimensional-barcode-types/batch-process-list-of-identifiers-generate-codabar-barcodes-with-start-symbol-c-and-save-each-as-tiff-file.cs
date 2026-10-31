@@ -1,32 +1,27 @@
 // Title: Generate Codabar barcodes in batch and save as TIFF files
-// Description: Demonstrates how to iterate over a collection of identifiers, create Codabar barcodes with start/stop symbol 'C', and write each barcode image to a TIFF file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.Codabar. It shows how to configure Codabar start/stop symbols, adjust X‑dimension, and save images in TIFF format—common tasks when integrating barcode creation into batch processing or reporting workflows. Developers looking for code samples on bulk barcode creation, format-specific settings, and file output will find this pattern useful.
+// Description: Demonstrates how to iterate over a list of identifiers, create Codabar barcodes with start/stop symbol C, and write each barcode to a TIFF image file.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator with EncodeTypes.Codabar. It shows typical batch processing scenarios where multiple codes are produced, start/stop symbols are customized, and images are saved in a specific format such as TIFF. Developers working with inventory, shipping, or ticketing systems often need to generate many barcodes programmatically, and this snippet provides a concise reference.
 // Prompt: Batch process a list of identifiers, generate Codabar barcodes with start symbol C, and save each as a TIFF file.
-// Tags: codabar, barcode generation, batch processing, tiff, aspose.barcode, encode types, image output
+// Tags: codabar, barcode generation, batch processing, tiff, aspose.barcode, encode types
 
 using System;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates Codabar barcodes for a list of identifiers
-/// and saves each barcode as a TIFF image file.
+/// Demonstrates batch generation of Codabar barcodes with start/stop symbol C and saves them as TIFF files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Performs batch barcode generation and file output.
+    /// Entry point that creates a temporary output folder, generates barcodes for a predefined list,
+    /// and writes each barcode image to a TIFF file.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary output directory for the generated TIFF files
-        string outputDir = Path.Combine(Path.GetTempPath(), "CodabarBatch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-
-        // Sample list of identifiers (numeric strings) to be encoded as barcodes
+        // Define a sample collection of identifiers to encode as barcodes
         List<string> identifiers = new List<string>
         {
             "12345",
@@ -36,35 +31,29 @@ class Program
             "778899"
         };
 
-        int index = 1; // Counter used for naming output files
+        // Create a dedicated temporary folder for the output TIFF files
+        string outputFolder = Path.Combine(Path.GetTempPath(), "CodabarBatch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // Iterate over each identifier, generate a barcode, and save it
-        foreach (string id in identifiers)
+        // Iterate over each identifier, generate a barcode, and save it as a TIFF image
+        for (int i = 0; i < identifiers.Count; i++)
         {
-            // Codabar requires explicit start/stop characters; we use 'C' for both
-            string codeText = $"C{id}C";
+            string codeText = identifiers[i];
+            string filePath = Path.Combine(outputFolder, $"Codabar_{i + 1}.tiff");
 
-            // Initialize the barcode generator with Codabar symbology and the prepared text
-            using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, codeText))
+            // Initialize the barcode generator with Codabar symbology and the current identifier
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar, codeText))
             {
-                // Configure the start and stop symbols to be 'C'
+                // Configure start and stop symbols to 'C' as required by the example
                 generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.C;
                 generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.C;
 
-                // Optional: set the X dimension (module width) for better readability
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-
-                // Build the full file path for the current barcode image
-                string filePath = Path.Combine(outputDir, $"Codabar_{index}.tiff");
-
-                // Save the generated barcode as a TIFF image
+                // Save the generated barcode image in TIFF format
                 generator.Save(filePath, BarCodeImageFormat.Tiff);
-
-                // Log the successful creation of the barcode file
-                Console.WriteLine($"Saved barcode for identifier '{id}' to: {filePath}");
             }
 
-            index++; // Increment the file counter
+            // Output the location of the generated barcode for verification
+            Console.WriteLine($"Generated barcode for '{codeText}' at: {filePath}");
         }
 
         // Indicate that the batch processing has finished

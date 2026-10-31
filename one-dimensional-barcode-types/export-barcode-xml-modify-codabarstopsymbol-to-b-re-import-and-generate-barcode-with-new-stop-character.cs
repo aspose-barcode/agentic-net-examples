@@ -1,8 +1,8 @@
-// Title: Export Codabar barcode to XML, modify stop symbol, and regenerate image
-// Description: Demonstrates exporting a Codabar barcode's configuration to XML, editing the stop symbol, re‑importing the XML, and generating a new barcode image with the updated stop character.
-// Category-Description: This example belongs to the Aspose.BarCode generation and configuration management category. It showcases the use of BarcodeGenerator for creating barcodes, ExportToXml for persisting settings, ImportFromXml for reloading modified configurations, and Save for rendering images. Developers often need to programmatically adjust barcode parameters (e.g., start/stop symbols) without recreating the generator from scratch, making XML export/import a convenient workflow.
+// Title: Export Codabar barcode configuration to XML, modify stop symbol, re-import and generate PNG
+// Description: Demonstrates exporting a Codabar barcode generator's settings to XML, editing the stop symbol, importing the modified XML, and creating a barcode image with the new stop character.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating how to persist barcode generator settings using XML, adjust parameters programmatically, and regenerate barcodes. It showcases key classes like BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, which developers commonly use for saving, loading, and customizing barcode configurations across applications.
 // Prompt: Export barcode XML, modify CodabarStopSymbol to B, re‑import, and generate barcode with new stop character.
-// Tags: codabar, barcode, export, import, xml, stop-symbol, aspose.barcode, generation, png
+// Tags: codabar, xml, export, import, png, barcodegenerator, parameters
 
 using System;
 using System.IO;
@@ -13,60 +13,70 @@ using Aspose.BarCode.Generation;
 
 /// <summary>
 /// Example program that exports a Codabar barcode configuration to XML,
-/// changes the stop symbol, re‑imports the modified XML, and saves the resulting barcode image.
+/// modifies the stop symbol, re-imports the configuration, and generates a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the export‑modify‑import workflow and writes the output path to the console.
+    /// Entry point of the example. Performs the export‑modify‑import workflow and saves the resulting barcode image.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for all generated files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "CodabarDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-
-        // Define file paths for the intermediate XML and final PNG image
-        string xmlPath = Path.Combine(tempFolder, "codabar.xml");
-        string imagePath = Path.Combine(tempFolder, "codabar_modified.png");
-
-        // Step 1: Generate an initial Codabar barcode and export its configuration to XML
-        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "-12345-"))
+        // Prepare the output directory where XML and PNG files will be stored.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        if (!Directory.Exists(outputDir))
         {
-            // The default start/stop symbols are 'A'; no explicit setting required
+            Directory.CreateDirectory(outputDir);
+        }
+
+        // Define file paths for the intermediate XML and final PNG image.
+        string xmlPath = Path.Combine(outputDir, "codabar.xml");
+        string imagePath = Path.Combine(outputDir, "codabar_B.png");
+
+        // Step 1: Create a Codabar generator with default start/stop symbols and export its configuration to XML.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "12345"))
+        {
+            // Explicitly set start and stop symbols to 'A' (default) for clarity.
+            generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.A;
+            generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.A;
+
+            // Persist the generator's settings to an XML file.
             generator.ExportToXml(xmlPath);
         }
 
-        // Step 2: Load the exported XML and modify the stop symbol to 'B'
-        if (!File.Exists(xmlPath))
+        // Step 2: Load the exported XML, locate the <StopSymbol> element, and change its value to 'B'.
+        if (File.Exists(xmlPath))
+        {
+            XDocument doc = XDocument.Load(xmlPath);
+            var stopSymbolElement = doc.Descendants("StopSymbol").FirstOrDefault();
+            if (stopSymbolElement != null)
+            {
+                stopSymbolElement.Value = "B";
+                doc.Save(xmlPath);
+            }
+            else
+            {
+                Console.WriteLine("StopSymbol element not found in XML.");
+                return;
+            }
+        }
+        else
         {
             Console.WriteLine("Exported XML file not found.");
             return;
         }
 
-        XDocument doc = XDocument.Load(xmlPath);
-        // Find the element whose name ends with "StopSymbol" (e.g., CodabarStopSymbol)
-        var stopElement = doc.Descendants()
-                             .FirstOrDefault(e => e.Name.LocalName.EndsWith("StopSymbol", StringComparison.Ordinal));
-        if (stopElement != null)
+        // Step 3: Import the modified XML back into a generator and create the barcode image.
+        using (var generator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            stopElement.Value = "B";
-        }
-        else
-        {
-            Console.WriteLine("StopSymbol element not found in XML.");
-            return;
-        }
-        doc.Save(xmlPath);
+            // Optional verification: output the stop symbol after import.
+            var stopSymbol = generator.Parameters.Barcode.Codabar.StopSymbol;
+            Console.WriteLine($"Stop symbol after import: {stopSymbol}");
 
-        // Step 3: Import the modified XML and generate a new barcode image with the updated stop symbol
-        using (var modifiedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
-        {
-            modifiedGenerator.Save(imagePath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG file.
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the generated image
-        Console.WriteLine("Modified barcode image saved to:");
-        Console.WriteLine(imagePath);
+        Console.WriteLine($"Barcode image saved to: {imagePath}");
     }
 }
