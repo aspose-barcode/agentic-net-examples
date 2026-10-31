@@ -1,8 +1,8 @@
-// Title: Feature Flag for Multithreaded Barcode Reading
-// Description: Demonstrates how to enable or disable multithreaded barcode reading using a startup flag.
-// Category-Description: This example belongs to the Aspose.BarCode reading category, showcasing the use of BarCodeReader and its ProcessorSettings to control multithreading. Developers often need to toggle multithreaded decoding for performance tuning or resource constraints. The sample covers barcode generation, reading, and cleanup, illustrating typical workflows for Code128 barcodes.
+// Title: Multithreaded Barcode Reading Feature Flag Demo
+// Description: Demonstrates how to toggle multithreaded barcode reading using Aspose.BarCode at application startup, generating a QR code and reading it with configurable threading.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, illustrating the use of BarcodeGenerator, BarCodeReader, and ProcessorSettings for controlling multithreading. Developers often need to optimize performance when processing many images; this snippet shows typical use cases such as enabling all CPU cores or limiting thread count via feature flags.
 // Prompt: Implement a feature flag that enables or disables multithreaded barcode reading at application startup.
-// Tags: barcode, symbology, reading, multithreading, feature flag, aspose.barcode, code128, image generation
+// Tags: qr, barcode generation, barcode recognition, multithreading, feature flag, aspose.barcode, processor settings
 
 using System;
 using System.IO;
@@ -11,58 +11,66 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Sample program that generates a Code128 barcode, optionally enables multithreaded
-/// reading via a feature flag, reads the barcode, and cleans up temporary files.
+/// Sample program that generates a QR barcode, then reads it using a configurable
+/// multithreading feature flag. Demonstrates Aspose.BarCode generation, recognition,
+/// and ProcessorSettings usage.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Application entry point. Parses command‑line arguments to set the multithreading flag,
-    /// creates a temporary barcode image, reads it, and outputs the result.
+    /// Application entry point. Sets up a feature flag, creates a temporary QR barcode,
+    /// configures multithreading, reads the barcode, and cleans up resources.
     /// </summary>
-    /// <param name="args">Command‑line arguments; use "disable" to turn off multithreading.</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine whether multithreaded reading should be enabled.
-        // The flag defaults to true and can be disabled by passing "disable" as the first argument.
-        bool enableMultithread = true;
-        if (args.Length > 0 && args[0].Equals("disable", StringComparison.OrdinalIgnoreCase))
-        {
-            enableMultithread = false;
-        }
+        // Feature flag to enable or disable multithreaded barcode reading
+        bool enableMultithread = true; // Change to false to disable
 
-        // Create a unique temporary folder for the sample barcode image.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "sample.png");
+        // Create a unique temporary folder for the sample barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "sample.png");
 
-        // Generate a simple Code128 barcode image and save it as PNG.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Generate a simple QR barcode and save it to the temporary folder
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Apply the multithreading setting based on the feature flag.
-        BarCodeReader.ProcessorSettings.UseAllCores = enableMultithread;
+        // Configure multithreading settings based on the feature flag
+        if (enableMultithread)
+        {
+            // Enable use of all available cores
+            BarCodeReader.ProcessorSettings.UseAllCores = true;
+            // Optionally limit the maximum additional threads
+            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 4;
+        }
+        else
+        {
+            // Disable multithreading
+            BarCodeReader.ProcessorSettings.UseAllCores = false;
+            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
+        }
 
-        // Read the barcode using the selected decode type (Code128).
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // Read the generated barcode using the configured settings
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
             var results = reader.ReadBarCodes();
             foreach (var result in results)
             {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                Console.WriteLine($"CodeType: {result.CodeTypeName}, CodeText: {result.CodeText}");
             }
         }
 
-        // Attempt to clean up the temporary folder and its contents.
+        // Clean up temporary files
         try
         {
-            Directory.Delete(tempFolder, true);
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
         }
         catch
         {
-            // Suppress any exceptions that occur during cleanup.
+            // Ignore any cleanup errors
         }
     }
 }

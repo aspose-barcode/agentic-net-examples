@@ -1,8 +1,8 @@
-// Title: Custom Australia Post barcode decoder example
-// Description: Demonstrates how to implement a custom CustomerInformationDecoder for Australia Post barcodes and use it during barcode recognition.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on Australia Post symbology. It shows the use of BarcodeGenerator, BarCodeReader, and the AustraliaPostSettings classes, which developers commonly employ to create, read, and interpret Australia Post barcodes with custom decoding logic.
+// Title: Custom Customer Information Decoder for Australia Post Barcodes
+// Description: Demonstrates how to create a custom decoder by inheriting AustraliaPostCustomerInformationDecoder and assign it to the barcode reader settings to interpret the customer information field.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on custom decoding of Australia Post barcodes. It showcases the use of BarcodeGenerator, BarCodeReader, and the AustraliaPost settings classes. Developers often need to extract and interpret the customer information segment of Australia Post barcodes, and custom decoders provide flexibility for proprietary or simplified decoding logic.
 // Prompt: Implement a custom class inheriting CustomerInformationDecoder and assign it to AustraliaPostSettings.CustomDecoder.
-// Tags: australia post, barcode, custom decoder, generation, recognition, aspnet.barcode
+// Tags: australia post, barcode, custom decoder, customer information, generation, recognition, aspnet, c#
 
 using System;
 using System.IO;
@@ -11,10 +11,10 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Custom decoder that inherits from <see cref="AustraliaPostCustomerInformationDecoder"/>.
-/// This simple implementation returns the raw customer information field unchanged.
+/// Custom decoder that simply returns the raw customer information field unchanged.
+/// Inherit from <see cref="AustraliaPostCustomerInformationDecoder"/> to integrate with Aspose.BarCode's Australia Post settings.
 /// </summary>
-class MyDecoder : AustraliaPostCustomerInformationDecoder
+public class MyDecoder : AustraliaPostCustomerInformationDecoder
 {
     /// <summary>
     /// Decodes the supplied customer information field.
@@ -23,7 +23,7 @@ class MyDecoder : AustraliaPostCustomerInformationDecoder
     /// <returns>The decoded (or in this case, unchanged) customer information.</returns>
     public string Decode(string customerInformationField)
     {
-        // Simple example: return the field unchanged
+        // Simple pass‑through decoder – no transformation applied.
         return customerInformationField;
     }
 }
@@ -31,22 +31,20 @@ class MyDecoder : AustraliaPostCustomerInformationDecoder
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates an Australia Post barcode, reads it back using a custom decoder,
-    /// and outputs the results to the console.
+    /// Entry point of the example. Generates an Australia Post barcode, reads it back,
+    /// applies the custom decoder, and displays the results.
     /// </summary>
     static void Main()
     {
-        // -----------------------------------------------------------------
-        // Prepare temporary output directory and file path for the barcode image
-        // -----------------------------------------------------------------
-        string outputDir = Path.Combine(Path.GetTempPath(), "AustraliaPostDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-        string barcodePath = Path.Combine(outputDir, "AustraliaPost.png");
+        // Create a unique temporary directory for the demo files.
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarCodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "AustraliaPost.png");
 
-        // -----------------------------------------------------------------
-        // Generate a sample Australia Post barcode with specific settings
-        // -----------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "620123456701234"))
+        // ------------------------------------------------------------
+        // Generate an Australia Post barcode using CTable encoding.
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "6201234567AB"))
         {
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Parameters.Barcode.BarHeight.Pixels = 50f;
@@ -54,50 +52,41 @@ class Program
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // -----------------------------------------------------------------
-        // Verify that the barcode image was successfully created
-        // -----------------------------------------------------------------
-        if (!File.Exists(barcodePath))
+        // ------------------------------------------------------------
+        // Read the barcode and assign the custom decoder.
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AustraliaPost))
         {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // -----------------------------------------------------------------
-        // Read the barcode using a custom customer information decoder
-        // -----------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.AustraliaPost))
-        {
-            // Match the interpreting type used during generation
-            reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
-
-            // Assign the custom decoder (property name is CustomerInformationDecoder)
+            // Attach the custom decoder to the Australia Post settings.
             reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder = new MyDecoder();
 
-            // Iterate through all detected barcodes (should be one in this example)
+            // Iterate through all detected barcodes (only one in this demo).
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
                 Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
+                Console.WriteLine($"Full CodeText: {result.CodeText}");
 
-                // Manually invoke the custom decoder if additional processing is required
-                string decodedInfo = ((AustraliaPostCustomerInformationDecoder)reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder)
-                                    .Decode(result.CodeText);
-                Console.WriteLine($"Custom Decoded Info: {decodedInfo}");
+                // Extract the customer information field (characters after the first 10).
+                string customerInfo = result.CodeText.Length > 10 ? result.CodeText.Substring(10) : string.Empty;
+
+                // Use the custom decoder to interpret the extracted field.
+                string decodedInfo = ((MyDecoder)reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder).Decode(customerInfo);
+                Console.WriteLine($"Decoded Customer Information: {decodedInfo}");
             }
         }
 
-        // -----------------------------------------------------------------
-        // Optional cleanup of temporary files and directories
-        // -----------------------------------------------------------------
+        // ------------------------------------------------------------
+        // Clean up temporary files and directories.
+        // ------------------------------------------------------------
         try
         {
-            File.Delete(barcodePath);
-            Directory.Delete(outputDir);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignore any errors during cleanup
+            // Ignored – cleanup failure should not affect program exit.
         }
     }
 }

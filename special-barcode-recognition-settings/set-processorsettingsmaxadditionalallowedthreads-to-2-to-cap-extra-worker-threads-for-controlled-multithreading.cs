@@ -1,70 +1,61 @@
-// Title: Controlling Barcode Reader Thread Pool Size
-// Description: Demonstrates how to limit additional worker threads for barcode reading using Aspose.BarCode's ProcessorSettings.
-// Category-Description: This example belongs to the Aspose.BarCode multithreading management category, illustrating the use of BarCodeReader.ProcessorSettings to cap extra threads. Developers working with high‑throughput barcode scanning often need to control thread usage to avoid resource exhaustion. The snippet shows generating a Code128 barcode, configuring thread limits, and reading the barcode.
+// Title: Cap Additional Worker Threads for Barcode Reading
+// Description: Demonstrates how to limit the number of extra worker threads used by Aspose.BarCode's barcode reader by setting ProcessorSettings.MaxAdditionalAllowedThreads.
+// Category-Description: This example belongs to the Aspose.BarCode multithreading control category. It shows how to configure the BarCodeReader's ProcessorSettings to cap additional allowed threads, a common requirement when integrating barcode processing into applications with constrained resources. Developers often need to balance performance and resource usage using key API classes like BarCodeReader, ProcessorSettings, and BarcodeGenerator.
 // Prompt: Set ProcessorSettings.MaxAdditionalAllowedThreads to 2 to cap extra worker threads for controlled multithreading.
-// Tags: code128, multithreading, png, barcodegenerator, barcodereader, processorsettings
+// Tags: barcode symbology, multithreading, qr, generation, recognition, aspose.barcode, processor settings
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates setting a limit on additional worker threads for barcode reading and processing a sample Code128 barcode.
+/// Example program that generates a QR code, limits barcode reader threading, and reads the code.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, configures thread limits, reads the barcode, and cleans up temporary files.
+    /// Entry point of the example. Generates a QR barcode, configures thread limits, reads the barcode, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the sample barcode image
+        // Create a unique temporary folder for storing the barcode image
         string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Generate a Code128 barcode image and save it as PNG
-        GenerateBarcode(barcodePath);
+        // Define the full path for the sample barcode image
+        string imagePath = Path.Combine(tempFolder, "sample.png");
 
-        // Limit the number of additional worker threads used by the barcode reader
+        // Generate a QR barcode with the text "Hello Aspose" and save it as a PNG file
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
+        {
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // Configure the barcode reader to allow a maximum of 2 additional worker threads
         BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 2;
 
-        // Initialize the barcode reader for Code128 and read the generated image
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // Read the barcode from the generated image using the configured processor settings
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.QR))
         {
-            var results = reader.ReadBarCodes();
-            foreach (var result in results)
+            BarCodeResult[] results = reader.ReadBarCodes();
+            Console.WriteLine($"Barcodes found: {results.Length}");
+            foreach (BarCodeResult result in results)
             {
-                Console.WriteLine($"Detected: {result.CodeTypeName} - {result.CodeText}");
+                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
             }
         }
 
-        // Attempt to delete the temporary folder and its contents
+        // Attempt to delete the temporary image file and folder; ignore any errors during cleanup
         try
         {
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Suppress any exceptions during cleanup to avoid breaking the flow
-        }
-    }
-
-    /// <summary>
-    /// Generates a Code128 barcode image with the specified text and saves it to the given path.
-    /// </summary>
-    /// <param name="path">Full file path where the PNG image will be saved.</param>
-    static void GenerateBarcode(string path)
-    {
-        // Create a barcode generator for Code128 with sample data
-        var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890");
-        using (Bitmap bitmap = generator.GenerateBarCodeImage())
-        {
-            // Save the generated bitmap as a PNG file
-            bitmap.Save(path, ImageFormat.Png);
+            // Cleanup failures are non‑critical; they do not affect program execution
         }
     }
 }

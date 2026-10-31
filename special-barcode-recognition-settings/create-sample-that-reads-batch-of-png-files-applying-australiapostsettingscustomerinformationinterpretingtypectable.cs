@@ -1,8 +1,8 @@
-// Title: Read batch of PNG barcodes with Australia Post CTable interpreting type
-// Description: Demonstrates generating a set of Australia Post barcodes, saving them as PNG files, and then reading them back while applying the CTable customer‑information interpreting type.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating Australia Post barcodes, the BarCodeReader for decoding them, and the AustraliaPostSettings.CustomerInformationInterpretingType enumeration to control how customer information is interpreted. Typical scenarios include batch processing of postal barcodes, automated verification of encoded data, and integration with logistics systems. Developers often need to generate barcodes with specific encoding tables and then read them in bulk, making this pattern a common building block in shipping and mailing applications.
+// Title: Read a batch of PNG barcodes using AustraliaPost CTable interpreting type
+// Description: This example generates PNG images containing Australia Post barcodes encoded with the CTable customer information interpreting type, then reads them back applying the same interpreting type.
+// Category-Description: Demonstrates Aspose.BarCode generation and recognition for Australia Post symbology. Uses BarcodeGenerator to create barcodes, BarCodeReader to decode them, and configures CustomerInformationInterpretingType.CTable. Ideal for developers needing batch processing of barcodes, custom encoding tables, and automated verification of generated images.
 // Prompt: Create a sample that reads a batch of PNG files applying AustraliaPostSettings.CustomerInformationInterpretingType.CTable.
-// Tags: barcode, australia post, ctable, batch, png, generation, recognition, aspose.barcode
+// Tags: barcode, australia post, ctable, batch processing, png, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,16 +10,14 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that generates a batch of Australia Post barcodes,
-/// saves them as PNG files, and reads them back using the CTable interpreting type.
+/// Demonstrates generating and reading a batch of Australia Post barcodes using the CTable interpreting type.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Generates barcodes, reads them, and optionally cleans up temporary files.
+    /// Entry point of the sample. Generates PNG files with Australia Post barcodes, then reads them applying CTable interpreting type.
     /// </summary>
     static void Main()
     {
@@ -27,33 +25,38 @@ class Program
         string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(batchFolder);
 
-        // List to hold generated file paths
-        List<string> barcodeFiles = new List<string>();
-
-        // Generate sample Australia Post barcodes with CTable encoding
-        for (int i = 0; i < 3; i++)
+        // Prepare sample barcode texts (valid for CTable)
+        List<string> codeTexts = new List<string>
         {
-            // Customer information must be two characters for CTable
-            string customerInfo = "AB" + i;
-            // FCC 62 + DPID (8 digits) + customer info
-            string codeText = "6201234567" + customerInfo;
-            string filePath = Path.Combine(batchFolder, $"AustraliaPost_{i}.png");
+            "6201234567ASPOSE",   // FCC 62 + customer info "ASPOSE"
+            "6201234567CODE123",  // FCC 62 + customer info "CODE123"
+            "6201234567TEST"      // FCC 62 + customer info "TEST"
+        };
 
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        // Generate PNG files with AustraliaPost CTable encoding
+        List<string> generatedFiles = new List<string>();
+        foreach (string text in codeTexts)
+        {
+            string filePath = Path.Combine(batchFolder, text + ".png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, text))
             {
                 // Set visual parameters
-                generator.Parameters.Barcode.XDimension.Pixels = 4f;
-                generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+                generator.Parameters.Barcode.BarHeight.Pixels = 50;
+
                 // Apply CTable encoding for customer information
                 generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
-                // Save as PNG
+
+                // Save the barcode image as PNG
                 generator.Save(filePath, BarCodeImageFormat.Png);
-                barcodeFiles.Add(filePath);
             }
+            generatedFiles.Add(filePath);
         }
 
-        // Read the generated barcodes applying CTable interpreting type
-        foreach (string file in barcodeFiles)
+        Console.WriteLine("Batch generation completed. Reading barcodes with CTable interpreting type:");
+
+        // Read each generated PNG applying CTable interpreting type
+        foreach (string file in generatedFiles)
         {
             if (!File.Exists(file))
             {
@@ -65,30 +68,25 @@ class Program
             {
                 using (BarCodeReader reader = new BarCodeReader(file, DecodeType.AustraliaPost))
                 {
-                    // Configure reader to interpret customer information using CTable
+                    // Configure the reader to interpret customer information using CTable
                     reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
 
-                    // Output each decoded result
+                    // Iterate through all detected barcodes in the image
                     foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                        Console.WriteLine($"File: {Path.GetFileName(file)}");
+                        Console.WriteLine($"  CodeType: {result.CodeTypeName}");
+                        Console.WriteLine($"  CodeText: {result.CodeText}");
                     }
                 }
             }
             catch (ArgumentException ex)
             {
-                Console.WriteLine($"Skipping file {Path.GetFileName(file)} due to error: {ex.Message}");
+                Console.WriteLine($"Failed to read '{file}': {ex.Message}");
             }
         }
 
-        // Optional cleanup (comment out if you want to inspect the files)
-        try
-        {
-            Directory.Delete(batchFolder, true);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        // Cleanup: optionally delete the temporary folder and its contents
+        // Directory.Delete(batchFolder, true);
     }
 }

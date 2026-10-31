@@ -1,8 +1,8 @@
-// Title: Custom Australia Post barcode decoding with Aspose.BarCode
-// Description: Shows how to generate an Australia Post barcode, assign a custom customer information decoder, and read the barcode using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on Australia Post symbology. It demonstrates using BarcodeGenerator, BarCodeReader, and AustraliaPostSettings to customize decoding logic. Developers working with postal services often need to interpret custom customer information fields, and this snippet illustrates the typical workflow for such scenarios.
+// Title: Custom Australia Post Barcode Decoding with Reverse Customer Information
+// Description: Demonstrates how to generate an Australia Post barcode, configure custom decoding settings, and apply a user‑defined customer information decoder to reverse the data.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for reading them, and AustraliaPostSettings for customizing decoding behavior. Developers often need to tailor Australia Post barcode interpretation, such as handling custom encoding tables or providing a custom CustomerInformationDecoder, to meet specific business requirements.
 // Prompt: Instantiate AustraliaPostSettings and assign it to BarCodeReader.RecognitionSettings for custom Australia Post decoding.
-// Tags: australia post, barcode, custom decoder, generation, recognition, aspnet, aspose.barcode
+// Tags: australia post, barcode, decoding, custom decoder, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,87 +12,80 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Custom decoder for Australia Post customer information fields.
+/// Custom decoder that reverses the customer information field string.
 /// </summary>
-class MyDecoder : AustraliaPostCustomerInformationDecoder
+class ReverseDecoder : AustraliaPostCustomerInformationDecoder
 {
     /// <summary>
-    /// Decodes the raw customer information field.
+    /// Reverses the supplied customer information field.
     /// </summary>
-    /// <param name="customerInformationField">The raw field extracted from the barcode.</param>
-    /// <returns>A simple prefixed string representing the decoded value.</returns>
+    /// <param name="customerInformationField">The original customer information string.</param>
+    /// <returns>The reversed string, or the original if null/empty.</returns>
     public string Decode(string customerInformationField)
     {
-        // Simple example: return the raw field prefixed
-        return $"Decoded:{customerInformationField}";
+        if (string.IsNullOrEmpty(customerInformationField))
+            return customerInformationField;
+
+        char[] chars = customerInformationField.ToCharArray();
+        Array.Reverse(chars);
+        return new string(chars);
     }
 }
 
 /// <summary>
-/// Demonstrates custom decoding of Australia Post barcodes using Aspose.BarCode.
+/// Demonstrates custom decoding of Australia Post barcodes using a user‑defined decoder.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a sample Australia Post barcode, reads it with a custom customer information decoder, and outputs the result.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary folder for the generated barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AustraliaPostDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "AustraliaPost.png");
+        // Prepare a temporary directory for the barcode image.
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeAustraliaPostDemo");
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "AustraliaPost.png");
 
-        // Generate a sample Australia Post barcode
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "620123456701234"))
+        // Generate a sample Australia Post barcode with specific parameters.
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, "6201234567ASPOSE"))
         {
-            // Set visual parameters
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
             generator.Parameters.Barcode.BarHeight.Pixels = 50f;
-
-            // Use N-table for customer information encoding
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.NTable;
-
-            // Save the barcode image as PNG
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Read the barcode with a custom customer information decoder
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AustraliaPost))
+        // Verify that the barcode image was created successfully.
+        if (!File.Exists(barcodePath))
         {
-            // Configure recognition settings for Australia Post
-            reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.NTable;
-            reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder = new MyDecoder();
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
 
-            // Perform the reading operation
+        // Read the barcode using custom Australia Post settings.
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AustraliaPost))
+        {
+            // Configure Australia Post specific decoding options.
+            reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.CTable;
+            reader.BarcodeSettings.AustraliaPost.IgnoreEndingFillingPatternsForCTable = true;
+            // Assign the custom decoder that reverses the customer information field.
+            reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder = new ReverseDecoder();
+
+            // Perform the barcode reading operation.
             BarCodeResult[] results = reader.ReadBarCodes();
-
-            // Output the results
             if (results.Length == 0)
             {
                 Console.WriteLine("No barcode detected.");
+                return;
             }
-            else
-            {
-                foreach (BarCodeResult result in results)
-                {
-                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                    Console.WriteLine($"CodeText: {result.CodeText}");
-                }
-            }
-        }
 
-        // Clean up temporary files and folder
-        try
-        {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignore cleanup errors
+            // Output the decoded barcode information.
+            foreach (var result in results)
+            {
+                Console.WriteLine($"Code Type: {result.CodeTypeName}");
+                Console.WriteLine($"Code Text: {result.CodeText}");
+            }
         }
     }
 }

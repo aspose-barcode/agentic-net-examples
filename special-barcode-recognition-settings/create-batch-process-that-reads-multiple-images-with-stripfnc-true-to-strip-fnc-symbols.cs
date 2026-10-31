@@ -1,8 +1,8 @@
 // Title: Batch barcode processing with StripFNC to remove FNC symbols
-// Description: Demonstrates how to generate multiple barcode images, read them in a batch, and strip Function Code (FNC) symbols during recognition.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes, BarCodeReader to decode them, and the StripFNC setting to remove FNC symbols from the decoded text. Typical use cases include bulk barcode processing, data cleanup, and preparing scanned data for downstream systems. Developers often need to batch‑process images, adjust decoding options, and handle various symbologies efficiently.
+// Description: Demonstrates generating multiple Code128 barcodes containing FNC1/FNC2 symbols, then reading them with StripFNC enabled to strip those symbols from the decoded text.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to create barcodes, configure decoding settings, and perform batch processing. It highlights key API classes such as BarcodeGenerator, BarCodeReader, and BarCodeResult, which developers commonly use for automated barcode workflows, bulk image handling, and data sanitization in inventory or logistics systems.
 // Prompt: Create a batch process that reads multiple images with StripFNC true to strip FNC symbols.
-// Tags: barcode, batch, stripfnc, code128, image, generation, recognition, aspose.barcode
+// Tags: barcode, code128, stripfnc, batch, generation, recognition, aspose.barcode, image, fnc
 
 using System;
 using System.IO;
@@ -10,41 +10,48 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation and reading of Code128 barcodes with the StripFNC option enabled.
+/// Demonstrates batch generation and reading of Code128 barcodes with FNC symbols,
+/// using Aspose.BarCode to strip FNC characters during recognition.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample barcode images, reads them while stripping FNC symbols,
-    /// and outputs the decoded information to the console.
+    /// Entry point. Generates sample barcodes, reads them with StripFNC enabled,
+    /// outputs results, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the batch operation
-        string batchFolder = Path.Combine(Path.GetTempPath(), "BatchStripFNC_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for the batch process
+        string batchFolder = Path.Combine(Path.GetTempPath(), "BatchFNC_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(batchFolder);
 
-        // Generate sample barcode images and collect their file paths
-        List<string> imageFiles = new List<string>();
-        for (int i = 1; i <= 5; i++)
+        // Prepare sample barcode data with FNC symbols
+        char FNC1 = (char)241; // FNC1 control character
+        char FNC2 = (char)242; // FNC2 control character
+        string baseText = "Sample";
+        string codeText = baseText + FNC1 + FNC2;
+
+        // List to hold generated file paths
+        List<string> barcodeFiles = new List<string>();
+
+        // Generate a few barcode images
+        for (int i = 1; i <= 3; i++)
         {
-            string filePath = Path.Combine(batchFolder, $"Sample{i}.png");
-            string codeText = $"Sample{i}";
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            string filePath = Path.Combine(batchFolder, $"Code128FNC_{i}.png");
+            using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                // Set barcode appearance
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                // Save the barcode image as PNG
-                generator.Save(filePath, BarCodeImageFormat.Png);
+                gen.Parameters.Barcode.XDimension.Pixels = 2f;
+                gen.Save(filePath, BarCodeImageFormat.Png);
             }
-            imageFiles.Add(filePath);
+            barcodeFiles.Add(filePath);
         }
 
-        // Process each generated image with StripFNC = true
-        foreach (string file in imageFiles)
+        Console.WriteLine("Batch processing of barcodes with StripFNC = true");
+
+        // Read each barcode image with StripFNC set to true
+        foreach (string file in barcodeFiles)
         {
             if (!File.Exists(file))
             {
@@ -56,30 +63,37 @@ class Program
             {
                 using (BarCodeReader reader = new BarCodeReader(file, DecodeType.Code128))
                 {
-                    // Enable stripping of FNC symbols from the decoded text
+                    // Enable stripping of FNC characters during decoding
                     reader.BarcodeSettings.StripFNC = true;
 
-                    // Read and output all detected barcodes in the image
                     foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                        Console.WriteLine($"File: {Path.GetFileName(file)}");
+                        Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                        Console.WriteLine($"CodeText: {result.CodeText}");
                     }
                 }
             }
             catch (ArgumentException ex)
             {
-                Console.WriteLine($"Error reading {file}: {ex.Message}");
+                Console.WriteLine($"Failed to read '{file}': {ex.Message}");
             }
         }
 
-        // Cleanup: delete the temporary folder and its contents
+        // Cleanup: delete temporary files and folder
         try
         {
-            Directory.Delete(batchFolder, true);
+            foreach (string file in barcodeFiles)
+            {
+                if (File.Exists(file))
+                    File.Delete(file);
+            }
+            if (Directory.Exists(batchFolder))
+                Directory.Delete(batchFolder);
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore any errors that occur during cleanup
+            Console.WriteLine($"Cleanup error: {ex.Message}");
         }
     }
 }

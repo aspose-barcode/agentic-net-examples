@@ -1,103 +1,105 @@
 // Title: Benchmark decoding speed with and without multi‑core processing
-// Description: Demonstrates how to measure the time required to decode Code128 barcodes using Aspose.BarCode when ProcessorSettings.UseAllCores is toggled.
-// Category-Description: This example belongs to the Aspose.BarCode decoding performance category. It showcases the use of BarCodeReader, ProcessorSettings, and related classes to evaluate single‑thread versus multi‑thread decoding. Developers often need to benchmark barcode recognition speed for large image batches or real‑time applications, adjusting core usage to balance performance and resource consumption.
+// Description: Demonstrates how to measure the barcode decoding time using Aspose.BarCode when ProcessorSettings.UseAllCores is toggled. The example generates sample PDF417 barcodes, decodes them, and reports single‑core versus multi‑core performance.
+// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, illustrating the use of BarCodeReader.ProcessorSettings to control parallel decoding. It shows typical usage of BarcodeGenerator for creating test images, BarCodeReader for decoding, and Stopwatch for timing. Developers often need to evaluate multi‑threaded decoding to optimize throughput in high‑volume scanning scenarios.
 // Prompt: Write a benchmark comparing decoding speed when ProcessorSettings.UseAllCores is true versus false.
-// Tags: code128, decoding, png, barcodereader, barcodegenerator
+// Tags: pdf417, decoding, performance, multithreading, processorsettings, barcodereader, barcodegenerator
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Provides a simple benchmark that compares barcode decoding times when
-/// Aspose.BarCode's ProcessorSettings.UseAllCores is enabled versus disabled.
+/// Demonstrates benchmarking of barcode decoding speed with different core usage settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the benchmark application.
-    /// Generates sample Code128 barcodes, runs decoding benchmarks,
-    /// and outputs the elapsed times for single‑thread and multi‑thread modes.
+    /// Entry point. Generates sample barcodes, runs single‑core and multi‑core benchmarks, and outputs the timings.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder to store generated barcode images.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBenchmark_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Benchmark_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate a set of sample barcode PNG files.
-        List<string> barcodeFiles = new List<string>();
+        // Generate sample barcode images
+        List<string> imagePaths = new List<string>();
         for (int i = 0; i < 5; i++)
         {
-            string filePath = Path.Combine(tempFolder, $"sample_{i}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, $"Sample{i}"))
+            string filePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, $"SampleText{i}"))
             {
+                // Configure barcode appearance
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+                // Save as PNG
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            barcodeFiles.Add(filePath);
+            imagePaths.Add(filePath);
         }
 
-        // Benchmark decoding using a single thread (UseAllCores = false).
-        long singleThreadTime = BenchmarkDecoding(barcodeFiles, useAllCores: false);
-        Console.WriteLine($"Single-thread decoding time: {singleThreadTime} ms");
+        // Benchmark with single core (UseAllCores = false)
+        long singleCoreTime = RunBenchmark(imagePaths, useAllCores: false);
+        Console.WriteLine($"Single-core decoding time: {singleCoreTime} ms");
 
-        // Benchmark decoding using all available cores (UseAllCores = true).
-        long multiThreadTime = BenchmarkDecoding(barcodeFiles, useAllCores: true);
-        Console.WriteLine($"Multi-thread decoding time: {multiThreadTime} ms");
+        // Benchmark with all cores (UseAllCores = true)
+        long multiCoreTime = RunBenchmark(imagePaths, useAllCores: true);
+        Console.WriteLine($"Multi-core decoding time: {multiCoreTime} ms");
 
-        // Clean up temporary files and folder.
-        try
+        // Clean up temporary files
+        foreach (var path in imagePaths)
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        if (Directory.Exists(tempFolder))
         {
             Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignore any errors that occur during cleanup.
         }
     }
 
     /// <summary>
-    /// Executes the decoding benchmark for a list of barcode image files.
+    /// Runs the decoding benchmark for a set of barcode images using the specified core usage setting.
     /// </summary>
-    /// <param name="files">Paths to barcode image files.</param>
-    /// <param name="useAllCores">If true, enables multi‑core processing; otherwise forces single‑thread execution.</param>
+    /// <param name="imagePaths">List of file paths to barcode images.</param>
+    /// <param name="useAllCores">If true, enables multi‑core processing; otherwise, forces single‑core execution.</param>
     /// <returns>Total elapsed time in milliseconds.</returns>
-    static long BenchmarkDecoding(List<string> files, bool useAllCores)
+    static long RunBenchmark(List<string> imagePaths, bool useAllCores)
     {
-        // Configure processor settings based on the desired core usage.
+        // Configure processor settings based on the desired core usage
         BarCodeReader.ProcessorSettings.UseAllCores = useAllCores;
-        if (!useAllCores)
+        if (useAllCores)
         {
-            // Restrict processing to a single core.
-            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;
-            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
+            // Allow additional threads proportional to the number of logical processors
+            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
         }
         else
         {
-            // Allow additional threads up to twice the number of logical processors.
-            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = Environment.ProcessorCount * 2;
+            // Restrict processing to a single core
+            BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;
+            BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
         }
 
-        // Start timing the decoding loop.
-        Stopwatch sw = Stopwatch.StartNew();
+        // Start timing
+        Stopwatch watch = Stopwatch.StartNew();
 
-        // Decode each barcode image file.
-        foreach (string file in files)
+        // Decode each image; results are ignored because we only measure performance
+        foreach (var path in imagePaths)
         {
-            using (var reader = new BarCodeReader(file, DecodeType.Code128))
+            using (var reader = new BarCodeReader(path, DecodeType.Pdf417))
             {
-                // Read all barcodes in the image (expected one per image).
-                BarCodeResult[] results = reader.ReadBarCodes();
-                // Results are not processed further in this benchmark.
+                reader.ReadBarCodes();
             }
         }
 
-        // Stop timing and return the elapsed milliseconds.
-        sw.Stop();
-        return sw.ElapsedMilliseconds;
+        // Stop timing and return elapsed milliseconds
+        watch.Stop();
+        return watch.ElapsedMilliseconds;
     }
 }

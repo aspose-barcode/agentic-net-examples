@@ -1,69 +1,55 @@
-// Title: Disable Multithreaded Barcode Reading Example
-// Description: Demonstrates generating a Code128 barcode, configuring Aspose.BarCode to use a single CPU core for reading, and decoding the barcode.
-// Category-Description: This example belongs to the Aspose.BarCode reading category, illustrating how to control processor usage via BarCodeReader.ProcessorSettings. It covers key classes such as BarcodeGenerator, BarCodeReader, and ProcessorSettings, which developers commonly use to optimize performance, limit resource consumption, or ensure deterministic single‑threaded execution in environments where multithreading is undesirable.
+// Title: Disable multithreaded barcode reading in Aspose.BarCode
+// Description: Demonstrates how to generate a Code128 barcode, save it as PNG, and read it using single‑threaded settings by configuring ProcessorSettings.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and ProcessorSettings for controlling multithreading. Developers often need to limit CPU usage during bulk or resource‑constrained scans, making this pattern useful for performance tuning and CI environments.
 // Prompt: Disable multithreaded barcode reading by setting ProcessorSettings.UseAllCores false and UseOnlyThisCoresCount to 1.
-// Tags: barcode symbology, reading, single-threaded, processor settings, aspose.barcode, code128, png
+// Tags: code128, single-threaded, png, barcodegenerator, barcodereader, processorsettings
 
 using System;
 using System.IO;
-using System.Diagnostics;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates disabling multithreaded barcode reading using Aspose.BarCode.
+/// Sample program that generates a Code128 barcode, saves it as a PNG image,
+/// and reads it back using single‑threaded processing settings.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Generates a barcode, configures single‑threaded reading,
-    /// decodes the barcode, and cleans up temporary files.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
         // Create a temporary folder for the sample barcode image
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
         string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // --------------------------------------------------------------------
-        // Generate a simple Code128 barcode and save it to a PNG file
-        // --------------------------------------------------------------------
+        // Generate a simple Code128 barcode and save it as PNG
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.BarColor = Color.Black;   // Set barcode foreground color
+            generator.Parameters.BackColor = Color.White;         // Set image background color
+            generator.Save(barcodePath, BarCodeImageFormat.Png);   // Save image to file
         }
 
-        // --------------------------------------------------------------------
-        // Disable multithreaded barcode reading (force single‑core usage)
-        // --------------------------------------------------------------------
-        BarCodeReader.ProcessorSettings.UseAllCores = false;
-        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;
-        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0;
+        // Configure ProcessorSettings to disable multithreaded barcode reading
+        BarCodeReader.ProcessorSettings.UseAllCores = false;          // Do not use all CPU cores
+        BarCodeReader.ProcessorSettings.UseOnlyThisCoresCount = 1;    // Restrict to a single core
+        BarCodeReader.ProcessorSettings.MaxAdditionalAllowedThreads = 0; // No extra threads
 
-        // --------------------------------------------------------------------
         // Read the barcode using the single‑threaded settings
-        // --------------------------------------------------------------------
         using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            Stopwatch watch = Stopwatch.StartNew();
-            BarCodeResult[] results = reader.ReadBarCodes();
-            watch.Stop();
-
-            Console.WriteLine($"Found {results.Length} barcode(s) in {watch.ElapsedMilliseconds} ms using single-threaded mode.");
+            var results = reader.ReadBarCodes();
             foreach (var result in results)
             {
                 Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // --------------------------------------------------------------------
-        // Clean up temporary files and directories
-        // --------------------------------------------------------------------
+        // Clean up temporary files and folder
         try
         {
             if (File.Exists(barcodePath))
@@ -73,7 +59,7 @@ class Program
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignore any cleanup errors
         }
     }
 }
