@@ -1,8 +1,8 @@
 // Title: Codabar barcode generation with Mod16 checksum and verification
-// Description: Demonstrates how to generate a Codabar barcode using the Mod16 checksum algorithm, save it as an image, and programmatically verify the checksum.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to configure checksum settings for Codabar, generate a PNG image, and use BarCodeReader to validate the checksum. Developers working with barcode symbologies, checksum algorithms, and image output can use these APIs (BarcodeGenerator, BarCodeReader, EncodeTypes, DecodeType) for similar tasks.
+// Description: Demonstrates how to generate a Codabar barcode using the Mod16 checksum algorithm, save it as a PNG image, and programmatically verify that the checksum matches the expected value.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding them, and the checksum validation features. Typical scenarios include ensuring data integrity for Codabar symbols in logistics, inventory, and healthcare applications where Mod16 checksum is required. Developers often need to generate barcodes with specific checksum modes and validate them during scanning.
 // Prompt: Configure barcode to use Mod16 checksum, generate image, and programmatically verify checksum matches expected Mod16 value.
-// Tags: codabar, checksum, mod16, barcode generation, barcode recognition, png, aspose.barcode, c#
+// Tags: codabar, checksum, mod16, barcode generation, barcode recognition, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,88 +10,78 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a Codabar barcode with a Mod16 checksum, saves it as a PNG image,
-/// and verifies the checksum using the Aspose.BarCode recognition API.
+/// Example program that creates a Codabar barcode with a Mod16 checksum,
+/// saves it as an image, and validates the checksum using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode creation, image saving,
-    /// and checksum verification.
+    /// Entry point of the example. Generates the barcode, computes the expected checksum,
+    /// reads the barcode back, and verifies the checksum matches the expected character.
     /// </summary>
     static void Main()
     {
-        // Define the temporary output file path for the generated barcode image.
-        string outputPath = Path.Combine(Path.GetTempPath(), "CodabarMod16.png");
+        // Prepare a unique temporary folder and file path for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "CodabarMod16_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string imagePath = Path.Combine(tempFolder, "codabar.png");
 
-        // --------------------------------------------------------------------
-        // Create a Codabar barcode generator with the data "12345".
-        // --------------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar, "12345"))
+        // Base codetext includes start/stop symbols required by Codabar (A...A)
+        string baseCodeText = "A12345A";
+
+        // Create a barcode generator for Codabar and configure Mod16 checksum
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Codabar, baseCodeText))
         {
-            // Enable checksum calculation and specify the Mod16 algorithm.
+            // Enable checksum generation
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
+            // Set the checksum algorithm to Mod16
             generator.Parameters.Barcode.Codabar.ChecksumMode = CodabarChecksumMode.Mod16;
 
-            // Set start and stop symbols to 'A' (required for Codabar).
-            generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.A;
-            generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.A;
-
-            // Save the generated barcode as a PNG image.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG image
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
-
-        // --------------------------------------------------------------------
-        // Read the saved barcode image and validate the checksum.
-        // --------------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(outputPath, DecodeType.Codabar))
+        // Compute the expected Mod16 checksum character manually
+        int sum = 0;
+        foreach (char ch in baseCodeText)
         {
-            // Turn on checksum validation during decoding.
+            // Only numeric characters contribute to the checksum calculation
+            if (char.IsDigit(ch))
+                sum += ch - '0';
+        }
+        int mod16 = sum % 16;
+        char expectedChecksumChar = mod16 < 10 ? (char)('0' + mod16) : (char)('A' + (mod16 - 10));
+
+        // Read the barcode image and verify the checksum using the reader
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Codabar))
+        {
+            // Enable checksum validation during decoding
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-            // Iterate through all detected barcodes (should be one in this case).
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Decoded CodeText: {result.CodeText}");
-
-                // Remove the leading and trailing start/stop symbols.
-                if (result.CodeText.Length >= 2)
-                {
-                    string inner = result.CodeText.Substring(1, result.CodeText.Length - 2);
-
-                    // The last character before the stop symbol is the checksum digit.
-                    if (inner.Length > 0)
-                    {
-                        string dataPart = inner.Substring(0, inner.Length - 1);
-                        char checksumChar = inner[inner.Length - 1];
-
-                        // Compute Mod16 checksum from numeric characters in the data part.
-                        int sum = 0;
-                        foreach (char c in dataPart)
-                        {
-                            if (char.IsDigit(c))
-                                sum += c - '0';
-                        }
-                        int computedChecksum = sum % 16;
-
-                        // Convert the numeric checksum to its character representation (0‑9, A‑F).
-                        char expectedChar = computedChecksum < 10
-                            ? (char)('0' + computedChecksum)
-                            : (char)('A' + (computedChecksum - 10));
-
-                        // Compare the extracted checksum character with the computed one.
-                        bool match = char.ToUpperInvariant(checksumChar) == char.ToUpperInvariant(expectedChar);
-                        Console.WriteLine($"Extracted checksum character: {checksumChar}");
-                        Console.WriteLine($"Computed Mod16 checksum: {computedChecksum} (expected char: {expectedChar})");
-                        Console.WriteLine($"Checksum match: {match}");
-                    }
-                }
+                string readCodeText = result.CodeText;
+                // Verify that the read code ends with the expected checksum character
+                bool checksumMatches = readCodeText.EndsWith(expectedChecksumChar.ToString(), StringComparison.Ordinal);
+                Console.WriteLine($"Read CodeText: {readCodeText}");
+                Console.WriteLine($"Expected checksum character: {expectedChecksumChar}");
+                Console.WriteLine($"Checksum verification result: {(checksumMatches ? "PASS" : "FAIL")}");
             }
+        }
+
+        // Clean up temporary files and folder
+        try
+        {
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // Suppress any exceptions during cleanup
         }
     }
 }

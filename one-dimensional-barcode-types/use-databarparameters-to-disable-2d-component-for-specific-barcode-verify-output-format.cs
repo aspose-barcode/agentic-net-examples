@@ -1,8 +1,8 @@
-// Title: Disable 2D Component in DataBar Expanded Barcode and Verify PNG Output
-// Description: Demonstrates how to generate a DataBar Expanded barcode with the 2‑dimensional composite component turned off, then checks that the resulting file is a PNG.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DataBar symbologies and barcode parameter customization. It showcases the use of BarcodeGenerator, EncodeTypes, and DataBarParameters to modify barcode features such as disabling the 2D composite component. Developers often need to tailor barcode appearance for specific standards or scanning requirements, and this snippet illustrates typical steps: configure parameters, generate the image, and validate the output format.
+// Title: Generate DataBar Expanded Barcode with 2D Component Disabled
+// Description: Demonstrates how to generate a DataBar Expanded barcode while disabling its 2D composite component and saving it as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on DataBarParameters configuration. It shows how to control the 2D composite component of DataBar barcodes, a common requirement when a pure linear representation is needed. Developers working with retail, logistics, or inventory systems often need to customize DataBar symbology for specific scanning environments, using classes like BarcodeGenerator, EncodeTypes, and BarCodeImageFormat.
 // Prompt: Use DataBarParameters to disable 2D component for specific barcode, verify output format.
-// Tags: databar, disable 2d component, png output, barcode generation, aspose.barcode, encode types, databarp
+// Tags: databar, barcode, generation, disable-2d-component, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,47 +10,45 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a DataBar Expanded barcode with the 2D composite component disabled,
-/// saves it as a PNG file, and verifies the output format.
+/// Demonstrates generating a DataBar Expanded barcode with the 2D composite component disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates an output folder, generates the barcode,
-    /// saves it, and checks that the file exists and has a PNG extension.
+    /// Entry point that creates a temporary folder, generates the barcode, saves it as PNG,
+    /// and verifies the output file.
     /// </summary>
     static void Main()
     {
-        // Define a temporary directory for the generated barcode image
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarCodeDemo");
-        if (!Directory.Exists(outputDir))
-        {
-            // Create the directory if it does not already exist
-            Directory.CreateDirectory(outputDir);
-        }
+        // Create a unique temporary directory for the demo output
+        string tempFolder = Path.Combine(Path.GetTempPath(), "DataBarDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Full path for the resulting PNG file
-        string filePath = Path.Combine(outputDir, "Databar2DComponentDisabled.png");
+        // Define the full path for the generated PNG image
+        string disabledPath = Path.Combine(tempFolder, "Databar2DComponentDisabled.png");
 
-        // Generate DataBar Expanded barcode with the 2D component disabled
-        using (var generator = new BarcodeGenerator(EncodeTypes.DatabarExpanded, "(01)12345678901231"))
+        // Generate a DataBar Expanded barcode with the 2D component disabled
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.DatabarExpanded, "(01)12345678901231"))
         {
             // Set the X-dimension (module width) in pixels
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            gen.Parameters.Barcode.XDimension.Pixels = 2f;
 
             // Disable the 2D composite component of the DataBar barcode
-            generator.Parameters.Barcode.DataBar.Is2DCompositeComponent = false;
+            gen.Parameters.Barcode.DataBar.Is2DCompositeComponent = false;
 
             // Save the barcode image as PNG
-            generator.Save(filePath, BarCodeImageFormat.Png);
+            gen.Save(disabledPath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the file was created and has a PNG extension
-        bool exists = File.Exists(filePath);
-        bool isPng = exists && string.Equals(Path.GetExtension(filePath), ".png", StringComparison.OrdinalIgnoreCase);
-
-        // Output verification results
-        Console.WriteLine($"Barcode file created: {exists}");
-        Console.WriteLine($"File extension is PNG: {isPng}");
+        // Verify that the file was created and has the expected PNG extension
+        if (File.Exists(disabledPath) && Path.GetExtension(disabledPath).Equals(".png", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("Barcode generated and saved successfully:");
+            Console.WriteLine(disabledPath);
+        }
+        else
+        {
+            Console.WriteLine("Failed to generate the barcode or incorrect output format.");
+        }
     }
 }

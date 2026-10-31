@@ -1,70 +1,85 @@
-// Title: Generate Code 16K Barcodes from CSV and Save as PNG
-// Description: This example reads barcode identifiers and data from a CSV file, creates Code 16K barcodes, and saves each as a PNG image in a temporary folder.
-// Category-Description: Demonstrates Aspose.BarCode generation workflow – reading external data, configuring barcode parameters, and exporting images. The example uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, typical for batch barcode creation scenarios such as inventory labeling, shipping manifests, or product catalog generation. Developers often need to automate barcode image production from data sources like CSV, databases, or APIs; this snippet shows a concise pattern for that purpose.
+// Title: Generate Code 16K barcodes from CSV data
+// Description: This example reads a CSV file containing barcode text and output file names, then creates Code 16K PNG images using Aspose.BarCode.
+// Category-Description: Demonstrates basic Aspose.BarCode generation for the Code 16K symbology. It covers reading input data, configuring barcode parameters (module size, aspect ratio, quiet zones), and saving images. Developers working with barcode creation, batch processing, or file‑based workflows can use this pattern as a starting point for automating barcode image production.
 // Prompt: Develop console application reading CSV barcode data, creating corresponding Code 16K PNG images.
-// Tags: code16k, barcode, generation, png, csv, aspose.barcode, console
+// Tags: barcode, code16k, csv, png, aspose.barcode, generation, console
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates reading barcode data from a CSV file and generating Code 16K PNG images using Aspose.BarCode.
+/// Console application that reads barcode data from a CSV file and generates Code 16K PNG images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a temporary output folder, writes sample CSV data, reads it, generates barcodes, and saves PNG files.
+    /// Entry point. Reads CSV, creates output directory, generates barcodes, and writes status messages.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a unique temporary folder for output
-        string outputFolder = Path.Combine(Path.GetTempPath(), "Code16KBarcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
+        // Define input CSV path and output directory
+        string csvPath = "barcodes.csv";
+        string outputDir = "output";
 
-        // Prepare a sample CSV file with barcode data
-        string csvPath = Path.Combine(outputFolder, "data.csv");
-        using (var writer = new StreamWriter(csvPath))
+        // Ensure the output directory exists
+        if (!Directory.Exists(outputDir))
         {
-            writer.WriteLine("barcode1,HELLO123");
-            writer.WriteLine("barcode2,ABCDEF");
-            writer.WriteLine("barcode3,1234567890");
+            Directory.CreateDirectory(outputDir);
         }
 
-        // Read the CSV and generate Code 16K barcodes
-        using (var reader = new StreamReader(csvPath))
+        // If the CSV file does not exist, create a sample file with example data
+        if (!File.Exists(csvPath))
         {
-            while (!reader.EndOfStream)
+            using (var writer = new StreamWriter(csvPath))
             {
-                // Read a line from the CSV file
-                string line = reader.ReadLine();
-                if (string.IsNullOrWhiteSpace(line))
-                    continue; // Skip empty lines
-
-                // Split the line into filename and barcode text
-                string[] parts = line.Split(',');
-                if (parts.Length < 2)
-                    continue; // Skip malformed lines
-
-                string fileName = parts[0].Trim();
-                string codeText = parts[1].Trim();
-
-                // Generate barcode using Aspose.BarCode
-                using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
-                {
-                    // Set visual parameters
-                    generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                    generator.Parameters.Barcode.Code16K.AspectRatio = 10f;
-
-                    // Define output file path and save as PNG
-                    string outputPath = Path.Combine(outputFolder, fileName + ".png");
-                    generator.Save(outputPath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Generated: {outputPath}");
-                }
+                writer.WriteLine("Aspose.Barcode,code1.png");
+                writer.WriteLine("12345678901231,code2.png");
+                writer.WriteLine("HELLO123,code3.png");
             }
+        }
+
+        // Read all lines from the CSV file
+        string[] lines = File.ReadAllLines(csvPath);
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string line = lines[i].Trim();
+
+            // Skip empty lines
+            if (string.IsNullOrEmpty(line))
+                continue;
+
+            // Split each line into barcode text and output file name
+            string[] parts = line.Split(',');
+            if (parts.Length < 2)
+            {
+                Console.WriteLine($"Skipping invalid line {i + 1}: '{line}'");
+                continue;
+            }
+
+            string codeText = parts[0];
+            string fileName = parts[1];
+            string outputPath = Path.Combine(outputDir, fileName);
+
+            // Generate the barcode using Aspose.BarCode
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
+            {
+                // Set module size (pixel width of the smallest bar)
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+                // Set aspect ratio (recommended value > 8 for Code 16K)
+                generator.Parameters.Barcode.Code16K.AspectRatio = 10;
+
+                // Optional quiet zone settings (defaults are acceptable)
+                generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = 10;
+                generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = 1;
+
+                // Save the generated barcode as a PNG image
+                generator.Save(outputPath, BarCodeImageFormat.Png);
+            }
+
+            Console.WriteLine($"Generated '{outputPath}' for code text '{codeText}'.");
         }
 
         Console.WriteLine("Barcode generation completed.");

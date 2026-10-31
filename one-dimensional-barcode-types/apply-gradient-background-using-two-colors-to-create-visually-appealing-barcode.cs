@@ -1,8 +1,8 @@
-// Title: Generate QR Code with Horizontal Gradient Background
-// Description: Creates a QR barcode and applies a horizontal gradient background using two colors, then saves the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance with graphics operations. It uses the BarcodeGenerator class to create a QR code, Aspose.Drawing Bitmap and Graphics to draw a color gradient, and overlays the barcode onto the gradient. Developers often need to enhance visual appeal of barcodes for marketing materials, packaging, or UI displays, and this pattern shows a typical workflow for such customizations.
+// Title: Generate a Code128 barcode with a two‑color gradient background
+// Description: Demonstrates how to create a Code128 barcode and overlay it on a simple two‑color gradient background, then save as PNG. Useful for adding visual appeal to barcodes in reports or UI.
+// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class and Aspose.Drawing graphics. Developers often need to modify background colors, apply gradients, or combine barcode images with custom graphics for branding or design purposes. The snippet shows typical steps: generate barcode, create a bitmap, draw custom background, and render the barcode on top.
 // Prompt: Apply a gradient background using two colors to create a visually appealing barcode.
-// Tags: qr code, gradient background, barcode generation, aspose.barcode, image processing, png output, c#
+// Tags: code128, gradient background, barcode generation, png output, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,70 +12,60 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR barcode with a custom horizontal gradient background and saving it as a PNG file.
+/// Demonstrates generating a Code128 barcode with a two‑color gradient background and saving it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, creates the gradient, overlays the barcode, and writes the image to disk.
+    /// Entry point. Generates the barcode, draws a simple gradient background, composites the barcode, and writes the result to disk.
     /// </summary>
     static void Main()
     {
-        // Determine the output file path in the current working directory.
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "barcode_gradient.png");
+        // Determine output file path in the current directory
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "gradient_barcode.png");
 
-        // Define the start and end colors for the horizontal gradient (blue to cyan).
-        Color startColor = Color.FromArgb(255, 0, 0, 255); // Blue
-        Color endColor = Color.FromArgb(255, 0, 255, 255); // Cyan
-
-        // Initialize the barcode generator for a QR code with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose Gradient"))
+        // Initialize the barcode generator for Code128 with the desired data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Set the barcode's foreground color to black.
-            generator.Parameters.Barcode.BarColor = Color.Black;
+            // Set the barcode bars to black
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            // Make the generator's background transparent; we'll draw our own gradient later
+            generator.Parameters.BackColor = Aspose.Drawing.Color.Transparent;
 
-            // Generate the barcode image as a bitmap.
+            // Generate the barcode image as a bitmap
             using (Bitmap barcodeBmp = generator.GenerateBarCodeImage())
             {
-                int width = barcodeBmp.Width;
-                int height = barcodeBmp.Height;
-
-                // Create a new bitmap that will hold the gradient background.
-                using (Bitmap gradientBmp = new Bitmap(width, height))
+                // Create a new bitmap that will hold the gradient background and the barcode
+                using (Bitmap finalBmp = new Bitmap(barcodeBmp.Width, barcodeBmp.Height, PixelFormat.Format32bppArgb))
                 {
-                    // Obtain a graphics object to draw on the gradient bitmap.
-                    using (Graphics gfx = Graphics.FromImage(gradientBmp))
+                    // Obtain a graphics object for drawing onto the final bitmap
+                    using (Graphics g = Graphics.FromImage(finalBmp))
                     {
-                        // Draw a horizontal gradient by iterating over each column.
-                        for (int x = 0; x < width; x++)
+                        // Draw the top half of the gradient (light blue)
+                        using (SolidBrush topBrush = new SolidBrush(Aspose.Drawing.Color.LightBlue))
                         {
-                            // Calculate the interpolation ratio for the current column.
-                            float ratio = (float)x / (width - 1);
-
-                            // Interpolate each RGB component between the start and end colors.
-                            int r = (int)(startColor.R + (endColor.R - startColor.R) * ratio);
-                            int g = (int)(startColor.G + (endColor.G - startColor.G) * ratio);
-                            int b = (int)(startColor.B + (endColor.B - startColor.B) * ratio);
-                            Color col = Color.FromArgb(255, r, g, b);
-
-                            // Draw a vertical line with the interpolated color.
-                            using (Pen pen = new Pen(col))
-                            {
-                                gfx.DrawLine(pen, x, 0, x, height);
-                            }
+                            Rectangle topRect = new Rectangle(0, 0, finalBmp.Width, finalBmp.Height / 2);
+                            g.FillRectangle(topBrush, topRect);
                         }
 
-                        // Overlay the generated barcode onto the gradient background.
-                        gfx.DrawImage(barcodeBmp, 0, 0, width, height);
+                        // Draw the bottom half of the gradient (light green)
+                        using (SolidBrush bottomBrush = new SolidBrush(Aspose.Drawing.Color.LightGreen))
+                        {
+                            Rectangle bottomRect = new Rectangle(0, finalBmp.Height / 2, finalBmp.Width, finalBmp.Height - finalBmp.Height / 2);
+                            g.FillRectangle(bottomBrush, bottomRect);
+                        }
+
+                        // Overlay the generated barcode on top of the gradient background
+                        g.DrawImage(barcodeBmp, 0, 0);
                     }
 
-                    // Save the final image as a PNG file.
-                    gradientBmp.Save(outputPath, ImageFormat.Png);
+                    // Save the composed image as PNG
+                    finalBmp.Save(outputPath, ImageFormat.Png);
                 }
             }
         }
 
-        // Inform the user where the image was saved.
-        Console.WriteLine($"Barcode with gradient saved to: {outputPath}");
+        // Inform the user where the file was saved
+        Console.WriteLine($"Barcode with gradient background saved to: {outputPath}");
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate Code128 barcode with custom text positioned above the bars
-// Description: Demonstrates how to create a Code128 barcode and place the human‑readable text above the barcode symbols.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to control text placement, alignment, and spacing. Developers often need to customize the appearance of barcodes for labeling, packaging, and inventory systems, and this snippet shows the typical API calls for positioning text relative to the bars.
+// Title: Generate Code128 Barcode with Text Above Bars
+// Description: Demonstrates creating a Code128 barcode where the human‑readable text is positioned above the barcode symbols.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class with EncodeTypes, BarCodeImageFormat, and related parameter objects to customize barcode appearance. Typical use cases include adding custom text placement, adjusting font size, and setting spacing for printable barcodes. Developers often need to control these settings to meet branding or labeling requirements.
 // Prompt: Create a barcode with custom text positioned above the bars (top placement).
-// Tags: code128, barcode generation, text placement, above, aspose.barcode, png, c#
+// Tags: code128, barcode generation, text placement, png, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,40 +10,39 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a Code128 barcode with the code text displayed above the bars.
+/// Example program that generates a Code128 barcode with the code text placed above the bars.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates the output directory, configures the barcode generator,
-    /// sets text placement parameters, saves the image, and writes the result path to the console.
+    /// Entry point of the application. Generates the barcode, saves it as a PNG file, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Define a temporary folder to store the generated barcode image.
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeExample");
+        // Define a temporary output directory and ensure it exists.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
         Directory.CreateDirectory(outputDir);
 
-        // Full file path for the resulting PNG image.
-        string outputPath = Path.Combine(outputDir, "barcode_top.png");
+        // Build the full file path for the resulting PNG image.
+        string outputPath = Path.Combine(outputDir, "barcode_above.png");
 
-        // Initialize the barcode generator with Code128 symbology and custom text.
+        // Create a BarcodeGenerator for Code128 with the desired custom text.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "CustomText"))
         {
-            // Position the code text above the barcode bars.
+            // Position the human‑readable text above the barcode bars.
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Above;
 
-            // Center the text horizontally relative to the barcode.
-            generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Center;
-
-            // Set the spacing between the text and the barcode bars (5 points).
+            // Set the spacing between the text and the barcode (5 points).
             generator.Parameters.Barcode.CodeTextParameters.Space.Point = 5f;
 
-            // Save the generated barcode as a PNG file.
+            // Define the font size for the code text (12 points).
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+
+            // Save the generated barcode as a PNG image.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
+        // Inform the user where the barcode image was saved.
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

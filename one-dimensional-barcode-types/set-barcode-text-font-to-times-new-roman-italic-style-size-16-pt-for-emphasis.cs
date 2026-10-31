@@ -1,45 +1,47 @@
-// Title: Set custom font for barcode text using Aspose.BarCode
-// Description: Demonstrates how to configure the barcode text font to Times New Roman, italic style, 16 pt, and save the result as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and CodeTextParameters to customize barcode appearance. Developers often need to adjust text fonts for branding, readability, or design compliance; this snippet shows the typical steps for setting manual font mode, selecting a font family, style, and size, then rendering the barcode to a common image format.
-/// Prompt: Set barcode text font to Times New Roman, italic style, size 16 pt for emphasis.
-// Tags: barcode, code128, font, text, aspose.barcode, png, generation
+// Title: Set barcode text font to Times New Roman italic 16pt
+// Description: Demonstrates how to configure the barcode text font using Aspose.BarCode to Times New Roman, italic style, 16 pt, and save as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize code text appearance. It uses BarcodeGenerator, EncodeTypes, and CodeTextParameters classes to modify font properties such as family, style, and size. Typical use cases include branding, emphasizing barcode data, or matching corporate style guidelines. Developers often need to adjust font settings when generating barcodes for printed materials, reports, or UI displays.
+// Prompt: Set barcode text font to Times New Roman, italic style, size 16 pt for emphasis.
+// Tags: barcode, code128, font, times new roman, italic, size, png, aspose.barcode, generation
 
 using System;
-using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode with custom text font settings.
+/// Generates a Code128 barcode with custom text font settings and saves it as a PNG image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a barcode image with Times New Roman italic 16 pt text and saves it to a PNG file.
+    /// Entry point of the example. Configures font properties for the barcode text and writes the image to disk.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the output file name.
+        // Define the output file path for the generated barcode image.
         string outputPath = "barcode.png";
 
-        // Create a BarcodeGenerator for Code128 with the desired data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Create a BarcodeGenerator for Code128 symbology with the desired code text.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample Text"))
         {
-            // Enable manual font mode so custom font settings are applied.
+            // Enable manual control over the code text font.
             generator.Parameters.Barcode.CodeTextParameters.FontMode = FontMode.Manual;
 
-            // Set the font family, style, and size for the barcode text.
+            // Set the font family to Times New Roman.
             generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Times New Roman";
+
+            // Apply italic style to the font.
             generator.Parameters.Barcode.CodeTextParameters.Font.Style = FontStyle.Italic;
+
+            // Set the font size to 16 points.
             generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 16f;
 
-            // Save the generated barcode as a PNG image.
+            // Save the generated barcode as a PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the full path of the saved barcode image.
-        Console.WriteLine($"Barcode saved to {Path.GetFullPath(outputPath)}");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode saved to {outputPath}");
     }
 }

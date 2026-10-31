@@ -1,8 +1,8 @@
-// Title: Custom foreground color for Code 16K barcode with contrast verification
-// Description: Demonstrates how to generate a Code 16K barcode using Aspose.BarCode with a custom blue foreground and white background, then calculates the WCAG contrast ratio to ensure accessibility.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on visual customization and accessibility compliance. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and image saving options, which developers commonly use to tailor barcode appearance and meet accessibility standards.
+// Title: Apply custom foreground color to Code 16K barcode and verify contrast
+// Description: Demonstrates generating a Code 16K barcode with a custom foreground color, saving it as PNG, and checking WCAG contrast compliance.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class, set bar and background colors, and evaluate color contrast for accessibility. Developers working with barcode rendering often need to adjust visual styles to match branding while ensuring readability for users with visual impairments.
 // Prompt: Apply custom foreground color to Code 16K barcodes, verify accessibility contrast compliance.
-// Tags: barcode, code16k, custom color, contrast ratio, accessibility, wcag, aspose.barcode, image generation
+// Tags: barcode, code16k, custom color, contrast ratio, accessibility, aspose.barcode, png, generation
 
 using System;
 using System.IO;
@@ -11,82 +11,83 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code 16K barcode with a custom foreground color and checking WCAG contrast compliance.
+/// Generates a Code 16K barcode with a custom foreground color,
+/// saves it as a PNG image, and verifies that the color contrast
+/// meets WCAG accessibility guidelines.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a temporary folder, generates the barcode, computes contrast ratio, and outputs results.
+    /// Entry point of the example. Creates the output folder,
+    /// defines colors, generates the barcode, saves the image,
+    /// and prints contrast analysis results to the console.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for output files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Code16KDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Prepare a temporary output folder for the generated image
+        string outputFolder = Path.Combine(Path.GetTempPath(), "Code16KExample");
+        Directory.CreateDirectory(outputFolder);
+        string outputPath = Path.Combine(outputFolder, "Code16K_CustomColor.png");
 
-        // Define barcode content and output file path
-        string codeText = "Aspose.Barcode";
-        string outputPath = Path.Combine(tempFolder, "Code16K.png");
-
-        // Define custom colors: blue foreground and white background
-        Color barColor = Color.FromArgb(0, 0, 255); // Blue foreground
-        Color backColor = Color.White; // White background
+        // Define the foreground (barcode) and background colors
+        Color foregroundColor = Color.FromArgb(255, 255, 0, 0); // Red
+        Color backgroundColor = Color.FromArgb(255, 255, 255, 255); // White
 
         // Generate the Code 16K barcode with the specified colors
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code16K, "Aspose.Barcode"))
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 2f; // Set module size
-            generator.Parameters.Barcode.BarColor = barColor;   // Apply foreground color
-            generator.Parameters.BackColor = backColor;        // Apply background color
-            generator.Save(outputPath, BarCodeImageFormat.Png); // Save as PNG
+            // Set module size (pixel width of the smallest bar)
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            // Apply custom colors
+            generator.Parameters.Barcode.BarColor = foregroundColor;
+            generator.Parameters.BackColor = backgroundColor;
+            // Save the barcode image as PNG
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Calculate and display WCAG contrast ratio between foreground and background
-        double contrastRatio = CalculateContrastRatio(barColor, backColor);
+        // Compute the contrast ratio between foreground and background colors
+        double contrast = ComputeContrastRatio(foregroundColor, backgroundColor);
+
+        // Output results
         Console.WriteLine($"Barcode saved to: {outputPath}");
-        Console.WriteLine($"Bar color: RGB({barColor.R},{barColor.G},{barColor.B})");
-        Console.WriteLine($"Background color: RGB({backColor.R},{backColor.G},{backColor.B})");
-        Console.WriteLine($"Contrast ratio: {contrastRatio:F2}:1");
+        Console.WriteLine($"Foreground color: {foregroundColor}");
+        Console.WriteLine($"Background color: {backgroundColor}");
+        Console.WriteLine($"Contrast ratio: {contrast:F2}:1");
 
-        // Evaluate contrast against WCAG AA thresholds
-        if (contrastRatio >= 4.5)
+        const double MinimumContrast = 4.5; // WCAG AA requirement for normal text
+        if (contrast >= MinimumContrast)
         {
-            Console.WriteLine("Contrast meets WCAG AA requirement for normal text.");
-        }
-        else if (contrastRatio >= 3.0)
-        {
-            Console.WriteLine("Contrast meets WCAG AA requirement for large text.");
+            Console.WriteLine("Contrast meets accessibility requirements.");
         }
         else
         {
-            Console.WriteLine("Contrast does NOT meet WCAG AA requirements.");
+            Console.WriteLine("Contrast does NOT meet accessibility requirements.");
         }
-
-        // Optional cleanup: delete temporary folder
-        // Directory.Delete(tempFolder, true);
     }
 
-    // Calculates the contrast ratio between two colors using the WCAG formula
-    static double CalculateContrastRatio(Color fore, Color back)
+    // Calculates the contrast ratio according to WCAG guidelines
+    static double ComputeContrastRatio(Color fore, Color back)
     {
-        double lumFore = GetRelativeLuminance(fore);
-        double lumBack = GetRelativeLuminance(back);
+        double lumFore = RelativeLuminance(fore);
+        double lumBack = RelativeLuminance(back);
         double lighter = Math.Max(lumFore, lumBack);
         double darker = Math.Min(lumFore, lumBack);
         return (lighter + 0.05) / (darker + 0.05);
     }
 
-    // Computes the relative luminance of a color per WCAG specifications
-    static double GetRelativeLuminance(Color color)
+    // Computes the relative luminance of a color (sRGB)
+    static double RelativeLuminance(Color color)
     {
-        double RsRGB = color.R / 255.0;
-        double GsRGB = color.G / 255.0;
-        double BsRGB = color.B / 255.0;
-
-        double R = RsRGB <= 0.03928 ? RsRGB / 12.92 : Math.Pow((RsRGB + 0.055) / 1.055, 2.4);
-        double G = GsRGB <= 0.03928 ? GsRGB / 12.92 : Math.Pow((GsRGB + 0.055) / 1.055, 2.4);
-        double B = BsRGB <= 0.03928 ? BsRGB / 12.92 : Math.Pow((BsRGB + 0.055) / 1.055, 2.4);
-
+        // Convert ARGB components to linear RGB (range 0..1)
+        double R = Linearize(color.R / 255.0);
+        double G = Linearize(color.G / 255.0);
+        double B = Linearize(color.B / 255.0);
         return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+    }
+
+    // Linearizes a single sRGB channel value
+    static double Linearize(double channel)
+    {
+        return channel <= 0.03928 ? channel / 12.92 : Math.Pow((channel + 0.055) / 1.055, 2.4);
     }
 }

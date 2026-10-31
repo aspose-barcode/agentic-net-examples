@@ -1,14 +1,13 @@
-// Title: Generate Code 16K barcode image and save to file
-// Description: Demonstrates creating a Code 16K barcode using Aspose.BarCode, configuring dimensions and quiet zones, and saving the PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to use BarcodeGenerator with EncodeTypes.Code16K. It shows setting XDimension, aspect ratio, and quiet zone coefficients—common tasks when customizing barcode appearance for printing or display. Developers often need such samples to quickly integrate barcode creation into web APIs or desktop apps.
+// Title: Generate Code 16K Barcode Image via Console Parameters
+// Description: Demonstrates generating a Code 16K barcode image using Aspose.BarCode and saving it to a temporary folder. The example shows how to configure aspect ratio, X‑dimension, and quiet zones based on input values.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to create barcodes with the BarcodeGenerator class. Typical use cases include producing barcode images for web APIs, reports, or inventory systems. Developers often need to set symbology‑specific parameters such as aspect ratio and quiet zone coefficients to meet scanning requirements.
 // Prompt: Create web API endpoint returning generated Code 16K barcode image based on query parameters.
-// Tags: code16k, barcode, generation, png, aspose.barcode, xdimension, aspectratio, quietzone
+// Tags: code16k, barcode, generation, image, png, aspnet, aspnetcore, aspnet-webapi, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
 /// Demonstrates generating a Code 16K barcode image using Aspose.BarCode.
@@ -16,83 +15,43 @@ using Aspose.Drawing;
 class Program
 {
     /// <summary>
-    /// Entry point. Simulates request parameters, generates the barcode, and writes the PNG file.
+    /// Entry point that parses arguments, configures the barcode generator, and saves the image.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments representing barcode text and optional parameters.</param>
+    static void Main(string[] args)
     {
-        // Simulated request parameters that would normally come from a web API query string
-        string codeText = "Aspose.Barcode";
-        int aspectRatio = 10;          // Recommended value > 8 for proper height
-        int quietZoneLeft = 10;        // Minimum quiet zone on the left side (>= 10)
-        int quietZoneRight = 10;       // Minimum quiet zone on the right side (>= 1)
-        float xDimensionPixels = 2f;   // Module size in pixels
+        // Parse sample request parameters (in a real web API these would come from the query string)
+        string codeText = args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]) ? args[0] : "Aspose.Barcode";
+        float aspectRatio = args.Length > 1 && float.TryParse(args[1], out var ar) && ar > 0 ? ar : 10f;
+        float xDimensionPixels = args.Length > 2 && float.TryParse(args[2], out var xd) && xd > 0 ? xd : 2f;
+        int quietLeft = args.Length > 3 && int.TryParse(args[3], out var ql) && ql >= 10 ? ql : 10;
+        int quietRight = args.Length > 4 && int.TryParse(args[4], out var qr) && qr >= 1 ? qr : 1;
 
-        try
+        // Determine output directory inside the system temporary folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        if (!Directory.Exists(outputDir))
         {
-            // Generate the barcode image as a byte array
-            byte[] imageBytes = GenerateCode16K(codeText, aspectRatio, quietZoneLeft, quietZoneRight, xDimensionPixels);
-
-            // Determine output path in the current working directory
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "Code16K.png");
-
-            // Write the PNG image to disk
-            File.WriteAllBytes(outputPath, imageBytes);
-
-            Console.WriteLine($"Code 16K barcode generated and saved to: {outputPath}");
+            // Create the directory if it does not exist
+            Directory.CreateDirectory(outputDir);
         }
-        catch (Exception ex)
-        {
-            // Log any errors that occur during generation or file I/O
-            Console.WriteLine($"Error: {ex.Message}");
-        }
-    }
 
-    /// <summary>
-    /// Generates a Code 16K barcode image with specified parameters and returns it as a PNG byte array.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="aspectRatio">Height aspect ratio (recommended > 8).</param>
-    /// <param name="quietLeftCoef">Quiet zone coefficient for the left side (minimum 10).</param>
-    /// <param name="quietRightCoef">Quiet zone coefficient for the right side (minimum 1).</param>
-    /// <param name="xDimensionPixels">Module size in pixels (must be positive).</param>
-    /// <returns>Byte array containing the PNG image of the generated barcode.</returns>
-    static byte[] GenerateCode16K(string codeText, int aspectRatio, int quietLeftCoef, int quietRightCoef, float xDimensionPixels)
-    {
-        // Validate input arguments
-        if (string.IsNullOrEmpty(codeText))
-            throw new ArgumentException("Code text must be provided.", nameof(codeText));
-        if (aspectRatio <= 0)
-            throw new ArgumentOutOfRangeException(nameof(aspectRatio), "Aspect ratio must be positive.");
-        if (quietLeftCoef < 10)
-            throw new ArgumentOutOfRangeException(nameof(quietLeftCoef), "QuietZoneLeftCoef must be >= 10.");
-        if (quietRightCoef < 1)
-            throw new ArgumentOutOfRangeException(nameof(quietRightCoef), "QuietZoneRightCoef must be >= 1.");
-        if (xDimensionPixels <= 0f)
-            throw new ArgumentOutOfRangeException(nameof(xDimensionPixels), "XDimension must be positive.");
-
-        byte[] result;
+        // Build a unique file name for the generated barcode image
+        string outputPath = Path.Combine(outputDir, $"Code16K_{Guid.NewGuid():N}.png");
 
         // Initialize the barcode generator with Code16K symbology and the provided text
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
         {
-            // Set the module size (pixel dimension of a single barcode element)
-            generator.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;
+            // Configure barcode appearance
+            generator.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;          // Width of the smallest bar element
+            generator.Parameters.Barcode.Code16K.AspectRatio = aspectRatio;           // Height‑to‑width ratio
+            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = quietLeft;       // Left quiet zone coefficient
+            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = quietRight;     // Right quiet zone coefficient
 
-            // Configure the aspect ratio (controls barcode height)
-            generator.Parameters.Barcode.Code16K.AspectRatio = aspectRatio;
-
-            // Apply quiet zone coefficients to control margins on each side
-            generator.Parameters.Barcode.Code16K.QuietZoneLeftCoef = quietLeftCoef;
-            generator.Parameters.Barcode.Code16K.QuietZoneRightCoef = quietRightCoef;
-
-            // Save the generated barcode to a memory stream in PNG format
-            using (MemoryStream ms = new MemoryStream())
-            {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                result = ms.ToArray(); // Convert stream to byte array
-            }
+            // Save the barcode as a PNG image
+            generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        return result;
+        // Output the location of the generated barcode image
+        Console.WriteLine($"Barcode generated: {outputPath}");
     }
 }

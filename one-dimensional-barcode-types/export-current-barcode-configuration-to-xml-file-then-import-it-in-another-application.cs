@@ -1,8 +1,8 @@
 // Title: Export and Import Barcode Generator Configuration via XML
-// Description: Demonstrates exporting a configured barcode generator to an XML file and importing it to recreate the barcode in another application.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to persist barcode settings using the BarcodeGenerator class. Developers often need to share or reuse barcode configurations across projects or environments; exporting to XML and later importing provides a portable, human‑readable format. Typical use cases include configuration versioning, deployment pipelines, and cross‑application barcode generation.
+// Description: Demonstrates exporting a configured BarcodeGenerator to an XML file and then importing that configuration in a new instance to generate identical barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating how to persist and reuse barcode generator settings using the ExportToXml and ImportFromXml APIs. Developers working with dynamic barcode generation often need to save generator parameters to files for later reuse, sharing across applications, or version control. The example showcases key classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, providing a practical pattern for configuration serialization.
 // Prompt: Export current barcode configuration to an XML file, then import it in another application.
-// Tags: barcode, export, import, xml, configuration, generation, qrcode, aspose.barcode
+// Tags: barcode, configuration, export, import, xml, aspose.barcode, qrcode, generation, image
 
 using System;
 using System.IO;
@@ -10,57 +10,48 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that exports a barcode generator's configuration to XML,
-/// then imports the configuration to generate the same barcode again.
+/// Demonstrates exporting a barcode generator's configuration to XML and importing it back.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a QR code, saves its image,
-    /// exports the generator settings to XML, imports the settings,
-    /// and generates a second image from the imported configuration.
+    /// Entry point of the example. Creates a QR code, saves its configuration to XML,
+    /// then loads the configuration in a new generator to produce the same barcode image.
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Prepare temporary working directory and file paths
-        // ------------------------------------------------------------
-        string workDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(workDir);
-        string xmlPath = Path.Combine(workDir, "generatorConfig.xml");
-        string originalPath = Path.Combine(workDir, "barcode_original.png");
-        string loadedPath = Path.Combine(workDir, "barcode_loaded.png");
+        // Prepare temporary directory and file paths
+        string baseDir = Path.Combine(Path.GetTempPath(), "BarcodeExportDemo");
+        Directory.CreateDirectory(baseDir);
+        string xmlPath = Path.Combine(baseDir, "generatorConfig.xml");
+        string originalImagePath = Path.Combine(baseDir, "original.png");
+        string importedImagePath = Path.Combine(baseDir, "imported.png");
 
-        // ------------------------------------------------------------
-        // Create a barcode generator, configure it, save the image,
-        // and export the configuration to an XML file
-        // ------------------------------------------------------------
+        // Create a barcode generator, configure its appearance, and export settings to XML
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
         {
-            // Set the X dimension (module size) in pixels
+            // Set module size, font size, and bar color
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.CodeTextParameters.Font.Size.Pixels = 12f;
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
 
-            // Save the generated QR code as a PNG image
-            generator.Save(originalPath, BarCodeImageFormat.Png);
-
-            // Export the current generator configuration to XML
+            // Persist the current configuration to an XML file
             generator.ExportToXml(xmlPath);
+
+            // Generate and save the original barcode image
+            generator.Save(originalImagePath, BarCodeImageFormat.Png);
         }
 
-        // ------------------------------------------------------------
-        // Import the previously saved configuration and generate a new barcode
-        // ------------------------------------------------------------
-        using (var loadedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
-        {
-            // Save the barcode generated from the imported configuration
-            loadedGenerator.Save(loadedPath, BarCodeImageFormat.Png);
-        }
+        // Load the previously saved configuration into a new generator instance
+        var importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath);
 
-        // ------------------------------------------------------------
+        // Generate and save the barcode image using the imported configuration
+        importedGenerator.Save(importedImagePath, BarCodeImageFormat.Png);
+        importedGenerator.Dispose();
+
         // Output the locations of the generated files
-        // ------------------------------------------------------------
-        Console.WriteLine($"Original barcode saved to: {originalPath}");
-        Console.WriteLine($"Configuration exported to XML: {xmlPath}");
-        Console.WriteLine($"Barcode generated from imported config saved to: {loadedPath}");
+        Console.WriteLine("Exported XML: " + xmlPath);
+        Console.WriteLine("Original barcode image: " + originalImagePath);
+        Console.WriteLine("Imported barcode image: " + importedImagePath);
     }
 }

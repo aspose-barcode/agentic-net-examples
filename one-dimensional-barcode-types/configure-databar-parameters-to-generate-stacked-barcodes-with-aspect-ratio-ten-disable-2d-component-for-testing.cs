@@ -1,8 +1,8 @@
 // Title: Generate Stacked DataBar Barcode with Custom Aspect Ratio
-// Description: Demonstrates how to create a stacked DataBar Omni‑Directional barcode, set its aspect ratio to ten, and disable the 2D composite component.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and DataBar parameters. Developers often need to customize DataBar symbologies—such as adjusting aspect ratios, stacking options, or toggling 2D components—to meet specific printing or scanning requirements. The snippet illustrates typical steps: initializing the generator, configuring barcode properties, and saving the output image.
+// Description: Demonstrates how to configure Aspose.BarCode to create a stacked DataBar barcode with an aspect ratio of ten and disable the 2D composite component.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on DataBar symbology configuration. It shows usage of the BarcodeGenerator class, EncodeTypes enumeration, and DataBar parameters such as AspectRatio and Is2DCompositeComponent. Developers often need to customize DataBar settings for retail or inventory applications, adjusting visual dimensions and composite features to meet scanning requirements.
 // Prompt: Configure DataBar parameters to generate stacked barcodes with aspect ratio ten, disable 2D component for testing.
-// Tags: databar, stacked, aspectratio, disable-2d-component, barcode-generation, aspnet, png, aspose.barcode
+// Tags: databar, stacked, aspectratio, disable-2d-component, barcode-generation, aspnet, csharp, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,41 +10,35 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that generates a stacked DataBar Omni‑Directional barcode
-/// with a custom aspect ratio and without the 2D composite component.
+/// Demonstrates generating a stacked DataBar barcode with a custom aspect ratio and disabled 2D component using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Creates the output directory,
-    /// configures the barcode generator, and saves the resulting PNG image.
+    /// Entry point of the example. Generates the barcode and saves it as a PNG file.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define a temporary folder to store the generated barcode image
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarCodeDemo");
+        // Define the output directory inside the system's temporary folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        // Ensure the directory exists
         Directory.CreateDirectory(outputDir);
+        // Build the full file path for the resulting PNG image
+        string filePath = Path.Combine(outputDir, "DatabarStackedAspectRatio10.png");
 
-        // Full path for the output PNG file
-        string outputPath = Path.Combine(outputDir, "DatabarStackedAspectRatio10.png");
-
-        // Initialize the barcode generator with the stacked Omni‑Directional DataBar symbology
-        using (var generator = new BarcodeGenerator(EncodeTypes.DatabarStackedOmniDirectional, "(01)12345678901231"))
+        // Initialize the barcode generator with stacked DataBar symbology and sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.DatabarStacked, "(01)12345678901231"))
         {
-            // Optional: set the module (X) size in pixels for finer control over image resolution
-            generator.Parameters.Barcode.XDimension.Pixels = 2;
-
-            // Set the aspect ratio to 10, which stretches the stacked barcode vertically
+            // Set the DataBar aspect ratio to 10
             generator.Parameters.Barcode.DataBar.AspectRatio = 10;
-
-            // Disable the 2D composite component (useful for testing or when only the linear part is required)
+            // Disable the 2D composite component for testing purposes
             generator.Parameters.Barcode.DataBar.Is2DCompositeComponent = false;
-
-            // Save the configured barcode as a PNG image to the specified path
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Save the generated barcode as a PNG file
+            generator.Save(filePath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user where the barcode image was saved
+        Console.WriteLine($"Barcode saved to: {filePath}");
     }
 }

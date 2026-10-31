@@ -1,61 +1,58 @@
-// Title: Generate Codabar barcode with custom start/stop symbols and embed in HTML
-// Description: This example creates a Codabar barcode using start symbol B and stop symbol C, saves it as a PNG image, converts the image to a Base64 string, and embeds it in a simple HTML page.
-// Category-Description: Demonstrates Aspose.BarCode barcode generation (BarcodeGenerator, EncodeTypes) and image handling (BarCodeImageFormat, Aspose.Drawing) for web integration. Typical use cases include creating printable or web‑displayable barcodes with custom symbology settings, converting them to Base64 for inline HTML, and automating file output. Developers working with barcode generation, image processing, or HTML embedding will find this pattern useful.
+// Title: Generate Codabar Barcode and Embed in HTML
+// Description: Creates a Codabar barcode with start symbol B and stop symbol C, saves it as a PNG file, and embeds the image in a simple HTML page using a base64 data URI.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, demonstrating how to use the BarcodeGenerator class with EncodeTypes.Codabar to produce barcodes for web or print scenarios. Typical use cases include creating inventory labels, ticketing codes, or any application requiring Codabar symbology. Developers often need to customize dimensions, start/stop symbols, and embed generated images directly into HTML or other markup.
 // Prompt: Generate a Codabar barcode with start symbol B, stop symbol C, and embed the image in an HTML page.
-// Tags: codabar, barcode, generation, image, html, base64, aspose.barcode, aspose.drawing
+// Tags: codabar, barcode, generation, png, html, base64, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Codabar barcode with specific start/stop symbols,
-/// converting it to Base64, and embedding it in an HTML page.
+/// Demonstrates generating a Codabar barcode with specific start/stop symbols and embedding it in an HTML page.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example.
+    /// Entry point. Generates the barcode image, converts it to Base64, and writes an HTML file displaying the barcode.
     /// </summary>
     static void Main()
     {
-        // Define output directory and file paths
+        // Define a temporary output directory for the generated files
         string outputDir = Path.Combine(Path.GetTempPath(), "CodabarExample");
-        Directory.CreateDirectory(outputDir);
+        Directory.CreateDirectory(outputDir); // Ensure the directory exists
+
+        // Paths for the barcode image and the resulting HTML page
         string imagePath = Path.Combine(outputDir, "codabar.png");
         string htmlPath = Path.Combine(outputDir, "codabar.html");
 
-        // Generate Codabar barcode with start symbol B and stop symbol C
-        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "12345"))
+        // Create a barcode generator for Codabar symbology with the data "123456"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Codabar, "123456"))
         {
+            // Set the X dimension (module width) to 2 pixels for better readability
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Configure start and stop symbols as required (B and C)
             generator.Parameters.Barcode.Codabar.StartSymbol = CodabarSymbol.B;
             generator.Parameters.Barcode.Codabar.StopSymbol = CodabarSymbol.C;
-            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+            // Save the generated barcode as a PNG image
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Read the generated PNG file and convert its bytes to a Base64 string
-        byte[] imageBytes = File.ReadAllBytes(imagePath);
-        string base64 = Convert.ToBase64String(imageBytes);
+        // Read the saved PNG file and convert its bytes to a Base64 string
+        byte[] imgBytes = File.ReadAllBytes(imagePath);
+        string base64 = Convert.ToBase64String(imgBytes);
 
-        // Build a simple HTML document that embeds the barcode image using a data URI
-        StringBuilder htmlBuilder = new StringBuilder();
-        htmlBuilder.AppendLine("<!DOCTYPE html>");
-        htmlBuilder.AppendLine("<html lang=\"en\">");
-        htmlBuilder.AppendLine("<head><meta charset=\"UTF-8\"><title>Codabar Barcode</title></head>");
-        htmlBuilder.AppendLine("<body>");
-        htmlBuilder.AppendLine("<h2>Codabar Barcode (Start B, Stop C)</h2>");
-        htmlBuilder.AppendLine($"<img src=\"data:image/png;base64,{base64}\" alt=\"Codabar Barcode\" />");
-        htmlBuilder.AppendLine("</body>");
-        htmlBuilder.AppendLine("</html>");
+        // Build a simple HTML page that embeds the barcode image using a data URI
+        string htmlContent = $"<html><body><h1>Codabar Barcode (Start B, Stop C)</h1>" +
+                             $"<img src=\"data:image/png;base64,{base64}\" alt=\"Codabar\"/></body></html>";
 
-        // Save the HTML file to disk
-        File.WriteAllText(htmlPath, htmlBuilder.ToString());
+        // Write the HTML content to the output file
+        File.WriteAllText(htmlPath, htmlContent);
 
-        // Inform the user where the files were saved
+        // Inform the user where the files have been saved
         Console.WriteLine($"Barcode image saved to: {imagePath}");
         Console.WriteLine($"HTML page saved to: {htmlPath}");
     }

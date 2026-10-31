@@ -1,8 +1,8 @@
 // Title: Generate Code 16K barcode and save as high‑resolution TIFF
-// Description: Demonstrates creating a Code 16K barcode with the maximum 77‑character payload and exporting it to a 300 dpi TIFF image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters such as resolution, X‑dimension, and aspect ratio using the BarcodeGenerator class. Typical use cases include producing high‑quality printable barcodes for inventory, shipping, or compliance labeling. Developers often need to adjust image resolution and dimensions to meet printing standards, and this snippet shows the essential API calls.
+// Description: Demonstrates creating a Code 16K barcode with the maximum 77‑character data length and saving it as a 300 DPI TIFF image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating how to configure barcode parameters such as resolution, module size, and aspect ratio using the BarcodeGenerator class. Typical use cases include producing high‑quality printable barcodes for inventory, shipping, or compliance labeling. Developers often need to set EncodeTypes, adjust XDimension, and export to raster formats like TIFF.
 // Prompt: Generate Code 16K barcode with maximum 77 characters, save high‑resolution TIFF.
-// Tags: code16k, barcode generation, tiff output, high resolution, aspnet.barcode, aspose.barcode
+// Tags: code16k, barcode generation, tiff, high resolution, aspose.barcode, barcodegenerator
 
 using System;
 using System.IO;
@@ -10,40 +10,40 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates a Code 16K barcode with a 77‑character payload
+/// Example program that generates a Code 16K barcode with the maximum allowed data length
 /// and saves it as a high‑resolution TIFF image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, configures image settings, and writes the file.
+    /// Entry point of the example. Creates the output directory, configures the barcode generator,
+    /// and writes the resulting image to disk.
     /// </summary>
     static void Main()
     {
-        // Determine output folder and ensure it exists
-        string outputDirectory = Path.Combine(Environment.CurrentDirectory, "Output");
-        Directory.CreateDirectory(outputDirectory);
+        // Prepare output directory in the system temporary folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "Code16KExample");
+        Directory.CreateDirectory(outputDir);
 
-        // Build full path for the output TIFF file
-        string outputPath = Path.Combine(outputDirectory, "Code16K.tiff");
+        // 77-character alphanumeric string (maximum for Code 16K)
+        string codeText = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDE";
 
-        // Prepare a 77‑character string for the barcode data
-        string baseStr = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        string codeText = (baseStr + baseStr + baseStr).Substring(0, 77);
+        // Full path for the resulting TIFF file
+        string outputPath = Path.Combine(outputDir, "Code16K.tiff");
 
-        // Initialize the generator with Code16K symbology and the prepared data
+        // Initialize the barcode generator with the Code 16K symbology and data
         using (var generator = new BarcodeGenerator(EncodeTypes.Code16K, codeText))
         {
-            // Set image resolution to 300 DPI for high‑quality output
+            // Set high resolution (300 DPI) for better print quality
             generator.Parameters.Resolution = 300f;
 
-            // Set X‑dimension (module width) to 2 pixels
+            // Define module (X) size in pixels
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            // Adjust the Code16K specific aspect ratio
-            generator.Parameters.Barcode.Code16K.AspectRatio = 10f;
+            // Set aspect ratio greater than 8 as recommended for Code 16K
+            generator.Parameters.Barcode.Code16K.AspectRatio = 10;
 
-            // Save the generated barcode as a TIFF image
+            // Save the barcode as a TIFF image with the specified resolution
             generator.Save(outputPath, BarCodeImageFormat.Tiff);
         }
 
