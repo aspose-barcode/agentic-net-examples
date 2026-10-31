@@ -1,53 +1,105 @@
+// Title: Generate QR Code barcode with runtime configuration
+// Description: Demonstrates creating a QR Code using Aspose.BarCode, allowing dynamic settings via command‑line arguments.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator and BarCodeReader classes for QR Code creation, customization of error correction level, version, and module size, and subsequent decoding. Developers often need to generate barcodes with variable parameters and verify them programmatically, making this pattern useful for batch processing, reporting, or automated testing.
+// Prompt: Generate a QR Code barcode and read configuration values at runtime for dynamic settings.
+// Tags: qr code, barcode generation, barcode recognition, runtime configuration, aspose.barcode, csharp
+
 using System;
 using System.IO;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
+/// <summary>
+/// Example program that generates a QR Code barcode using Aspose.BarCode,
+/// saves it as an image, and then reads it back to verify the encoded text.
+/// Configuration values such as the code text, error correction level,
+/// QR version, and module size can be supplied via command‑line arguments.
+/// </summary>
 class Program
 {
+    /// <summary>
+    /// Entry point. Parses optional arguments, creates the QR Code, saves it,
+    /// and decodes it to display the result.
+    /// </summary>
+    /// <param name="args">
+    /// Optional command‑line arguments:
+    /// 0 – code text,
+    /// 1 – error correction level (L, M, Q, H),
+    /// 2 – QR version (Auto or 1‑40),
+    /// 3 – X‑dimension in pixels.
+    /// </param>
     static void Main(string[] args)
     {
-        // Default settings
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr.png");
-        string codeText = "Hello World";
+        // Default configuration values
+        string codeText = "Aspose";
         QRErrorLevel errorLevel = QRErrorLevel.LevelM;
-        QRVersion qrVersion = QRVersion.Auto;
-        float xDimension = 4f;
+        QRVersion version = QRVersion.Auto;
+        float xDimensionPixels = 4f;
+        string outputPath = "qr.png";
 
-        // Parse command‑line arguments (if any)
+        // -----------------------------------------------------------------
+        // Parse command‑line arguments (fallback to defaults)
+        // -----------------------------------------------------------------
         if (args.Length > 0 && !string.IsNullOrWhiteSpace(args[0]))
-            outputPath = args[0];
+            codeText = args[0];
+
         if (args.Length > 1 && !string.IsNullOrWhiteSpace(args[1]))
-            codeText = args[1];
+        {
+            switch (args[1].ToUpperInvariant())
+            {
+                case "L": errorLevel = QRErrorLevel.LevelL; break;
+                case "M": errorLevel = QRErrorLevel.LevelM; break;
+                case "Q": errorLevel = QRErrorLevel.LevelQ; break;
+                case "H": errorLevel = QRErrorLevel.LevelH; break;
+            }
+        }
+
         if (args.Length > 2 && !string.IsNullOrWhiteSpace(args[2]))
-            errorLevel = ParseErrorLevel(args[2]);
-        if (args.Length > 3 && !string.IsNullOrWhiteSpace(args[3]))
-            qrVersion = ParseQrVersion(args[3]);
-        if (args.Length > 4 && float.TryParse(args[4], out float dim) && dim > 0)
-            xDimension = dim;
+        {
+            string vStr = args[2].Trim();
+            if (vStr.Equals("Auto", StringComparison.OrdinalIgnoreCase))
+            {
+                version = QRVersion.Auto;
+            }
+            else if (int.TryParse(vStr, out int vNum) && vNum >= 1 && vNum <= 40)
+            {
+                // Map numeric version to the corresponding QRVersion field
+                string fieldName = vNum < 10 ? $"Version0{vNum}" : $"Version{vNum}";
+                var field = typeof(QRVersion).GetField(fieldName);
+                if (field != null)
+                    version = (QRVersion)field.GetValue(null);
+            }
+        }
 
-        // Ensure output directory exists
-        string outDir = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(outDir) && !Directory.Exists(outDir))
-            Directory.CreateDirectory(outDir);
+        if (args.Length > 3 && float.TryParse(args[3], out float xDim) && xDim > 0)
+            xDimensionPixels = xDim;
 
-        // Generate QR Code
+        // -----------------------------------------------------------------
+        // Ensure the output directory exists
+        // -----------------------------------------------------------------
+        string outputDir = Path.GetDirectoryName(Path.GetFullPath(outputPath));
+        if (!Directory.Exists(outputDir))
+            Directory.CreateDirectory(outputDir);
+
+        // -----------------------------------------------------------------
+        // Generate QR Code using BarcodeGenerator
+        // -----------------------------------------------------------------
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            generator.Parameters.Barcode.XDimension.Pixels = xDimension;
+            generator.Parameters.Barcode.XDimension.Pixels = xDimensionPixels;
             generator.Parameters.Barcode.QR.ErrorLevel = errorLevel;
-            generator.Parameters.Barcode.QR.QrVersion = qrVersion;
-            generator.Parameters.Resolution = 300f; // optional DPI
-
+            generator.Parameters.Barcode.QR.Version = version;
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"QR Code saved to: {outputPath}");
+        Console.WriteLine($"QR code saved to: {outputPath}");
 
-        // Read back the generated QR Code
+        // -----------------------------------------------------------------
+        // Read back the generated barcode to verify its content
+        // -----------------------------------------------------------------
         if (File.Exists(outputPath))
         {
             using (var reader = new BarCodeReader(outputPath, DecodeType.QR))
@@ -55,7 +107,6 @@ class Program
                 foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
                     Console.WriteLine($"Decoded Text: {result.CodeText}");
-                    Console.WriteLine($"Symbology: {result.CodeType}");
                 }
             }
         }
@@ -63,32 +114,5 @@ class Program
         {
             Console.WriteLine("Failed to locate the generated barcode image.");
         }
-    }
-
-    static QRErrorLevel ParseErrorLevel(string level)
-    {
-        return level.ToUpperInvariant() switch
-        {
-            "L" => QRErrorLevel.LevelL,
-            "M" => QRErrorLevel.LevelM,
-            "Q" => QRErrorLevel.LevelQ,
-            "H" => QRErrorLevel.LevelH,
-            _ => QRErrorLevel.LevelM
-        };
-    }
-
-    static QRVersion ParseQrVersion(string versionStr)
-    {
-        if (string.Equals(versionStr, "auto", StringComparison.OrdinalIgnoreCase))
-            return QRVersion.Auto;
-
-        if (int.TryParse(versionStr, out int v) && v >= 1 && v <= 40)
-        {
-            string fieldName = v < 10 ? $"Version0{v}" : $"Version{v}";
-            var field = typeof(QRVersion).GetField(fieldName);
-            if (field != null)
-                return (QRVersion)field.GetValue(null);
-        }
-        return QRVersion.Auto;
     }
 }
