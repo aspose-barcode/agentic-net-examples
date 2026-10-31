@@ -1,63 +1,70 @@
-// Title: Generate Planet Barcodes with Validation and Skipping Invalid Inputs
-// Description: Demonstrates creating Planet barcodes, validating code text, logging warnings for unsupported characters, and skipping those entries.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.Planet, configure strict validation via ThrowExceptionWhenCodeTextIncorrect, and handle errors gracefully. Developers often need to generate barcodes in batch while ensuring input data conforms to symbology rules; this pattern shows typical use cases such as logging and skipping invalid records.
+// Title: Australia Post Barcode Generation with Validation and Skipping Invalid Codes
+// Description: Demonstrates generating Australia Post barcodes, validating customer information, and skipping codes containing unsupported characters.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing how to use BarcodeGenerator, EncodeTypes, and generation parameters to create barcodes. Typical use cases include producing shipping labels, tracking numbers, and postal codes where strict data validation is required. Developers often need to handle invalid input gracefully, log warnings, and continue processing remaining items.
 // Prompt: Handle cases where customer information uses unsupported characters by logging a warning and skipping generation.
-// Tags: barcode, planet, validation, error-handling, generation, png, aspnet, aspose.barcode
+// Tags: australiapost, barcode generation, png, barcodegenerator, encodetypes, parameters
 
 using System;
 using System.IO;
-using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates batch generation of Planet barcodes with strict validation,
-/// logging warnings for unsupported characters, and skipping invalid entries.
+/// Generates Australia Post barcodes for a set of sample code texts,
+/// validates the content, and skips any codes containing unsupported characters.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates an output folder, iterates over sample
-    /// code texts, generates barcodes for valid inputs, and logs warnings for invalid ones.
+    /// Entry point of the example. Prepares the output folder, iterates over sample code texts,
+    /// attempts barcode generation with strict validation, and logs warnings for invalid inputs.
     /// </summary>
     static void Main()
     {
-        // Create a dedicated temporary output folder for the generated barcode images
-        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputFolder);
+        // Prepare a temporary output directory for generated barcode images
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
 
-        // Sample code texts: some contain unsupported characters for Planet barcode (only digits allowed)
-        var codeTexts = new List<string>
+        // Sample Australia Post code texts (some contain unsupported characters)
+        var codeTexts = new[]
         {
-            "1234567",          // valid
-            "12345AB",          // invalid characters
-            "9876543",          // valid
-            "12#34*6",          // invalid characters
-            "7654321"           // valid
+            "1100000000",            // valid, no customer info
+            "5980123456AB",          // valid CTable (letters allowed)
+            "5980123456A$",          // invalid for CTable (symbol $)
+            "628012345612345",       // valid NTable (digits only)
+            "6280123456123A",        // invalid for NTable (letter A)
+            "9280123456ABCD",        // valid CTable (up to 5 letters)
+            "9280123456ABCD$",       // invalid for CTable (symbol $)
         };
 
         // Process each code text individually
-        foreach (var text in codeTexts)
+        foreach (var codeText in codeTexts)
         {
-            // Build the full file path for the output PNG image
-            string filePath = Path.Combine(outputFolder, $"Planet_{text}.png");
             try
             {
-                // Initialize the barcode generator with Planet symbology and the current text
-                using (var generator = new BarcodeGenerator(EncodeTypes.Planet, text))
+                // Initialize the barcode generator with Australia Post symbology
+                using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
                 {
-                    // Enable strict validation: throw exception on invalid characters
+                    // Set the encoding table to CTable; invalid characters will trigger an exception
+                    generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.CTable;
+
+                    // Enable strict validation to throw on incorrect code text
                     generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
 
-                    // Save the generated barcode image as PNG
+                    // Define the output file path (PNG format)
+                    string filePath = Path.Combine(outputDir, $"{codeText}.png");
+
+                    // Save the generated barcode image
                     generator.Save(filePath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Generated barcode for '{text}' at: {filePath}");
+                    Console.WriteLine($"Generated barcode: {filePath}");
                 }
             }
             catch (Exception ex)
             {
-                // Log a warning and skip generation for this entry
-                Console.WriteLine($"Warning: Unable to generate barcode for '{text}'. Reason: {ex.Message}");
+                // Log a warning and skip the current code text if validation fails
+                Console.WriteLine($"Warning: Skipping barcode for '{codeText}'. Reason: {ex.Message}");
             }
         }
 

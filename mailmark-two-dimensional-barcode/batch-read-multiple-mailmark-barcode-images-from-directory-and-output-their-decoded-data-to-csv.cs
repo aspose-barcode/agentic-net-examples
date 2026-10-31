@@ -1,36 +1,39 @@
 // Title: Batch read Mailmark barcodes from images and export results to CSV
-// Description: Demonstrates generating multiple Mailmark barcode images, reading them back, and writing the decoded data to a CSV file.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode processing category. It showcases the use of ComplexBarcodeGenerator for creating Mailmark barcodes, BarCodeReader for decoding them, and ComplexCodetextReader for extracting structured data. Typical scenarios include bulk generation of postal barcodes and automated extraction of their payload for reporting or integration purposes.
+// Description: Demonstrates generating sample Mailmark 4‑state barcodes, reading them from a folder, and writing decoded information to a CSV file.
+// Category-Description: Shows how to use Aspose.BarCode to generate and recognize Mailmark barcodes, covering ComplexBarcodeGenerator, BarCodeReader, DecodeType.Mailmark, and CSV export. Typical use cases include bulk processing of Mailmark images for logistics, inventory, or postal automation. Developers working with Aspose.BarCode often need to batch‑read barcodes, extract structured data, and persist results in common formats.
 // Prompt: Batch read multiple Mailmark barcode images from a directory and output their decoded data to CSV.
-// Tags: mailmark, barcode, batch, csv, reading, aspose.barcode, complexbarcode
+// Tags: mailmark, barcode, batch, csv, generation, recognition, complexbarcode, aspose.barcode
 
 using System;
 using System.IO;
 using System.Text;
-using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates a set of Mailmark barcode images, reads them back, and writes the decoded information to a CSV file.
+/// Example program that generates Mailmark barcode images, reads them in batch,
+/// and writes the decoded data to a CSV file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the sample. Performs image generation, batch decoding, and CSV export.
+    /// Entry point of the example. Creates sample Mailmark images, processes them,
+    /// and outputs a CSV file with the decoded information.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the sample files
+        // Create a unique temporary folder for generated images and results
         string tempFolder = Path.Combine(Path.GetTempPath(), "MailmarkBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Prepare a collection of Mailmark data objects to be encoded
-        var mailmarks = new List<MailmarkCodetext>();
+        // Generate sample Mailmark 4‑state barcode images
+        var imageFiles = new System.Collections.Generic.List<string>();
         for (int i = 0; i < 5; i++)
         {
-            var mm = new MailmarkCodetext
+            var mailmark = new MailmarkCodetext
             {
                 Format = 4,
                 VersionID = 1,
@@ -39,75 +42,104 @@ class Program
                 ItemID = 16563762 + i,
                 DestinationPostCodePlusDPS = "EF61AH8T "
             };
-            mailmarks.Add(mm);
-        }
 
-        // Generate barcode images for each Mailmark object and collect file paths
-        var filePaths = new List<string>();
-        for (int i = 0; i < mailmarks.Count; i++)
-        {
-            string filePath = Path.Combine(tempFolder, $"Mailmark_{i}.png");
-            using (var generator = new ComplexBarcodeGenerator(mailmarks[i]))
+            string imagePath = Path.Combine(tempFolder, $"Mailmark_{i + 1}.png");
+            using (var generator = new ComplexBarcodeGenerator(mailmark))
             {
-                // Adjust image resolution for better readability
+                // Set barcode module size (X‑dimension) in pixels
                 generator.Parameters.Barcode.XDimension.Pixels = 4f;
-                generator.Save(filePath);
+                generator.Save(imagePath, BarCodeImageFormat.Png);
             }
-            filePaths.Add(filePath);
+            imageFiles.Add(imagePath);
         }
 
-        // Initialise CSV builder with header row
-        var csvBuilder = new StringBuilder();
-        csvBuilder.AppendLine("FileName,Format,VersionID,Class,SupplychainID,ItemID,DestinationPostCodePlusDPS");
+        // Prepare CSV output with header row
+        string csvPath = Path.Combine(tempFolder, "results.csv");
+        var sb = new StringBuilder();
+        sb.AppendLine("FileName,CodeText,CodeTypeName,VersionID,Class,SupplychainID,ItemID,DestinationPostCodePlusDPS");
 
-        // Define the decode type for Mailmark barcodes
-        BaseDecodeType decodeType = DecodeType.Mailmark;
-
-        // Process each generated image: decode and append results to CSV
-        for (int i = 0; i < filePaths.Count; i++)
+        // Batch read each generated image
+        foreach (string file in imageFiles)
         {
-            string file = filePaths[i];
-            MailmarkCodetext decoded = null;
-
-            if (File.Exists(file))
+            if (!File.Exists(file))
             {
-                try
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
+
+            try
+            {
+                using (var reader = new BarCodeReader(file, DecodeType.Mailmark))
                 {
-                    using (var reader = new BarCodeReader(file, decodeType))
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    if (results.Length == 0)
                     {
-                        var results = reader.ReadBarCodes();
-                        if (results != null && results.Length > 0)
+                        // No Mailmark barcode detected; record empty fields
+                        sb.AppendLine($"{Path.GetFileName(file)},,,");
+                        Console.WriteLine($"No barcode detected in {Path.GetFileName(file)} (Mailmark reading unsupported).");
+                    }
+                    else
+                    {
+                        foreach (var result in results)
                         {
-                            // Attempt to decode the Mailmark payload from the recognized text
-                            decoded = ComplexCodetextReader.TryDecodeMailmark(results[0].CodeText);
+                            string codeText = result.CodeText ?? "";
+                            string codeType = result.CodeTypeName ?? "";
+                            string versionId = "";
+                            string classVal = "";
+                            string supplyChain = "";
+                            string itemId = "";
+                            string destPost = "";
+
+                            // Attempt to parse Mailmark codetext into its components
+                            MailmarkCodetext decoded = ComplexCodetextReader.TryDecodeMailmark(codeText);
+                            if (decoded != null)
+                            {
+                                versionId = decoded.VersionID.ToString();
+                                classVal = decoded.Class ?? "";
+                                supplyChain = decoded.SupplychainID.ToString();
+                                itemId = decoded.ItemID.ToString();
+                                destPost = decoded.DestinationPostCodePlusDPS ?? "";
+                            }
+
+                            // Append a CSV line with escaped values
+                            sb.AppendLine($"{Path.GetFileName(file)},{EscapeCsv(codeText)},{EscapeCsv(codeType)},{EscapeCsv(versionId)},{EscapeCsv(classVal)},{EscapeCsv(supplyChain)},{EscapeCsv(itemId)},{EscapeCsv(destPost)}");
                         }
                     }
                 }
-                catch (ArgumentException)
-                {
-                    // Image loading failed – continue to fallback handling
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error reading '{Path.GetFileName(file)}': {ex.Message}");
-                }
             }
-
-            // If decoding failed, fall back to the original data used for generation
-            if (decoded == null)
+            catch (ArgumentException ex)
             {
-                decoded = mailmarks[i];
+                // Image loading failed or format unsupported
+                Console.WriteLine($"Error processing {Path.GetFileName(file)}: {ex.Message}");
+                sb.AppendLine($"{Path.GetFileName(file)},Error loading image,,,");
             }
-
-            // Append a CSV line with the decoded (or fallback) values
-            string line = $"{Path.GetFileName(file)},{decoded.Format},{decoded.VersionID},{decoded.Class},{decoded.SupplychainID},{decoded.ItemID},{decoded.DestinationPostCodePlusDPS}";
-            csvBuilder.AppendLine(line);
+            catch (Exception ex)
+            {
+                // General safety catch for unexpected errors
+                Console.WriteLine($"Unexpected error for {Path.GetFileName(file)}: {ex.Message}");
+                sb.AppendLine($"{Path.GetFileName(file)},Unexpected error,,,");
+            }
         }
 
-        // Write the accumulated CSV content to a file in the temporary folder
-        string csvPath = Path.Combine(tempFolder, "MailmarkResults.csv");
-        File.WriteAllText(csvPath, csvBuilder.ToString(), Encoding.UTF8);
+        // Write the accumulated CSV content to file
+        File.WriteAllText(csvPath, sb.ToString(), Encoding.UTF8);
+        Console.WriteLine($"CSV results written to: {csvPath}");
+    }
 
-        Console.WriteLine($"Batch processing completed. CSV saved to: {csvPath}");
+    /// <summary>
+    /// Escapes a string for safe inclusion in a CSV file.
+    /// Wraps the value in quotes if it contains commas, quotes, or line breaks.
+    /// </summary>
+    /// <param name="input">The string to escape.</param>
+    /// <returns>The escaped CSV field.</returns>
+    static string EscapeCsv(string input)
+    {
+        if (input == null) return "";
+        if (input.Contains(",") || input.Contains("\"") || input.Contains("\n") || input.Contains("\r"))
+        {
+            string escaped = input.Replace("\"", "\"\"");
+            return $"\"{escaped}\"";
+        }
+        return input;
     }
 }
