@@ -1,8 +1,8 @@
-// Title: Custom Foreground and Background Colors for QR Code Barcode
-// Description: Demonstrates how to set custom foreground (barcode) and background colors when generating a QR code image using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize the visual appearance of barcodes. It uses the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create a QR code with specific colors. Developers often need to match branding guidelines or improve scan reliability by adjusting colors, and this snippet shows the typical steps for such customizations.
+// Title: Apply custom foreground and background colors to a barcode image
+// Description: Demonstrates how to set barcode foreground (BarColor) and background colors using Aspose.BarCode generator and save the image as PNG.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize visual appearance of barcodes. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create a barcode, modify its Parameters.Barcode.BarColor and Parameters.BackColor properties, and export the result. Developers often need to match branding colors or improve readability, making color customization a common requirement in barcode generation scenarios.
 // Prompt: Apply custom foreground and background colors to the barcode image using generator settings.
-// Tags: qr, barcode, color, foreground, background, generation, png, aspose.barcode
+// Tags: barcode, color customization, code128, png, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -11,40 +11,36 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a QR code barcode with custom foreground and background colors and saves it as a PNG image.
+/// Generates a Code128 barcode with custom foreground and background colors and saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the output folder, configures barcode colors, and saves the image.
+    /// Entry point of the example. Creates an output folder, configures barcode colors, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the output directory path relative to the current working directory.
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-
-        // Ensure the output directory exists; create it if it does not.
+        // Define a temporary output directory for the generated barcode image.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeColorDemo");
         if (!Directory.Exists(outputDir))
         {
+            // Create the directory if it does not already exist.
             Directory.CreateDirectory(outputDir);
         }
 
-        // Full file path for the generated barcode image.
+        // Full path for the resulting PNG file.
         string outputPath = Path.Combine(outputDir, "custom_color_barcode.png");
 
-        // Text to encode in the QR code.
-        string codeText = "Aspose";
-
-        // Initialize the barcode generator for a QR code with the specified text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        // Initialize the barcode generator with Code128 symbology and sample data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the barcode (foreground) color to blue.
+            // Set the barcode's foreground (bars) color to blue.
             generator.Parameters.Barcode.BarColor = Color.Blue;
 
-            // Set the background color of the image to yellow.
+            // Set the image background color to yellow.
             generator.Parameters.BackColor = Color.Yellow;
 
-            // Save the generated barcode as a PNG file to the specified path.
+            // Save the barcode image as a PNG file to the specified path.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 

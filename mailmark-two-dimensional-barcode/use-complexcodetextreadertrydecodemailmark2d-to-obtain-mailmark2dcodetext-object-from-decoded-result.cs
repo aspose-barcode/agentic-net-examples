@@ -1,38 +1,40 @@
-// Title: Generate and Decode a Mailmark 2D Barcode
-// Description: Demonstrates creating a Mailmark 2D barcode image, saving it to a temporary folder, and decoding the image back into a Mailmark2DCodetext object.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator to build a Mailmark 2D codetext, BarCodeReader for DataMatrix decoding, and ComplexCodetextReader.TryDecodeMailmark2D to parse the decoded string into a strongly‑typed Mailmark2DCodetext. Developers working with postal barcodes, logistics, or supply‑chain tracking often need to generate and validate Mailmark 2D symbols programmatically.
+// Title: Generate and decode a Mailmark 2D barcode using Aspose.BarCode
+// Description: Demonstrates creating a Mailmark2D barcode image, saving it to a temporary folder, and decoding it back to a Mailmark2DCodetext object.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It shows how to use ComplexBarcodeGenerator to create a Mailmark2D barcode, BarCodeReader with DecodeType.DataMatrix to read it, and ComplexCodetextReader.TryDecodeMailmark2D to parse the codetext. Developers working with postal barcodes, especially Mailmark 2D, can use these APIs for generating shipping labels and validating encoded data.
 // Prompt: Use ComplexCodetextReader.TryDecodeMailmark2D to obtain a Mailmark2DCodetext object from the decoded result.
-// Tags: mailmark2d, barcode, generation, decoding, aspose.barcode, complexbarcode, datamatrix, csharp
+// Tags: mailmark2d, barcode, generation, recognition, complexbarcode, datamatrix, aspnet, csharp
 
 using System;
 using System.IO;
-using System.Text;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Example program that creates a Mailmark 2D barcode, saves it as an image,
-/// reads the image back, and extracts the original codetext using Aspose.BarCode APIs.
+/// Demonstrates generation of a Mailmark2D barcode, saving it to a temporary location,
+/// decoding it, and extracting the individual fields from the resulting <see cref="Mailmark2DCodetext"/>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs generation, saving, decoding, and cleanup.
+    /// Entry point of the example. Executes the full create‑read‑cleanup cycle for a Mailmark2D barcode.
     /// </summary>
     static void Main()
     {
-        // Ensure Unicode characters are displayed correctly in the console.
-        Console.OutputEncoding = Encoding.Unicode;
+        // -----------------------------------------------------------------
+        // 1. Create a unique temporary folder to store the generated image.
+        // -----------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Mailmark2D_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Create a unique temporary directory for the barcode image.
-        string tempDir = Path.Combine(Path.GetTempPath(), "Mailmark2D_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string imagePath = Path.Combine(tempDir, "Mailmark2D.png");
+        // -------------------------------------------------
+        // 2. Define the full path for the barcode image file.
+        // -------------------------------------------------
+        string barcodePath = Path.Combine(tempFolder, "mailmark2d.png");
 
-        // --------------------------------------------------------------------
-        // 1. Build the Mailmark 2D codetext with required fields.
-        // --------------------------------------------------------------------
+        // -------------------------------------------------
+        // 3. Prepare the Mailmark2D codetext with sample data.
+        // -------------------------------------------------
         var mailmark2D = new Mailmark2DCodetext
         {
             UPUCountryID = "JGB ",
@@ -49,39 +51,41 @@ class Program
             DataMatrixType = Mailmark2DType.Type_7
         };
 
-        // --------------------------------------------------------------------
-        // 2. Generate the barcode image using ComplexBarcodeGenerator.
-        // --------------------------------------------------------------------
+        // -------------------------------------------------
+        // 4. Generate the barcode image using ComplexBarcodeGenerator.
+        // -------------------------------------------------
         using (var generator = new ComplexBarcodeGenerator(mailmark2D))
         {
-            // Adjust the X‑dimension for better readability.
+            // Set the X-dimension (module size) to 4 pixels for better readability.
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created successfully.
-        if (!File.Exists(imagePath))
+        // -------------------------------------------------
+        // 5. Verify that the image file was successfully created.
+        // -------------------------------------------------
+        if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // --------------------------------------------------------------------
-        // 3. Read and decode the barcode from the saved image.
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.DataMatrix))
+        // -------------------------------------------------
+        // 6. Read and decode the barcode from the saved image.
+        // -------------------------------------------------
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.DataMatrix))
         {
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Attempt to parse the raw CodeText into a strongly‑typed Mailmark2DCodetext.
+                // Attempt to parse the decoded text into a Mailmark2DCodetext object.
                 Mailmark2DCodetext decoded = ComplexCodetextReader.TryDecodeMailmark2D(result.CodeText);
                 if (decoded == null)
                 {
-                    Console.WriteLine("Unable to decode Mailmark 2D codetext.");
+                    Console.WriteLine("Failed to decode Mailmark2D codetext.");
                     continue;
                 }
 
-                // Output each field of the decoded Mailmark 2D codetext.
+                // Output each field of the decoded Mailmark2D codetext.
                 Console.WriteLine($"UPUCountryID: {decoded.UPUCountryID}");
                 Console.WriteLine($"InformationTypeID: {decoded.InformationTypeID}");
                 Console.WriteLine($"VersionID: {decoded.VersionID}");
@@ -95,16 +99,19 @@ class Program
             }
         }
 
-        // --------------------------------------------------------------------
-        // 4. Clean up temporary files and directories.
-        // --------------------------------------------------------------------
+        // -------------------------------------------------
+        // 7. Clean up temporary files and directories.
+        // -------------------------------------------------
         try
         {
-            Directory.Delete(tempDir, true);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Suppress any exceptions during cleanup to avoid breaking the example flow.
+            // Ignored – cleanup failures should not affect program exit.
         }
     }
 }

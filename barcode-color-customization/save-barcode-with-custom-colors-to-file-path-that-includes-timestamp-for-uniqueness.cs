@@ -1,45 +1,53 @@
-// Title: Save barcode with custom colors to a timestamped PNG file
-// Description: This example generates a Code128 barcode, applies custom foreground (blue) and background (yellow) colors, and saves the image as a PNG file with a unique name that includes a timestamp.
-// Category-Description: Demonstrates Aspose.BarCode generation features such as setting barcode symbology, customizing colors, and exporting images. The key API classes used are BarcodeGenerator, EncodeTypes, and BarCodeImageFormat. Typical scenarios include branding, UI integration, and batch processing where distinct file names are required. Developers often need to customize appearance and ensure file uniqueness in automated workflows.
+// Title: Save Barcode with Custom Colors and Timestamped Filename
+// Description: Demonstrates generating a Code128 barcode, applying custom foreground, background, and border colors, and saving it as a PNG file with a unique timestamped name.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class and its Parameters properties. Typical use cases include branding, visual distinction, and creating uniquely named image files for batch processing. Developers often need to set BarColor, BackColor, and Border.Color, then save the image in a desired format.
 // Prompt: Save a barcode with custom colors to a file path that includes a timestamp for uniqueness.
-// Tags: barcode, code128, custom-colors, png, timestamp, aspose.barcode, image-generation
+// Tags: code128, barcode generation, custom colors, timestamped filename, png, aspose.barcode, aspnet
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Entry point for the barcode generation example.
+/// Example program that creates a Code128 barcode with custom colors
+/// and saves it to a uniquely named PNG file using a timestamp.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a Code128 barcode with custom colors and saves it to a uniquely named PNG file.
+    /// Entry point of the application.
+    /// Generates the barcode, applies color customizations, and writes the image to disk.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode and the barcode symbology
-        string codeText = "12345678";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
+        // Determine the folder where the executable is running.
+        string outputFolder = Directory.GetCurrentDirectory();
 
-        // Build a unique file name using the current timestamp
+        // Create a timestamp string to ensure the file name is unique.
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmssfff");
-        string fileName = $"barcode_{timestamp}.png";
-        string outputPath = Path.Combine(Environment.CurrentDirectory, fileName);
 
-        // Create the barcode generator with the specified symbology and content
-        using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
+        // Combine folder path and file name with timestamp.
+        string filePath = Path.Combine(outputFolder, $"barcode_{timestamp}.png");
+
+        // Initialize the barcode generator for Code128 with the desired data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            // Apply custom colors: blue bars on a yellow background
-            generator.Parameters.Barcode.BarColor = Color.Blue;   // foreground (bars) color
-            generator.Parameters.BackColor = Color.Yellow;       // background color
+            // Set the barcode (foreground) color to blue.
+            generator.Parameters.Barcode.BarColor = Color.Blue;
 
-            // Save the generated barcode image to the file system as PNG
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            // Set the background color of the image to yellow.
+            generator.Parameters.BackColor = Color.Yellow;
+
+            // Set the border color around the barcode to red.
+            generator.Parameters.Border.Color = Color.Red;
+
+            // Save the generated barcode as a PNG file to the specified path.
+            generator.Save(filePath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user where the barcode image was saved.
+        Console.WriteLine($"Barcode saved to: {filePath}");
     }
 }

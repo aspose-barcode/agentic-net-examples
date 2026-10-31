@@ -1,53 +1,49 @@
-// Title: Generate Code128 Barcode with Left-Aligned Text and Caption
-// Description: Demonstrates how to create a Code128 barcode where the main barcode text and a custom bottom caption are both visible and left‑aligned.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, CodeTextParameters, and CaptionBelow to produce barcodes for labeling, packaging, and inventory applications. Developers often need to customize text placement, alignment, and visibility to meet branding or regulatory requirements. The snippet illustrates typical steps for configuring text and caption properties before saving the image.
+// Title: Generate Code128 barcode with left-aligned main text and bottom caption
+// Description: Demonstrates how to create a Code128 barcode where both the primary code text and a custom bottom caption are visible and left‑aligned.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, CodeTextParameters, and CaptionBelow settings. Developers often need to customize barcode text placement and alignment for branding or labeling requirements. The snippet shows typical steps for configuring text visibility, alignment, and saving the image.
 // Prompt: Create barcodes where both main text and bottom caption are visible, each aligned left for consistency.
-// Tags: code128, barcode generation, caption, left alignment, png, aspose.barcode, c#
+// Tags: code128, barcode, caption, text alignment, png, aspose.barcode, generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a Code128 barcode with left‑aligned main text and a custom bottom caption.
+/// Demonstrates generating a Code128 barcode with visible main text and a left‑aligned bottom caption.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates the barcode image and saves it to the Output folder.
+    /// Entry point. Generates the barcode image and saves it to a temporary folder.
     /// </summary>
     static void Main()
     {
-        // Prepare the output directory where the barcode image will be saved
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Define output directory in the system temporary folder and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodesDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Define the barcode content and the caption text
-        string codeText = "1234567890";
-        string bottomCaption = "Sample Caption";
+        // Full path for the resulting PNG image
         string outputPath = Path.Combine(outputDir, "BarcodeWithCaption.png");
 
-        // Create a BarcodeGenerator for Code128 with the specified code text
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Create a barcode generator for Code128 with the specified data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Configure the main barcode text to appear below the bars and align it to the left
+            // Ensure main text is displayed below the barcode and aligned left
             generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
             generator.Parameters.Barcode.CodeTextParameters.Alignment = TextAlignment.Left;
 
-            // Enable the bottom caption, set its text, and align it to the left
+            // Configure bottom caption: make it visible and left aligned
             generator.Parameters.CaptionBelow.Visible = true;
-            generator.Parameters.CaptionBelow.Text = bottomCaption;
+            generator.Parameters.CaptionBelow.Text = "Bottom Caption";
             generator.Parameters.CaptionBelow.Alignment = TextAlignment.Left;
 
-            // Save the generated barcode as a PNG image
+            // Save the barcode image as PNG
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Output the location of the saved barcode image
+        // Inform the user where the barcode image was saved
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

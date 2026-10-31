@@ -1,8 +1,8 @@
-// Title: Barcode PNG Color Verification Example
-// Description: Generates a Code128 barcode PNG with custom colors and verifies that the output image contains the specified RGB values.
-// Category-Description: This example belongs to the Aspose.BarCode generation and image processing category. It demonstrates how to customize barcode appearance using key API classes such as BarcodeGenerator, EncodeTypes, and BarCodeImageFormat, and how to programmatically verify pixel colors in the resulting PNG. Developers often need to ensure visual fidelity of generated barcodes for branding or compliance purposes.
+// Title: Generate Code128 barcode PNG with custom colors and verify pixel colors
+// Description: Creates a Code128 barcode image with specific background, bar, border, text, and caption colors, saves it as PNG, and checks that the generated pixels match the expected RGB values.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode appearance using the BarcodeGenerator class and related parameter objects. It covers setting background, bar, border, code text, and caption colors, saving to PNG, and performing pixel‑level verification—common tasks for developers needing precise visual control over barcode output.
 // Prompt: Verify that the generated PNG file contains the exact RGB values specified for each color property.
-// Tags: barcode symbology, color customization, png output, aspose.barcode, image verification
+// Tags: barcode symbology, generation, png, color, verification, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
@@ -12,117 +12,118 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a barcode with custom colors, saving it as PNG,
-/// and verifying that the image contains the expected RGB values for each color element.
+/// Demonstrates generating a Code128 barcode with custom colors and verifying the exact RGB values in the resulting PNG.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Determines whether two colors are within a specified tolerance.
+    /// Entry point. Generates the barcode, saves it, and validates color values.
     /// </summary>
-    /// <param name="a">First color to compare.</param>
-    /// <param name="b">Second color to compare.</param>
-    /// <param name="tolerance">Maximum allowed difference per channel.</param>
-    /// <returns>True if the colors are within tolerance; otherwise, false.</returns>
-    static bool IsCloseColor(Color a, Color b, int tolerance = 40)
+    static void Main()
+    {
+        // Define output file path in the temporary folder
+        string outputPath = Path.Combine(Path.GetTempPath(), "barcode_test.png");
+
+        // Create a barcode generator for Code128 with the data "12345678"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
+        {
+            // Set background color (light gray)
+            generator.Parameters.BackColor = Color.FromArgb(255, 200, 200, 200);
+
+            // Set bar (foreground) color (dark green)
+            generator.Parameters.Barcode.BarColor = Color.FromArgb(255, 0, 128, 0);
+
+            // Enable and configure a red border of 2 pixels
+            generator.Parameters.Border.Visible = true;
+            generator.Parameters.Border.Width.Pixels = 2f;
+            generator.Parameters.Border.Color = Color.FromArgb(255, 255, 0, 0);
+
+            // Set code text color (blue)
+            generator.Parameters.Barcode.CodeTextParameters.Color = Color.FromArgb(255, 0, 0, 255);
+
+            // Configure captions with custom colors
+            generator.Parameters.CaptionAbove.Text = "Top Caption";
+            generator.Parameters.CaptionAbove.TextColor = Color.FromArgb(255, 255, 0, 255);
+            generator.Parameters.CaptionBelow.Text = "Bottom Caption";
+            generator.Parameters.CaptionBelow.TextColor = Color.FromArgb(255, 0, 255, 255);
+
+            // Save the barcode as a PNG file
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
+
+        // Verify that the file was created successfully
+        if (!File.Exists(outputPath))
+        {
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // Load the generated PNG for pixel‑level verification
+        using (var bitmap = (Bitmap)Image.FromFile(outputPath))
+        {
+            // Verify background color by checking the top‑left pixel
+            Color bgExpected = Color.FromArgb(255, 200, 200, 200);
+            Color bgActual = bitmap.GetPixel(0, 0);
+            Console.WriteLine($"Background color match: {bgActual.ToArgb() == bgExpected.ToArgb()}");
+
+            // Verify that the exact bar color appears somewhere in the image
+            Color barExpected = Color.FromArgb(255, 0, 128, 0);
+            Console.WriteLine($"Bar color found: {FindExactColor(bitmap, barExpected)}");
+
+            // Verify that the exact border color appears somewhere in the image
+            Color borderExpected = Color.FromArgb(255, 255, 0, 0);
+            Console.WriteLine($"Border color found: {FindExactColor(bitmap, borderExpected)}");
+
+            // Verify code text color with a tolerance (anti‑aliasing may affect exact match)
+            Color textExpected = Color.FromArgb(255, 0, 0, 255);
+            Console.WriteLine($"Code text color found (tolerant): {FindCloseColor(bitmap, textExpected, 40)}");
+
+            // Verify caption above color with tolerance
+            Color captionAboveExpected = Color.FromArgb(255, 255, 0, 255);
+            Console.WriteLine($"Caption above color found (tolerant): {FindCloseColor(bitmap, captionAboveExpected, 40)}");
+
+            // Verify caption below color with tolerance
+            Color captionBelowExpected = Color.FromArgb(255, 0, 255, 255);
+            Console.WriteLine($"Caption below color found (tolerant): {FindCloseColor(bitmap, captionBelowExpected, 40)}");
+        }
+
+        // Clean up the temporary file
+        try { File.Delete(outputPath); } catch { }
+    }
+
+    // Searches the entire bitmap for a pixel that exactly matches the target color
+    static bool FindExactColor(Bitmap bitmap, Color target)
+    {
+        for (int y = 0; y < bitmap.Height; y++)
+        {
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                if (bitmap.GetPixel(x, y).ToArgb() == target.ToArgb())
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    // Searches the bitmap for a pixel whose color is within the specified tolerance of the target color
+    static bool FindCloseColor(Bitmap bitmap, Color target, int tolerance)
+    {
+        for (int y = 0; y < bitmap.Height; y++)
+        {
+            for (int x = 0; x < bitmap.Width; x++)
+            {
+                if (IsCloseColor(bitmap.GetPixel(x, y), target, tolerance))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    // Determines whether two colors are within the given tolerance for each RGB component
+    static bool IsCloseColor(Color a, Color b, int tolerance)
     {
         return Math.Abs(a.R - b.R) <= tolerance &&
                Math.Abs(a.G - b.G) <= tolerance &&
                Math.Abs(a.B - b.B) <= tolerance;
-    }
-
-    /// <summary>
-    /// Entry point of the example. Generates the barcode, verifies colors, and cleans up.
-    /// </summary>
-    static void Main()
-    {
-        // Define the expected colors for each barcode element.
-        Color expectedBackground = Color.FromArgb(255, 255, 255); // white
-        Color expectedBar = Color.FromArgb(255, 0, 0); // red
-        Color expectedBorder = Color.FromArgb(0, 255, 0); // green
-        Color expectedCodeText = Color.FromArgb(0, 0, 255); // blue
-        Color expectedCaptionAbove = Color.FromArgb(255, 0, 255); // magenta
-        Color expectedCaptionBelow = Color.FromArgb(0, 255, 255); // cyan
-
-        // Prepare the output file path in the temporary directory.
-        string outputPath = Path.Combine(Path.GetTempPath(), "barcode_test.png");
-        if (File.Exists(outputPath))
-            File.Delete(outputPath);
-
-        // Generate the barcode with the custom color settings.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
-        {
-            generator.Parameters.BackColor = expectedBackground;
-            generator.Parameters.Barcode.BarColor = expectedBar;
-            generator.Parameters.Border.Visible = true;
-            generator.Parameters.Border.Width.Pixels = 2f;
-            generator.Parameters.Border.Color = expectedBorder;
-
-            generator.Parameters.Barcode.CodeTextParameters.Color = expectedCodeText;
-            generator.Parameters.CaptionAbove.Text = "Above";
-            generator.Parameters.CaptionAbove.TextColor = expectedCaptionAbove;
-            generator.Parameters.CaptionBelow.Text = "Below";
-            generator.Parameters.CaptionBelow.TextColor = expectedCaptionBelow;
-
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-        }
-
-        // Counters for matching pixels of each element.
-        int borderCount = 0, barCount = 0, backgroundCount = 0;
-        int codeTextCloseCount = 0, captionAboveCloseCount = 0, captionBelowCloseCount = 0;
-
-        // Load the generated PNG and iterate over each pixel.
-        using (Bitmap bitmap = new Bitmap(outputPath))
-        {
-            int width = bitmap.Width;
-            int height = bitmap.Height;
-
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    Color pixel = bitmap.GetPixel(x, y);
-
-                    // Exact matches for border, bar, and background colors.
-                    if (pixel.ToArgb() == expectedBorder.ToArgb())
-                        borderCount++;
-
-                    if (pixel.ToArgb() == expectedBar.ToArgb())
-                        barCount++;
-
-                    if (pixel.ToArgb() == expectedBackground.ToArgb())
-                        backgroundCount++;
-
-                    // Approximate matches for text and caption colors.
-                    if (IsCloseColor(pixel, expectedCodeText))
-                        codeTextCloseCount++;
-
-                    if (IsCloseColor(pixel, expectedCaptionAbove))
-                        captionAboveCloseCount++;
-
-                    if (IsCloseColor(pixel, expectedCaptionBelow))
-                        captionBelowCloseCount++;
-                }
-            }
-        }
-
-        // Output verification results to the console.
-        Console.WriteLine($"Border color matches: {(borderCount > 0 ? "PASS" : "FAIL")}");
-        Console.WriteLine($"Bar color matches: {(barCount > 0 ? "PASS" : "FAIL")}");
-        Console.WriteLine($"Background color matches: {(backgroundCount > 0 ? "PASS" : "FAIL")}");
-        Console.WriteLine($"Code text color close match: {(codeTextCloseCount > 0 ? "PASS" : "FAIL")}");
-        Console.WriteLine($"Caption above color close match: {(captionAboveCloseCount > 0 ? "PASS" : "FAIL")}");
-        Console.WriteLine($"Caption below color close match: {(captionBelowCloseCount > 0 ? "PASS" : "FAIL")}");
-
-        // Clean up the temporary PNG file.
-        try
-        {
-            if (File.Exists(outputPath))
-                File.Delete(outputPath);
-        }
-        catch
-        {
-            // Ignore any cleanup errors.
-        }
     }
 }

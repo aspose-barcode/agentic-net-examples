@@ -1,8 +1,8 @@
-// Title: Encode and Verify MaxiCode Mode 2 with Numeric Postal Code
-// Description: This example encodes a 9‑digit numeric postal code into the primary message of a MaxiCode Mode 2 barcode, saves it as PNG, then decodes it to confirm the data matches.
-// Category-Description: Shows how to work with complex barcodes using Aspose.BarCode, specifically generating and reading MaxiCode symbols. It covers the ComplexBarcodeGenerator, MaxiCodeCodetextMode2, BarCodeReader, and related classes—common tasks for developers needing to create or validate MaxiCode barcodes in logistics and shipping applications.
+// Title: Encode numeric postal code in MaxiCode Mode 2 and verify decoding
+// Description: Demonstrates how to generate a MaxiCode Mode 2 barcode with a numeric postal code in the primary message, add a structured secondary message, and validate the encoded data by decoding the image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode2, and BarCodeReader to create, customize, and read MaxiCode symbols—common tasks for shipping, logistics, and inventory systems that require high‑density data encoding.
 // Prompt: Encode a numeric postal code in the primary message of a MaxiCode Mode 2 and verify decoding accuracy.
-// Tags: maxicode, mode2, encoding, decoding, barcode-generation, barcode-recognition, aspose.barcode
+// Tags: maxicode, mode2, barcode generation, barcode recognition, complex barcode, aspnet, csharp, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,78 +10,116 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates encoding a numeric postal code in MaxiCode Mode 2 and verifying the decoded result.
+/// Demonstrates encoding a numeric postal code in a MaxiCode Mode 2 barcode,
+/// adding a structured secondary message, and verifying the encoded data by decoding the generated image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a MaxiCode Mode 2 barcode with a numeric postal code, saves it as PNG,
-    /// then reads it back to confirm the encoded data matches the original.
+    /// Generates a MaxiCode Mode 2 barcode, saves it to a temporary file,
+    /// decodes it, and compares the decoded values with the original input.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary folder for the generated image
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "MaxiCodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "maxicode_mode2.png");
+        // Prepare a temporary file path for the generated barcode image
+        string tempPath = Path.Combine(Path.GetTempPath(), "MaxiCodeMode2.png");
 
-        // --------------------------------------------------------------------
-        // Define sample data for the MaxiCode
-        // --------------------------------------------------------------------
-        string postalCode = "123456789"; // 9‑digit numeric postal code
-        int countryCode = 56;
-        int serviceCategory = 999;
-
-        // --------------------------------------------------------------------
-        // Build the complex codetext for MaxiCode Mode 2
-        // --------------------------------------------------------------------
-        var maxiCodeData = new MaxiCodeCodetextMode2
+        // Create MaxiCode codetext for Mode 2 with a numeric postal code and other required fields
+        var maxiCodeCodetext = new MaxiCodeCodetextMode2
         {
-            PostalCode = postalCode,
-            CountryCode = countryCode,
-            ServiceCategory = serviceCategory
+            PostalCode = "123456789", // 9 numeric digits
+            CountryCode = 56,
+            ServiceCategory = 1
         };
 
-        // --------------------------------------------------------------------
-        // Generate the barcode image
-        // --------------------------------------------------------------------
-        using (var generator = new ComplexBarcodeGenerator(maxiCodeData))
+        // Build a structured secondary message (address lines, state, and year)
+        var secondMessage = new MaxiCodeStructuredSecondMessage();
+        secondMessage.Add("123 MAIN STREET");
+        secondMessage.Add("ANYTOWN");
+        secondMessage.Add("CA");
+        secondMessage.Year = 23;
+        maxiCodeCodetext.SecondMessage = secondMessage;
+
+        // Generate the barcode using ComplexBarcodeGenerator
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
+            // Set the MaxiCode mode to 2
             generator.Parameters.Barcode.MaxiCode.Mode = MaxiCodeMode.Mode2;
-            generator.Parameters.Barcode.XDimension.Pixels = 15;
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            // Optionally adjust the module size (pixel dimension)
+            generator.Parameters.Barcode.XDimension.Pixels = 10;
+            // Save the barcode image as PNG
+            generator.Save(tempPath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Decode the saved image and verify the postal code
-        // --------------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.MaxiCode))
+        // Verify that the barcode image file was created successfully
+        if (!File.Exists(tempPath))
         {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            Console.WriteLine("Failed to generate barcode image.");
+            return;
+        }
+
+        // Decode the generated barcode image
+        using (var reader = new BarCodeReader(tempPath, DecodeType.MaxiCode))
+        {
+            var results = reader.ReadBarCodes();
+            if (results.Length == 0)
             {
-                // Retrieve the mode used during generation from the extended result
-                var mode = result.Extended.MaxiCode.Mode;
+                Console.WriteLine("No barcode detected during decoding.");
+                return;
+            }
 
-                // Decode the complex codetext back into a strongly‑typed object
-                MaxiCodeCodetext decoded = ComplexCodetextReader.TryDecodeMaxiCode(mode, result.CodeText);
-                var decodedMode2 = decoded as MaxiCodeCodetextMode2;
-
-                if (decodedMode2 != null)
+            // Process each decoded result
+            foreach (var result in results)
+            {
+                // Attempt to decode complex MaxiCode codetext
+                var decodedCodetext = ComplexCodetextReader.TryDecodeMaxiCode(result.Extended.MaxiCode.Mode, result.CodeText);
+                if (decodedCodetext is MaxiCodeCodetextMode2 decodedMode2)
                 {
-                    bool match = decodedMode2.PostalCode == postalCode;
-                    Console.WriteLine($"Decoded PostalCode: {decodedMode2.PostalCode}");
-                    Console.WriteLine($"Verification: {(match ? "Success" : "Failure")}");
+                    // Compare primary message fields
+                    bool postalMatch = decodedMode2.PostalCode == maxiCodeCodetext.PostalCode;
+                    bool countryMatch = decodedMode2.CountryCode == maxiCodeCodetext.CountryCode;
+                    bool serviceMatch = decodedMode2.ServiceCategory == maxiCodeCodetext.ServiceCategory;
+
+                    Console.WriteLine($"PostalCode match: {postalMatch}");
+                    Console.WriteLine($"CountryCode match: {countryMatch}");
+                    Console.WriteLine($"ServiceCategory match: {serviceMatch}");
+
+                    // Verify the structured secondary message if present
+                    if (decodedMode2.SecondMessage is MaxiCodeStructuredSecondMessage decodedSecond)
+                    {
+                        bool linesMatch = decodedSecond.Identifiers.Count == secondMessage.Identifiers.Count;
+                        if (linesMatch)
+                        {
+                            for (int i = 0; i < decodedSecond.Identifiers.Count; i++)
+                            {
+                                if (decodedSecond.Identifiers[i] != secondMessage.Identifiers[i])
+                                {
+                                    linesMatch = false;
+                                    break;
+                                }
+                            }
+                        }
+                        Console.WriteLine($"Structured second message match: {linesMatch}");
+                        Console.WriteLine($"Year match: {decodedSecond.Year == secondMessage.Year}");
+                    }
                 }
                 else
                 {
-                    Console.WriteLine("Failed to decode MaxiCode as Mode 2.");
+                    Console.WriteLine("Decoded codetext is not of expected Mode2 type.");
                 }
             }
+        }
+
+        // Clean up the temporary barcode image file
+        try
+        {
+            File.Delete(tempPath);
+        }
+        catch
+        {
+            // Ignore any cleanup errors
         }
     }
 }

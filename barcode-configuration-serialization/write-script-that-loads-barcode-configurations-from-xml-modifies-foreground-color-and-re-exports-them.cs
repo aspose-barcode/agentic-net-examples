@@ -1,67 +1,71 @@
-// Title: Load barcode configuration from XML, modify bar color, and export
-// Description: Demonstrates how to export a barcode's settings to XML, import them back, change the foreground color, and save the updated configuration.
-// Category-Description: This example belongs to the Aspose.BarCode configuration management category, illustrating the use of BarcodeGenerator.ExportToXml, BarcodeGenerator.ImportFromXml, and barcode parameter manipulation. Developers often need to persist barcode settings, adjust visual properties like bar color, and re‑use configurations across applications. The snippet shows a typical workflow for XML‑based barcode configuration handling.
+// Title: Load, modify, and export barcode configuration XML
+// Description: Demonstrates loading a barcode generator configuration from an XML file, changing the bar color, and saving the updated configuration back to XML.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on configuration import/export via XML. It showcases the BarcodeGenerator class, its Parameters property, and the ImportFromXml/ExportToXml methods—common tasks for developers who need to persist, edit, or share barcode settings across applications or environments.
 // Prompt: Write a script that loads barcode configurations from XML, modifies the foreground color, and re‑exports them.
-// Tags: barcode, xml, configuration, color, export, import, aspose.barcode, code128
+// Tags: barcode symbology, configuration, xml, import, export, color, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that demonstrates exporting a barcode configuration to XML,
-/// importing it, changing the bar (foreground) color, and re‑exporting the modified configuration.
+/// Example program that shows how to load a barcode configuration from XML,
+/// change its foreground color, and re‑export it.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs the XML export/import workflow and reports results.
+    /// Entry point that creates a temporary barcode configuration, modifies it,
+    /// and writes the updated XML file to disk.
     /// </summary>
     static void Main()
     {
         // Create a temporary folder for the demo files
-        string demoFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(demoFolder);
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeConfigDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
         // Define file paths for the original and modified XML configurations
-        string originalXmlPath = Path.Combine(demoFolder, "original.xml");
-        string modifiedXmlPath = Path.Combine(demoFolder, "modified.xml");
+        string originalXml = Path.Combine(tempFolder, "config.xml");
+        string modifiedXml = Path.Combine(tempFolder, "config_modified.xml");
 
-        // Step 1: Generate a barcode and export its configuration to XML
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // Step 1: Create a barcode generator, set initial properties, and export to XML
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Export the initial configuration to the original XML file
-            generator.ExportToXml(originalXmlPath);
+            // Set the initial bar (foreground) color to black
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            // Export the current configuration to an XML file
+            generator.ExportToXml(originalXml);
         }
 
-        // Verify the original XML file exists
-        if (!File.Exists(originalXmlPath))
+        // Verify that the original XML file was created successfully
+        if (!File.Exists(originalXml))
         {
             Console.WriteLine("Failed to create the original XML configuration.");
             return;
         }
 
-        // Step 2: Import the configuration from XML, modify the foreground color, and re‑export
-        using (var importedGenerator = BarcodeGenerator.ImportFromXml(originalXmlPath))
+        // Step 2: Import the configuration from XML, modify the foreground (bar) color, and re‑export
+        using (var importedGenerator = BarcodeGenerator.ImportFromXml(originalXml))
         {
-            // Change the foreground (bar) color to Red
-            importedGenerator.Parameters.Barcode.BarColor = Color.Red;
-
-            // Export the modified configuration to the new XML file
-            importedGenerator.ExportToXml(modifiedXmlPath);
+            // Change the bar color to blue
+            importedGenerator.Parameters.Barcode.BarColor = Color.Blue;
+            // Export the modified configuration to a new XML file
+            importedGenerator.ExportToXml(modifiedXml);
         }
 
-        // Verify the modified XML file exists and report the outcome
-        if (File.Exists(modifiedXmlPath))
+        // Report the result of the modified XML export
+        if (File.Exists(modifiedXml))
         {
-            Console.WriteLine("Modified XML configuration saved to:");
-            Console.WriteLine(modifiedXmlPath);
+            Console.WriteLine("Modified XML configuration saved successfully:");
+            Console.WriteLine(modifiedXml);
         }
         else
         {
-            Console.WriteLine("Failed to create the modified XML configuration.");
+            Console.WriteLine("Failed to save the modified XML configuration.");
         }
+
+        // Clean up: optional deletion of temporary files (comment out if inspection is needed)
+        // try { File.Delete(originalXml); File.Delete(modifiedXml); Directory.Delete(tempFolder, true); } catch { }
     }
 }
