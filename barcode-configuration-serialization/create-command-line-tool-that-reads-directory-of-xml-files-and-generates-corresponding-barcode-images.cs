@@ -1,8 +1,8 @@
 // Title: Generate barcode images from XML files using a command‑line tool
-// Description: Demonstrates reading barcode definition XML files from a directory and creating PNG images with Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showing how to import barcode settings from XML (BarcodeGenerator.ImportFromXml), generate barcodes, and save them in common image formats. Developers often need to batch‑process barcode definitions stored as XML for automated workflows, reporting, or integration with other systems. The key API classes used are BarcodeGenerator, EncodeTypes, BarCodeImageFormat, and the ExportToXml/ImportFromXml methods.
+// Description: Demonstrates how to read a directory of XML files that define barcodes and produce PNG images for each using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and import category, showcasing the BarcodeGenerator class for importing barcode settings from XML (ImportFromXml) and exporting images (Save). Typical use cases include batch processing of pre‑configured barcode definitions stored as XML, useful for automated reporting, inventory labeling, or integration pipelines. Developers often need to read configuration files, generate barcodes, and output them in common image formats.
 // Prompt: Create a command‑line tool that reads a directory of XML files and generates corresponding barcode images.
-// Tags: barcode, code128, xml, generation, png, aspose.barcode, barcodegenerator, command-line
+// Tags: barcode, code128, xml, png, aspose.barcode, generation, import, command-line
 
 using System;
 using System.IO;
@@ -15,58 +15,60 @@ using Aspose.BarCode.Generation;
 class Program
 {
     /// <summary>
-    /// Entry point. Accepts optional input and output directory arguments, creates sample XML if none exist, and generates barcode images.
+    /// Entry point. Accepts an optional directory path argument; if omitted, creates a sample XML file for demonstration.
     /// </summary>
-    /// <param name="args">[0] Input directory (optional), [1] Output directory (optional).</param>
+    /// <param name="args">Command‑line arguments; first argument may specify the input directory.</param>
     static void Main(string[] args)
     {
-        // Determine input and output directories (use provided arguments or temporary folders)
-        string inputDir = args.Length > 0
-            ? args[0]
-            : Path.Combine(Path.GetTempPath(), "BarcodesXml_" + Guid.NewGuid().ToString("N"));
-        string outputDir = args.Length > 1
-            ? args[1]
-            : Path.Combine(Path.GetTempPath(), "BarcodesImg_" + Guid.NewGuid().ToString("N"));
+        string inputDirectory;
 
-        // Ensure the input directory exists
-        if (!Directory.Exists(inputDir))
+        // Determine input directory: use argument if valid, otherwise create a temporary sample directory
+        if (args.Length > 0 && Directory.Exists(args[0]))
         {
-            Directory.CreateDirectory(inputDir);
+            inputDirectory = args[0];
         }
-
-        // Ensure the output directory exists
-        if (!Directory.Exists(outputDir))
+        else
         {
-            Directory.CreateDirectory(outputDir);
-        }
+            // Create a temporary directory with a sample XML file for demonstration purposes
+            inputDirectory = Path.Combine(Path.GetTempPath(), "BarcodeXml_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(inputDirectory);
 
-        // If no XML files are present, create a sample barcode definition and export it to XML
-        string[] existingXml = Directory.GetFiles(inputDir, "*.xml");
-        if (existingXml.Length == 0)
-        {
-            string sampleXmlPath = Path.Combine(inputDir, "sample1.xml");
-            using (var gen = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+            string sampleXmlPath = Path.Combine(inputDirectory, "sample.xml");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
             {
-                gen.ExportToXml(sampleXmlPath);
+                // Set barcode visual property
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                // Export the barcode configuration to XML
+                generator.ExportToXml(sampleXmlPath);
             }
-            existingXml = new[] { sampleXmlPath };
+
+            Console.WriteLine($"No valid input directory provided. Created sample directory: {inputDirectory}");
         }
 
-        // Process each XML file: import settings, generate barcode, and save as PNG
-        foreach (string xmlFile in existingXml)
+        // Retrieve all XML files in the specified directory
+        string[] xmlFiles = Directory.GetFiles(inputDirectory, "*.xml");
+        if (xmlFiles.Length == 0)
+        {
+            Console.WriteLine("No XML files found in the specified directory.");
+            return;
+        }
+
+        // Process each XML file: import settings and generate a PNG image
+        foreach (string xmlFile in xmlFiles)
         {
             try
             {
-                using (var gen = BarcodeGenerator.ImportFromXml(xmlFile))
+                using (var generator = BarcodeGenerator.ImportFromXml(xmlFile))
                 {
-                    string outputFileName = Path.GetFileNameWithoutExtension(xmlFile) + ".png";
-                    string outputPath = Path.Combine(outputDir, outputFileName);
-                    gen.Save(outputPath, BarCodeImageFormat.Png);
-                    Console.WriteLine($"Generated barcode image: {outputPath}");
+                    string outputImagePath = Path.ChangeExtension(xmlFile, ".png");
+                    // Save the generated barcode as a PNG image
+                    generator.Save(outputImagePath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Generated barcode image: {outputImagePath}");
                 }
             }
             catch (Exception ex)
             {
+                // Report any errors encountered while processing a file
                 Console.WriteLine($"Error processing '{xmlFile}': {ex.Message}");
             }
         }

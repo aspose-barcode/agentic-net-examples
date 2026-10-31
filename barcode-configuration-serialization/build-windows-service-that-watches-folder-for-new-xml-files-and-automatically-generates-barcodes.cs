@@ -1,125 +1,124 @@
-// Title: Generate Barcodes from XML Files Using Aspose.BarCode
-// Description: Demonstrates reading XML files that specify barcode symbology and data, then creating PNG barcode images with Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to parse input data, resolve symbology via EncodeTypes, and produce barcode images. It showcases the BarcodeGenerator class, EncodeTypes, and image saving options—common tasks for developers automating barcode creation in batch or service scenarios.
+// Title: Generate barcodes from XML files in a watched folder
+// Description: Demonstrates reading XML definitions of barcodes, generating images using Aspose.BarCode, and saving them to an output directory.
+// Category-Description: This example belongs to the Aspose.BarCode file‑processing category, illustrating how to parse XML input, map symbology names to EncodeTypes via reflection, and create barcode images with the BarcodeGenerator class. Typical use cases include batch barcode creation, automated document processing, and integration with services that monitor file systems for new data.
 // Prompt: Build a Windows service that watches a folder for new XML files and automatically generates barcodes.
-// Tags: barcode, symbology, generation, png, xml, aspose.barcode, aspose.barcode.generation, encode-types
+// Tags: barcode symbology, xml processing, image output, aspose.barcode, barcodegenerator
 
 using System;
 using System.IO;
-using System.Xml;
 using System.Text;
+using System.Xml.Linq;
 using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates processing XML files to generate barcode images using Aspose.BarCode.
+/// Sample console application that reads XML files describing barcodes,
+/// generates corresponding barcode images using Aspose.BarCode, and saves them
+/// to an output folder. This logic can be adapted for a Windows service that
+/// watches a directory for new XML files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates temporary folders, writes a sample XML, processes each XML file,
-    /// generates a barcode image, and writes status messages to the console.
+    /// Entry point of the application. Creates temporary input/output folders,
+    /// writes a sample XML definition, processes each XML file, and generates
+    /// barcode images.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // Setup: create temporary input and output directories for the demo.
+        // Setup: create dedicated temporary input and output folders
         // --------------------------------------------------------------------
-        string inputDir = Path.Combine(Path.GetTempPath(), "BarcodeInput_" + Guid.NewGuid().ToString("N"));
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeOutput_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(inputDir);
-        Directory.CreateDirectory(outputDir);
+        string inputFolder = Path.Combine(Path.GetTempPath(), "BarcodeInput_" + Guid.NewGuid().ToString("N"));
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeOutput_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(inputFolder);
+        Directory.CreateDirectory(outputFolder);
 
         // --------------------------------------------------------------------
-        // Create a sample XML file that defines the barcode to generate.
+        // Create a sample XML file that describes a barcode (symbology + data)
         // --------------------------------------------------------------------
-        string sampleXmlPath = Path.Combine(inputDir, "sample1.xml");
-        string xmlContent = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<Barcode>
-    <Symbology>Code128</Symbology>
-    <CodeText>ABC12345</CodeText>
-</Barcode>";
-        File.WriteAllText(sampleXmlPath, xmlContent, Encoding.UTF8);
+        string sampleXmlPath = Path.Combine(inputFolder, "sample1.xml");
+        XDocument sampleDoc = new XDocument(
+            new XElement("Barcode",
+                new XElement("Symbology", "Code128"),
+                new XElement("CodeText", "ABC123456")
+            )
+        );
+        sampleDoc.Save(sampleXmlPath);
 
         // --------------------------------------------------------------------
-        // Process each XML file found in the input directory.
+        // Retrieve all XML files from the input folder
         // --------------------------------------------------------------------
-        string[] xmlFiles = Directory.GetFiles(inputDir, "*.xml");
-        foreach (string xmlFile in xmlFiles)
+        string[] xmlFiles = Directory.GetFiles(inputFolder, "*.xml");
+        Console.WriteLine($"Found {xmlFiles.Length} XML file(s) in {inputFolder}");
+
+        // --------------------------------------------------------------------
+        // Process each XML file: parse, map symbology, generate and save barcode
+        // --------------------------------------------------------------------
+        for (int i = 0; i < xmlFiles.Length; i++)
         {
+            string xmlPath = xmlFiles[i];
             try
             {
-                // Load the XML document and extract required elements.
-                var doc = new XmlDocument();
-                doc.Load(xmlFile);
-                var symNode = doc.SelectSingleNode("//Symbology");
-                var textNode = doc.SelectSingleNode("//CodeText");
-                if (symNode == null || textNode == null)
+                // Load XML document
+                XDocument doc = XDocument.Load(xmlPath);
+                XElement root = doc.Root;
+                if (root == null)
                 {
-                    Console.WriteLine($"Skipping '{Path.GetFileName(xmlFile)}': missing required elements.");
+                    Console.WriteLine($"Skipping file (no root element): {Path.GetFileName(xmlPath)}");
                     continue;
                 }
 
-                string symbologyName = symNode.InnerText.Trim();
-                string codeText = textNode.InnerText.Trim();
+                // Extract required elements
+                string symbologyName = root.Element("Symbology")?.Value?.Trim();
+                string codeText = root.Element("CodeText")?.Value?.Trim();
 
-                // Resolve the symbology name to a BaseEncodeType instance using reflection.
-                BaseEncodeType encodeType = ResolveEncodeType(symbologyName);
+                // Validate extracted data
+                if (string.IsNullOrEmpty(symbologyName) || string.IsNullOrEmpty(codeText))
+                {
+                    Console.WriteLine($"Skipping file (missing data): {Path.GetFileName(xmlPath)}");
+                    continue;
+                }
+
+                // Resolve symbology name to BaseEncodeType using reflection
+                FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+                if (field == null)
+                {
+                    Console.WriteLine($"Unknown symbology '{symbologyName}' in file {Path.GetFileName(xmlPath)}");
+                    continue;
+                }
+
+                BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
                 if (encodeType == null)
                 {
-                    Console.WriteLine($"Skipping '{Path.GetFileName(xmlFile)}': unknown symbology '{symbologyName}'.");
+                    Console.WriteLine($"Failed to obtain encode type for '{symbologyName}'");
                     continue;
                 }
 
                 // ----------------------------------------------------------------
-                // Generate the barcode image and save it as PNG.
+                // Generate barcode image with basic appearance settings
                 // ----------------------------------------------------------------
-                string outputFileName = Path.GetFileNameWithoutExtension(xmlFile) + ".png";
-                string outputPath = Path.Combine(outputDir, outputFileName);
                 using (var generator = new BarcodeGenerator(encodeType, codeText))
                 {
-                    // Configure appearance parameters (optional).
-                    generator.Parameters.Barcode.XDimension.Point = 2f;
-                    generator.Parameters.Barcode.BarHeight.Point = 30f;
-                    generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-                    generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
-                    generator.Parameters.Barcode.BarColor = Color.Black;
-                    generator.Parameters.BackColor = Color.White;
+                    generator.Parameters.Barcode.XDimension.Point = 2f;   // narrow bar width
+                    generator.Parameters.Barcode.BarHeight.Point = 30f; // bar height
+                    generator.Parameters.Resolution = 300f;              // image DPI
 
-                    // Save the generated barcode to the output path.
+                    // Determine output file path and save as PNG
+                    string outputFileName = Path.GetFileNameWithoutExtension(xmlPath) + ".png";
+                    string outputPath = Path.Combine(outputFolder, outputFileName);
                     generator.Save(outputPath, BarCodeImageFormat.Png);
+                    Console.WriteLine($"Generated barcode saved to: {outputPath}");
                 }
-
-                Console.WriteLine($"Generated barcode for '{Path.GetFileName(xmlFile)}' -> '{outputFileName}'.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error processing '{Path.GetFileName(xmlFile)}': {ex.Message}");
+                Console.WriteLine($"Error processing file {Path.GetFileName(xmlPath)}: {ex.Message}");
             }
         }
 
-        // --------------------------------------------------------------------
-        // Cleanup: optionally delete temporary folders (commented out to allow inspection).
-        // --------------------------------------------------------------------
-        // Directory.Delete(inputDir, true);
-        // Directory.Delete(outputDir, true);
-    }
-
-    /// <summary>
-    /// Resolves a symbology name to the corresponding <see cref="BaseEncodeType"/> using reflection.
-    /// Returns null if the symbology is not found.
-    /// </summary>
-    /// <param name="symbologyName">The name of the barcode symbology (e.g., "Code128").</param>
-    /// <returns>The matching <see cref="BaseEncodeType"/> or null.</returns>
-    static BaseEncodeType ResolveEncodeType(string symbologyName)
-    {
-        // Look for a public static field in EncodeTypes that matches the provided name.
-        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName, BindingFlags.Public | BindingFlags.Static);
-        if (field == null)
-            return null;
-
-        return field.GetValue(null) as BaseEncodeType;
+        Console.WriteLine("Processing complete.");
     }
 }
