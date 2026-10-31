@@ -1,8 +1,8 @@
-// Title: Custom Colored Barcode Comparison
-// Description: Demonstrates generating a default barcode and a custom-colored version, then programmatically comparing their visual differences.
-// Category-Description: This example belongs to the Aspose.BarCode generation and rendering category. It showcases how to customize barcode colors using the BarcodeGenerator.Parameters API, render the images to PNG, and compare them pixel‑by‑pixel. Developers working with barcode visual styling, branding, or automated image validation will find these patterns useful.
+// Title: Barcode Color Comparison Example
+// Description: Demonstrates generating the same barcode with default and custom colors and programmatically comparing the visual differences.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to customize barcode appearance using the BarcodeGenerator class and related drawing classes. It covers setting bar, background, border, and text colors, saving images with Aspose.Drawing, and performing pixel‑by‑pixel image comparison—common tasks for developers needing visual validation of barcode styling.
 // Prompt: Apply different custom colors to the same barcode type and compare visual differences programmatically.
-// Tags: barcode, color, comparison, png, aspose.barcode, code128, generation, image-processing
+// Tags: barcode symbology, color customization, image comparison, code128, aspose.barcode, aspose.drawing, png
 
 using System;
 using System.IO;
@@ -12,84 +12,119 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a default barcode and a custom‑colored barcode, then compares the two images pixel by pixel.
+/// Provides an example that creates two Code128 barcodes with different color schemes,
+/// saves them as PNG files, and compares their pixel data to highlight visual differences.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates two barcodes (default and custom colors) and outputs the number of differing pixels.
+    /// Entry point of the example. Generates barcodes, saves them, and outputs the pixel difference count.
     /// </summary>
     static void Main()
     {
-        const string codeText = "1234567890";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
+        // Text to encode in the barcode
+        string codeText = "1234567890";
 
-        // Generate the default barcode (no custom colors applied)
-        using (var defaultGenerator = new BarcodeGenerator(encodeType, codeText))
+        // Create a unique temporary directory for output files
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeColorComparison_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+
+        // First barcode: default colors (black bars on white background)
+        using (Bitmap bmp1 = CreateBarcode(
+            codeText,
+            Aspose.Drawing.Color.Black,   // Bar color
+            Aspose.Drawing.Color.White,   // Background color
+            Aspose.Drawing.Color.Black,   // Border color
+            Aspose.Drawing.Color.Black)) // Text color
         {
-            using (var defaultStream = new MemoryStream())
+            // Save the default-colored barcode image
+            string path1 = Path.Combine(outputDir, "barcode_default.png");
+            using (FileStream fs = new FileStream(path1, FileMode.Create, FileAccess.Write))
             {
-                defaultGenerator.Save(defaultStream, BarCodeImageFormat.Png);
-                defaultStream.Position = 0;
+                bmp1.Save(fs, ImageFormat.Png);
+            }
 
-                using (var defaultBitmap = new Bitmap(defaultStream))
+            // Second barcode: custom colors
+            using (Bitmap bmp2 = CreateBarcode(
+                codeText,
+                Aspose.Drawing.Color.Blue,    // Bar color
+                Aspose.Drawing.Color.Yellow,  // Background color
+                Aspose.Drawing.Color.Green,   // Border color
+                Aspose.Drawing.Color.Red))    // Text color
+            {
+                // Save the custom-colored barcode image
+                string path2 = Path.Combine(outputDir, "barcode_custom.png");
+                using (FileStream fs = new FileStream(path2, FileMode.Create, FileAccess.Write))
                 {
-                    // Generate a barcode with custom colors and captions
-                    using (var customGenerator = new BarcodeGenerator(encodeType, codeText))
-                    {
-                        // Apply custom colors to various barcode elements
-                        customGenerator.Parameters.Barcode.BarColor = Color.Red;
-                        customGenerator.Parameters.BackColor = Color.Yellow;
-                        customGenerator.Parameters.Barcode.CodeTextParameters.Color = Color.Blue;
-                        customGenerator.Parameters.Border.Color = Color.Green;
-
-                        // Add captions above and below the barcode
-                        customGenerator.Parameters.CaptionAbove.Text = "Above";
-                        customGenerator.Parameters.CaptionBelow.Text = "Below";
-                        customGenerator.Parameters.CaptionAbove.TextColor = Color.Purple;
-                        customGenerator.Parameters.CaptionBelow.TextColor = Color.Purple;
-
-                        using (var customStream = new MemoryStream())
-                        {
-                            customGenerator.Save(customStream, BarCodeImageFormat.Png);
-                            customStream.Position = 0;
-
-                            using (var customBitmap = new Bitmap(customStream))
-                            {
-                                // Compare the two bitmaps and report the number of differing pixels
-                                int diffPixels = CompareBitmaps(defaultBitmap, customBitmap);
-                                Console.WriteLine($"Different pixels between default and custom barcode: {diffPixels}");
-                            }
-                        }
-                    }
+                    bmp2.Save(fs, ImageFormat.Png);
                 }
+
+                // Compare the two images pixel by pixel
+                int diffCount = CompareBitmaps(bmp1, bmp2);
+                Console.WriteLine($"Generated barcodes saved to: {outputDir}");
+                Console.WriteLine($"Pixel differences between default and custom colored barcodes: {diffCount}");
             }
         }
     }
 
     /// <summary>
-    /// Compares two bitmaps of identical dimensions and returns the count of pixels that differ.
+    /// Generates a barcode image with specified colors.
     /// </summary>
-    /// <param name="bmp1">First bitmap to compare.</param>
-    /// <param name="bmp2">Second bitmap to compare.</param>
-    /// <returns>Number of pixels with different ARGB values.</returns>
-    /// <exception cref="ArgumentException">Thrown when the bitmap sizes do not match.</exception>
-    static int CompareBitmaps(Bitmap bmp1, Bitmap bmp2)
+    /// <param name="codeText">The text to encode.</param>
+    /// <param name="barColor">Color of the barcode bars.</param>
+    /// <param name="backColor">Background color.</param>
+    /// <param name="borderColor">Border color.</param>
+    /// <param name="textColor">Color of the human‑readable text.</param>
+    /// <returns>A Bitmap containing the generated barcode.</returns>
+    static Bitmap CreateBarcode(string codeText, Color barColor, Color backColor, Color borderColor, Color textColor)
     {
-        if (bmp1.Width != bmp2.Width || bmp1.Height != bmp2.Height)
-            throw new ArgumentException("Bitmap sizes do not match.");
+        // Initialize the generator for Code128 symbology
+        BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText);
 
-        int diffCount = 0;
-        for (int y = 0; y < bmp1.Height; y++)
+        // Apply color customizations
+        generator.Parameters.Barcode.BarColor = barColor;
+        generator.Parameters.BackColor = backColor;
+        generator.Parameters.Border.Color = borderColor;
+        generator.Parameters.Border.Width.Pixels = 2f;
+        generator.Parameters.Barcode.CodeTextParameters.Color = textColor;
+        generator.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
+
+        // Ensure consistent size for comparison
+        generator.Parameters.Barcode.XDimension.Point = 2f;
+
+        // Generate the barcode image
+        Bitmap bitmap = generator.GenerateBarCodeImage();
+
+        // Clean up generator resources
+        generator.Dispose();
+
+        return bitmap;
+    }
+
+    /// <summary>
+    /// Compares two bitmaps pixel by pixel and returns the count of differing pixels.
+    /// </summary>
+    /// <param name="bmpA">First bitmap.</param>
+    /// <param name="bmpB">Second bitmap.</param>
+    /// <returns>
+    /// Number of pixels that differ, or -1 if the images have different dimensions.
+    /// </returns>
+    static int CompareBitmaps(Bitmap bmpA, Bitmap bmpB)
+    {
+        // Verify that both images share the same dimensions
+        if (bmpA.Width != bmpB.Width || bmpA.Height != bmpB.Height)
+            return -1; // Different dimensions
+
+        int diff = 0;
+        for (int y = 0; y < bmpA.Height; y++)
         {
-            for (int x = 0; x < bmp1.Width; x++)
+            for (int x = 0; x < bmpA.Width; x++)
             {
-                Color c1 = bmp1.GetPixel(x, y);
-                Color c2 = bmp2.GetPixel(x, y);
-                if (c1.ToArgb() != c2.ToArgb())
-                    diffCount++;
+                // Compare ARGB values of each pixel
+                if (bmpA.GetPixel(x, y).ToArgb() != bmpB.GetPixel(x, y).ToArgb())
+                    diff++;
             }
         }
-        return diffCount;
+        return diff;
     }
 }
