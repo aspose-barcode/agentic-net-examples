@@ -1,8 +1,8 @@
-// Title: Process Code 39 Images with Checksum Validation Using BarCodeReader
-// Description: Demonstrates how to generate Code 39 barcode images with optional checksum enabled, then read them from a folder using BarCodeReader with ChecksumValidation.On to verify the checksums.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, highlighting checksum validation—a common requirement when working with Code 39 symbology in inventory, shipping, and tracking systems. Developers often need to batch‑process images, validate optional checksums, and extract barcode data efficiently.
+// Title: Validate Code 39 barcodes in a folder using BarCodeReader with checksum validation
+// Description: Demonstrates how to generate a set of Code 39 barcode images, some with checksums, and then read them back using Aspose.BarCode's BarCodeReader with ChecksumValidation.On to verify optional checksums.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on checksum validation for one‑dimensional symbologies. It showcases the use of BarCodeGenerator for image creation, BarCodeReader for decoding, and the ChecksumValidation setting to enforce checksum checks. Developers working with inventory, shipping, or any system that relies on Code 39 often need to validate optional checksums to ensure data integrity.
 // Prompt: Process a folder of Code 39 images using BarCodeReader with ChecksumValidation.On to validate optional checksums.
-// Tags: code39, checksum, barcode, generation, recognition, aspose.barcode
+// Tags: code39, checksumvalidation, barcode, barcodegeneration, barcoderecognition, aspnet, csharp
 
 using System;
 using System.IO;
@@ -13,96 +13,100 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates temporary Code 39 barcode images with checksum enabled,
-/// then reads each image using BarCodeReader with checksum validation turned on.
+/// Demonstrates generating Code 39 barcodes (with and without checksum) and validating them using BarCodeReader with checksum validation enabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, validates them, and cleans up temporary files.
+    /// Entry point. Generates sample barcodes, reads them back with checksum validation, and outputs results.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Create a dedicated temporary folder for the sample barcode images.
-        // --------------------------------------------------------------------
-        string folderPath = Path.Combine(Path.GetTempPath(), "Code39Batch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(folderPath);
+        // Create a unique temporary folder for sample barcode images
+        string tempFolder = Path.Combine(Path.GetTempPath(), "Code39Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // ---------------------------------------------------------------
-        // 2. Generate sample Code 39 barcode images with checksum enabled.
-        // ---------------------------------------------------------------
-        List<string> barcodeFiles = new List<string>();
-        for (int i = 1; i <= 3; i++)
+        List<string> imageFiles = new List<string>();
+
+        // Generate sample Code 39 barcodes (some with checksum, one without)
+        for (int i = 1; i <= 5; i++)
         {
             string codeText = $"CODE{i}";
-            string filePath = Path.Combine(folderPath, $"Code39_{i}.png");
+            string filePath = Path.Combine(tempFolder, $"Code39_{i}.png");
 
-            // Use BarcodeGenerator to create a PNG image for each code.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code39, codeText))
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, codeText))
             {
+                // Set barcode appearance and enable checksum generation
                 generator.Parameters.Barcode.XDimension.Pixels = 2f;
                 generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            barcodeFiles.Add(filePath);
+            imageFiles.Add(filePath);
         }
 
-        // ---------------------------------------------------------------
-        // 3. Process each barcode image with checksum validation turned on.
-        // ---------------------------------------------------------------
-        foreach (string file in barcodeFiles)
+        // Add a barcode without checksum to demonstrate validation failure
+        string noChecksumPath = Path.Combine(tempFolder, "Code39_NoChecksum.png");
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, "NOCHECK"))
         {
-            if (!File.Exists(file))
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+            generator.Save(noChecksumPath, BarCodeImageFormat.Png);
+        }
+        imageFiles.Add(noChecksumPath);
+
+        Console.WriteLine("Processing Code 39 images with ChecksumValidation.On");
+        Console.WriteLine($"Folder: {tempFolder}");
+        Console.WriteLine();
+
+        // Iterate over each generated image and attempt to read it with checksum validation enabled
+        foreach (string imagePath in imageFiles)
+        {
+            if (!File.Exists(imagePath))
             {
-                Console.WriteLine($"File not found: {file}");
+                Console.WriteLine($"File not found: {imagePath}");
                 continue;
             }
 
             try
             {
-                // Initialize BarCodeReader for Code 39 decoding.
-                using (var reader = new BarCodeReader(file, DecodeType.Code39))
+                using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code39))
                 {
-                    // Enable checksum validation for the reader.
+                    // Enforce checksum validation for optional Code 39 checksums
                     reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-                    // Read all barcodes found in the image.
                     BarCodeResult[] results = reader.ReadBarCodes();
 
                     if (results.Length == 0)
                     {
-                        Console.WriteLine($"No barcode detected in {Path.GetFileName(file)}");
-                        continue;
+                        Console.WriteLine($"No valid barcode detected in: {Path.GetFileName(imagePath)}");
                     }
-
-                    // Output details for each detected barcode.
-                    foreach (var result in results)
+                    else
                     {
-                        Console.WriteLine($"File: {Path.GetFileName(file)}");
-                        Console.WriteLine($"  CodeType: {result.CodeTypeName}");
-                        Console.WriteLine($"  CodeText: {result.CodeText}");
-                        Console.WriteLine($"  CheckSum: {result.Extended.OneD.CheckSum}");
+                        foreach (BarCodeResult result in results)
+                        {
+                            Console.WriteLine($"File: {Path.GetFileName(imagePath)}");
+                            Console.WriteLine($"  Symbology : {result.CodeTypeName}");
+                            Console.WriteLine($"  CodeText  : {result.CodeText}");
+                            Console.WriteLine($"  Value     : {result.Extended.OneD.Value}");
+                            Console.WriteLine($"  CheckSum  : {result.Extended.OneD.CheckSum}");
+                        }
                     }
                 }
             }
             catch (ArgumentException ex)
             {
-                Console.WriteLine($"Error loading image '{Path.GetFileName(file)}': {ex.Message}");
+                Console.WriteLine($"Failed to load image '{Path.GetFileName(imagePath)}': {ex.Message}");
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing '{Path.GetFileName(imagePath)}': {ex.Message}");
+            }
+
+            Console.WriteLine();
         }
 
-        // ---------------------------------------------------------------
-        // 4. Cleanup: delete the temporary folder and its contents.
-        // ---------------------------------------------------------------
-        try
-        {
-            Directory.Delete(folderPath, true);
-        }
-        catch
-        {
-            // Ignore cleanup errors (e.g., files in use).
-        }
+        // Cleanup: optionally delete the temporary folder
+        // Directory.Delete(tempFolder, true);
     }
 }

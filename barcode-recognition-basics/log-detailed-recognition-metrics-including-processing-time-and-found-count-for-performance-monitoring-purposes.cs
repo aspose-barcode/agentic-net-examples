@@ -1,85 +1,71 @@
-// Title: Barcode Recognition Performance Metrics Logging
-// Description: Demonstrates generating a Code128 barcode, recognizing it, and logging processing time and found count for performance monitoring.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader to decode them. Developers commonly use these APIs for batch processing, quality assurance, and performance benchmarking of barcode workflows in .NET applications.
+// Title: Barcode Generation, Recognition, and Performance Metrics Logging
+// Description: Demonstrates generating a Code128 barcode, recognizing it, and logging processing time and count of detected barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and Stopwatch for measuring performance. Developers often need to generate barcodes, read them from images, and monitor recognition speed and accuracy in batch processing or real-time applications.
 // Prompt: Log detailed recognition metrics, including processing time and found count, for performance monitoring purposes.
-// Tags: barcode symbology, generation, recognition, performance, metrics, aspose.barcode, code128, .net
+// Tags: barcode generation, barcode recognition, performance metrics, code128, aspose.barcode, stopwatch, image processing
 
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.Diagnostics;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample program that generates a barcode, reads it back, and logs recognition metrics.
+/// Example program that creates a barcode image, reads it back, and logs recognition metrics.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Generates a barcode image, measures recognition time,
-    /// logs processing metrics, and cleans up temporary files.
+    /// Entry point of the application. Generates a barcode, reads it, and outputs processing time and found count.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a temporary folder for the sample barcode image
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodePerf_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string imagePath = Path.Combine(tempDir, "sample.png");
+        // Prepare a temporary folder for storing the generated barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Generate a simple Code128 barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        // Define barcode content and output image path
+        string barcodeText = "1234567890";
+        string imagePath = Path.Combine(tempFolder, "barcode.png");
+
+        // Generate barcode image using Code128 symbology
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeText))
         {
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image was created successfully
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
-
-        // Measure recognition time and log metrics
-        var stopwatch = new Stopwatch();
+        // Read the generated barcode and log performance metrics
         using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
         {
-            stopwatch.Start();
-            try
-            {
-                // Perform barcode recognition
-                reader.ReadBarCodes();
-            }
-            catch (RecognitionAbortedException ex)
-            {
-                Console.WriteLine($"Recognition aborted: {ex.Message}");
-            }
-            stopwatch.Stop();
+            // Start timing the recognition process
+            Stopwatch sw = Stopwatch.StartNew();
+            reader.ReadBarCodes();
+            sw.Stop();
 
-            // Output performance metrics
+            // Retrieve the number of barcodes found
             int foundCount = reader.FoundCount;
-            Console.WriteLine($"Processing time: {stopwatch.ElapsedMilliseconds} ms");
-            Console.WriteLine($"Found count: {foundCount}");
+            Console.WriteLine($"Processing time: {sw.ElapsedMilliseconds} ms");
+            Console.WriteLine($"Found barcodes: {foundCount}");
 
-            // List details of each recognized barcode
-            foreach (var result in reader.FoundBarCodes)
+            // Output details of each recognized barcode
+            foreach (BarCodeResult result in reader.FoundBarCodes)
             {
-                Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}, Quality: {result.ReadingQuality}");
+                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
             }
         }
 
-        // Clean up temporary files and directory
+        // Clean up temporary files and directories
         try
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempDir, true);
+            if (File.Exists(imagePath))
+                File.Delete(imagePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored – cleanup failures are non‑critical for this demo
+            // Ignore any errors that occur during cleanup
         }
     }
 }

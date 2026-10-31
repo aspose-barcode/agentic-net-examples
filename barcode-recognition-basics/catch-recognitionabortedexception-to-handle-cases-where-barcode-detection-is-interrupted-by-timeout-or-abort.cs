@@ -1,67 +1,65 @@
-// Title: Handle barcode recognition timeout using RecognitionAbortedException
-// Description: Demonstrates generating a QR code, attempting to read it with an extremely short timeout, and catching RecognitionAbortedException when the operation is aborted.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader to decode them. Typical scenarios include validating barcode readability under constrained conditions, handling timeouts, and managing exceptions. Developers often need to generate barcodes, read them from images, and gracefully handle recognition failures using key API classes such as BarcodeGenerator, BarCodeReader, and BarCodeResult.
-/// Prompt: Catch RecognitionAbortedException to handle cases where barcode detection is interrupted by timeout or abort.
-// Tags: barcode, qr, recognition, timeout, exception, aspose.barcode, generation, reading
+// Title: Demonstrate handling RecognitionAbortedException during barcode recognition with timeout
+// Description: This example generates a Code128 barcode, then attempts to read it using an intentionally short timeout to trigger a RecognitionAbortedException, showing how to catch and handle the exception.
+// Category-Description: This sample belongs to the Aspose.BarCode barcode recognition category, illustrating the use of BarCodeReader, setting a timeout, and handling recognition abort scenarios. Developers working with barcode scanning often need to manage timeouts, aborts, and exceptions to ensure robust applications. The example showcases key API classes such as BarcodeGenerator, BarCodeReader, and RecognitionAbortedException.
+// Prompt: Catch RecognitionAbortedException to handle cases where barcode detection is interrupted by timeout or abort.
+// Tags: barcode, code128, recognitionabortedexception, timeout, exception-handling, generation, reading, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a QR barcode, attempts to read it with a minimal timeout,
-/// and demonstrates handling of <see cref="RecognitionAbortedException"/>.
+/// Demonstrates generating a barcode, attempting to read it with a short timeout, and handling <see cref="RecognitionAbortedException"/>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, reads it with a short timeout,
-    /// catches <see cref="RecognitionAbortedException"/>, and cleans up temporary files.
+    /// Entry point of the sample. Generates a barcode image, reads it with a forced timeout, and catches any <see cref="RecognitionAbortedException"/>.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the sample files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a temporary directory for the sample files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeSample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
         // Define the full path for the generated barcode image
-        string barcodePath = Path.Combine(tempFolder, "sample.png");
+        string barcodePath = Path.Combine(tempDir, "sample.png");
 
-        // Generate a QR barcode image and save it as PNG
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
+        // Generate a simple Code128 barcode image and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify the file exists before attempting recognition
+        // Verify the file was created before attempting to read it
         if (!File.Exists(barcodePath))
         {
-            Console.WriteLine("Barcode image was not created.");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
         // Attempt to read the barcode with a very short timeout to trigger abort
-        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            // Set timeout to 1 millisecond to force a timeout scenario
-            reader.Timeout = 1; // milliseconds
+            // Set timeout to 1 millisecond (likely to cause a timeout)
+            reader.Timeout = 1;
 
             try
             {
-                // Perform barcode recognition
-                BarCodeResult[] results = reader.ReadBarCodes();
-                Console.WriteLine($"Found {results.Length} barcode(s):");
-                foreach (BarCodeResult result in results)
+                // Read all barcodes from the image
+                var results = reader.ReadBarCodes();
+                foreach (var result in results)
                 {
-                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
                 }
             }
             catch (RecognitionAbortedException ex)
             {
-                // Handle the case where recognition was aborted due to timeout
-                Console.WriteLine($"Recognition aborted after timeout: {ex.Message}");
+                // Handle the case where recognition was aborted due to timeout or external abort
+                Console.WriteLine($"Recognition aborted after {ex.ExecutionTime} ms: {ex.Message}");
             }
         }
 
@@ -69,11 +67,11 @@ class Program
         try
         {
             File.Delete(barcodePath);
-            Directory.Delete(tempFolder);
+            Directory.Delete(tempDir);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program outcome
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

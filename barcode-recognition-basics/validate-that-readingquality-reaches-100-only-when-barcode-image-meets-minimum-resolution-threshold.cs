@@ -1,99 +1,110 @@
 // Title: Validate ReadingQuality based on barcode image resolution
-// Description: Demonstrates how the ReadingQuality property reaches 100 only when the barcode image meets a minimum resolution of 300 DPI.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes at specific resolutions and BarCodeReader to decode them, focusing on the ReadingQuality metric. Developers often need to ensure barcode readability under varying image qualities, making resolution a key factor in quality assessment.
+// Description: Demonstrates generating QR barcodes at different DPI settings and checking the ReadingQuality property to ensure it reaches 100 only when the image meets a minimum resolution.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and the ReadingQuality metric to assess scan reliability. Developers often need to verify that barcode images meet resolution requirements for optimal scanning in applications such as inventory management, ticketing, and document processing.
 // Prompt: Validate that ReadingQuality reaches 100 only when the barcode image meets a minimum resolution threshold.
-// Tags: qr, readingquality, resolution, barcode, generation, recognition, aspose.barcode
+// Tags: qr, barcode, readingquality, resolution, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates validation that ReadingQuality reaches 100 only when the barcode image meets a minimum resolution threshold.
+/// Demonstrates how barcode reading quality varies with image resolution using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates QR barcodes at various resolutions, reads them, and validates the ReadingQuality metric.
+    /// Entry point of the demo. Generates low and high resolution QR codes, evaluates their reading quality, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Minimum resolution required for ReadingQuality 100
+        // Minimum DPI required for perfect reading quality
         const float minResolution = 300f;
 
-        // Create a temporary folder for generated images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeQualityDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary directory for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeQualityDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
 
-        // Resolutions to test
-        float[] resolutions = new float[] { 96f, 150f, 300f };
+        // Paths for low‑ and high‑resolution barcode images
+        string lowResPath = Path.Combine(tempDir, "qr_low.png");
+        string highResPath = Path.Combine(tempDir, "qr_high.png");
+        string codeText = "Test123";
 
-        // Iterate over each resolution, generate barcode, read it, and validate quality
-        foreach (float res in resolutions)
+        // Generate low resolution barcode (96 DPI)
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
         {
-            // Build file path for the current resolution image
-            string filePath = Path.Combine(tempFolder, $"qr_{res}dpi.png");
-
-            // Generate barcode image at the specified resolution
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Aspose"))
-            {
-                generator.Parameters.Resolution = res;
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-
-            // Verify that the image file was created successfully
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"Failed to create image at {res} DPI.");
-                continue;
-            }
-
-            // Read the barcode and obtain the ReadingQuality value
-            double readingQuality = -1;
-            using (var reader = new BarCodeReader(filePath, DecodeType.QR))
-            {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    readingQuality = result.ReadingQuality;
-                    Console.WriteLine($"Resolution: {res} DPI, CodeText: {result.CodeText}, ReadingQuality: {readingQuality}");
-                    break; // Only need the first result
-                }
-            }
-
-            // Perform validation based on resolution and ReadingQuality
-            bool qualityIsFull = Math.Abs(readingQuality - 100.0) < 0.0001;
-            bool meetsThreshold = res >= minResolution;
-
-            if (qualityIsFull && meetsThreshold)
-            {
-                Console.WriteLine("Validation passed: Quality 100 achieved at sufficient resolution.");
-            }
-            else if (qualityIsFull && !meetsThreshold)
-            {
-                Console.WriteLine("Validation failed: Quality 100 reached below minimum resolution.");
-            }
-            else if (!qualityIsFull && meetsThreshold)
-            {
-                Console.WriteLine("Validation warning: Expected Quality 100 at or above minimum resolution, but got lower.");
-            }
-            else
-            {
-                Console.WriteLine("Validation OK: Quality below 100 as expected for lower resolution.");
-            }
-
-            Console.WriteLine();
+            generator.Parameters.Resolution = 96f;
+            generator.Save(lowResPath, BarCodeImageFormat.Png);
         }
 
-        // Cleanup temporary files and folder
+        // Generate high resolution barcode (300 DPI)
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
+        {
+            generator.Parameters.Resolution = 300f;
+            generator.Save(highResPath, BarCodeImageFormat.Png);
+        }
+
+        // Local function to read a barcode image and report its ReadingQuality
+        void Evaluate(string imagePath, float resolution)
+        {
+            // Verify the image file exists before attempting to read it
+            if (!File.Exists(imagePath))
+            {
+                Console.WriteLine($"File not found: {imagePath}");
+                return;
+            }
+
+            // Set the expected decode type (QR code)
+            BaseDecodeType decodeType = DecodeType.QR;
+
+            // Use BarCodeReader to decode the image
+            using (var reader = new BarCodeReader(imagePath, decodeType))
+            {
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                // If no barcodes were detected, report and exit
+                if (results.Length == 0)
+                {
+                    Console.WriteLine($"No barcode detected in image '{Path.GetFileName(imagePath)}' (Resolution: {resolution} DPI).");
+                    return;
+                }
+
+                // Iterate through all detected barcodes and output their quality metrics
+                foreach (BarCodeResult result in results)
+                {
+                    double quality = result.ReadingQuality;
+                    Console.WriteLine($"Image: {Path.GetFileName(imagePath)} | Resolution: {resolution} DPI | ReadingQuality: {quality}");
+
+                    // Validate that quality matches expectations based on resolution
+                    if (resolution >= minResolution && quality != 100.0)
+                    {
+                        Console.WriteLine("  Warning: Expected ReadingQuality 100 at this resolution, but got lower.");
+                    }
+                    else if (resolution < minResolution && quality == 100.0)
+                    {
+                        Console.WriteLine("  Warning: ReadingQuality 100 achieved below the minimum resolution threshold.");
+                    }
+                }
+            }
+        }
+
+        // Evaluate both generated images
+        Evaluate(lowResPath, 96f);
+        Evaluate(highResPath, 300f);
+
+        // Cleanup temporary files and directory
         try
         {
-            Directory.Delete(tempFolder, true);
+            File.Delete(lowResPath);
+            File.Delete(highResPath);
+            Directory.Delete(tempDir);
         }
         catch
         {
-            // Ignore cleanup errors
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

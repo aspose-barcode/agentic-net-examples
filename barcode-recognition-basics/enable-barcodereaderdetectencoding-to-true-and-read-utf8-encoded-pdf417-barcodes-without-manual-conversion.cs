@@ -1,8 +1,8 @@
-// Title: Read UTF8 PDF417 Barcodes with DetectEncoding Enabled
-// Description: Demonstrates generating a PDF417 barcode containing UTF‑8 text and reading it using BarCodeReader with DetectEncoding set to true, eliminating the need for manual character conversion.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator to create PDF417 symbols, BarCodeReader to decode them, and the DetectEncoding setting to automatically handle UTF‑8 encoded data. Developers working with multilingual barcodes, especially PDF417, often need to generate and read encoded text without manual byte‑to‑string conversions.
+// Title: Read UTF-8 PDF417 Barcodes with DetectEncoding Enabled
+// Description: Demonstrates generating a PDF417 barcode encoded in UTF-8 and reading it back using BarCodeReader with DetectEncoding set to true, eliminating the need for manual text conversion.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating PDF417 symbols with ECI UTF-8 encoding and BarCodeReader for decoding them, highlighting typical scenarios such as international text handling and automatic character set detection. Developers working with multi-language barcodes often need to enable DetectEncoding to correctly interpret encoded data without extra conversion steps.
 // Prompt: Enable BarCodeReader.DetectEncoding to true and read UTF8 encoded PDF417 barcodes without manual conversion.
-// Tags: pdf417, barcode, encoding, detection, generation, recognition, aspose.barcode
+// Tags: pdf417,utf-8,detectencoding,barcode generation,barcode recognition,aspose.barcode
 
 using System;
 using System.IO;
@@ -12,63 +12,62 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a PDF417 barcode with UTF‑8 text and reading it using DetectEncoding.
+/// Provides a sample that generates a PDF417 barcode with UTF‑8 text and reads it using DetectEncoding.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example.
+    /// Entry point that creates a temporary directory, generates a PDF417 barcode image, and reads it back with automatic encoding detection.
     /// </summary>
     static void Main()
     {
-        // Define a temporary directory to store the generated barcode image
-        string tempDir = Path.Combine(Path.GetTempPath(), "AsposePdf417Demo");
+        // Define a temporary folder to store the generated barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
         Directory.CreateDirectory(tempDir);
-        string barcodePath = Path.Combine(tempDir, "pdf417_utf8.png");
+        string imagePath = Path.Combine(tempDir, "pdf417_utf8.png");
 
-        // Generate a PDF417 barcode that encodes UTF‑8 text
+        // Generate a PDF417 barcode with UTF-8 encoded text ("こんにちは世界")
         using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417))
         {
-            generator.SetCodeText("Пример UTF8 текста", Encoding.UTF8);
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            // Set PDF417 to use ECI mode with UTF-8 encoding
+            generator.Parameters.Barcode.Pdf417.EncodeMode = Pdf417EncodeMode.ECI;
+            generator.Parameters.Barcode.Pdf417.ECIEncoding = ECIEncodings.UTF8;
+
+            // Assign the Unicode text and specify UTF-8 encoding explicitly
+            generator.SetCodeText("こんにちは世界", Encoding.UTF8);
+
+            // Save the barcode as a PNG image
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully
-        if (!File.Exists(barcodePath))
+        // Verify that the image file was created successfully
+        if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // -----------------------------------------------------------------
-        // Read the barcode with DetectEncoding set to true (automatic UTF‑8 handling)
-        // -----------------------------------------------------------------
-        Console.WriteLine("Reading with DetectEncoding = true:");
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Pdf417))
+        // Read the barcode image with DetectEncoding enabled to auto‑detect UTF-8 text
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Pdf417))
         {
+            // Enable automatic character set detection
             reader.BarcodeSettings.DetectEncoding = true;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+
+            // Perform the recognition
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Handle case where no barcode was found
+            if (results.Length == 0)
+            {
+                Console.WriteLine("No barcode detected.");
+                return;
+            }
+
+            // Output the type and decoded text of each detected barcode
+            foreach (BarCodeResult result in results)
             {
                 Console.WriteLine($"CodeType: {result.CodeTypeName}");
                 Console.WriteLine($"CodeText: {result.CodeText}");
-            }
-        }
-
-        // -----------------------------------------------------------------
-        // Read the barcode with DetectEncoding set to false (manual conversion may be required)
-        // -----------------------------------------------------------------
-        Console.WriteLine("\nReading with DetectEncoding = false:");
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Pdf417))
-        {
-            reader.BarcodeSettings.DetectEncoding = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"Raw CodeText: {result.CodeText}");
-                // Example of manual decoding if needed:
-                // string decoded = Encoding.UTF8.GetString(Encoding.Default.GetBytes(result.CodeText));
-                // Console.WriteLine($"Manually decoded: {decoded}");
             }
         }
     }

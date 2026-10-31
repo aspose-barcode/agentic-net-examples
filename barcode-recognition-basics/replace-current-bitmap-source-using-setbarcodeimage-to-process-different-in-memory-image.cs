@@ -1,51 +1,52 @@
-// Title: Replace barcode image source using SetBarCodeImage
-// Description: Demonstrates how to switch the in‑memory bitmap source of a BarCodeReader to read different barcodes without recreating the reader.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcode images, BarCodeReader to decode them, and the SetBarCodeImage method to replace the image source dynamically. Developers working with multiple in‑memory images or streams often need to reuse a single reader instance for efficiency.
+// Title: Replace barcode image source with a new in‑memory bitmap
+// Description: Demonstrates how to generate a barcode, save it to a memory stream, load a new bitmap from that stream, and replace the BarCodeReader's image source using SetBarCodeImage.
+// Category-Description: This example belongs to the Aspose.BarCode image manipulation and recognition category. It shows how to work with in‑memory images using the BarcodeGenerator, Bitmap, MemoryStream, and BarCodeReader classes. Typical use cases include processing dynamically created or transformed barcode images without writing to disk, a common requirement for web services and automated CI pipelines.
 // Prompt: Replace the current bitmap source using SetBarCodeImage to process a different in‑memory image.
-// Tags: barcode symbology, image source replacement, in-memory bitmap, setbarcodeimage, generation, recognition, csharp
+// Tags: barcode, code128, setbarcodeimage, in-memory, bitmap, memorystream, aspnet, aspose.barcode, image-processing
 
 using System;
-using Aspose.BarCode;
+using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that shows how to replace the barcode image source of a BarCodeReader using SetBarCodeImage.
+/// Demonstrates replacing the BarCodeReader's image source with a different in‑memory bitmap.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates two barcode images in memory and reads them sequentially with a single BarCodeReader instance,
-    /// demonstrating the SetBarCodeImage method to change the source image.
+    /// Entry point that generates a barcode, creates a new bitmap from a memory stream,
+    /// and reads the barcode using the replaced image source.
     /// </summary>
     static void Main()
     {
-        // Generate the first barcode bitmap (Code128, value "12345")
-        using (var generator1 = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+        // Generate a Code128 barcode image as a bitmap
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
         {
-            using (Bitmap bitmap1 = generator1.GenerateBarCodeImage())
+            using (Bitmap originalBitmap = generator.GenerateBarCodeImage())
             {
-                // Generate the second barcode bitmap (Code128, value "ABCDEF")
-                using (var generator2 = new BarcodeGenerator(EncodeTypes.Code128, "ABCDEF"))
+                // Save the generated bitmap to a memory stream in PNG format
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    using (Bitmap bitmap2 = generator2.GenerateBarCodeImage())
-                    {
-                        // Create a BarCodeReader without an initial image source
-                        using (var reader = new BarCodeReader())
-                        {
-                            // Set the first bitmap as the source and read its barcode(s)
-                            reader.SetBarCodeImage(bitmap1);
-                            Console.WriteLine("Reading from first bitmap:");
-                            foreach (var result in reader.ReadBarCodes())
-                            {
-                                Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
-                            }
+                    originalBitmap.Save(ms, ImageFormat.Png);
+                    ms.Position = 0; // Reset stream position for reading
 
-                            // Replace the source with the second bitmap and read its barcode(s)
-                            reader.SetBarCodeImage(bitmap2);
-                            Console.WriteLine("Reading from second bitmap:");
-                            foreach (var result in reader.ReadBarCodes())
+                    // Load a new bitmap from the memory stream (represents a different in‑memory image)
+                    using (Bitmap newBitmap = new Bitmap(ms))
+                    {
+                        // Initialize a BarCodeReader without an initial image source
+                        using (BarCodeReader reader = new BarCodeReader())
+                        {
+                            // Replace the reader's source with the new bitmap
+                            reader.SetBarCodeImage(newBitmap);
+                            // Configure the reader to look for Code128 barcodes only
+                            reader.SetBarCodeReadType(DecodeType.Code128);
+
+                            Console.WriteLine("Reading barcode from replaced bitmap source:");
+                            // Iterate through all detected barcodes and output their type and text
+                            foreach (BarCodeResult result in reader.ReadBarCodes())
                             {
                                 Console.WriteLine($"{result.CodeTypeName}:{result.CodeText}");
                             }

@@ -1,8 +1,8 @@
-// Title: Disable DetectEncoding and manually decode Unicode QR barcode
-// Description: Demonstrates generating a QR code with UTF-16 encoded text, disabling automatic encoding detection during recognition, and manually decoding the raw byte data using Encoding.Unicode.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases how to use BarcodeGenerator to create 2D barcodes with custom encoding, and BarCodeReader to read them while turning off DetectEncoding. Developers often need to control encoding for Unicode barcodes, retrieve raw byte data, and perform manual decoding for precise text handling.
+// Title: Decode Unicode QR Code with Manual UTF-16 Decoding
+// Description: Demonstrates generating a QR code with Unicode text using UTF-16 encoding, then reading it with DetectEncoding disabled and manually decoding the raw bytes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create 2D barcodes with custom text encoding and BarCodeReader to extract raw byte data when automatic encoding detection is turned off. Developers often need to control encoding for Unicode symbols in QR codes, especially when interoperating with systems that require specific character sets.
 // Prompt: Disable DetectEncoding and manually decode raw byte data using Encoding.UTF16 for Unicode 2D barcodes.
-// Tags: qr, unicode, detectencoding, manual-decoding, barcode-generation, barcode-recognition, aspose.barcode
+// Tags: qr,unicode,utf-16,detectencoding,barcode-generation,barcode-recognition,aspose.barcode
 
 using System;
 using System.IO;
@@ -13,79 +13,70 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a QR code with UTF-16 encoded text,
-/// reads it back with automatic encoding detection disabled,
-/// and manually decodes the raw byte data.
+/// Demonstrates disabling DetectEncoding and manually decoding raw byte data using UTF-16 for a Unicode QR code.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes barcode generation, recognition,
-    /// manual decoding, and cleanup.
+    /// Entry point of the example.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary file path for the barcode image
-        string tempPath = Path.Combine(Path.GetTempPath(), "UnicodeBarcode.png");
+        // --------------------------------------------------------------------
+        // Prepare a temporary folder and file path for the generated barcode image
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "qr_utf16.png");
 
-        // ------------------------------------------------------------
-        // Generate a QR code containing UTF-16 encoded text (no ECI)
-        // ------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // Define the Unicode text to encode in the QR code
+        // --------------------------------------------------------------------
+        string originalText = "Aspose Unicode テスト";
+
+        // --------------------------------------------------------------------
+        // Generate a QR code using UTF-16 (Unicode) encoding
+        // --------------------------------------------------------------------
         using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            // Set module size (pixel dimension) for better readability
-            generator.Parameters.Barcode.XDimension.Pixels = 8;
-
-            // Encode the text using UTF-16 (Unicode) explicitly
-            generator.SetCodeText("Aspose Unicode 漢字", Encoding.Unicode);
-
-            // Set the display text that appears under the barcode (optional)
-            generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "Aspose Unicode 漢字";
-
-            // Save the generated barcode as a PNG image
-            generator.Save(tempPath, BarCodeImageFormat.Png);
+            generator.Parameters.Barcode.XDimension.Pixels = 8; // Set module size
+            generator.SetCodeText(originalText, Encoding.Unicode); // Apply manual UTF-16 encoding
+            generator.Save(barcodePath, BarCodeImageFormat.Png); // Save as PNG
         }
 
         // Verify that the barcode image was created successfully
-        if (!File.Exists(tempPath))
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine($"Failed to create barcode image at {tempPath}");
+            Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // ------------------------------------------------------------
-        // Read the barcode with DetectEncoding disabled and decode manually
-        // ------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(tempPath, DecodeType.QR))
+        // --------------------------------------------------------------------
+        // Read the barcode with automatic encoding detection turned off
+        // and decode the raw bytes manually using UTF-16
+        // --------------------------------------------------------------------
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
         {
-            // Turn off automatic encoding detection
-            reader.BarcodeSettings.DetectEncoding = false;
-
-            // Iterate through all detected barcodes (only one expected)
+            reader.BarcodeSettings.DetectEncoding = false; // Disable auto-detection
             foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine($"Code Type: {result.CodeTypeName}");
-
-                // Retrieve the raw byte array representing the encoded text
-                byte[] rawBytes = result.CodeBytes;
-                Console.WriteLine($"Raw Bytes Length: {rawBytes.Length}");
-
-                // Manually decode the raw bytes using UTF-16 (Unicode)
-                string decodedText = Encoding.Unicode.GetString(rawBytes);
-                Console.WriteLine($"Manually Decoded Text (UTF-16): {decodedText}");
+                byte[] rawBytes = result.CodeBytes; // Retrieve raw byte data
+                string decodedText = Encoding.Unicode.GetString(rawBytes); // Manual UTF-16 decode
+                Console.WriteLine($"Decoded Text: {decodedText}");
             }
         }
 
-        // ------------------------------------------------------------
-        // Clean up the temporary barcode image file
-        // ------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // Clean up temporary files and directories
+        // --------------------------------------------------------------------
         try
         {
-            File.Delete(tempPath);
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Suppress any exceptions during cleanup
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Disable Checksum Validation for Code 11 Barcodes in Batch Processing
-// Description: Demonstrates how to generate Code 11 barcode images and read them in a batch while disabling checksum verification.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, highlighting how to configure BarcodeSettings.ChecksumValidation to Off. Developers working with bulk barcode processing often need to relax checksum checks for legacy or non‑standard Code 11 data, making this pattern useful for high‑throughput scenarios.
+// Title: Disable checksum validation for Code 11 barcodes during batch processing
+// Description: Demonstrates generating a set of Code 11 barcodes, then reading them with checksum validation turned off. Useful when processing barcodes that may have missing or incorrect checksums.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator to create barcodes and BarCodeReader with BarcodeSettings to control checksum validation. Developers working with bulk barcode processing often need to disable checksum checks for legacy or imperfect data, and this snippet illustrates the typical API usage for such scenarios.
 // Prompt: Set BarcodeSettings.ChecksumValidation to Off to disable checksum verification for Code 11 during batch processing.
-// Tags: code11, checksumvalidation, batch-processing, generation, recognition, aspose.barcode
+// Tags: code11, checksumvalidation, off, batch processing, generation, recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,71 +10,90 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Generates a set of Code 11 barcode images, then reads them back in a batch with checksum validation disabled.
+/// Demonstrates batch generation and reading of Code 11 barcodes with checksum validation disabled.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates temporary barcode files, processes them, and cleans up.
+    /// Entry point. Generates temporary Code 11 barcode images, reads them with checksum validation turned off, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for batch processing
+        // Create a unique temporary folder for the batch operation
         string tempFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Generate sample Code 11 barcode images
+        // Store paths of generated barcode images
         List<string> barcodeFiles = new List<string>();
-        for (int i = 1; i <= 5; i++)
+
+        // Generate 5 Code 11 barcode images
+        for (int i = 0; i < 5; i++)
         {
-            string codeText = "12345" + i; // Sample numeric text
+            string codeText = "12345" + i;
             string filePath = Path.Combine(tempFolder, $"code11_{i}.png");
 
-            // Use BarcodeGenerator to create a PNG image for each barcode
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code11, codeText))
+            // Use BarcodeGenerator to create a Code 11 barcode
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code11, codeText))
             {
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                generator.Save(filePath, BarCodeImageFormat.Png);
+                generator.Parameters.Barcode.XDimension.Pixels = 2; // Set module size
+                generator.Save(filePath, BarCodeImageFormat.Png);   // Save as PNG
             }
 
             barcodeFiles.Add(filePath);
         }
 
-        // Batch read the generated barcodes with checksum validation turned off
+        Console.WriteLine("Batch reading Code11 barcodes with ChecksumValidation.Off");
+
+        // Read each generated barcode with checksum validation disabled
         foreach (string file in barcodeFiles)
         {
+            if (!File.Exists(file))
+            {
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
+
             try
             {
-                // Initialize BarCodeReader for Code 11 decoding
-                using (BarCodeReader reader = new BarCodeReader(file, DecodeType.Code11))
+                // Initialize BarCodeReader for Code 11
+                using (var reader = new BarCodeReader(file, DecodeType.Code11))
                 {
-                    // Disable checksum verification for this reader instance
+                    // Disable checksum verification
                     reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Off;
 
-                    // Iterate over all detected barcodes in the image
+                    // Iterate through all detected barcodes in the image
                     foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine($"File: {Path.GetFileName(file)} | Type: {result.CodeTypeName} | Text: {result.CodeText}");
+                        Console.WriteLine($"File: {Path.GetFileName(file)}");
+                        Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                        Console.WriteLine($"CodeText: {result.CodeText}");
+                        Console.WriteLine($"Checksum: {result.Extended.OneD.CheckSum}");
                     }
                 }
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
             {
-                // Handle cases where the file cannot be read as a barcode
-                Console.WriteLine($"Failed to read {Path.GetFileName(file)}: {ex.Message}");
+                // Handle unreadable image files gracefully
+                Console.WriteLine($"Skipping unreadable file: {file}");
+            }
+            catch (Exception ex)
+            {
+                // Log any other errors encountered during reading
+                Console.WriteLine($"Error reading file {file}: {ex.Message}");
             }
         }
 
-        // Cleanup: delete temporary folder and its contents
+        // Clean up temporary folder and files
         try
         {
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignore any cleanup errors
+            // Suppress any exceptions during cleanup
         }
     }
 }
