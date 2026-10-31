@@ -1,105 +1,107 @@
-// Title: Barcode XML aggregation example
-// Description: Demonstrates generating barcodes, exporting their recognition state to XML, and aggregating results from multiple XML files into a single collection for reporting.
-// Category-Description: This example belongs to the Aspose.BarCode operations category covering barcode generation, recognition, and state persistence. It showcases key API classes such as BarcodeGenerator, BarCodeReader, and methods like ExportToXml and ImportFromXml, which developers use to serialize and later reprocess barcode recognition data across sessions or systems.
+// Title: Aggregate Barcode Results from Multiple XML Reader States
+// Description: Demonstrates generating barcodes, exporting reader state to XML, importing those states, and aggregating the results into a single collection for reporting.
+// Category-Description: This example belongs to the Aspose.BarCode reading and state management category. It showcases the use of BarcodeGenerator, BarCodeReader, ExportToXml, and ImportFromXml APIs to handle barcode data across multiple files. Developers often need to persist reader configurations, import them later, and combine results for batch processing or reporting scenarios.
 // Prompt: Implement a method that aggregates barcode results from multiple imported XML states into a single collection for reporting.
-// Tags: barcode, xml, aggregation, generation, recognition, aspose.barcode, exporttoxml, importfromxml
+// Tags: barcode, aggregation, xml, import, export, aspose.barcode, code128, reader, generator
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates barcode generation, XML state export, import, and aggregation of results.
+/// Demonstrates aggregation of barcode results from multiple imported XML reader states.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, exports reader state to XML, imports the states, aggregates results, and displays them.
+    /// Entry point that generates sample barcodes, exports reader states, aggregates results, and displays them.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated images and XML files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlAgg_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a temporary working directory for generated images and XML files
+        string workDir = Path.Combine(Path.GetTempPath(), "BarcodeAgg_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workDir);
 
-        // Define sample barcodes to generate (text and symbology)
-        var samples = new (string CodeText, BaseEncodeType Encode)[]
+        // Sample data: generate barcodes, read them, and export reader state to XML
+        int sampleCount = 3;
+        var imagePaths = new List<string>();
+        var xmlPaths = new List<string>();
+
+        for (int i = 0; i < sampleCount; i++)
         {
-            ("HelloWorld", EncodeTypes.QR),
-            ("123456789012", EncodeTypes.Code128),
-            ("ABCD1234", EncodeTypes.DataMatrix)
-        };
+            string codeText = $"CODE{i + 1}";
+            string imagePath = Path.Combine(workDir, $"barcode_{i}.png");
+            string xmlPath = Path.Combine(workDir, $"reader_{i}.xml");
 
-        // Generate barcode images, read them, and export the reader state to XML files
-        for (int i = 0; i < samples.Length; i++)
-        {
-            string imagePath = Path.Combine(tempFolder, $"barcode_{i}.png");
-            string xmlPath = Path.Combine(tempFolder, $"reader_{i}.xml");
-
-            // Generate barcode image using the specified symbology and text
-            using (var generator = new BarcodeGenerator(samples[i].Encode, samples[i].CodeText))
+            // Generate barcode image using Code128 symbology
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
                 generator.Save(imagePath, BarCodeImageFormat.Png);
             }
 
-            // Read the generated barcode and export its recognition state to XML
+            // Read barcode and export the reader state to XML
             using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
             {
-                // Perform reading (results may be used later)
-                reader.ReadBarCodes();
-
-                // Export the recognition state to an XML file
+                reader.ReadBarCodes(); // Populate FoundBarCodes
                 reader.ExportToXml(xmlPath);
             }
+
+            imagePaths.Add(imagePath);
+            xmlPaths.Add(xmlPath);
         }
 
-        // Aggregate results from the imported XML states into a single collection
-        List<BarCodeResult> aggregatedResults = new List<BarCodeResult>();
+        // Aggregate results from imported XML states
+        List<BarCodeResult> aggregatedResults = AggregateBarcodeResults(xmlPaths, imagePaths);
 
-        for (int i = 0; i < samples.Length; i++)
+        // Reporting: output aggregated barcode results to console
+        Console.WriteLine("Aggregated Barcode Results:");
+        foreach (var result in aggregatedResults)
         {
-            string xmlPath = Path.Combine(tempFolder, $"reader_{i}.xml");
-            string imagePath = Path.Combine(tempFolder, $"barcode_{i}.png");
+            Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+        }
 
-            // Ensure both the XML and image files exist before attempting import
+        // Cleanup (optional)
+        // Directory.Delete(workDir, true);
+    }
+
+    /// <summary>
+    /// Imports barcode reader states from XML files, reassigns the corresponding images, reads barcodes, and aggregates all results.
+    /// </summary>
+    /// <param name="xmlFiles">List of XML file paths containing exported reader states.</param>
+    /// <param name="imageFiles">List of image file paths corresponding to each XML state.</param>
+    /// <returns>A combined list of <see cref="BarCodeResult"/> objects from all imported states.</returns>
+    static List<BarCodeResult> AggregateBarcodeResults(List<string> xmlFiles, List<string> imageFiles)
+    {
+        var allResults = new List<BarCodeResult>();
+
+        for (int i = 0; i < xmlFiles.Count; i++)
+        {
+            string xmlPath = xmlFiles[i];
+            string imagePath = imageFiles[i];
+
+            // Skip iteration if either the XML or image file is missing
             if (!File.Exists(xmlPath) || !File.Exists(imagePath))
-                continue; // Skip missing files gracefully
+                continue;
 
-            // Import the previously exported reader state from XML
-            using (var importedReader = BarCodeReader.ImportFromXml(xmlPath))
+            // Import reader settings from XML
+            using (var reader = BarCodeReader.ImportFromXml(xmlPath))
             {
-                // Associate the original image with the imported reader instance
-                importedReader.SetBarCodeImage(imagePath);
+                // Set the image source (image path is not stored in the XML)
+                reader.SetBarCodeImage(imagePath);
 
-                // Read barcodes using the imported state
-                BarCodeResult[] results = importedReader.ReadBarCodes();
+                // Read barcodes using the imported settings
+                BarCodeResult[] results = reader.ReadBarCodes();
 
-                // Add each result to the aggregated collection
-                foreach (var result in results)
+                if (results != null)
                 {
-                    aggregatedResults.Add(result);
+                    allResults.AddRange(results);
                 }
             }
         }
 
-        // Report the aggregated barcode results to the console
-        Console.WriteLine("Aggregated Barcode Results:");
-        foreach (var result in aggregatedResults)
-        {
-            Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
-        }
-
-        // Clean up the temporary folder (optional). Errors are ignored to avoid breaking the flow.
-        try
-        {
-            Directory.Delete(tempFolder, true);
-        }
-        catch
-        {
-            // Ignore any cleanup errors
-        }
+        return allResults;
     }
 }

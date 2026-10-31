@@ -1,8 +1,8 @@
-// Title: Create barcode with custom colors for bars, background, text, and captions
-// Description: Demonstrates generating a Code128 barcode with custom colors for the background, bars, human‑readable text, and both top and bottom captions, then saving it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize visual aspects of a barcode using the BarcodeGenerator and its Parameters API. It shows typical use cases such as branding, UI design, and report generation where specific colors for bars, background, text, and captions are required. Developers often need to adjust these properties to match corporate style guides or improve readability in printed materials.
+// Title: Generate a Code128 barcode with custom colors and captions
+// Description: Demonstrates creating a Code128 barcode image with custom bar, background, text, and caption colors in a single generation step.
+// Category-Description: Shows how to use Aspose.BarCode Generation API to customize visual aspects of a barcode, including bar color, background, human‑readable text, and captions. Typical use cases involve branding, UI integration, or printing where color differentiation is required. Developers often work with BarcodeGenerator, BarcodeParameters, and related color properties to produce tailored barcode images.
 // Prompt: Create a barcode with custom bar, background, text, and caption colors in a single generation step.
-// Tags: barcode, code128, color, custom-colors, background, barcolor, textcolor, caption, png, aspose.barcode, generation
+// Tags: code128, barcode generation, color customization, caption, png, aspose.barcode, aspnet
 
 using System;
 using System.IO;
@@ -11,45 +11,47 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Generates a Code128 barcode with customized colors for background, bars, text, and captions, and saves it as a PNG file.
+/// Example program that generates a Code128 barcode with customized colors for bars,
+/// background, human‑readable text, and both top and bottom captions, then saves it as a PNG file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, applies color customizations, and writes the image to disk.
+    /// Entry point of the example. Creates the barcode, applies color customizations,
+    /// configures captions, saves the image, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Determine output file path in the current working directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "custom_barcode.png");
+        // Define the output file path in the current working directory.
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "custom_color_barcode.png");
 
-        // Initialize the barcode generator with Code128 symbology and sample data
+        // Initialize the barcode generator for Code128 with the desired data.
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            // Set the overall background color of the barcode image
+            // Set the foreground (bar) color to blue.
+            generator.Parameters.Barcode.BarColor = Color.Blue;
+
+            // Set the background color to yellow.
             generator.Parameters.BackColor = Color.Yellow;
 
-            // Set the color of the barcode bars (foreground)
-            generator.Parameters.Barcode.BarColor = Color.DarkBlue;
-
-            // Set the color of the human‑readable code text displayed below the bars
+            // Set the human‑readable text (code text) color to green.
             generator.Parameters.Barcode.CodeTextParameters.Color = Color.Green;
 
-            // Enable and configure a caption displayed above the barcode
+            // Enable and configure the top caption with red text.
             generator.Parameters.CaptionAbove.Visible = true;
             generator.Parameters.CaptionAbove.Text = "Top Caption";
             generator.Parameters.CaptionAbove.TextColor = Color.Red;
 
-            // Enable and configure a caption displayed below the barcode
+            // Enable and configure the bottom caption with purple text.
             generator.Parameters.CaptionBelow.Visible = true;
             generator.Parameters.CaptionBelow.Text = "Bottom Caption";
             generator.Parameters.CaptionBelow.TextColor = Color.Purple;
 
-            // Save the generated barcode image to the specified path in PNG format
+            // Save the generated barcode image as a PNG file.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        // Inform the user where the barcode image has been saved.
+        Console.WriteLine($"Barcode image saved to: {outputPath}");
     }
 }

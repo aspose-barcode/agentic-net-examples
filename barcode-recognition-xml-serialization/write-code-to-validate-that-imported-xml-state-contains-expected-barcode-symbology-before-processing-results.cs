@@ -1,109 +1,90 @@
 // Title: Validate barcode symbology from imported XML state
-// Description: Demonstrates how to generate a barcode, export the reader state to XML, import it back, and verify that the XML contains the expected symbology before processing results.
-// Category-Description: This example belongs to the Aspose.BarCode state management category, showing how to use BarCodeGenerator, BarCodeReader, and the ImportFromXml/ExportToXml methods. Typical use cases include persisting reader configuration, sharing barcode processing settings across services, and ensuring the correct symbology is applied when re‑reading barcodes. Developers often need to validate imported XML state to avoid mismatched decoding types.
+// Description: Demonstrates how to generate a barcode, export its configuration to XML, import it back, and verify that the symbology matches the expected type before further processing.
+// Category-Description: This example belongs to the Aspose.BarCode XML serialization and symbology validation category. It shows how to use BarcodeGenerator, EncodeTypes, BaseEncodeType, and BarCodeImageFormat to generate a barcode, export its state to XML, import it, and compare the BarcodeType. Developers often need to ensure that imported barcode configurations retain the correct symbology when loading from persisted XML files.
 // Prompt: Write code to validate that an imported XML state contains the expected barcode symbology before processing results.
-// Tags: barcode symbology, validation, xml state, import, export, aspose.barcode, generation, recognition
+// Tags: barcode, symbology, validation, xml, import, export, aspose.barcode, generation
 
 using System;
 using System.IO;
 using System.Reflection;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates a barcode, exports the reader state to XML,
-/// re‑imports the state, and validates that the expected symbology is present.
+/// Demonstrates barcode symbology validation using Aspose.BarCode XML import/export.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a sample barcode, saves its reader state, and validates the symbology.
-    /// </summary>
+    /// Entry point. Generates a QR barcode, exports its state to XML, re-imports it, and validates the symbology.
+/// </summary>
     static void Main()
     {
-        // Prepare a temporary working folder for generated files
-        string workFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workFolder);
+        // -----------------------------------------------------------------
+        // Set up temporary working directory and file paths
+        // -----------------------------------------------------------------
+        string basePath = Path.Combine(Path.GetTempPath(), "SymbologyValidateDemo");
+        Directory.CreateDirectory(basePath);
+        string xmlPath = Path.Combine(basePath, "generator.xml");
+        string imagePath = Path.Combine(basePath, "barcode.png");
 
-        // Define file paths and expected symbology name
-        string barcodePath = Path.Combine(workFolder, "barcode.png");
-        string xmlPath = Path.Combine(workFolder, "readerState.xml");
-        string expectedSymbology = "Code128";
+        // -----------------------------------------------------------------
+        // Define the expected symbology name (as it appears in EncodeTypes)
+        // -----------------------------------------------------------------
+        string expectedSymbologyName = "QR";
 
-        // Generate a sample barcode image (Code128, value "123456")
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
+        // Resolve the corresponding BaseEncodeType value via reflection
+        FieldInfo expectedField = typeof(EncodeTypes).GetField(expectedSymbologyName);
+        if (expectedField == null)
         {
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Unknown symbology name: {expectedSymbologyName}");
+            return;
+        }
+        BaseEncodeType expectedEncodeType = (BaseEncodeType)expectedField.GetValue(null);
+
+        // -----------------------------------------------------------------
+        // Generate a barcode and export its configuration to XML
+        // -----------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Test123"))
+        {
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.ExportToXml(xmlPath);
         }
 
-        // Create a reader for the generated image, optionally adjust settings, and export its state to XML
-        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // -----------------------------------------------------------------
+        // Ensure the XML file was created before attempting import
+        // -----------------------------------------------------------------
+        if (!File.Exists(xmlPath))
         {
-            // Example setting: strip FNC characters from the result
-            reader.BarcodeSettings.StripFNC = true;
-            reader.ExportToXml(xmlPath);
-        }
-
-        // Validate that the imported XML state contains the expected symbology before further processing
-        ValidateSymbology(xmlPath, barcodePath, expectedSymbology);
-    }
-
-    /// <summary>
-    /// Imports a reader state from an XML file, assigns the corresponding image,
-    /// reads barcodes, and checks whether the detected symbology matches the expected one.
-    /// </summary>
-    /// <param name="xmlFilePath">Path to the exported reader state XML.</param>
-    /// <param name="imageFilePath">Path to the barcode image file.</param>
-    /// <param name="expectedSymbologyName">Name of the expected symbology (e.g., "Code128").</param>
-    static void ValidateSymbology(string xmlFilePath, string imageFilePath, string expectedSymbologyName)
-    {
-        // Verify that the XML state file exists
-        if (!File.Exists(xmlFilePath))
-        {
-            Console.WriteLine($"XML state file not found: {xmlFilePath}");
+            Console.WriteLine("Exported XML file not found.");
             return;
         }
 
-        // Verify that the barcode image file exists
-        if (!File.Exists(imageFilePath))
+        // -----------------------------------------------------------------
+        // Import the barcode generator from the XML and validate symbology
+        // -----------------------------------------------------------------
+        using (var importedGen = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            Console.WriteLine($"Barcode image file not found: {imageFilePath}");
-            return;
-        }
-
-        // Resolve the expected symbology name to a BaseDecodeType value using reflection
-        FieldInfo field = typeof(DecodeType).GetField(expectedSymbologyName);
-        if (field == null)
-        {
-            Console.WriteLine($"Unknown symbology: {expectedSymbologyName}");
-            return;
-        }
-
-        BaseDecodeType expectedDecode = (BaseDecodeType)field.GetValue(null);
-
-        // Import the reader state from the XML file
-        using (BarCodeReader importedReader = BarCodeReader.ImportFromXml(xmlFilePath))
-        {
-            // Assign the barcode image to the imported reader (state does not store the image)
-            importedReader.SetBarCodeImage(imageFilePath);
-
-            // Perform barcode detection
-            BarCodeResult[] results = importedReader.ReadBarCodes();
-
-            if (results.Length == 0)
+            BaseEncodeType importedEncodeType = importedGen.BarcodeType;
+            if (importedEncodeType == null)
             {
-                Console.WriteLine("No barcodes were detected.");
+                Console.WriteLine("Imported generator does not have a BarcodeType.");
                 return;
             }
 
-            // Iterate through detected results and compare symbology
-            foreach (BarCodeResult result in results)
+            // Compare imported symbology with the expected one
+            if (importedEncodeType.Equals(expectedEncodeType))
             {
-                bool matches = result.CodeType.Equals(expectedDecode);
-                Console.WriteLine($"Detected symbology: {result.CodeTypeName}");
-                Console.WriteLine($"Matches expected ({expectedSymbologyName}): {matches}");
-                Console.WriteLine($"Code text: {result.CodeText}");
+                Console.WriteLine($"Symbology validation succeeded: {expectedSymbologyName}");
+
+                // Optionally regenerate the barcode using the imported settings
+                string importedImagePath = Path.Combine(basePath, "barcode_imported.png");
+                importedGen.Save(importedImagePath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Barcode image saved to: {importedImagePath}");
+            }
+            else
+            {
+                Console.WriteLine($"Symbology validation failed. Expected: {expectedSymbologyName}, Found: {importedEncodeType}");
             }
         }
     }

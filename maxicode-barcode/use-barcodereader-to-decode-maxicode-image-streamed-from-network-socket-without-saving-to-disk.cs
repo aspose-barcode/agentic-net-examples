@@ -1,37 +1,36 @@
-// Title: Decode MaxiCode barcode from a network stream using Aspose.BarCode
-// Description: Demonstrates how to generate a MaxiCode barcode, stream it over a TCP socket, and decode it directly from the received stream without writing to disk.
-// Category-Description: This example belongs to the Aspose.BarCode barcode reading and generation category. It showcases the use of BarcodeGenerator for creating barcodes, TcpListener/TcpClient for network streaming, and BarCodeReader for decoding. Developers working with real‑time barcode transmission, such as point‑of‑sale or logistics systems, can use this pattern to process barcodes on the fly without intermediate files.
+// Title: Decode MaxiCode from network stream using BarcodeReader
+// Description: Demonstrates how to generate a MaxiCode barcode, stream it over a TCP socket, and decode it directly from the received memory stream without writing to disk.
+// Category-Description: This example belongs to the Aspose.BarCode reading and decoding category, showcasing the use of BarCodeGenerator, BarCodeReader, and ComplexCodetextReader for MaxiCode symbology. Typical use cases include real-time barcode scanning from network sources such as sockets, streams, or web services where persisting images is undesirable. Developers often need to read barcodes from in-memory data, handle complex MaxiCode payloads, and integrate with .NET networking APIs.
 // Prompt: Use the BarcodeReader to decode a MaxiCode image streamed from a network socket without saving to disk.
-// Tags: maxicode, barcode, decoding, network, stream, aspose.barcode, generation, reading
+// Tags: maxicode, barcode, decoding, stream, network, socket, aspose.barcode, barcodereader, complexcodetextreader
 
 using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
+using System.Threading.Tasks;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a MaxiCode barcode, streams it over a TCP socket,
-/// and decodes it directly from the received stream using Aspose.BarCode.
+/// Example program that generates a MaxiCode barcode, sends it over a TCP socket,
+/// and decodes it directly from the received stream using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a barcode, sends it via a TCP listener, receives it,
-    /// and decodes the barcode without persisting the image to disk.
+    /// Entry point. Executes the end‑to‑end demonstration of streaming and decoding a MaxiCode image.
     /// </summary>
     static void Main()
     {
         // ------------------------------------------------------------
-        // 1. Generate a MaxiCode barcode image and store it in a byte array.
+        // 1. Generate a sample MaxiCode image and store it in a byte array.
         // ------------------------------------------------------------
         byte[] imageBytes;
-        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "1234567890"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.MaxiCode, "Sample MaxiCode"))
         {
             using (var ms = new MemoryStream())
             {
@@ -41,60 +40,73 @@ class Program
         }
 
         // ------------------------------------------------------------
-        // 2. Set up a TCP listener on a dynamic port to act as the server.
+        // 2. Start a simple TCP listener that will send the image bytes to a client.
         // ------------------------------------------------------------
-        int port;
-        using (var listener = new TcpListener(IPAddress.Loopback, 0))
+        int port = 5000;
+        var listener = new TcpListener(IPAddress.Loopback, port);
+        listener.Start();
+
+        var serverTask = Task.Run(() =>
         {
-            listener.Start();
-            port = ((IPEndPoint)listener.LocalEndpoint).Port;
-
-            // --------------------------------------------------------
-            // 3. Server thread: accept a single client connection and
-            //    write the generated image bytes to the network stream.
-            // --------------------------------------------------------
-            Thread serverThread = new Thread(() =>
+            using (var client = listener.AcceptTcpClient())
+            using (var networkStream = client.GetStream())
             {
-                using (var client = listener.AcceptTcpClient())
-                using (var networkStream = client.GetStream())
-                {
-                    networkStream.Write(imageBytes, 0, imageBytes.Length);
-                }
-                listener.Stop();
-            });
-            serverThread.Start();
+                // Transmit the generated image bytes over the network.
+                networkStream.Write(imageBytes, 0, imageBytes.Length);
+            }
+            listener.Stop();
+        });
 
-            // --------------------------------------------------------
-            // 4. Client side: connect to the server and read the image
-            //    bytes into a MemoryStream.
-            // --------------------------------------------------------
-            using (var client = new TcpClient())
+        // ------------------------------------------------------------
+        // 3. Connect as a client, receive the image bytes, and decode the barcode.
+        // ------------------------------------------------------------
+        using (var client = new TcpClient())
+        {
+            client.Connect(IPAddress.Loopback, port);
+            using (var netStream = client.GetStream())
+            using (var memStream = new MemoryStream())
             {
-                client.Connect(IPAddress.Loopback, port);
-                using (var networkStream = client.GetStream())
-                using (var receivedStream = new MemoryStream())
-                {
-                    networkStream.CopyTo(receivedStream);
-                    receivedStream.Position = 0; // Reset stream position for reading.
+                // Copy the incoming data into a memory stream for in‑memory processing.
+                netStream.CopyTo(memStream);
+                memStream.Position = 0;
 
-                    // ----------------------------------------------------
-                    // 5. Decode the MaxiCode barcode directly from the stream.
-                    // ----------------------------------------------------
-                    using (var reader = new BarCodeReader(receivedStream, DecodeType.MaxiCode))
+                // Initialize the reader for MaxiCode decoding.
+                using (var reader = new BarCodeReader(memStream, DecodeType.MaxiCode))
+                {
+                    // Reset stream position before assigning it to the reader.
+                    memStream.Position = 0;
+                    reader.SetBarCodeImage(memStream);
+
+                    // Iterate through all detected barcodes (should be one in this case).
+                    foreach (var result in reader.ReadBarCodes())
                     {
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
+                        Console.WriteLine($"CodeText: {result.CodeText}");
+                        Console.WriteLine($"CodeTypeName: {result.CodeTypeName}");
+
+                        // Attempt to decode complex MaxiCode payloads (e.g., mode 2 or 3).
+                        var complex = ComplexCodetextReader.TryDecodeMaxiCode(result.Extended.MaxiCode.Mode, result.CodeText);
+                        if (complex != null)
                         {
-                            Console.WriteLine($"CodeText: {result.CodeText}");
-                            Console.WriteLine($"CodeTypeName: {result.CodeTypeName}");
+                            Console.WriteLine("Decoded MaxiCode complex data:");
+                            if (complex is MaxiCodeCodetextMode2 mode2)
+                            {
+                                Console.WriteLine($"PostalCode: {mode2.PostalCode}");
+                                Console.WriteLine($"CountryCode: {mode2.CountryCode}");
+                                Console.WriteLine($"ServiceCategory: {mode2.ServiceCategory}");
+                            }
+                            else if (complex is MaxiCodeCodetextMode3 mode3)
+                            {
+                                Console.WriteLine($"PostalCode: {mode3.PostalCode}");
+                                Console.WriteLine($"CountryCode: {mode3.CountryCode}");
+                                Console.WriteLine($"ServiceCategory: {mode3.ServiceCategory}");
+                            }
                         }
                     }
                 }
             }
-
-            // ------------------------------------------------------------
-            // 6. Wait for the server thread to finish before exiting.
-            // ------------------------------------------------------------
-            serverThread.Join();
         }
+
+        // Ensure the server task completes before exiting.
+        serverTask.Wait();
     }
 }

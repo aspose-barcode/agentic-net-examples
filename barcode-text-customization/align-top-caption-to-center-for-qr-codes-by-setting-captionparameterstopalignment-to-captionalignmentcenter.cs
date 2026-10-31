@@ -1,49 +1,44 @@
-// Title: Align top caption to center for QR code barcode
-// Description: Demonstrates how to generate a QR code with a centered top caption using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and caption parameters. Developers often need to customize barcode appearance, such as adding and aligning captions, for branding or informational purposes. The snippet illustrates typical steps: setting up output paths, configuring barcode properties, and saving the image.
+// Title: Center Align Top Caption for QR Code Barcode
+// Description: Demonstrates how to add a top caption to a QR code and align it to the center using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and CaptionParameters to customize barcode appearance. Developers often need to add descriptive text above barcodes for branding or informational purposes, and aligning captions correctly ensures a professional look. The snippet illustrates typical steps: creating a generator, configuring caption visibility, text, and alignment, then saving the image.
 // Prompt: Align top caption to center for QR codes by setting CaptionParameters.Top.Alignment to CaptionAlignment.Center.
-// Tags: qr code, caption alignment, png, barcodegenerator, aspose.barcode
+// Tags: qr code, caption, alignment, aspose.barcode, generation, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a QR code with a centered caption above it and saves the image as PNG.
+/// Provides an example that generates a QR code with a centered top caption.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates output directory, configures barcode settings, and saves the result.
+    /// Entry point of the example. Generates a QR code, adds a visible top caption,
+    /// centers the caption, and saves the result as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory for the generated barcode image.
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        if (!Directory.Exists(outputDir))
-        {
-            // Create the directory if it does not already exist.
-            Directory.CreateDirectory(outputDir);
-        }
+        // Define the output directory and ensure it exists.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
 
-        // Full path for the resulting PNG file.
-        string outputPath = Path.Combine(outputDir, "qr_with_top_caption.png");
+        // Build the full path for the resulting image file.
+        string outputPath = Path.Combine(outputDir, "QrWithCenteredTopCaption.png");
 
-        // Initialize the barcode generator for a QR code with the desired text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample QR Code"))
+        // Create a QR code generator with the desired data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
         {
-            // Enable the caption above the barcode and set its text.
+            // Enable the top caption and set its displayed text.
             generator.Parameters.CaptionAbove.Visible = true;
             generator.Parameters.CaptionAbove.Text = "Top Caption";
 
-            // Center-align the caption horizontally.
+            // Center the top caption horizontally.
             generator.Parameters.CaptionAbove.Alignment = TextAlignment.Center;
 
-            // Adjust the module size (pixel dimension) of the QR code.
-            generator.Parameters.Barcode.XDimension.Pixels = 3f;
-
-            // Save the generated barcode as a PNG image.
+            // Save the generated barcode image to the specified path in PNG format.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
