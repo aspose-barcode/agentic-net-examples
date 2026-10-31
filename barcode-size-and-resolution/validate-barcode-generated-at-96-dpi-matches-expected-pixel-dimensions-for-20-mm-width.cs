@@ -1,8 +1,8 @@
-// Title: Validate barcode physical width at 96 dpi
-// Description: Generates a Code128 barcode at 96 dpi and checks that its pixel width corresponds to a 20 mm physical size.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, demonstrating how to configure resolution, render a barcode to a bitmap, and verify its dimensions. It uses BarcodeGenerator, EncodeTypes, and the Parameters.Resolution property, which are common when developers need precise sizing for printing or scanning applications.
+// Title: Validate barcode image dimensions at 96 dpi
+// Description: Generates a Code128 barcode at 96 dpi and verifies that its physical width matches 20 mm within a half‑millimeter tolerance.
+// Category-Description: This example belongs to the Aspose.BarCode generation and measurement category. It demonstrates how to use BarcodeGenerator, set resolution, control AutoSizeMode, and retrieve the resulting Bitmap to calculate physical dimensions. Developers often need to ensure that generated barcodes meet exact size specifications for printing or scanning requirements, making resolution and size validation a common task.
 // Prompt: Validate barcode generated at 96 dpi matches expected pixel dimensions for 20 mm width.
-// Tags: barcode, code128, resolution, dimension validation, bitmap, aspose.barcode, generation
+// Tags: code128, barcode, resolution, size, validation, aspose.barcode, generation, image
 
 using System;
 using Aspose.BarCode;
@@ -10,44 +10,47 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode and validating its physical width based on resolution.
+/// Demonstrates generating a Code128 barcode and validating its physical dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, computes its physical width, and reports whether it matches the expected 20 mm size.
+    /// Entry point. Generates barcode, calculates physical size, and checks width against expected value.
     /// </summary>
     static void Main()
     {
-        // The text to encode in the barcode.
-        const string codeText = "12345";
-
-        // Create a barcode generator for Code128 with the specified text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Create a barcode generator for Code128 with the value "1234"
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234"))
         {
-            // Set the image resolution to 96 DPI.
+            // Explicitly set the image resolution to 96 dpi
             generator.Parameters.Resolution = 96f;
 
-            // Generate the barcode image as a bitmap.
-            using (var bitmap = generator.GenerateBarCodeImage())
+            // Disable automatic sizing so the dimensions are based solely on the content
+            generator.Parameters.AutoSizeMode = AutoSizeMode.None;
+
+            // Generate the barcode image as a Bitmap
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Width in pixels of the generated bitmap.
-                int pixelWidth = bitmap.Width;
+                // Retrieve pixel dimensions of the generated image
+                int widthPixels = bitmap.Width;
+                int heightPixels = bitmap.Height;
 
-                // Convert pixel width to physical width in millimeters.
-                float physicalWidthMm = pixelWidth / generator.Parameters.Resolution * 25.4f;
+                // Convert pixel dimensions to physical size in millimeters using the resolution
+                double physicalWidthMm = widthPixels * 25.4 / generator.Parameters.Resolution;
+                double physicalHeightMm = heightPixels * 25.4 / generator.Parameters.Resolution;
 
-                // Expected physical width and tolerance.
-                const float expectedWidthMm = 20f;
-                const float toleranceMm = 0.5f;
+                // Define the expected physical width and allowable tolerance
+                const double expectedWidthMm = 20.0;
+                const double toleranceMm = 0.5; // half‑millimeter tolerance
 
-                // Determine if the actual width is within the tolerance range.
-                bool matches = Math.Abs(physicalWidthMm - expectedWidthMm) <= toleranceMm;
+                // Determine whether the actual width falls within the tolerance range
+                bool widthMatches = Math.Abs(physicalWidthMm - expectedWidthMm) <= toleranceMm;
 
-                // Output the results.
-                Console.WriteLine($"Pixel width: {pixelWidth}");
-                Console.WriteLine($"Physical width (mm): {physicalWidthMm:F2}");
-                Console.WriteLine($"Matches expected 20mm ±{toleranceMm}mm: {matches}");
+                // Output the results
+                Console.WriteLine($"Barcode image size: {widthPixels}×{heightPixels} pixels");
+                Console.WriteLine($"Physical size: {physicalWidthMm:F2} mm × {physicalHeightMm:F2} mm");
+                Console.WriteLine($"Expected width: {expectedWidthMm} mm");
+                Console.WriteLine($"Width matches expected (±{toleranceMm} mm): {widthMatches}");
             }
         }
     }

@@ -1,106 +1,103 @@
-// Title: Barcode Generation with Unit Configuration and Logging
-// Description: Demonstrates creating DataMatrix, Code128, and QR barcodes using Aspose.BarCode while configuring dimensions in different measurement units and logging the applied settings.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to set measurement units (pixels, millimeters, inches) and resolution (DPI) for barcode images. It uses BarcodeGenerator, BarCodeParameters, and related classes, typical for developers needing precise control over barcode size and quality in automated image creation pipelines.
+// Title: Barcode Generation with Logging of Measurement Unit, Dimensions, and DPI
+// Description: This example generates Code128 barcodes with different measurement units, saves them as PNG images, and logs each barcode's configured unit, XDimension, resolution (DPI), and resulting image size.
+// Category-Description: Demonstrates Aspose.BarCode generation features, including setting XDimension in pixels or millimeters, configuring image resolution, and saving images. Typical use cases involve creating barcodes for print or digital media where precise sizing and DPI are required. Developers often need to log these settings for quality control or auditing across multiple barcode outputs.
 // Prompt: Develop logging mechanism recording configured measurement unit, dimensions, and DPI for each generated barcode image.
-// Tags: barcode, generation, logging, measurement units, dpi, aspose.barcode, csharp
+// Tags: barcode, code128, generation, logging, measurement unit, resolution, dpi, png, aspose.barcode
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation with configurable measurement units and logs the configuration details.
+/// Program that generates barcodes with various measurement units and logs their configuration and image details.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates sample barcodes, logs their configuration, and saves them as PNG files.
+    /// Entry point. Generates barcodes, saves images, and writes a log file with unit, dimension, DPI, and image size.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for output files
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeLogDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
+        // Create a dedicated temporary folder for barcode images and the log file
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeLog_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        string logFile = Path.Combine(outputFolder, "barcode_log.txt");
 
-        // Define sample barcode configurations with different measurement units
-        var samples = new[]
+        // Define barcode configurations: text, symbology, measurement unit, and a configuration action
+        var configs = new List<(string CodeText, BaseEncodeType EncodeType, string UnitName, Action<BarcodeGenerator> Configure)>
         {
-            new
+            ("ABC123", EncodeTypes.Code128, "Pixels", gen =>
             {
-                CodeText = "Sample1",
-                Encode = (BaseEncodeType)EncodeTypes.DataMatrix,
-                Configure = new Action<BarcodeGenerator>(gen =>
-                {
-                    // Configure dimensions in pixels and set resolution
-                    gen.Parameters.Barcode.XDimension.Pixels = 3f;
-                    gen.Parameters.Resolution = 96f;
-                    gen.Parameters.ImageWidth.Pixels = 300f;
-                    gen.Parameters.ImageHeight.Pixels = 150f;
-                }),
-                FileName = "barcode1.png"
-            },
-            new
+                gen.Parameters.Barcode.XDimension.Pixels = 3f;
+                gen.Parameters.Resolution = 96f;
+            }),
+            ("XYZ789", EncodeTypes.Code128, "Millimeters", gen =>
             {
-                CodeText = "Sample2",
-                Encode = (BaseEncodeType)EncodeTypes.Code128,
-                Configure = new Action<BarcodeGenerator>(gen =>
-                {
-                    // Configure dimensions in millimeters and set higher resolution
-                    gen.Parameters.Barcode.XDimension.Millimeters = 2f;
-                    gen.Parameters.Resolution = 300f;
-                    gen.Parameters.ImageWidth.Millimeters = 50f;
-                    gen.Parameters.ImageHeight.Millimeters = 25f;
-                }),
-                FileName = "barcode2.png"
-            },
-            new
+                gen.Parameters.Barcode.XDimension.Millimeters = 2f;
+                gen.Parameters.Resolution = 300f;
+            }),
+            ("LMN456", EncodeTypes.Code128, "Pixels", gen =>
             {
-                CodeText = "Sample3",
-                Encode = (BaseEncodeType)EncodeTypes.QR,
-                Configure = new Action<BarcodeGenerator>(gen =>
-                {
-                    // Configure dimensions in inches and set custom resolution
-                    gen.Parameters.Barcode.XDimension.Inches = 0.1f;
-                    gen.Parameters.Resolution = 72f;
-                    gen.Parameters.ImageWidth.Inches = 2f;
-                    gen.Parameters.ImageHeight.Inches = 2f;
-                }),
-                FileName = "barcode3.png"
-            }
+                gen.Parameters.Barcode.XDimension.Pixels = 5f;
+                gen.Parameters.Resolution = 200f;
+            })
         };
 
-        // Iterate over each sample, generate the barcode, log its settings, and save the image
-        foreach (var sample in samples)
+        int index = 1;
+        foreach (var cfg in configs)
         {
-            string filePath = Path.Combine(outputDir, sample.FileName);
-            using (var generator = new BarcodeGenerator(sample.Encode, sample.CodeText))
+            // Build the file path for the current barcode image
+            string filePath = Path.Combine(outputFolder, $"barcode_{index}.png");
+
+            // Generate the barcode with the specified configuration and save it as PNG
+            using (var generator = new BarcodeGenerator(cfg.EncodeType, cfg.CodeText))
             {
-                // Apply the specific configuration for this sample
-                sample.Configure(generator);
-
-                // Log configuration details to the console
-                Console.WriteLine($"Generating '{sample.FileName}':");
-                Console.WriteLine($"  CodeText: {sample.CodeText}");
-                Console.WriteLine($"  XDimension - Pixels: {generator.Parameters.Barcode.XDimension.Pixels} " +
-                                  $"Millimeters: {generator.Parameters.Barcode.XDimension.Millimeters} " +
-                                  $"Inches: {generator.Parameters.Barcode.XDimension.Inches}");
-                Console.WriteLine($"  ImageWidth - Pixels: {generator.Parameters.ImageWidth.Pixels} " +
-                                  $"Millimeters: {generator.Parameters.ImageWidth.Millimeters} " +
-                                  $"Inches: {generator.Parameters.ImageWidth.Inches}");
-                Console.WriteLine($"  ImageHeight - Pixels: {generator.Parameters.ImageHeight.Pixels} " +
-                                  $"Millimeters: {generator.Parameters.ImageHeight.Millimeters} " +
-                                  $"Inches: {generator.Parameters.ImageHeight.Inches}");
-                Console.WriteLine($"  Resolution (DPI): {generator.Parameters.Resolution}");
-                Console.WriteLine();
-
-                // Save the generated barcode as a PNG file
+                cfg.Configure(generator);
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
+
+            // Retrieve the dimensions of the saved image
+            int imgWidth, imgHeight;
+            using (Image img = Image.FromFile(filePath))
+            {
+                imgWidth = img.Width;
+                imgHeight = img.Height;
+            }
+
+            // Build a log entry containing unit, XDimension, resolution, image size, and file path
+            string logLine = $"Barcode {index}: Unit={cfg.UnitName}, XDimension={GetXDimensionValue(cfg.UnitName, cfg.Configure)}{cfg.UnitName}, Resolution={GetResolution(cfg.Configure)} DPI, ImageSize={imgWidth}x{imgHeight} pixels, File={filePath}";
+
+            // Output the log line to console and append it to the log file
+            Console.WriteLine(logLine);
+            File.AppendAllText(logFile, logLine + Environment.NewLine);
+            index++;
         }
 
-        // Output the location of the saved barcode images
-        Console.WriteLine($"Barcodes saved to: {outputDir}");
+        // Inform the user where the log file is located
+        Console.WriteLine($"Log written to: {logFile}");
+    }
+
+    // Helper to extract XDimension value from the configuration action (re-evaluates the action)
+    static float GetXDimensionValue(string unitName, Action<BarcodeGenerator> configure)
+    {
+        using (var gen = new BarcodeGenerator(EncodeTypes.Code128, "temp"))
+        {
+            configure(gen);
+            return unitName == "Pixels" ? gen.Parameters.Barcode.XDimension.Pixels : gen.Parameters.Barcode.XDimension.Millimeters;
+        }
+    }
+
+    // Helper to extract Resolution (DPI) from the configuration action
+    static float GetResolution(Action<BarcodeGenerator> configure)
+    {
+        using (var gen = new BarcodeGenerator(EncodeTypes.Code128, "temp"))
+        {
+            configure(gen);
+            return gen.Parameters.Resolution;
+        }
     }
 }

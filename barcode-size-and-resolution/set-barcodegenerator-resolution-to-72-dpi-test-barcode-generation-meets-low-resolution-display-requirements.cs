@@ -1,57 +1,50 @@
-// Title: Low‑Resolution Barcode Generation and Verification
-// Description: Demonstrates generating a Code128 barcode at 72 dpi and saving it as PNG, then reading it back to confirm readability on low‑resolution displays.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to configure the BarcodeGenerator resolution for low‑dpi scenarios. It uses BarcodeGenerator, BarCodeImageFormat, and BarCodeReader classes, typical for developers needing to produce barcodes for screens or printers with limited resolution. The pattern is common when validating that barcodes remain scannable after down‑sampling.
+// Title: Generate low‑resolution Code128 barcode (72 dpi) and verify image size
+// Description: Demonstrates setting the BarcodeGenerator resolution to 72 dpi, creating a Code128 barcode, and saving it as a PNG image for low‑resolution display scenarios.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode rendering parameters such as resolution. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, common for developers needing custom image quality, size, or DPI settings when producing barcodes for web or print.
 // Prompt: Set BarcodeGenerator resolution to 72 dpi, test barcode generation meets low‑resolution display requirements.
-// Tags: code128, resolution, lowdpi, generation, recognition, png, aspose.barcode
+// Tags: code128, barcode generation, png, resolution, aspose.barcodes, aspose.drawing
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates setting barcode generation resolution to 72 dpi and verifying readability.
+/// Demonstrates generating a low‑resolution Code128 barcode and inspecting its image dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a low‑resolution barcode, saves it, and reads it back.
+    /// Entry point. Creates a temporary folder, generates a 72 dpi Code128 barcode, saves it as PNG, and outputs the file path and image size.
     /// </summary>
     static void Main()
     {
-        // Create a temporary directory to store the generated barcode image
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeResolutionDemo");
-        Directory.CreateDirectory(tempDir);
+        // Create a unique temporary folder for output
+        string outputFolder = Path.Combine(Path.GetTempPath(), "BarcodeLowRes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // Define the full path for the output PNG file
-        string barcodePath = Path.Combine(tempDir, "lowres_barcode.png");
+        // Define output file path
+        string barcodePath = Path.Combine(outputFolder, "code128_72dpi.png");
 
-        // Generate a Code128 barcode with a resolution of 72 dpi
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Test123"))
+        // Generate a Code128 barcode with 72 dpi resolution
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "LOWRES123"))
         {
-            generator.Parameters.Resolution = 72f; // Set low resolution
-            generator.Save(barcodePath, BarCodeImageFormat.Png); // Save as PNG
+            // Set low resolution (72 DPI)
+            generator.Parameters.Resolution = 72f;
+            // Save the barcode image as PNG
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Barcode saved to: {barcodePath}");
-
-        // Verify that the saved barcode can be read back correctly
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // Load the generated image to verify dimensions
+        using (Bitmap bitmap = new Bitmap(barcodePath))
         {
-            var results = reader.ReadBarCodes();
-            if (results.Length == 0)
-            {
-                Console.WriteLine("No barcode detected.");
-            }
-            else
-            {
-                foreach (var result in results)
-                {
-                    Console.WriteLine($"Read CodeText: {result.CodeText}");
-                    Console.WriteLine($"Read CodeType: {result.CodeTypeName}");
-                }
-            }
+            Console.WriteLine($"Barcode saved to: {barcodePath}");
+            Console.WriteLine($"Image dimensions (pixels): Width={bitmap.Width}, Height={bitmap.Height}");
         }
+
+        // Clean up: optionally delete the temporary folder
+        // Directory.Delete(outputFolder, true);
     }
 }

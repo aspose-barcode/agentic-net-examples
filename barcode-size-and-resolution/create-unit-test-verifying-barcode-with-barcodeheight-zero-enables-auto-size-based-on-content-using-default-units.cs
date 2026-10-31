@@ -1,93 +1,93 @@
-// Title: Verify auto‑sizing of barcode images when BarCodeHeight is zero
-// Description: Demonstrates that a barcode generated with default height automatically adjusts its image size based on the length of the encoded text.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how the BarcodeGenerator class determines image dimensions without explicit BarCodeHeight or AutoSizeMode settings. Developers often need to create barcodes that adapt to varying content lengths, ensuring optimal readability and layout in reports or UI components. The snippet shows typical usage of EncodeTypes, BarCodeImageFormat, and image size extraction for validation.
+// Title: Verify auto‑sizing of barcode when BarCodeHeight is zero
+// Description: Demonstrates that a barcode generated with default BarCodeHeight automatically adjusts its width based on the encoded content while keeping height constant.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how the BarcodeGenerator class determines image dimensions without explicit size settings. Developers often need to ensure barcodes scale correctly for varying data lengths, using default units and auto‑size behavior.
 // Prompt: Create unit test verifying barcode with BarCodeHeight zero enables auto‑size based on content, using default units.
-// Tags: barcode, autosize, code128, image, unit-test, aspose.barcode, generation
+// Tags: barcode, autosize, code128, generation, unit-test, aspose.barcode, default-units
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Contains the entry point for the barcode auto‑size verification example.
+/// Demonstrates and validates that a barcode generated with default BarCodeHeight (zero) automatically sizes its width based on the encoded text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates two barcodes of different lengths, compares their image dimensions, and reports whether auto‑sizing adapts to content.
+    /// Entry point that creates short and long Code128 barcodes, compares their dimensions, and reports the auto‑size result.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for test artifacts.
+        // Create a temporary directory for any file output (optional, useful for visual inspection)
         string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeAutoSizeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
 
-        // Define output file paths for short and long barcode images.
-        string pathShort = Path.Combine(tempDir, "short.png");
-        string pathLong = Path.Combine(tempDir, "long.png");
+        // Define short and long code texts to test width scaling
+        string shortText = "A";
+        string longText = "ABCDEFGHIJKLMNO";
 
-        // Generate barcodes with differing text lengths.
-        GenerateBarcode("A", pathShort);
-        GenerateBarcode("ABCDEFGHIJKLMN", pathLong);
+        // Variables to hold generated image dimensions
+        int shortWidth, longWidth;
+        int shortHeight, longHeight;
 
-        // Retrieve image dimensions for each generated barcode.
-        var sizeShort = GetImageSize(pathShort);
-        var sizeLong = GetImageSize(pathLong);
-
-        // Output the measured dimensions to the console.
-        Console.WriteLine($"Short code size: {sizeShort.Width}x{sizeShort.Height}");
-        Console.WriteLine($"Long code size: {sizeLong.Width}x{sizeLong.Height}");
-
-        // Verify that the image size changes with content length.
-        if (sizeShort.Width != sizeLong.Width || sizeShort.Height != sizeLong.Height)
+        // Generate barcode for the short text without setting BarCodeHeight (defaults to zero)
+        using (var genShort = new BarcodeGenerator(EncodeTypes.Code128, shortText))
         {
-            Console.WriteLine("PASS: Image size adapts to content length.");
+            using (Bitmap bmp = genShort.GenerateBarCodeImage())
+            {
+                shortWidth = bmp.Width;
+                shortHeight = bmp.Height;
+
+                // Optionally save the image for manual verification
+                string path = Path.Combine(tempDir, "short.png");
+                bmp.Save(path, ImageFormat.Png);
+            }
+        }
+
+        // Generate barcode for the long text without setting BarCodeHeight (defaults to zero)
+        using (var genLong = new BarcodeGenerator(EncodeTypes.Code128, longText))
+        {
+            using (Bitmap bmp = genLong.GenerateBarCodeImage())
+            {
+                longWidth = bmp.Width;
+                longHeight = bmp.Height;
+
+                // Optionally save the image for manual verification
+                string path = Path.Combine(tempDir, "long.png");
+                bmp.Save(path, ImageFormat.Png);
+            }
+        }
+
+        // Verify that the longer text results in a wider barcode (auto‑sized) while height remains unchanged
+        bool widthIncreased = longWidth > shortWidth;
+        bool heightEqual = longHeight == shortHeight; // Height should stay the same for the same symbology
+
+        // Output the measured dimensions
+        Console.WriteLine($"Short barcode size:  {shortWidth}x{shortHeight}");
+        Console.WriteLine($"Long barcode size:   {longWidth}x{longHeight}");
+        Console.WriteLine();
+
+        // Report test result based on dimension comparison
+        if (widthIncreased && heightEqual)
+        {
+            Console.WriteLine("PASSED: BarCodeHeight zero (default) enables auto-size based on content.");
         }
         else
         {
-            Console.WriteLine("FAIL: Image size does not adapt to content length.");
+            Console.WriteLine("FAILED: Auto-size behavior not as expected.");
         }
 
-        // Clean up temporary files and directory.
+        // Clean up temporary files and directory
         try
         {
-            File.Delete(pathShort);
-            File.Delete(pathLong);
-            Directory.Delete(tempDir);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignore cleanup errors.
-        }
-    }
-
-    /// <summary>
-    /// Generates a barcode image using the default height (zero) which enables auto‑sizing.
-    /// </summary>
-    /// <param name="codeText">The text to encode in the barcode.</param>
-    /// <param name="outputPath">The file path where the barcode image will be saved.</param>
-    static void GenerateBarcode(string codeText, string outputPath)
-    {
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
-        {
-            // No BarHeight or AutoSizeMode set; defaults allow auto‑sizing based on content.
-            generator.Save(outputPath, BarCodeImageFormat.Png);
-        }
-    }
-
-    /// <summary>
-    /// Retrieves the width and height of an image file.
-    /// </summary>
-    /// <param name="imagePath">The path to the image file.</param>
-    /// <returns>A tuple containing the image width and height in pixels.</returns>
-    static (int Width, int Height) GetImageSize(string imagePath)
-    {
-        using (var image = Image.FromFile(imagePath))
-        {
-            var bitmap = (Bitmap)image;
-            return (bitmap.Width, bitmap.Height);
+            // Ignore cleanup errors (e.g., files in use)
         }
     }
 }
