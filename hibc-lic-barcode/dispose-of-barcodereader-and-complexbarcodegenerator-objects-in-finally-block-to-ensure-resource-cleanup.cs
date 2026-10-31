@@ -1,8 +1,8 @@
-// Title: Generate and Read a MaxiCode Complex Barcode using Aspose.BarCode
-// Description: Demonstrates creating a MaxiCode complex barcode, saving it as PNG, and reading it back with Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator to create a MaxiCode codetext, saving the image with BarCodeImageFormat, and then using BarCodeReader to decode the barcode. Developers working with advanced barcode symbologies often need to generate complex barcodes and validate them programmatically, making this pattern a common requirement.
+// Title: Generate and Read a Mailmark Complex Barcode
+// Description: Demonstrates creating a Mailmark complex barcode, saving it as a PNG image, and decoding it using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of ComplexBarcodeGenerator to produce a Mailmark barcode and BarCodeReader to decode it. Developers working with postal services, logistics, or any scenario requiring complex barcode creation and validation will find these APIs essential for generating compliant barcodes and extracting their data.
 // Prompt: Dispose of BarCodeReader and ComplexBarcodeGenerator objects in a finally block to ensure resource cleanup.
-// Tags: maxicode, complex barcode, generation, recognition, png, aspose.barcode, csharp
+// Tags: mailmark, complexbarcode, generation, recognition, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,59 +12,73 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Example program that generates a MaxiCode complex barcode, saves it to a file,
-/// and then reads it back using Aspose.BarCode APIs.
+/// Demonstrates generation of a Mailmark complex barcode, saving it to disk,
+/// and reading it back using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Performs barcode generation, saving, and reading,
-    /// and ensures proper disposal of resources in a finally block.
+    /// Entry point of the example. Generates a Mailmark barcode, saves it as PNG,
+    /// then reads and prints the decoded text.
     /// </summary>
     static void Main()
     {
-        // Declare variables for generator and reader; they will be instantiated later.
-        ComplexBarcodeGenerator generator = null;
+        // Create a unique temporary directory for the demo files.
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "mailmark.png");
+
+        // Define the Mailmark code text with required fields.
+        var mailmark = new MailmarkCodetext
+        {
+            Format = 4,
+            VersionID = 1,
+            Class = "1",
+            SupplychainID = 384224,
+            ItemID = 16563762,
+            DestinationPostCodePlusDPS = "EF61AH8T "
+        };
+
+        ComplexBarcodeGenerator complexGenerator = null;
         BarCodeReader reader = null;
 
         try
         {
-            // Create a simple MaxiCode complex codetext (Mode 2) with sample data.
-            var codetext = new MaxiCodeCodetextMode2
+            // Generate the complex barcode and save it as a PNG image.
+            complexGenerator = new ComplexBarcodeGenerator(mailmark);
+            complexGenerator.Save(imagePath, BarCodeImageFormat.Png);
+            Console.WriteLine($"Barcode saved to {imagePath}");
+
+            // Verify the image exists before attempting to read it.
+            if (File.Exists(imagePath))
             {
-                PostalCode = "123456",
-                CountryCode = 56,
-                ServiceCategory = 999
-            };
+                // Initialize the reader for Mailmark decoding.
+                reader = new BarCodeReader(imagePath, DecodeType.Mailmark);
+                var results = reader.ReadBarCodes();
 
-            // Generate the barcode image from the codetext.
-            generator = new ComplexBarcodeGenerator(codetext);
-            string imagePath = Path.Combine(Path.GetTempPath(), "maxicode.png");
-            generator.Save(imagePath, BarCodeImageFormat.Png);
-            Console.WriteLine($"Barcode saved to: {imagePath}");
-
-            // Read the generated barcode from the saved image file.
-            reader = new BarCodeReader(imagePath, DecodeType.MaxiCode);
-            var results = reader.ReadBarCodes();
-
-            // Output each decoded result to the console.
-            foreach (var result in results)
+                // Output each decoded result.
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Decoded: {result.CodeText}");
+                }
+            }
+            else
             {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                Console.WriteLine("Generated image not found.");
             }
         }
         finally
         {
-            // Ensure the BarCodeReader is disposed if it was created.
+            // Ensure the reader is disposed safely.
             if (reader != null)
             {
-                reader.Dispose();
+                try { reader.Dispose(); } catch { }
             }
 
-            // Ensure the ComplexBarcodeGenerator is disposed if it was created.
-            if (generator != null)
+            // Ensure the generator is disposed safely.
+            if (complexGenerator != null)
             {
-                generator.Dispose();
+                try { complexGenerator.Dispose(); } catch { }
             }
         }
     }

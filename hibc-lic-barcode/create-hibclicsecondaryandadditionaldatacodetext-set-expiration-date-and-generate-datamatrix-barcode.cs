@@ -1,66 +1,55 @@
-// Title: Generate DataMatrix barcode with HIBCLIC secondary and additional data
-// Description: Demonstrates how to build a HIBCLIC secondary and additional data codetext, set an expiration date, and render it as a DataMatrix barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category, showcasing the use of HIBCLICSecondaryAndAdditionalDataCodetext, EncodeTypes, and BarcodeGenerator classes. Typical use cases include encoding pharmaceutical product information such as lot numbers, serial numbers, and expiry dates into a DataMatrix symbol for labeling and tracking. Developers often need to construct custom codetext, configure barcode parameters, and export the result to common image formats.
+// Title: Generate HIBC LIC Secondary and Additional Data DataMatrix Barcode
+// Description: Demonstrates how to build a HIBCLICSecondaryAndAdditionalDataCodetext with an expiration date and lot number, then encode it as a DataMatrix barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on HIBC (Health Industry Bar Code) symbologies. It showcases the use of HIBCLICSecondaryAndAdditionalDataCodetext, EncodeTypes, and BarcodeGenerator classes to create a DataMatrix barcode containing secondary and additional data. Developers working with medical or pharmaceutical labeling often need to embed expiry dates, lot numbers, and other regulatory information in barcodes; this snippet provides a concise reference for that common requirement.
 // Prompt: Create a HIBCLICSecondaryAndAdditionalDataCodetext, set expiration date, and generate a DataMatrix barcode.
-// Tags: data matrix, hibc lic, secondary data, expiration date, aspose.barcode, barcode generation, png
+// Tags: hibc, lic, secondary, additional, data, datamatrix, barcode, generation, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation of a DataMatrix barcode using HIBCLIC secondary and additional data codetext.
+/// Example program that creates a HIBCLICSecondaryAndAdditionalDataCodetext,
+/// sets an expiration date and lot number, and generates a DataMatrix barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Builds the codetext, configures barcode parameters, and saves the image.
+    /// Entry point of the example. Builds the codetext, generates the barcode, and saves it as a PNG file.
     /// </summary>
-    static void Main()
+    /// <param name="args">Command‑line arguments (not used).</param>
+    static void Main(string[] args)
     {
-        // Define the output file path (PNG) in the current working directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "HIBCLIC_DataMatrix.png");
+        // Prepare HIBC LIC secondary and additional data codetext
+        HIBCLICSecondaryAndAdditionalDataCodetext hibcCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext();
+        hibcCodetext.BarcodeType = EncodeTypes.HIBCDataMatrixLIC; // Specify HIBC DataMatrix LIC type
+        hibcCodetext.LinkCharacter = '+'; // Set the link character used in the codetext
+        hibcCodetext.Data = new SecondaryAndAdditionalData();
 
-        // ------------------------------------------------------------
-        // Create HIBC LIC secondary and additional data codetext
-        // ------------------------------------------------------------
-        var complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
+        // Set expiration date and format
+        hibcCodetext.Data.ExpiryDate = DateTime.Now;
+        hibcCodetext.Data.ExpiryDateFormat = HIBCLICDateFormat.MMDDYY;
+
+        // Set lot number
+        hibcCodetext.Data.LotNumber = "LOT123";
+
+        // Generate the codetext string that will be encoded in the barcode
+        string codeText = hibcCodetext.GetConstructedCodetext();
+
+        // Define output file path for the generated barcode image
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "HIBCLICSecondaryDataMatrix.png");
+
+        // Create DataMatrix barcode with the generated codetext and save it as PNG
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Set the barcode type to HIBC QR LIC (required for this codetext)
-            BarcodeType = EncodeTypes.HIBCQRLIC,
-            // Initialize the data container for secondary and additional fields
-            Data = new SecondaryAndAdditionalData()
-        };
-
-        // Populate secondary and additional data fields
-        complexCodetext.Data.ExpiryDate = DateTime.Now;                     // Expiration date
-        complexCodetext.Data.ExpiryDateFormat = HIBCLICDateFormat.MMDDYY; // Date format
-        complexCodetext.Data.Quantity = 30;                                 // Quantity
-        complexCodetext.Data.LotNumber = "LOT123";                          // Lot number
-        complexCodetext.Data.SerialNumber = "SERIAL123";                    // Serial number
-        complexCodetext.Data.DateOfManufacture = DateTime.Now;             // Manufacture date
-        complexCodetext.LinkCharacter = '+';                               // Link character
-
-        // Retrieve the fully constructed codetext string
-        string codeText = complexCodetext.GetConstructedCodetext();
-
-        // ------------------------------------------------------------
-        // Generate a DataMatrix barcode using the constructed codetext
-        // ------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
-        {
-            // Set visual parameters: module size and matrix version
-            generator.Parameters.Barcode.XDimension.Pixels = 5f;
-            generator.Parameters.Barcode.DataMatrix.Version = DataMatrixVersion.ECC200_32x32;
-
-            // Save the barcode image as PNG
+            generator.Parameters.Barcode.XDimension.Pixels = 4f; // Set module size
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
-        Console.WriteLine($"DataMatrix barcode saved to: {outputPath}");
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

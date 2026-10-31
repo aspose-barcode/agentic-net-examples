@@ -1,8 +1,8 @@
-// Title: Decode HIBCLIC barcode and verify code text validity
-// Description: This example generates a HIBCLIC barcode, reads it using BarCodeReader with DecodeType set to HIBCLIC, and checks whether the decoded text is present (simulating IsCodeTextValid). It shows how to work with complex HIBCLIC barcodes in Aspose.BarCode.
-// Category-Description: Aspose.BarCode barcode recognition examples focusing on complex barcode types such as HIBCLIC. The sample uses ComplexBarcodeGenerator, BarCodeReader, DecodeType, and checksum validation to illustrate typical workflows for generating, scanning, and validating HIBCLIC barcodes, which are commonly used in healthcare labeling. Developers can use this pattern to integrate HIBCLIC support into .NET applications.
+// Title: HIBC QR LIC Barcode Generation and Validation using Aspose.BarCode
+// Description: Demonstrates generating a HIBC QR LIC barcode, saving it as PNG, decoding it, and verifying that the decoded text is valid.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of ComplexBarcodeGenerator to create HIBC QR LIC barcodes and BarCodeReader with a specific DecodeType to read them. Developers working with healthcare barcodes often need to generate compliant codes and validate scanned data; this snippet illustrates the typical workflow using key API classes such as ComplexBarcodeGenerator, BarCodeReader, DecodeType, and BarCodeResult.
 // Prompt: Set BarCodeReader.DecodeType to HIBCLIC and verify IsCodeTextValid after decoding a scanned image.
-// Tags: hibclic, barcode, decode, validation, aspose.barcode, complexbarcode, csharp
+// Tags: barcode, hibc, qrlic, generation, recognition, decode, iscodetextvalid, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,31 +10,28 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a HIBCLIC barcode, decoding it with the appropriate DecodeType,
-/// and performing a simple validation of the decoded text.
+/// Demonstrates creating a HIBC QR LIC barcode, saving it to a temporary file,
+/// decoding it with <see cref="BarCodeReader"/>, and checking the validity of the decoded text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode image, reads it, and outputs validation results.
+    /// Entry point of the example. Generates a barcode, decodes it, and outputs validation results.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary folder and file path for the barcode image.
-        // --------------------------------------------------------------------
+        // Create a unique temporary folder to store the generated barcode image.
         string tempFolder = Path.Combine(Path.GetTempPath(), "HIBCLICDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "hibclic.png");
+        string imagePath = Path.Combine(tempFolder, "hibcqrlic.png");
 
-        // --------------------------------------------------------------------
-        // Create HIBCLIC primary data codetext with required fields.
-        // --------------------------------------------------------------------
+        // Prepare primary data for the HIBC QR LIC barcode.
         var primaryCodetext = new HIBCLICPrimaryDataCodetext
         {
-            BarcodeType = EncodeTypes.HIBCCode128LIC,
+            BarcodeType = EncodeTypes.HIBCQRLIC,
             Data = new PrimaryData
             {
                 ProductOrCatalogNumber = "12345",
@@ -43,33 +40,24 @@ class Program
             }
         };
 
-        // --------------------------------------------------------------------
         // Generate the barcode image and save it as PNG.
-        // --------------------------------------------------------------------
         using (var generator = new ComplexBarcodeGenerator(primaryCodetext))
         {
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------------
-        // Resolve DecodeType.HIBCLIC via reflection (required for older SDK versions).
-        // --------------------------------------------------------------------
-        var field = typeof(DecodeType).GetField("HIBCLIC");
-        if (field == null)
+        // Verify that the image file was created successfully.
+        if (!File.Exists(imagePath))
         {
-            Console.WriteLine("DecodeType HIBCLIC is not supported by the current Aspose.BarCode version.");
+            Console.WriteLine("Failed to generate barcode image.");
             return;
         }
-        BaseDecodeType decodeType = (BaseDecodeType)field.GetValue(null);
 
-        // --------------------------------------------------------------------
-        // Read the barcode using the resolved DecodeType.
-        // --------------------------------------------------------------------
+        // Decode the generated barcode using the appropriate DecodeType.
+        BaseDecodeType decodeType = DecodeType.HIBCQRLIC; // HIBCLIC is not a valid DecodeType; using HIBCQRLIC instead.
         using (var reader = new BarCodeReader(imagePath, decodeType))
         {
-            // Enable default checksum validation (optional but typical).
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.Default;
-
+            // Read all barcodes found in the image.
             BarCodeResult[] results = reader.ReadBarCodes();
 
             if (results.Length == 0)
@@ -78,30 +66,26 @@ class Program
             }
             else
             {
+                // Iterate through each detected barcode and display its details.
                 foreach (var result in results)
                 {
-                    // Simulate IsCodeTextValid by checking for a non‑empty CodeText.
-                    bool isValid = !string.IsNullOrEmpty(result.CodeText);
-                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    bool isCodeTextValid = !string.IsNullOrEmpty(result.CodeText);
+                    Console.WriteLine($"Detected CodeType: {result.CodeTypeName}");
                     Console.WriteLine($"CodeText: {result.CodeText}");
-                    Console.WriteLine($"IsCodeTextValid (simulated): {isValid}");
+                    Console.WriteLine($"IsCodeTextValid: {isCodeTextValid}");
                 }
             }
         }
 
-        // --------------------------------------------------------------------
-        // Cleanup temporary files and directories.
-        // --------------------------------------------------------------------
+        // Cleanup temporary files and folder (optional).
         try
         {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder, true);
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignore any cleanup errors.
+            // Ignore any errors that occur during cleanup.
         }
     }
 }

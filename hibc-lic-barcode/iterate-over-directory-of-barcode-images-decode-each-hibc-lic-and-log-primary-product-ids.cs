@@ -1,73 +1,69 @@
-// Title: Decode HIBC LIC Barcodes from Multiple Images and Log Product IDs
-// Description: This example generates a series of HIBC QR LIC barcode images, then iterates over a directory, decodes each barcode, and logs the primary product or catalog number found in the codetext.
-// Category-Description: Demonstrates Aspose.BarCode generation and recognition of complex HIBC LIC barcodes. It uses ComplexBarcodeGenerator to create HIBC QR LIC images, BarCodeReader with DecodeType.HIBCQRLIC to read them, and ComplexCodetextReader to parse the resulting codetext. Typical scenarios include batch processing of medical or pharmaceutical labels where product identifiers must be extracted automatically.
+// Title: Decode HIBC LIC Barcodes from a Directory and Log Product IDs
+// Description: This example generates sample HIBC QR LIC barcodes, saves them to a temporary folder, then iterates over the images, decodes each barcode, and outputs the primary product or catalog number.
+// Category-Description: Demonstrates Aspose.BarCode complex barcode generation and recognition for HIBC LIC symbology. It uses ComplexBarcodeGenerator to create HIBCLICPrimaryDataCodetext, BarCodeReader with DecodeType.HIBCQRLIC to read images, and ComplexCodetextReader to parse the complex codetext. Typical use cases include batch processing of medical device labels, inventory tracking, and validation of HIBC QR codes in healthcare applications.
 // Prompt: Iterate over a directory of barcode images, decode each HIBC LIC, and log primary product IDs.
-// Tags: barcode, hibc, lic, decoding, generation, complexbarcode, aspose.barcode, c#, example
+// Tags: barcode, hibc, lic, decoding, batch processing, aspose.barcode, complexbarcode, qr, productid
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation and decoding of HIBC QR LIC barcodes,
-/// extracting and logging the primary product or catalog number from each image.
+/// Sample program that creates HIBC LIC barcodes, reads them back, and logs the primary product identifiers.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample HIBC QR LIC barcodes,
-    /// saves them to a temporary folder, then reads each file, decodes the
-    /// barcode, and writes the product identifier to the console.
+    /// Entry point. Generates sample barcodes, decodes each file, and writes product numbers to the console.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
+        // ----------------------------------------------------------------------
         // Create a dedicated temporary folder for sample barcode images
-        // --------------------------------------------------------------------
+        // ----------------------------------------------------------------------
         string tempFolder = Path.Combine(Path.GetTempPath(), "HIBCBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // --------------------------------------------------------------------
-        // Generate sample barcode images with primary data codetext
-        // --------------------------------------------------------------------
+        // ----------------------------------------------------------------------
+        // Generate sample HIBC LIC primary data barcodes and collect file paths
+        // ----------------------------------------------------------------------
         List<string> barcodeFiles = new List<string>();
         for (int i = 1; i <= 5; i++)
         {
-            // Build primary data codetext for the current iteration
+            // Prepare primary data codetext
             HIBCLICPrimaryDataCodetext primaryCodetext = new HIBCLICPrimaryDataCodetext
             {
                 BarcodeType = EncodeTypes.HIBCQRLIC,
                 Data = new PrimaryData
                 {
                     ProductOrCatalogNumber = $"PROD{i:D3}",
-                    LabelerIdentificationCode = $"L{i:D3}",
-                    UnitOfMeasureID = i
+                    LabelerIdentificationCode = "A999",
+                    UnitOfMeasureID = 1
                 }
             };
 
-            // Define the output file path for the generated barcode image
+            // Generate barcode image and save to temporary folder
             string filePath = Path.Combine(tempFolder, $"HIBCPrimary_{i}.png");
-
-            // Generate and save the barcode image
             using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(primaryCodetext))
             {
-                generator.Parameters.Barcode.XDimension.Pixels = 5f;
+                generator.Parameters.Barcode.XDimension.Pixels = 10f;
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
             barcodeFiles.Add(filePath);
         }
 
-        // --------------------------------------------------------------------
-        // Decode each barcode image and log the primary product IDs
-        // --------------------------------------------------------------------
+        // ----------------------------------------------------------------------
+        // Decode each barcode file and log the primary product IDs
+        // ----------------------------------------------------------------------
+        BaseDecodeType decodeType = DecodeType.HIBCQRLIC;
         foreach (string file in barcodeFiles)
         {
-            // Verify that the image file exists before attempting to read it
             if (!File.Exists(file))
             {
                 Console.WriteLine($"File not found: {file}");
@@ -76,50 +72,52 @@ class Program
 
             try
             {
-                // Initialize the barcode reader for HIBC QR LIC symbology
-                using (BarCodeReader reader = new BarCodeReader(file, DecodeType.HIBCQRLIC))
+                using (BarCodeReader reader = new BarCodeReader(file, decodeType))
                 {
-                    BarCodeResult[] results = reader.ReadBarCodes();
-
-                    // Handle case where no barcode was detected in the image
-                    if (results.Length == 0)
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
                     {
-                        Console.WriteLine($"No barcode detected in {Path.GetFileName(file)}");
-                        continue;
-                    }
-
-                    // Process each detected barcode result
-                    foreach (BarCodeResult result in results)
-                    {
-                        // Attempt to decode the HIBC LIC codetext into a strongly‑typed object
+                        // Attempt to decode HIBC LIC complex codetext
                         HIBCLICComplexCodetext complex = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
+                        if (complex == null)
+                        {
+                            Console.WriteLine($"Unable to decode HIBC LIC in file: {file}");
+                            continue;
+                        }
 
-                        // Output the primary product or catalog number based on the decoded type
+                        // Handle primary data codetext (stand‑alone or within combined codetext)
                         if (complex is HIBCLICPrimaryDataCodetext primary)
                         {
-                            Console.WriteLine($"File: {Path.GetFileName(file)} - ProductOrCatalogNumber: {primary.Data.ProductOrCatalogNumber}");
+                            string productId = primary.Data?.ProductOrCatalogNumber ?? "(null)";
+                            Console.WriteLine($"File: {Path.GetFileName(file)} - ProductOrCatalogNumber: {productId}");
                         }
-                        else if (complex is HIBCLICCombinedCodetext combined)
+                        else if (complex is HIBCLICCombinedCodetext combined && combined.PrimaryData != null)
                         {
-                            Console.WriteLine($"File: {Path.GetFileName(file)} - ProductOrCatalogNumber: {combined.PrimaryData.ProductOrCatalogNumber}");
+                            string productId = combined.PrimaryData.ProductOrCatalogNumber ?? "(null)";
+                            Console.WriteLine($"File: {Path.GetFileName(file)} - ProductOrCatalogNumber: {productId}");
                         }
                         else
                         {
-                            Console.WriteLine($"File: {Path.GetFileName(file)} - Unrecognized HIBC LIC codetext.");
+                            Console.WriteLine($"File: {Path.GetFileName(file)} - No primary data found.");
                         }
                     }
                 }
             }
-            // Specific handling for image‑loading errors
             catch (ArgumentException ex)
             {
-                Console.WriteLine($"Error loading image {Path.GetFileName(file)}: {ex.Message}");
+                Console.WriteLine($"Error loading image '{file}': {ex.Message}");
             }
-            // General exception handling to avoid termination of the batch process
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error processing {Path.GetFileName(file)}: {ex.Message}");
-            }
+        }
+
+        // ----------------------------------------------------------------------
+        // Cleanup: delete temporary folder and its contents
+        // ----------------------------------------------------------------------
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // If deletion fails, ignore – folder will be cleaned up by the OS eventually.
         }
     }
 }
