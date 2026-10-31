@@ -1,8 +1,8 @@
-// Title: Checksum Validation for Unsupported Symbology
-// Description: Demonstrates that enabling checksum on a barcode symbology that does not support it (QR) throws an exception.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on checksum handling and error validation. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to illustrate typical scenarios where developers need to verify API behavior when configuring unsupported features. Such examples help developers understand exception handling patterns for barcode symbology settings.
+// Title: Demonstrate checksum validation for unsupported barcode symbology
+// Description: Shows that enabling checksum on a QR code (which lacks checksum support) throws a clear exception.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to configure barcode parameters and handle validation errors. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes, common when developers need to generate barcodes and ensure parameter compatibility. Typical use cases include validating configuration before production deployment.
 // Prompt: Test that setting IsChecksumEnabled true for a symbology lacking checksum support throws a meaningful exception.
-// Tags: barcode, symbology, checksum, exception handling, aspose.barcode, generation, qr, png
+// Tags: barcode symbology, checksum validation, qr code, exception handling, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -10,55 +10,45 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Contains the entry point for the checksum validation example.
+/// Demonstrates that enabling checksum on a QR code (which does not support checksums) results in an exception.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Attempts to enable a checksum on a QR code, which does not support checksums,
-    /// and verifies that a meaningful exception is thrown.
+    /// Entry point that generates a QR code, then attempts to enable checksum and captures the expected exception.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the test files.
-        string tempDir = Path.Combine(Path.GetTempPath(), "ChecksumTest_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary directory for test output
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
+        string qrPath = Path.Combine(tempDir, "qr.png");
 
-        // Define the full path for the output PNG file.
-        string outputFile = Path.Combine(tempDir, "qr.png");
+        // Generate a QR code with default settings (no checksum)
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
+        {
+            generator.Save(qrPath, BarCodeImageFormat.Png);
+            Console.WriteLine($"QR code generated at: {qrPath}");
+        }
 
-        // Initialize the barcode generator with QR symbology and sample data.
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Test"))
+        // Attempt to enable checksum for QR (unsupported symbology) and capture the validation exception
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
         {
             try
             {
-                // Attempt to enable checksum for a symbology that does not support it (QR).
+                // Enable checksum – this should trigger validation failure for QR codes
                 generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-                // Save the generated barcode image; this line should not be reached.
-                generator.Save(outputFile, BarCodeImageFormat.Png);
-                Console.WriteLine("No exception was thrown. Checksum was incorrectly accepted.");
+                // Force barcode generation to invoke validation logic
+                generator.GenerateBarCodeImage();
+
+                Console.WriteLine("Unexpected: QR code generated with checksum enabled.");
             }
             catch (Exception ex)
             {
-                // Expected path: capture and display the exception message.
                 Console.WriteLine("Expected exception caught:");
                 Console.WriteLine(ex.Message);
             }
-        }
-
-        // Clean up temporary files and directory.
-        try
-        {
-            if (File.Exists(outputFile))
-            {
-                File.Delete(outputFile);
-            }
-            Directory.Delete(tempDir, true);
-        }
-        catch
-        {
-            // Ignored – cleanup failures should not affect program exit.
         }
     }
 }

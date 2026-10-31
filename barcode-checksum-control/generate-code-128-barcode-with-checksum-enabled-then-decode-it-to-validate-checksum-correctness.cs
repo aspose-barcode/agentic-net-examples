@@ -1,8 +1,8 @@
-// Title: Generate and Validate a Code 128 Barcode with Checksum
-// Description: Demonstrates how to create a Code 128 barcode with checksum enabled using Aspose.BarCode, save it as PNG, and then decode it to confirm the checksum passes.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, setting checksum options via Parameters.Barcode.IsChecksumEnabled, and BarCodeReader for decoding and validating checksum integrity. Developers working with barcode symbologies often need to ensure data integrity, making checksum validation a common requirement in inventory, shipping, and point‑of‑sale systems.
+// Title: Generate and validate a Code 128 barcode with checksum
+// Description: Demonstrates creating a Code 128 barcode with checksum enabled using Aspose.BarCode, saving it as PNG, and then decoding it to verify the checksum.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for encoding and BarCodeReader for decoding, focusing on checksum handling. Developers working with barcode symbologies often need to ensure data integrity by enabling and validating checksums during generation and scanning.
 // Prompt: Generate a Code 128 barcode with checksum enabled, then decode it to validate checksum correctness.
-// Tags: code128, checksum, barcode generation, barcode recognition, aspose.barcode, png, csharp
+// Tags: code128, checksum, barcode generation, barcode recognition, aspose.barcode, png
 
 using System;
 using System.IO;
@@ -11,60 +11,52 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates generating a Code 128 barcode with checksum enabled and decoding it to verify checksum correctness.
+/// Demonstrates generating a Code 128 barcode with checksum enabled and decoding it to verify correctness.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary folder, generates the barcode image, decodes it, and cleans up.
+    /// Entry point of the example. Generates, saves, decodes, and cleans up a Code 128 barcode.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary folder for the demo files
+        // Create a unique temporary folder for the demo files
         string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Define the full path for the barcode image file
+        // Define the output file path and the text to encode
         string barcodePath = Path.Combine(tempFolder, "code128.png");
+        string codeText = "Aspose123";
 
-        // Generate a Code128 barcode with checksum enabled and save it as PNG
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Aspose123"))
+        // Generate a Code128 barcode with checksum enabled
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image file was successfully created
-        if (!File.Exists(barcodePath))
-        {
-            Console.WriteLine("Failed to create barcode image.");
-            return;
-        }
+        Console.WriteLine($"Barcode saved to: {barcodePath}");
 
-        // Decode the barcode and validate checksum (presence of a result implies checksum passed)
+        // Decode the generated barcode using the appropriate decode type
         BaseDecodeType decodeType = DecodeType.Code128;
         using (BarCodeReader reader = new BarCodeReader(barcodePath, decodeType))
         {
-            // Ensure checksum validation is enabled (default behavior, set explicitly for clarity)
-            reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
-
+            // The reader validates checksum by default; no extra configuration required
             BarCodeResult[] results = reader.ReadBarCodes();
-            if (results.Length > 0)
+
+            if (results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText))
             {
-                foreach (BarCodeResult result in results)
-                {
-                    Console.WriteLine($"Decoded Type: {result.CodeTypeName}");
-                    Console.WriteLine($"Decoded Text: {result.CodeText}");
-                }
-                Console.WriteLine("Checksum validation succeeded.");
+                Console.WriteLine("Barcode decoded successfully.");
+                Console.WriteLine($"Detected Type: {results[0].CodeTypeName}");
+                Console.WriteLine($"Decoded Text: {results[0].CodeText}");
             }
             else
             {
-                Console.WriteLine("No barcode detected or checksum validation failed.");
+                Console.WriteLine("Failed to decode the barcode.");
             }
         }
 
-        // Clean up temporary files and folder
+        // Optional cleanup of temporary files and folder
         try
         {
             File.Delete(barcodePath);
@@ -72,7 +64,7 @@ class Program
         }
         catch
         {
-            // Ignored - cleanup not critical for demo
+            // Suppress any errors during cleanup
         }
     }
 }

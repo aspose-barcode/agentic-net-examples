@@ -1,8 +1,8 @@
-// Title: Disable checksum for Code128 and log exception
-// Description: Demonstrates disabling checksum on a barcode that requires it and logging the resulting exception to a file.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on checksum handling. It shows how to configure the BarcodeGenerator, trigger an error when an obligatory checksum is disabled, and capture the exception using standard .NET I/O. Developers working with barcode symbologies that enforce checksums can use this pattern to log errors for diagnostics.
+// Title: Disable checksum handling for Code11 barcode and log exception
+// Description: Demonstrates generating a Code11 barcode, attempting to disable its mandatory checksum, catching the resulting exception, and writing the error to a log file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on checksum management. It showcases the use of BarcodeGenerator, EncodeTypes, and related parameter classes to create barcodes, handle obligatory checksum settings, and implement robust error handling. Developers working with barcode symbologies that require checksums often need to validate configuration changes and log issues for diagnostics.
 // Prompt: Implement a feature that logs the exception message when disabling checksum for an obligatory‑checksum barcode to a file.
-// Tags: code128, checksum, exception-logging, barcode-generation, aspose.barcode, file-io
+// Tags: code11, checksum, exception handling, logging, aspose.barcode, barcode generation, png, c#
 
 using System;
 using System.IO;
@@ -11,46 +11,65 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that attempts to disable the checksum for a Code128 barcode,
-/// catches the resulting exception, and logs the error message to a file.
+/// Demonstrates barcode generation with Aspose.BarCode, attempts to disable a mandatory checksum,
+/// captures the exception, and logs it to a file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Sets up logging, generates a barcode with checksum disabled,
-    /// and records any exception that occurs.
+    /// Entry point. Generates a Code11 barcode, tries to turn off its required checksum,
+    /// and records any exception to a log file.
     /// </summary>
     static void Main()
     {
-        // Define the path for the log file in the current working directory.
-        string logFile = Path.Combine(Directory.GetCurrentDirectory(), "checksum_error.log");
+        // Prepare temporary directory and file paths
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeChecksumDemo");
+        Directory.CreateDirectory(tempDir);
+        string logFile = Path.Combine(tempDir, "checksum_log.txt");
+        string barcodePath = Path.Combine(tempDir, "code11.png");
 
-        // Remove any existing log file to ensure a clean start.
-        if (File.Exists(logFile))
-            File.Delete(logFile);
+        // --------------------------------------------------------------------
+        // Create a barcode with obligatory checksum (Code11) and save it
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
+        {
+            // Set visual parameter: X-dimension in pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
+            // Save a correct barcode (checksum enabled by default)
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
+        }
+
+        // --------------------------------------------------------------------
+        // Attempt to disable checksum for the same barcode and capture any exception
+        // --------------------------------------------------------------------
         try
         {
-            // Create a barcode generator for Code128 with the data "ABC123".
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
             {
-                // Attempt to disable the checksum, which is mandatory for this symbology.
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+
+                // Disable checksum (should throw for obligatory checksum symbology)
                 generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
 
-                // Generate the barcode image. An exception is expected before this point.
-                using (Bitmap bmp = generator.GenerateBarCodeImage())
+                // Generate barcode image (expected to fail)
+                using (Aspose.Drawing.Bitmap image = generator.GenerateBarCodeImage())
                 {
-                    // Image generation succeeded (unlikely in this scenario).
+                    // If generation unexpectedly succeeds, save the image
+                    string disabledPath = Path.Combine(tempDir, "code11_no_checksum.png");
+                    image.Save(disabledPath, Aspose.Drawing.Imaging.ImageFormat.Png);
                 }
             }
         }
         catch (Exception ex)
         {
-            // Append the exception message to the log file.
-            File.AppendAllText(logFile, ex.Message + Environment.NewLine);
-
-            // Inform the user where the exception was logged.
-            Console.WriteLine("Exception logged to: " + logFile);
+            // Log exception message with timestamp to the log file
+            string logEntry = $"{DateTime.Now:u} - Exception disabling checksum: {ex.Message}{Environment.NewLine}";
+            File.AppendAllText(logFile, logEntry);
         }
+
+        // Output locations for reference
+        Console.WriteLine($"Barcode saved to: {barcodePath}");
+        Console.WriteLine($"Log file written to: {logFile}");
     }
 }

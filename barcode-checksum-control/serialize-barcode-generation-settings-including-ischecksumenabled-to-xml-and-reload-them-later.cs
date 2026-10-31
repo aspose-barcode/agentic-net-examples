@@ -1,8 +1,8 @@
-// Title: Serialize and Reload Barcode Generator Settings via XML
-// Description: Demonstrates how to export barcode generation settings, including checksum enablement, to an XML file and later import them to recreate the barcode.
-// Category-Description: This example belongs to the Aspose.BarCode generation and serialization category. It showcases the use of BarcodeGenerator, its Parameters, and the ExportToXml/ImportFromXml methods to persist and restore settings. Typical scenarios include saving configuration for later reuse, sharing settings across services, or version‑controlling barcode definitions. Developers often need to serialize settings to XML or JSON to integrate barcode generation into automated pipelines or configuration‑driven applications.
+// Title: Serialize barcode generator settings to XML and reload
+// Description: Demonstrates how to configure a barcode generator, export its settings to an XML file, and later import those settings to recreate the barcode.
+// Category-Description: This example belongs to the Aspose.BarCode configuration management category, showing how to use BarcodeGenerator, its Parameters, and the ExportToXml / ImportFromXml methods. Developers often need to persist barcode generation settings for reuse, versioning, or sharing across applications, and this snippet illustrates the typical workflow for saving and reloading generator configurations.
 // Prompt: Serialize barcode generation settings, including IsChecksumEnabled, to XML and reload them later.
-// Tags: barcode symbology, serialization, xml, checksum, generation, aspose.barcode
+// Tags: barcode, serialization, xml, checksum, code39, aspnet, aspose.barcode, generation
 
 using System;
 using System.IO;
@@ -10,55 +10,58 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides a simple demonstration of exporting barcode generator settings to XML,
-/// then importing those settings to generate an identical barcode image.
+/// Example program that creates a barcode, saves its configuration to XML,
+/// reloads the configuration, and generates the barcode again.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a barcode, saves its image, exports settings to XML,
-    /// reloads the settings, and generates a second image from the imported configuration.
+    /// Entry point of the example. Performs barcode generation, XML export/import,
+    /// and saves the resulting images to the temporary folder.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for all demo files
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeXmlDemo_" + Guid.NewGuid().ToString("N"));
+        // Prepare a temporary directory for all output files
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
         Directory.CreateDirectory(tempDir);
 
-        // Define file paths for the XML settings and the two barcode images
+        // Define file paths for the XML configuration and the two barcode images
         string xmlPath = Path.Combine(tempDir, "generator.xml");
-        string imgPathOriginal = Path.Combine(tempDir, "barcode_original.png");
-        string imgPathLoaded = Path.Combine(tempDir, "barcode_loaded.png");
+        string imgOriginal = Path.Combine(tempDir, "original.png");
+        string imgLoaded = Path.Combine(tempDir, "loaded.png");
 
         // --------------------------------------------------------------------
-        // Generate the original barcode, enable checksum, save the image,
-        // and export the generator's configuration to an XML file.
+        // Create a barcode generator, configure checksum and other parameters,
+        // save the barcode image, and export the generator settings to XML.
         // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code39, "Sample123"))
         {
             // Enable checksum calculation for the barcode
             generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
 
-            // Save the generated barcode image as PNG
-            generator.Save(imgPathOriginal, BarCodeImageFormat.Png);
+            // Set the X-dimension (module width) in pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 2;
 
-            // Export the current generator settings (including checksum flag) to XML
+            // Save the generated barcode as a PNG image
+            generator.Save(imgOriginal, BarCodeImageFormat.Png);
+
+            // Export the current generator configuration to an XML file
             generator.ExportToXml(xmlPath);
         }
 
         // --------------------------------------------------------------------
-        // Import the previously saved XML settings and generate a second image
-        // using the restored configuration.
+        // Import the previously saved generator settings from XML and generate
+        // the barcode again, saving it to a separate image file.
         // --------------------------------------------------------------------
         using (var loadedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
         {
-            // Save the barcode image generated from the imported settings
-            loadedGenerator.Save(imgPathLoaded, BarCodeImageFormat.Png);
+            // Save the barcode generated from the imported settings
+            loadedGenerator.Save(imgLoaded, BarCodeImageFormat.Png);
         }
 
         // Output the locations of the generated files for verification
-        Console.WriteLine("Original barcode image: " + imgPathOriginal);
-        Console.WriteLine("Exported XML settings: " + xmlPath);
-        Console.WriteLine("Loaded barcode image: " + imgPathLoaded);
+        Console.WriteLine("Original image: " + imgOriginal);
+        Console.WriteLine("Loaded image: " + imgLoaded);
+        Console.WriteLine("XML configuration: " + xmlPath);
     }
 }

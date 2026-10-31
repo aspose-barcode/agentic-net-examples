@@ -1,70 +1,71 @@
-// Title: List optional‑checksum symbologies and export to JSON
-// Description: Demonstrates how to identify barcode symbologies that support optional checksums by inspecting the Aspose.BarCode EncodeTypes enumeration and writing the results to a JSON file.
-// Category-Description: This example belongs to the Aspose.BarCode enumeration and symbology discovery category. It shows how to use reflection with EncodeTypes and BaseEncodeType, create BarcodeGenerator instances, and query the IsChecksumEnabled property. Developers often need to programmatically list supported symbologies for validation, UI population, or documentation purposes.
+// Title: Generate JSON list of optional‑checksum barcode symbologies
+// Description: The example extracts barcode symbologies that support optional checksums from Aspose.BarCode's EncodeTypes and writes them to a JSON file.
+// Category-Description: This example belongs to the barcode metadata extraction category, demonstrating how to inspect the Aspose.BarCode API via reflection to retrieve information about supported symbologies. It uses the EncodeTypes class and BaseEncodeType objects to identify symbologies with optional checksum features, a common need when configuring barcode generation or validation logic. Developers often need to programmatically enumerate symbology capabilities for documentation, UI population, or custom processing.
 // Prompt: Document optional‑checksum symbologies by parsing the library enumeration and outputting the list to a JSON file.
-// Tags: barcode symbology, optional checksum, enumeration parsing, json output, aspose.barcode, reflection
+// Tags: barcode symbology, reflection, json output, aspose.barcode, encode types, optional checksum
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text.Json;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Program that discovers barcode symbologies with optional checksum support and writes them to a JSON file.
+/// Demonstrates how to discover barcode symbologies that support optional checksums
+/// and serialize the resulting list to a JSON file using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Scans EncodeTypes, creates generators, checks checksum setting, and serializes results.
+    /// Entry point of the example. Reflects over <see cref="EncodeTypes"/> to find
+    /// symbologies with optional checksum support and writes their type names to a JSON file.
     /// </summary>
     static void Main()
     {
-        // Collection to hold names of symbologies with optional checksum
-        var optionalChecksumSymbologies = new List<string>();
-
-        // Retrieve all public static fields of EncodeTypes (each represents a barcode symbology)
-        FieldInfo[] fields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
-        foreach (FieldInfo field in fields)
+        // Define the set of field names in EncodeTypes that correspond to optional‑checksum symbologies.
+        var optionalFieldNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            // Consider only fields whose type derives from BaseEncodeType
-            if (!typeof(BaseEncodeType).IsAssignableFrom(field.FieldType))
-                continue;
+            "Codabar",
+            "Code39FullASCII",
+            "ItalianPost25",
+            "Interleaved2Of5",
+            "Matrix2Of5",
+            "MSI",
+            "Pharmacode",
+            "PatchCode",
+            "PZN",
+            "Standard2Of5"
+        };
 
-            string symbologyName = field.Name;
-            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+        // List that will hold the human‑readable type names of the matching symbologies.
+        var optionalSymbologies = new List<string>();
 
-            // Attempt to instantiate a generator with a sample code text
-            try
+        // Retrieve all public static fields from the EncodeTypes class via reflection.
+        FieldInfo[] fields = typeof(EncodeTypes).GetFields(BindingFlags.Public | BindingFlags.Static);
+        foreach (var field in fields)
+        {
+            // Process only the fields whose names are in the predefined optional checksum set.
+            if (optionalFieldNames.Contains(field.Name))
             {
-                using (var generator = new BarcodeGenerator(encodeType, "12345"))
+                // Each field holds a BaseEncodeType instance; extract its TypeName property.
+                if (field.GetValue(null) is BaseEncodeType encodeType)
                 {
-                    // If the default checksum setting is 'No', the checksum is optional for this symbology
-                    if (generator.Parameters.Barcode.IsChecksumEnabled == EnableChecksum.No)
-                    {
-                        optionalChecksumSymbologies.Add(symbologyName);
-                    }
+                    optionalSymbologies.Add(encodeType.TypeName);
                 }
-            }
-            catch
-            {
-                // Skip symbologies that cannot be instantiated with the sample text
-                continue;
             }
         }
 
-        // Serialize the list to a formatted JSON string
-        string json = JsonSerializer.Serialize(optionalChecksumSymbologies, new JsonSerializerOptions { WriteIndented = true });
+        // Serialize the list to a formatted JSON string.
+        string json = JsonSerializer.Serialize(optionalSymbologies, new JsonSerializerOptions { WriteIndented = true });
 
-        // Determine output file path in the current working directory
+        // Determine the output file path in the current working directory.
         string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "optional_checksum_symbologies.json");
 
-        // Write JSON content to the file
+        // Write the JSON content to the file.
         File.WriteAllText(outputPath, json);
 
-        // Inform the user where the file was saved
+        // Inform the user where the file was created.
         Console.WriteLine($"Optional checksum symbologies written to: {outputPath}");
     }
 }
