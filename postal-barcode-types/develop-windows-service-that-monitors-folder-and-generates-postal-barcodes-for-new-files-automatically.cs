@@ -1,94 +1,82 @@
-// Title: Generate RM4SCC Postal Barcodes from Files
-// Description: Demonstrates creating temporary input files, generating RM4SCC postal barcodes for each file, and saving them as PNG images.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It shows how to use BarcodeGenerator (EncodeTypes.RM4SCC) to create postal barcodes, customize dimensions, and save them as images. It also illustrates reading back the generated barcode with BarCodeReader (DecodeType.RM4SCC) for verification. Developers working with postal services, logistics, or any scenario requiring RM4SCC barcodes will find this pattern useful.
+// Title: Generate Postal Barcodes for Files in a Temporary Folder
+// Description: Demonstrates creating a temporary input folder, generating a Postnet barcode for each file, and saving the images to an output folder.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on postal symbologies such as Postnet. It showcases the use of BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce barcode images programmatically. Developers often need to automate barcode creation for mailing workflows, batch processing, or integration with document management systems.
 // Prompt: Develop a Windows service that monitors a folder and generates postal barcodes for new files automatically.
-// Tags: postal barcode, rm4scc, barcode generation, barcode recognition, image output, aspose.barcode, c#
+// Tags: postal barcode, postnet, barcode generation, image output, aspose.barcode, csharp
 
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample console application that creates temporary files, generates RM4SCC postal barcodes for each file,
-/// saves the barcodes as PNG images, and optionally verifies them by reading back the generated images.
+/// Demonstrates generating Postnet barcodes for files placed in a temporary input folder and saving them as PNG images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Executes the barcode generation workflow.
+    /// Entry point of the example. Creates temporary folders, processes a sample file, generates a barcode, and saves the result.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // 1. Create a unique temporary input folder and populate it with sample files.
+        // 1. Set up a unique temporary input folder and write a sample file.
         // --------------------------------------------------------------------
         string inputFolder = Path.Combine(Path.GetTempPath(), "PostalInput_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(inputFolder);
-        var inputFiles = new string[3];
-        for (int i = 0; i < inputFiles.Length; i++)
-        {
-            string filePath = Path.Combine(inputFolder, $"Sample{i + 1}.txt");
-            File.WriteAllText(filePath, $"Sample content {i + 1}");
-            inputFiles[i] = filePath;
-        }
+        string sampleFilePath = Path.Combine(inputFolder, "sample.txt");
+        File.WriteAllText(sampleFilePath, "Sample content for postal barcode generation.");
 
         // --------------------------------------------------------------------
-        // 2. Create a unique temporary output folder for the generated barcode images.
+        // 2. Set up a unique temporary output folder for the generated barcodes.
         // --------------------------------------------------------------------
-        string outputFolder = Path.Combine(Path.GetTempPath(), "PostalOutput_" + Guid.NewGuid().ToString("N"));
+        string outputFolder = Path.Combine(Path.GetTempPath(), "PostalBarcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputFolder);
 
         // --------------------------------------------------------------------
-        // 3. Process each input file: generate an RM4SCC barcode based on the file index,
-        //    save the barcode image, and optionally read it back for verification.
+        // 3. Prepare the list of files to process.
+        //    (In a real service this list would be built by monitoring the folder.)
         // --------------------------------------------------------------------
-        for (int i = 0; i < inputFiles.Length; i++)
+        List<string> filesToProcess = new List<string> { sampleFilePath };
+
+        // --------------------------------------------------------------------
+        // 4. Iterate over each file and generate a Postnet barcode.
+        // --------------------------------------------------------------------
+        foreach (string filePath in filesToProcess)
         {
-            string file = inputFiles[i];
-            if (!File.Exists(file))
+            // Verify that the file still exists before processing.
+            if (!File.Exists(filePath))
             {
-                Console.WriteLine($"File not found: {file}");
+                Console.WriteLine($"File not found: {filePath}");
                 continue;
             }
 
-            // Build a code text suitable for RM4SCC (example format).
-            string codeText = $"RM9996050{i + 1:D2}CH";
+            // Fixed numeric code suitable for a Postnet barcode (for demo purposes).
+            string codeText = "1234567890";
 
-            // Generate the barcode image using Aspose.BarCode.
-            using (var generator = new BarcodeGenerator(EncodeTypes.RM4SCC, codeText))
+            // Resolve the symbology type (Postnet) via EncodeTypes static field.
+            BaseEncodeType encodeType = EncodeTypes.Postnet;
+
+            // Create the barcode generator with the chosen symbology and data.
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Set the X-dimension (module width) to 2 pixels for better readability.
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                // Configure typical parameters for postal barcodes.
+                generator.Parameters.Barcode.XDimension.Pixels = 2f;   // Width of the smallest bar element.
+                generator.Parameters.Barcode.BarHeight.Pixels = 100f; // Height of the barcode.
 
-                // Determine the output PNG file path.
-                string outputPath = Path.Combine(outputFolder, Path.GetFileNameWithoutExtension(file) + ".png");
+                // Build the output file path (same name as input, but with .png extension).
+                string outputFile = Path.Combine(outputFolder, Path.GetFileNameWithoutExtension(filePath) + ".png");
 
-                // Save the generated barcode as a PNG image.
-                generator.Save(outputPath, BarCodeImageFormat.Png);
-                Console.WriteLine($"Generated barcode for '{Path.GetFileName(file)}' at '{outputPath}'");
-
-                // ----------------------------------------------------------------
-                // Optional verification: read back the generated barcode image.
-                // ----------------------------------------------------------------
-                using (Bitmap bitmap = generator.GenerateBarCodeImage())
-                {
-                    using (var reader = new BarCodeReader(bitmap, DecodeType.RM4SCC))
-                    {
-                        foreach (BarCodeResult result in reader.ReadBarCodes())
-                        {
-                            Console.WriteLine($"Read back: Type={result.CodeTypeName}, Text={result.CodeText}");
-                        }
-                    }
-                }
+                // Save the generated barcode image in PNG format.
+                generator.Save(outputFile, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated barcode for '{filePath}' at '{outputFile}'.");
             }
         }
 
         // --------------------------------------------------------------------
-        // 4. Cleanup (optional): delete the temporary folders created for the demo.
+        // 5. Optional cleanup – delete temporary folders after the demo.
         // --------------------------------------------------------------------
         // Directory.Delete(inputFolder, true);
         // Directory.Delete(outputFolder, true);

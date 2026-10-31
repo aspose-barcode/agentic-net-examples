@@ -1,115 +1,111 @@
-// Title: Barcode Generation with JSON Logging Example
-// Description: Demonstrates creating a Code128 barcode image and recording generation parameters and results to a structured JSON log file.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator class to produce barcodes, configure visual parameters, and persist operation details. Developers often need to log barcode creation settings and outcomes for auditing, debugging, or analytics; this snippet illustrates capturing those details in a JSON file using System.Text.Json.
+// Title: Barcode Generation with JSON Logging
+// Description: Demonstrates generating a QR barcode using Aspose.BarCode and logging generation parameters and results to a JSON file.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to create barcodes, configure key parameters (such as XDimension and error correction level), and persist operation details in a structured JSON log. Developers working with barcode creation, image output, and audit trails can use this pattern to capture metadata for debugging, reporting, or compliance purposes.
 // Prompt: Implement logging of barcode generation parameters and outcomes to a structured JSON log file.
-// Tags: barcode, code128, json logging, aspose.barcode, image generation, parameters
+// Tags: qr, barcode, generation, json, logging, aspose.barcode, png
 
 using System;
 using System.IO;
+using System.Text;
 using System.Text.Json;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Holds visual parameter values of a generated barcode for logging purposes.
+/// Represents a log entry for a barcode generation operation.
 /// </summary>
-class ParametersInfo
+class LogEntry
 {
-    public float XDimension { get; set; }
-    public float BarHeight { get; set; }
-    public string BarColor { get; set; }
-    public string BackColor { get; set; }
-    public float RotationAngle { get; set; }
-}
-
-/// <summary>
-/// Represents a complete log entry for a barcode generation operation.
-/// </summary>
-class BarcodeLog
-{
-    public DateTime Timestamp { get; set; }
+    public string Timestamp { get; set; }
     public string Symbology { get; set; }
     public string CodeText { get; set; }
-    public ParametersInfo Parameters { get; set; }
-    public string Outcome { get; set; }
+    public float XDimensionPixels { get; set; }
+    public string ErrorLevel { get; set; }
     public string OutputPath { get; set; }
-    public string ErrorMessage { get; set; }
+    public bool Success { get; set; }
+    public string Message { get; set; }
 }
 
 /// <summary>
-/// Entry point for the barcode generation demo.
+/// Demo program that generates a QR barcode and writes a JSON log.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Generates a barcode image, logs parameters and outcome to JSON, and saves both files.
+    /// Entry point that creates the barcode, logs details, and writes output files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for output files.
-        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Prepare a unique temporary output folder.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
 
-        // Define paths for the barcode image and the JSON log file.
-        string imagePath = Path.Combine(outputDir, "barcode.png");
-        string logPath = Path.Combine(outputDir, "log.json");
+        // Define the path for the JSON log file.
+        string logFilePath = Path.Combine(outputDir, "barcode_log.json");
 
-        // Choose barcode symbology and the text to encode.
-        BaseEncodeType encodeType = EncodeTypes.Code128;
-        string codeText = "1234567890";
+        // Sample barcode data.
+        string symbologyName = "QR";
+        string codeText = "Aspose.BarCode JSON Log Demo";
 
-        // Initialize the log entry with static information.
-        var log = new BarcodeLog
+        // Resolve the symbology enum value via reflection.
+        FieldInfo field = typeof(EncodeTypes).GetField(symbologyName);
+        if (field == null)
         {
-            Timestamp = DateTime.UtcNow,
+            Console.WriteLine($"Unknown symbology: {symbologyName}");
+            return;
+        }
+        BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+        // Determine the output image file path.
+        string imagePath = Path.Combine(outputDir, $"{encodeType.TypeName}.png");
+
+        // Initialize the log entry with basic information.
+        LogEntry log = new LogEntry
+        {
+            Timestamp = DateTime.UtcNow.ToString("o"),
             Symbology = encodeType.TypeName,
             CodeText = codeText,
-            Outcome = "Success",
-            OutputPath = imagePath
+            OutputPath = imagePath,
+            Success = false
         };
 
         try
         {
-            // Create the barcode generator with the selected symbology and data.
-            using (var generator = new BarcodeGenerator(encodeType, codeText))
+            // Create the barcode generator with the selected symbology and text.
+            using (BarcodeGenerator generator = new BarcodeGenerator(encodeType, codeText))
             {
-                // Configure visual parameters of the barcode.
-                generator.Parameters.Barcode.XDimension.Point = 2f;
-                generator.Parameters.Barcode.BarHeight.Point = 30f;
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Parameters.RotationAngle = 0f;
+                // Configure barcode appearance and error correction.
+                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
+                generator.Parameters.Barcode.BarColor = Color.Black;
+                generator.Parameters.BackColor = Color.White;
 
-                // Capture the configured parameters for logging.
-                log.Parameters = new ParametersInfo
-                {
-                    XDimension = generator.Parameters.Barcode.XDimension.Point,
-                    BarHeight = generator.Parameters.Barcode.BarHeight.Point,
-                    BarColor = generator.Parameters.Barcode.BarColor.ToString(),
-                    BackColor = generator.Parameters.BackColor.ToString(),
-                    RotationAngle = generator.Parameters.RotationAngle
-                };
-
-                // Save the generated barcode image to the specified path.
+                // Save the generated barcode as a PNG image.
                 generator.Save(imagePath, BarCodeImageFormat.Png);
+
+                // Populate additional log details after successful generation.
+                log.XDimensionPixels = generator.Parameters.Barcode.XDimension.Pixels;
+                log.ErrorLevel = generator.Parameters.Barcode.QR.ErrorLevel.ToString();
+                log.Success = true;
+                log.Message = "Barcode generated successfully.";
             }
         }
         catch (Exception ex)
         {
-            // Record failure details in the log if an exception occurs.
-            log.Outcome = "Failure";
-            log.ErrorMessage = ex.Message;
+            // Capture any errors that occurred during generation.
+            log.Success = false;
+            log.Message = $"Error: {ex.Message}";
         }
 
-        // Serialize the log object to a formatted JSON string.
-        string json = JsonSerializer.Serialize(log, new JsonSerializerOptions { WriteIndented = true });
+        // Serialize the log entry to formatted JSON and append it to the log file.
+        var options = new JsonSerializerOptions { WriteIndented = true };
+        string json = JsonSerializer.Serialize(log, options);
+        File.AppendAllText(logFilePath, json + Environment.NewLine, Encoding.UTF8);
 
-        // Write the JSON log to the file system.
-        File.WriteAllText(logPath, json);
-
-        // Output the locations of the generated files for user reference.
-        Console.WriteLine($"Barcode image saved to: {imagePath}");
-        Console.WriteLine($"Log written to: {logPath}");
+        // Output the locations of the generated files for verification.
+        Console.WriteLine($"Barcode image: {imagePath}");
+        Console.WriteLine($"Log file: {logFilePath}");
     }
 }

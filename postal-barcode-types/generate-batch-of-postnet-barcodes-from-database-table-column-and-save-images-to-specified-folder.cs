@@ -1,95 +1,64 @@
-// Title: Generate Postnet barcodes from a list and save as PNG files
-// Description: Demonstrates how to create Postnet barcodes for a collection of ZIP codes and store each barcode image in a temporary folder.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of BarcodeGenerator with EncodeTypes.Postnet. It covers setting visual parameters, validating input data, and saving images in PNG format—common tasks for developers building mailing or shipping applications that require postal barcode output.
+// Title: Generate Postnet barcodes and save as PNG images
+// Description: This example creates Postnet barcodes for a collection of numeric strings and writes each barcode to a PNG file in a uniquely named temporary directory.
+// Category-Description: Demonstrates batch barcode generation using Aspose.BarCode for the Postnet symbology. It showcases the BarcodeGenerator class, EncodeTypes enumeration, and image saving with BarCodeImageFormat. Typical scenarios include generating postal barcodes from database values for shipping labels or bulk printing.
 // Prompt: Generate a batch of Postnet barcodes from a database table column and save images to a specified folder.
-// Tags: postnet, barcode, generation, png, aspose.barcode, csharp
+// Tags: postnet, barcode, generation, png, aspose.barcode, batch, image, c#, encode
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates Postnet barcodes for a set of ZIP codes
-/// and writes each barcode image to a uniquely named PNG file in a temporary folder.
+/// Example program that generates Postnet barcodes from a list of codes and saves them as PNG images.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Iterates over a list of ZIP codes,
-    /// validates each entry, creates a Postnet barcode, and saves the image to disk.
+    /// Entry point. Generates barcodes, saves them, and writes progress to the console.
     /// </summary>
     static void Main()
     {
-        // -----------------------------------------------------------------
-        // In a real scenario, the following list would be populated from a
-        // database table column (e.g., SELECT ZipCode FROM PostalCodes).
-        // The database code is omitted because the required ADO.NET
-        // providers are not available in the snippet runner.
-        // -----------------------------------------------------------------
-        List<string> zipCodes = new List<string>
+        // Sample data that would normally come from a database column
+        List<string> postnetCodes = new List<string>
         {
-            "12345",
-            "90210",
-            "10001",
-            "33109",
-            "60614"
+            "123456",
+            "1159628792",
+            "9876543210",
+            "55555",
+            "00123"
         };
 
-        // Create a dedicated output folder inside the system temporary directory.
-        string outputFolder = Path.Combine(Path.GetTempPath(),
-            "PostnetBatch_" + Guid.NewGuid().ToString("N"));
+        // Create a unique output folder in the system temporary directory
+        string outputFolder = Path.Combine(Path.GetTempPath(), "PostnetBarcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputFolder);
-
-        Console.WriteLine("Generating Postnet barcodes in: " + outputFolder);
+        Console.WriteLine("Saving barcodes to: " + outputFolder);
 
         int index = 1;
-        foreach (string zip in zipCodes)
+        // Iterate over each code and generate a barcode image
+        foreach (string code in postnetCodes)
         {
-            // Validate that the ZIP code consists only of numeric characters.
-            if (string.IsNullOrWhiteSpace(zip) || !IsAllDigits(zip))
+            // Build the file path for the current barcode image
+            string filePath = Path.Combine(outputFolder, $"Postnet_{index}.png");
+
+            // Initialize the barcode generator with Postnet symbology and the current code
+            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, code))
             {
-                Console.WriteLine($"Skipping invalid zip code '{zip}'.");
-                continue;
-            }
+                // Configure typical Postnet parameters
+                generator.Parameters.Barcode.XDimension.Pixels = 3f;          // Width of a single module
+                generator.Parameters.Barcode.BarHeight.Pixels = 50f;        // Overall bar height
+                generator.Parameters.Barcode.Postal.ShortBarHeight.Pixels = 20f; // Height of short bars
 
-            // Build the full file path for the current barcode image.
-            string filePath = Path.Combine(outputFolder,
-                $"Postnet_{index:D3}_{zip}.png");
-
-            // Initialize the barcode generator with Postnet symbology and the ZIP code text.
-            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, zip))
-            {
-                // Configure visual appearance of the barcode.
-                generator.Parameters.Barcode.XDimension.Pixels = 3f;          // Width of a single bar.
-                generator.Parameters.Barcode.BarHeight.Pixels = 50f;        // Height of the tall bars.
-                generator.Parameters.Barcode.Postal.ShortBarHeight.Pixels = 20f; // Height of the short bars.
-
-                // Save the generated barcode as a PNG image.
+                // Save the generated barcode as a PNG file
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
 
-            Console.WriteLine($"Saved: {filePath}");
+            Console.WriteLine($"Generated barcode {index}: {code}");
             index++;
         }
 
         Console.WriteLine("Barcode generation completed.");
-    }
-
-    /// <summary>
-    /// Determines whether the supplied string consists exclusively of decimal digits.
-    /// </summary>
-    /// <param name="s">String to evaluate.</param>
-    /// <returns>True if every character is a digit; otherwise, false.</returns>
-    static bool IsAllDigits(string s)
-    {
-        foreach (char c in s)
-        {
-            if (c < '0' || c > '9')
-                return false;
-        }
-        return true;
     }
 }

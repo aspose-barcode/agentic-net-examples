@@ -1,8 +1,8 @@
-// Title: Generate default configuration XML for postal barcode symbologies
-// Description: This example creates XML configuration files that define default XDimension, BarHeight, and FilledBars settings for a set of postal barcode types.
-// Category-Description: Demonstrates how to use Aspose.BarCode Generation API to export barcode generator parameters to XML. Typical use cases include establishing standard barcode appearance for postal services such as Planet, RM4SCC, Postnet, DutchKIX, OneCode, and AustraliaPost. Developers often need to create reusable configuration files to ensure consistent barcode rendering across applications.
+// Title: Export and Import Postal Barcode Configuration via XML
+// Description: Demonstrates how to create an XML configuration file that defines default XDimension, BarHeight, and FilledBars for postal barcodes, then reuse it to generate a barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode generation and configuration category. It shows how to use BarcodeGenerator to set default barcode parameters, export them to an XML configuration file, and import the configuration for later barcode creation. Developers working with postal symbologies often need to standardize visual settings across multiple barcodes; this pattern provides a reusable, file‑based approach using the Parameters, ExportToXml, and ImportFromXml APIs.
 // Prompt: Create a configuration file that defines default XDimension, BarHeight, and FilledBars for all postal barcode operations.
-// Tags: postal barcode, configuration, xdimension, barheight, filledbars, aspose.barcode, xml export
+// Tags: postal, barcode, configuration, xml, xdimension, barheight, filledbars, generation, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,50 +10,46 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates exporting default barcode generation settings to XML for various postal symbologies.
+/// Example program that exports default postal barcode settings to an XML file
+/// and then imports them to generate a barcode image.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates configuration XML files for each postal barcode type with predefined XDimension, BarHeight, and FilledBars values.
+    /// Entry point. Creates a configuration file with default XDimension, BarHeight,
+    /// and FilledBars for postal barcodes, then generates a barcode using that configuration.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory to store the generated XML configuration files.
-        string outputDir = Path.Combine(Path.GetTempPath(), "PostalConfigDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
+        // Define file paths for the configuration XML and the output image
+        string configPath = Path.Combine(Directory.GetCurrentDirectory(), "postalConfig.xml");
+        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "PostalFromConfig.png");
 
-        // Define the set of postal barcode types, sample text, and a friendly name for each configuration.
-        var configs = new (BaseEncodeType encode, string text, string name)[]
+        // Create a sample generator to define default settings and export them to XML
+        using (var generator = new BarcodeGenerator(EncodeTypes.Planet, "123456"))
         {
-            (EncodeTypes.Planet, "123456", "Planet"),
-            (EncodeTypes.RM4SCC, "123456", "RM4SCC"),
-            (EncodeTypes.Postnet, "123456", "Postnet"),
-            (EncodeTypes.DutchKIX, "123456", "DutchKIX"),
-            (EncodeTypes.OneCode, "12345678901234567890", "OneCode"),
-            (EncodeTypes.AustraliaPost, "1100000000", "AustraliaPost")
-        };
+            // Set default parameters for postal barcodes
+            generator.Parameters.Barcode.XDimension.Pixels = 3f;   // Width of the smallest bar element
+            generator.Parameters.Barcode.BarHeight.Pixels = 50f; // Height of the barcode bars
+            generator.Parameters.Barcode.FilledBars = false;    // Use unfilled (hollow) bars
 
-        // Iterate over each barcode configuration, set default parameters, and export to XML.
-        foreach (var cfg in configs)
-        {
-            using (var generator = new BarcodeGenerator(cfg.encode, cfg.text))
-            {
-                // Set default visual parameters for the barcode.
-                generator.Parameters.Barcode.XDimension.Pixels = 4f;
-                generator.Parameters.Barcode.BarHeight.Pixels = 50f;
-                generator.Parameters.Barcode.FilledBars = true;
-
-                // Build the full path for the XML file and export the configuration.
-                string xmlPath = Path.Combine(outputDir, $"{cfg.name}Config.xml");
-                generator.ExportToXml(xmlPath);
-
-                // Inform the user about the generated file.
-                Console.WriteLine($"Exported {cfg.name} configuration to: {xmlPath}");
-            }
+            // Export the configuration to an XML file for later reuse
+            generator.ExportToXml(configPath);
         }
 
-        // Final status message.
-        Console.WriteLine("All postal barcode default configurations have been generated.");
+        // Import the configuration from XML and generate a barcode using the defaults
+        using (var importedGenerator = BarcodeGenerator.ImportFromXml(configPath))
+        {
+            // Apply the desired symbology and code text
+            importedGenerator.BarcodeType = EncodeTypes.Planet;
+            importedGenerator.CodeText = "123456";
+
+            // Save the generated barcode image as PNG
+            importedGenerator.Save(outputPath, BarCodeImageFormat.Png);
+        }
+
+        // Inform the user where the files were created
+        Console.WriteLine("Configuration exported to: " + configPath);
+        Console.WriteLine("Barcode generated using configuration: " + outputPath);
     }
 }

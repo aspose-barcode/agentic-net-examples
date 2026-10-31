@@ -1,8 +1,8 @@
-// Title: Generate a Planet postal barcode with custom margins and verify dimensions
-// Description: Demonstrates creating a Planet postal barcode, applying custom padding, and checking that the resulting image size reflects the margin changes.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the BarcodeGenerator class, EncodeTypes enumeration, and image handling via Aspose.Drawing. Typical use cases include generating postal barcodes with specific layout requirements, adjusting padding for printing constraints, and validating output dimensions. Developers often need to customize barcode appearance and verify rendering results programmatically.
+// Title: Generate Postal Planet Barcode with Custom Padding and Verify Image Size
+// Description: Demonstrates creating a Planet postal barcode, applying custom margin (padding) settings, and confirming that the resulting image dimensions reflect the added padding.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on postal symbologies. It showcases the use of BarcodeGenerator, setting XDimension, BarHeight, and Padding properties, and saving the output as PNG. Developers working with postal barcodes often need to adjust margins for layout requirements and verify image dimensions for downstream processing.
 // Prompt: Generate a postal barcode with custom margin settings and verify image dimensions match expectations.
-// Tags: postal barcode, margin, padding, image dimensions, aspose.barcode, aspose.drawing, generation
+// Tags: postal barcode, padding, image dimensions, aspose.barcode, barcodegenerator, png, verification
 
 using System;
 using System.IO;
@@ -13,86 +13,92 @@ using Aspose.Drawing.Imaging;
 
 /// <summary>
 /// Demonstrates generating a Planet postal barcode with and without custom padding,
-/// saving the images, and verifying that padding affects the image dimensions.
+/// saving the images, and verifying that the padding affects image dimensions as expected.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates output directory, generates two barcode images,
-    /// and prints verification results to the console.
+    /// Entry point of the example. Generates barcode images, applies custom padding,
+    /// saves them to a temporary folder, and writes verification results to the console.
     /// </summary>
     static void Main()
     {
-        // Define and create the output folder for generated barcode images
+        // Prepare output directory in the system temporary folder
         string outputDir = Path.Combine(Path.GetTempPath(), "PostalBarcodeDemo");
         Directory.CreateDirectory(outputDir);
 
-        // -------------------------------------------------
-        // Generate default barcode (no custom padding)
-        // -------------------------------------------------
-        int defaultWidth, defaultHeight;
-        string defaultPath = Path.Combine(outputDir, "PlanetDefault.png");
-        using (var generator = new BarcodeGenerator(EncodeTypes.Planet, "123456"))
+        // Common barcode settings
+        string codeText = "123456";
+        BaseEncodeType encodeType = EncodeTypes.Planet;
+        float xDim = 4f;          // Width of the smallest bar (X-dimension) in pixels
+        float barHeight = 50f;    // Height of the barcode bars in pixels
+
+        // ------------------------------------------------------------
+        // Generate barcode without custom padding
+        // ------------------------------------------------------------
+        int widthNoPad, heightNoPad;
+        string pathNoPad = Path.Combine(outputDir, "PostalPlanet_NoPadding.png");
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
             // Set basic barcode dimensions
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+            generator.Parameters.Barcode.XDimension.Pixels = xDim;
+            generator.Parameters.Barcode.BarHeight.Pixels = barHeight;
 
-            // Render the barcode to a bitmap and capture its size
+            // Render the barcode image
             using (Bitmap bmp = generator.GenerateBarCodeImage())
             {
-                defaultWidth = bmp.Width;
-                defaultHeight = bmp.Height;
-                // Save the default image as PNG
-                bmp.Save(defaultPath, ImageFormat.Png);
+                widthNoPad = bmp.Width;
+                heightNoPad = bmp.Height;
+
+                // Save the image as PNG
+                bmp.Save(pathNoPad, ImageFormat.Png);
             }
         }
 
-        // -------------------------------------------------
-        // Generate barcode with custom margins (padding)
-        // -------------------------------------------------
-        int paddedWidth, paddedHeight;
-        string paddedPath = Path.Combine(outputDir, "PlanetPadded.png");
-        using (var generator = new BarcodeGenerator(EncodeTypes.Planet, "123456"))
+        // ------------------------------------------------------------
+        // Generate barcode with custom padding (margin)
+        // ------------------------------------------------------------
+        int widthPad, heightPad;
+        string pathPad = Path.Combine(outputDir, "PostalPlanet_WithPadding.png");
+
+        // Padding values in pixels
+        float padLeft = 10f, padRight = 10f, padTop = 20f, padBottom = 20f;
+
+        using (var generator = new BarcodeGenerator(encodeType, codeText))
         {
             // Set basic barcode dimensions
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+            generator.Parameters.Barcode.XDimension.Pixels = xDim;
+            generator.Parameters.Barcode.BarHeight.Pixels = barHeight;
 
-            // Apply custom padding on all sides (20 pixels each)
-            generator.Parameters.Barcode.Padding.Left.Pixels = 20f;
-            generator.Parameters.Barcode.Padding.Right.Pixels = 20f;
-            generator.Parameters.Barcode.Padding.Top.Pixels = 20f;
-            generator.Parameters.Barcode.Padding.Bottom.Pixels = 20f;
+            // Apply custom padding to each side
+            generator.Parameters.Barcode.Padding.Left.Pixels = padLeft;
+            generator.Parameters.Barcode.Padding.Right.Pixels = padRight;
+            generator.Parameters.Barcode.Padding.Top.Pixels = padTop;
+            generator.Parameters.Barcode.Padding.Bottom.Pixels = padBottom;
 
-            // Render the padded barcode to a bitmap and capture its size
+            // Render the barcode image with padding
             using (Bitmap bmp = generator.GenerateBarCodeImage())
             {
-                paddedWidth = bmp.Width;
-                paddedHeight = bmp.Height;
+                widthPad = bmp.Width;
+                heightPad = bmp.Height;
+
                 // Save the padded image as PNG
-                bmp.Save(paddedPath, ImageFormat.Png);
+                bmp.Save(pathPad, ImageFormat.Png);
             }
         }
 
-        // -------------------------------------------------
-        // Verification: compare dimensions of default vs padded images
-        // -------------------------------------------------
-        bool widthIncreased = paddedWidth > defaultWidth;
-        bool heightIncreased = paddedHeight > defaultHeight;
+        // ------------------------------------------------------------
+        // Verify that the padded image dimensions increased as expected
+        // ------------------------------------------------------------
+        bool widthMatches = widthPad == widthNoPad + (int)(padLeft + padRight);
+        bool heightMatches = heightPad == heightNoPad + (int)(padTop + padBottom);
 
-        Console.WriteLine($"Default image size: {defaultWidth}x{defaultHeight}");
-        Console.WriteLine($"Padded image size: {paddedWidth}x{paddedHeight}");
-        Console.WriteLine($"Width increased: {widthIncreased}");
-        Console.WriteLine($"Height increased: {heightIncreased}");
-
-        if (widthIncreased && heightIncreased)
-        {
-            Console.WriteLine("Custom margin settings applied successfully.");
-        }
-        else
-        {
-            Console.WriteLine("Margin settings did not affect image dimensions as expected.");
-        }
+        Console.WriteLine($"No padding image size:  {widthNoPad}x{heightNoPad}");
+        Console.WriteLine($"With padding image size: {widthPad}x{heightPad}");
+        Console.WriteLine($"Expected width increase:  {padLeft + padRight} pixels");
+        Console.WriteLine($"Expected height increase: {padTop + padBottom} pixels");
+        Console.WriteLine($"Width verification: {(widthMatches ? "PASS" : "FAIL")}");
+        Console.WriteLine($"Height verification: {(heightMatches ? "PASS" : "FAIL")}");
+        Console.WriteLine($"Images saved to: {outputDir}");
     }
 }

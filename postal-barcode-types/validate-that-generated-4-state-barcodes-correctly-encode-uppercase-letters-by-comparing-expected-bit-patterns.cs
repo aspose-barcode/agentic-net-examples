@@ -1,15 +1,16 @@
-// Title: Validate RM4SCC 4‑state barcode encoding of uppercase letters
-// Description: Generates RM4SCC barcodes for each uppercase alphabet character, saves them as PNG files, then reads them back to verify that the decoded text matches the original.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It demonstrates how to use BarcodeGenerator (EncodeTypes.RM4SCC) to create 4‑state barcodes, and BarCodeReader (DecodeType.RM4SCC) to decode them. Typical use cases include automated testing of barcode symbologies, batch processing of inventory codes, and validation of encoding logic. Developers often need to generate barcodes, persist them in image formats, and later verify correctness via the recognition API.
-/// Prompt: Validate that generated 4‑state barcodes correctly encode uppercase letters by comparing expected bit patterns.
-/// Tags: barcode symbology, generation, recognition, validation, rm4scc, png, csharp, aspose.barcode
+// Title: Validate RM4SCC 4‑State Barcode Encoding for Uppercase Letters
+// Description: Generates RM4SCC barcodes for each uppercase alphabet character, reads them back, and verifies that the decoded text matches the original.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It demonstrates using BarcodeGenerator with EncodeTypes.RM4SCC and BarCodeReader with DecodeType.RM4SCC to validate encoding correctness. Developers often need to ensure that 4‑state barcodes such as RM4SCC correctly represent data, especially when integrating barcode scanning in logistics or document processing systems.
+// Prompt: Validate that generated 4‑state barcodes correctly encode uppercase letters by comparing expected bit patterns.
+// Tags: barcode, rm4scc, generation, recognition, validation, csharp, aspose.barcode
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
 /// Demonstrates generation and validation of RM4SCC (4‑state) barcodes for all uppercase letters.
@@ -17,87 +18,76 @@ using Aspose.Drawing;
 class Program
 {
     /// <summary>
-    /// Entry point. Generates barcodes, saves them, then reads each back to ensure the encoded text matches the original letter.
+    /// Entry point. Generates a temporary folder, creates barcodes for A‑Z, reads them back,
+    /// compares decoded values with the original characters, reports mismatches, and cleans up.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "FourStateTest_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for generated barcodes
+        string tempFolder = Path.Combine(Path.GetTempPath(), "FourStateValidation_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // Build a list containing all uppercase letters A‑Z
+        // Build a list of uppercase letters to test (A‑Z)
         List<char> letters = new List<char>();
-        for (char c = 'A'; c <= 'Z'; c++)
-        {
-            letters.Add(c);
-        }
+        for (char c = 'A'; c <= 'Z'; c++) letters.Add(c);
 
-        // -----------------------------------------------------------------
-        // Generate RM4SCC barcodes for each letter and save them as PNG files
-        // -----------------------------------------------------------------
+        // Collect any mismatches between expected and decoded values
+        List<string> mismatches = new List<string>();
+
+        // Iterate over each letter, generate its barcode, and validate decoding
         foreach (char letter in letters)
         {
             string codeText = letter.ToString();
             string filePath = Path.Combine(tempFolder, $"RM4SCC_{letter}.png");
 
+            // Generate the RM4SCC barcode image
             using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.RM4SCC, codeText))
             {
-                // Optional visual parameters: set module size and bar height
-                generator.Parameters.Barcode.XDimension.Pixels = 4;
-                generator.Parameters.Barcode.BarHeight.Pixels = 50;
-
-                // Save the generated barcode image
+                generator.Parameters.Barcode.XDimension.Pixels = 4;   // Set module width
+                generator.Parameters.Barcode.BarHeight.Pixels = 50; // Set bar height
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-        }
 
-        // ---------------------------------------------------------------
-        // Validate each generated barcode by decoding it and comparing text
-        // ---------------------------------------------------------------
-        bool allValid = true;
-        foreach (char letter in letters)
-        {
-            string expected = letter.ToString();
-            string filePath = Path.Combine(tempFolder, $"RM4SCC_{letter}.png");
-
-            // Ensure the file was created
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"File missing: {filePath}");
-                allValid = false;
-                continue;
-            }
-
-            string decoded = null;
-
-            // Decode the barcode using the RM4SCC symbology
+            // Read back the generated barcode and decode its text
             using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.RM4SCC))
             {
-                foreach (var result in reader.ReadBarCodes())
+                BarCodeResult[] results = reader.ReadBarCodes();
+                if (results.Length == 0)
                 {
-                    decoded = result.CodeText;
-                    break; // Take the first decoded result
+                    mismatches.Add($"{letter}: No barcode detected.");
+                    continue;
                 }
-            }
 
-            // Evaluate decoding outcome
-            if (decoded == null)
-            {
-                Console.WriteLine($"Failed to decode barcode for '{expected}'.");
-                allValid = false;
-            }
-            else if (!decoded.Equals(expected, StringComparison.Ordinal))
-            {
-                Console.WriteLine($"Mismatch for '{expected}': decoded as '{decoded}'.");
-                allValid = false;
-            }
-            else
-            {
-                Console.WriteLine($"Success: '{expected}' encoded and decoded correctly.");
+                string decodedText = results[0].CodeText;
+                if (!string.Equals(decodedText, codeText, StringComparison.Ordinal))
+                {
+                    mismatches.Add($"{letter}: Expected '{codeText}', got '{decodedText}'.");
+                }
             }
         }
 
-        // Summarize validation results
-        Console.WriteLine(allValid ? "All uppercase letters validated successfully." : "Some validations failed.");
+        // Output validation results to the console
+        if (mismatches.Count == 0)
+        {
+            Console.WriteLine("All uppercase letters encoded and decoded correctly for RM4SCC.");
+        }
+        else
+        {
+            Console.WriteLine("Mismatches found:");
+            foreach (string msg in mismatches)
+            {
+                Console.WriteLine(msg);
+            }
+        }
+
+        // Attempt to clean up the temporary folder and its contents
+        try
+        {
+            Directory.Delete(tempFolder, true);
+        }
+        catch
+        {
+            // If cleanup fails, ignore – the OS will eventually remove the files
+        }
     }
 }

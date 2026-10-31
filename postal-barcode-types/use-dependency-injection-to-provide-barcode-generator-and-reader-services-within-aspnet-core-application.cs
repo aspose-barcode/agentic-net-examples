@@ -1,130 +1,145 @@
-// Title: Demonstrate Dependency Injection for Barcode Generation and Reading in a Console App
-// Description: Shows how to use Aspose.BarCode to generate a Code128 barcode image and read it back, using a simple DI pattern.
-// Category-Description: This example belongs to the Aspose.BarCode operations category covering barcode creation and recognition. It illustrates the use of BarcodeGenerator, BarCodeReader, and related parameter classes, typical for developers needing to integrate barcode functionality via dependency injection in .NET applications.
+// Title: Dependency Injection Demo for Aspose.BarCode in a Console App
+// Description: Demonstrates how to inject barcode generator and reader services using interfaces, mimicking ASP.NET Core DI, and performs generation and reading of a Code128 barcode.
+// Category-Description: This example belongs to the Aspose.BarCode .NET library collection showing service‑oriented patterns. It highlights key API classes such as BarcodeGenerator, BarCodeReader, and related parameter objects. Typical use cases include generating barcodes for labels and scanning them in back‑office systems, where developers often register these services in an ASP.NET Core DI container for clean architecture.
 // Prompt: Use dependency injection to provide barcode generator and reader services within an ASP.NET Core application.
-// Tags: code128, barcode generation, barcode reading, png, aspnet core, dependency injection, aspose.barcode
+// Tags: barcode, code128, generation, reading, dependency injection, aspnet core, aspose.barcode, png
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
-namespace BarcodeDiConsoleApp
+namespace BarcodeDiConsole
 {
-    // Service contract for barcode generation
+    /// <summary>
+    /// Service contract for generating barcodes.
+    /// </summary>
     public interface IBarcodeGeneratorService
     {
         void Generate(string codeText, string outputPath);
     }
 
-    // Service contract for barcode reading
+    /// <summary>
+    /// Service contract for reading barcodes from images.
+    /// </summary>
     public interface IBarcodeReaderService
     {
-        void Read(string imagePath);
+        string Read(string imagePath);
     }
 
-    // Concrete implementation that creates a barcode image using Aspose.BarCode
+    /// <summary>
+    /// Implements <see cref="IBarcodeGeneratorService"/> using Aspose.BarCode's <see cref="BarcodeGenerator"/>.
+    /// </summary>
     public class BarcodeGeneratorService : IBarcodeGeneratorService
     {
         public void Generate(string codeText, string outputPath)
         {
-            // Ensure the output directory exists
-            string directory = Path.GetDirectoryName(outputPath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            // Create and configure the barcode generator
+            // Create a generator for Code128 symbology with the supplied text.
             using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
-                generator.Parameters.Barcode.XDimension.Point = 2f;
+                // Simple appearance settings.
                 generator.Parameters.Barcode.BarColor = Color.Black;
                 generator.Parameters.BackColor = Color.White;
+                generator.Parameters.RotationAngle = 0f;
+                generator.Parameters.Resolution = 300f;
+
+                // Save the generated barcode as a PNG file.
                 generator.Save(outputPath, BarCodeImageFormat.Png);
             }
-
-            Console.WriteLine($"Barcode generated and saved to: {outputPath}");
-        }
-    }
-
-    // Concrete implementation that reads a barcode image using Aspose.BarCode
-    public class BarcodeReaderService : IBarcodeReaderService
-    {
-        public void Read(string imagePath)
-        {
-            if (!File.Exists(imagePath))
-            {
-                Console.WriteLine($"File not found: {imagePath}");
-                return;
-            }
-
-            // Specify the expected symbology for decoding
-            BaseDecodeType decodeType = DecodeType.Code128;
-            using (var reader = new BarCodeReader(imagePath, decodeType))
-            {
-                // Iterate through all detected barcodes (checksum validation is on by default)
-                foreach (var result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"Decoded text: {result.CodeText}");
-                }
-            }
-        }
-    }
-
-    // Minimalistic service container to simulate ASP.NET Core DI in a console app
-    public class ServiceProvider
-    {
-        private readonly Dictionary<Type, object> _services = new Dictionary<Type, object>();
-
-        // Register a service implementation
-        public void Add<TService>(TService implementation) where TService : class
-        {
-            _services[typeof(TService)] = implementation;
-        }
-
-        // Resolve a registered service
-        public TService Get<TService>() where TService : class
-        {
-            if (_services.TryGetValue(typeof(TService), out var service))
-            {
-                return service as TService;
-            }
-
-            throw new InvalidOperationException($"Service of type {typeof(TService).Name} not registered.");
         }
     }
 
     /// <summary>
-    /// Simple console application demonstrating DI for barcode services.
+    /// Implements <see cref="IBarcodeReaderService"/> using Aspose.BarCode's <see cref="BarCodeReader"/>.
+    /// </summary>
+    public class BarcodeReaderService : IBarcodeReaderService
+    {
+        public string Read(string imagePath)
+        {
+            // Verify that the image file exists before attempting to read.
+            if (!File.Exists(imagePath))
+            {
+                Console.WriteLine($"File not found: {imagePath}");
+                return string.Empty;
+            }
+
+            // Restrict decoding to Code128 for this demo.
+            BaseDecodeType decodeType = DecodeType.Code128;
+            using (var reader = new BarCodeReader(imagePath, decodeType))
+            {
+                // Iterate through all detected barcodes.
+                foreach (var result in reader.ReadBarCodes())
+                {
+                    // In evaluation mode non‑Code39 results have masked text,
+                    // so we consider any non‑empty result as a successful read.
+                    if (!string.IsNullOrEmpty(result.CodeText))
+                    {
+                        return result.CodeText;
+                    }
+                }
+            }
+
+            // Return empty string if no readable barcode was found.
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Console demo of DI‑based barcode services.
     /// </summary>
     class Program
     {
         /// <summary>
-        /// Entry point: sets up services, generates a barcode, and reads it.
+        /// Entry point that composes services, generates a barcode, reads it back, and cleans up temporary files.
         /// </summary>
         static void Main()
         {
-            // Simulate ASP.NET Core DI with a basic ServiceProvider
-            var serviceProvider = new ServiceProvider();
-            serviceProvider.Add<IBarcodeGeneratorService>(new BarcodeGeneratorService());
-            serviceProvider.Add<IBarcodeReaderService>(new BarcodeReaderService());
+            // In a real ASP.NET Core app these services would be registered in the DI container.
+            // Here we manually compose them for a console demonstration.
 
-            // Resolve services
-            var generator = serviceProvider.Get<IBarcodeGeneratorService>();
-            var reader = serviceProvider.Get<IBarcodeReaderService>();
+            IBarcodeGeneratorService generatorService = new BarcodeGeneratorService();
+            IBarcodeReaderService readerService = new BarcodeReaderService();
 
-            // Prepare temporary folder and file path
-            string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+            // Prepare a temporary folder and file path for the barcode image.
+            string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempFolder);
             string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-            // Generate a Code128 barcode and then read it back
-            generator.Generate("1234567890", barcodePath);
-            reader.Read(barcodePath);
+            string sampleText = "ABC123456";
+
+            // Generate the barcode image.
+            generatorService.Generate(sampleText, barcodePath);
+            Console.WriteLine($"Barcode generated at: {barcodePath}");
+
+            // Read the barcode back from the image.
+            string decodedText = readerService.Read(barcodePath);
+            if (!string.IsNullOrEmpty(decodedText))
+            {
+                Console.WriteLine($"Decoded text: {decodedText}");
+            }
+            else
+            {
+                Console.WriteLine("No barcode detected or decoding failed.");
+            }
+
+            // Clean up temporary files and directory.
+            try
+            {
+                if (File.Exists(barcodePath))
+                {
+                    File.Delete(barcodePath);
+                }
+                if (Directory.Exists(tempFolder))
+                {
+                    Directory.Delete(tempFolder, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Cleanup error: {ex.Message}");
+            }
         }
     }
 }

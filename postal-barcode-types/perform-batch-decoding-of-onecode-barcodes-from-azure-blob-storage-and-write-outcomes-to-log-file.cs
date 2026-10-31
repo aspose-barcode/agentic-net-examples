@@ -1,133 +1,126 @@
-// Title: Batch decode OneCode barcodes and write results to a log file
-// Description: Demonstrates generating a set of OneCode barcodes, decoding them in a batch, and recording the outcomes in a text log. Useful for validating OneCode recognition in automated pipelines.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to use BarcodeGenerator for OneCode creation and BarCodeReader for OneCode recognition. Typical use cases include bulk validation of barcode data, automated quality checks, and integration tests where developers need to generate, read, and log multiple barcodes efficiently.
+// Title: Batch decode OneCode barcodes and log results
+// Description: Demonstrates generating OneCode barcodes, attempting batch decoding, and writing outcomes to a log file.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing category, illustrating how to generate OneCode barcodes, use BarCodeReader for batch decoding, and record results. It showcases key classes such as BarcodeGenerator, BarCodeReader, and BarCodeResult, which developers commonly use for bulk barcode operations, logging, and integration with storage services.
 // Prompt: Perform batch decoding of OneCode barcodes from an Azure Blob storage and write outcomes to a log file.
-// Tags: onecode, barcode, batch, decode, log, aspose.barcode, csharp
+// Tags: onecode, batch-decoding, log-file, aspose.barcode, barcode-generation, barcode-recognition
 
 using System;
 using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Sample program that creates a temporary set of OneCode barcode images,
-/// decodes each image using <see cref="BarCodeReader"/>, and writes a detailed
-/// log of the decoding results to a text file.
+/// Example program that generates OneCode barcodes, attempts to decode them in batch,
+/// and records the results in a log file. Includes commented‑out Azure Blob Storage
+/// integration for reference.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Executes the generation, batch decoding,
-    /// and logging workflow for OneCode barcodes.
+    /// Entry point of the example. Creates temporary files, generates barcodes,
+    /// decodes them, and writes a detailed log.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // 1. Create a unique temporary folder for generated barcode images.
-        // --------------------------------------------------------------------
+        // ----------------------------------------------------------------------
+        // Create a unique temporary folder for the batch operation
+        // ----------------------------------------------------------------------
         string tempFolder = Path.Combine(Path.GetTempPath(), "OneCodeBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // --------------------------------------------------------------------
-        // 2. Define sample OneCode codetexts (valid lengths and second digit 0‑4).
-        // --------------------------------------------------------------------
-        List<string> codeTexts = new List<string>
+        // Path for the log file that will capture generation and decoding outcomes
+        string logFile = Path.Combine(tempFolder, "OneCodeDecodeLog.txt");
+
+        // ----------------------------------------------------------------------
+        // Sample OneCode codetexts (valid lengths: 20, 25, 29, 31 digits; second digit 0‑4)
+        // ----------------------------------------------------------------------
+        List<string> sampleCodes = new List<string>
         {
-            "12345678901234567890",               // 20 digits, second digit '2'
-            "1034567890123456789012",             // 22 digits (invalid length) – will be skipped
-            "1204567890123456789012345",          // 25 digits, second digit '2'
-            "13045678901234567890123456789",      // 29 digits, second digit '3'
-            "14045678901234567890123456789012"    // 31 digits, second digit '4'
+            "12345678901234567890",          // 20 digits, second digit '2'
+            "1234567890123456789012345",    // 25 digits, second digit '2'
+            "12345678901234567890123456789" // 29 digits, second digit '2'
         };
 
-        // --------------------------------------------------------------------
-        // 3. Generate barcode images for the valid codetexts.
-        // --------------------------------------------------------------------
-        List<string> imageFiles = new List<string>();
-        foreach (string text in codeTexts)
+        // ----------------------------------------------------------------------
+        // Generate barcode images and log the process
+        // ----------------------------------------------------------------------
+        List<string> barcodeFiles = new List<string>();
+        foreach (string code in sampleCodes)
         {
-            // Validate length (20, 25, 29, 31) and ensure the second digit is between 0‑4.
-            if ((text.Length == 20 || text.Length == 25 || text.Length == 29 || text.Length == 31) &&
-                text.Length > 1 && text[1] >= '0' && text[1] <= '4')
+            string filePath = Path.Combine(tempFolder, $"OneCode_{code.Length}.png");
+            try
             {
-                string filePath = Path.Combine(tempFolder, $"OneCode_{text.Length}.png");
-                try
+                using (var generator = new BarcodeGenerator(EncodeTypes.OneCode, code))
                 {
-                    using (var generator = new BarcodeGenerator(EncodeTypes.OneCode, text))
-                    {
-                        generator.Save(filePath, BarCodeImageFormat.Png);
-                    }
-                    imageFiles.Add(filePath);
+                    // No additional parameters required for OneCode generation
+                    generator.Save(filePath, BarCodeImageFormat.Png);
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to generate barcode for text '{text}': {ex.Message}");
-                }
+
+                barcodeFiles.Add(filePath);
+                File.AppendAllText(logFile, $"Generated barcode image: {filePath}{Environment.NewLine}");
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine($"Skipping invalid OneCode codetext: {text}");
+                File.AppendAllText(logFile, $"Failed to generate barcode for code '{code}': {ex.Message}{Environment.NewLine}");
             }
         }
 
-        // --------------------------------------------------------------------
-        // 4. Prepare the log file that will capture decoding results.
-        // --------------------------------------------------------------------
-        string logPath = Path.Combine(tempFolder, "OneCodeDecodeLog.txt");
-        File.WriteAllText(logPath, $"OneCode batch decode started at {DateTime.Now}\n");
-
-        // --------------------------------------------------------------------
-        // 5. Decode each generated image using BarCodeReader with DecodeType.OneCode.
-        // --------------------------------------------------------------------
-        BaseDecodeType decodeType = DecodeType.OneCode;
-        foreach (string imagePath in imageFiles)
+        // ----------------------------------------------------------------------
+        // Batch decode the generated OneCode images and log results
+        // ----------------------------------------------------------------------
+        foreach (string imagePath in barcodeFiles)
         {
             if (!File.Exists(imagePath))
             {
-                File.AppendAllText(logPath, $"File not found: {imagePath}\n");
+                File.AppendAllText(logFile, $"File not found: {imagePath}{Environment.NewLine}");
                 continue;
             }
 
             try
             {
-                using (var reader = new BarCodeReader(imagePath, decodeType))
+                using (var reader = new BarCodeReader(imagePath, DecodeType.OneCode))
                 {
+                    // OneCode recognition is not supported; expecting zero results
                     BarCodeResult[] results = reader.ReadBarCodes();
                     if (results.Length == 0)
                     {
-                        File.AppendAllText(logPath,
-                            $"No barcode detected in '{Path.GetFileName(imagePath)}' (expected – OneCode recognition unsupported).\n");
+                        File.AppendAllText(logFile, $"No barcode detected in '{Path.GetFileName(imagePath)}' (expected – OneCode not supported).{Environment.NewLine}");
                     }
                     else
                     {
                         foreach (var result in results)
                         {
-                            File.AppendAllText(logPath,
-                                $"Detected in '{Path.GetFileName(imagePath)}': Type={result.CodeTypeName}, Text={result.CodeText}\n");
+                            File.AppendAllText(logFile, $"Detected OneCode in '{Path.GetFileName(imagePath)}': Type={result.CodeTypeName}, Data={result.CodeText}{Environment.NewLine}");
                         }
                     }
                 }
             }
-            catch (ArgumentException ae)
-            {
-                File.AppendAllText(logPath,
-                    $"Image loading failed for '{Path.GetFileName(imagePath)}': {ae.Message}\n");
-            }
             catch (Exception ex)
             {
-                File.AppendAllText(logPath,
-                    $"Error processing '{Path.GetFileName(imagePath)}': {ex.Message}\n");
+                File.AppendAllText(logFile, $"Error reading '{Path.GetFileName(imagePath)}': {ex.Message}{Environment.NewLine}");
             }
         }
 
-        // --------------------------------------------------------------------
-        // 6. Finalize the log and inform the user where it is stored.
-        // --------------------------------------------------------------------
-        File.AppendAllText(logPath, $"OneCode batch decode completed at {DateTime.Now}\n");
-        Console.WriteLine($"Log written to: {logPath}");
+        // ----------------------------------------------------------------------
+        // Inform the user where the log file is located
+        // ----------------------------------------------------------------------
+        Console.WriteLine($"Batch decoding completed. Log file located at: {logFile}");
+
+        // ----------------------------------------------------------------------
+        // Azure Blob Storage integration (commented out – requires Azure.Storage.Blobs package)
+        // ----------------------------------------------------------------------
+        // string connectionString = "<Your Azure Blob Storage connection string>";
+        // string containerName = "<Your container name>";
+        // string blobName = "<Your blob name>";
+        // var blobClient = new BlobClient(connectionString, containerName, blobName);
+        // using (var downloadStream = new MemoryStream())
+        // {
+        //     blobClient.DownloadTo(downloadStream);
+        //     downloadStream.Position = 0;
+        //     // Process the downloaded image stream with BarCodeReader as shown above
+        // }
     }
 }

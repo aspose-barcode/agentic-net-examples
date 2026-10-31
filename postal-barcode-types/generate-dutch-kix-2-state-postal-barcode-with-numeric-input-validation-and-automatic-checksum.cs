@@ -1,96 +1,77 @@
-// Title: Generate Dutch KIX 2‑state postal barcode with checksum
-// Description: Demonstrates creating a Dutch KIX 2‑state postal barcode from a numeric string, validating input, calculating the checksum, and saving the image as PNG.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.DutchKIX. It shows typical steps such as input validation, checksum calculation, setting barcode parameters, and exporting to an image file—common tasks for developers implementing postal barcode solutions.
+// Title: Generate Dutch KIX 2‑state Postal Barcode with Validation and Checksum
+// Description: Demonstrates creating a Dutch KIX barcode from a numeric string, validating the input, and saving the image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It shows how to use BarcodeGenerator with EncodeTypes.DutchKIX, configure visual parameters, and verify the barcode using BarCodeReader. Developers working with postal symbologies often need to generate KIX barcodes, validate numeric data, and read back the encoded information.
 // Prompt: Generate a Dutch KIX 2‑state postal barcode with numeric input validation and automatic checksum.
-// Tags: dutch,kix,barcode,generation,checksum,validation,image,png
+// Tags: barcode, generation, recognition, dutch kix, postal, validation, checksum, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a Dutch KIX 2‑state postal barcode with numeric validation and automatic checksum.
+/// Demonstrates generating and reading a Dutch KIX 2‑state postal barcode with numeric validation.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Validates numeric input, appends checksum, generates barcode, and saves as PNG.
+    /// Entry point. Generates a Dutch KIX barcode from a numeric string, saves it as PNG, and reads it back to verify.
     /// </summary>
     static void Main()
     {
-        // Input string to be encoded; must be numeric.
-        string input = "123456";
+        // Sample numeric input; replace with any numeric string as needed
+        string input = "1234567890";
 
-        try
+        // Validate that the input contains only digits
+        if (string.IsNullOrEmpty(input) || !IsAllDigits(input))
         {
-            // Validate that the input contains only digits.
-            string numeric = ValidateNumericInput(input);
+            throw new ArgumentException("Input must be a non‑empty string of numeric digits only.");
+        }
 
-            // Calculate and append the checksum digit.
-            string codeText = AppendChecksum(numeric);
+        // Prepare a temporary output folder and file path
+        string outputFolder = Path.Combine(Path.GetTempPath(), "KIXDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
+        string outputPath = Path.Combine(outputFolder, "DutchKIX.png");
 
-            // Determine a temporary file path for the output image.
-            string outputPath = Path.Combine(Path.GetTempPath(), "DutchKIX.png");
+        // Generate Dutch KIX barcode using the validated input
+        using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, input))
+        {
+            // Optional visual settings: set module size and bar height
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            generator.Parameters.Barcode.BarHeight.Pixels = 50;
 
-            // Create a barcode generator for the Dutch KIX symbology.
-            using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, codeText))
+            // Save the generated barcode image as PNG
+            generator.Save(outputPath, BarCodeImageFormat.Png);
+        }
+
+        Console.WriteLine($"Dutch KIX barcode saved to: {outputPath}");
+
+        // Read back the barcode image to verify its content
+        using (var bitmap = (Bitmap)Image.FromFile(outputPath))
+        {
+            BaseDecodeType decodeType = DecodeType.DutchKIX;
+            using (var reader = new BarCodeReader(bitmap, decodeType))
             {
-                // Set the X-dimension (module width) to 4 pixels for better readability.
-                generator.Parameters.Barcode.XDimension.Pixels = 4;
-
-                // Save the generated barcode as a PNG image.
-                generator.Save(outputPath, BarCodeImageFormat.Png);
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"Decoded Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Decoded Text: {result.CodeText}");
+                }
             }
-
-            Console.WriteLine($"Dutch KIX barcode saved to: {outputPath}");
-        }
-        catch (Exception ex)
-        {
-            // Output any validation or generation errors.
-            Console.WriteLine($"Error: {ex.Message}");
         }
     }
 
-    /// <summary>
-    /// Ensures the provided text consists solely of numeric digits.
-    /// </summary>
-    /// <param name="text">The input string to validate.</param>
-    /// <returns>The original string if validation succeeds.</returns>
-    /// <exception cref="ArgumentException">Thrown when the input is null, empty, or contains non‑digit characters.</exception>
-    static string ValidateNumericInput(string text)
+    // Helper method to ensure a string consists solely of digit characters
+    static bool IsAllDigits(string s)
     {
-        if (string.IsNullOrEmpty(text))
-            throw new ArgumentException("Input cannot be null or empty.");
-
-        foreach (char c in text)
+        foreach (char c in s)
         {
-            if (!char.IsDigit(c))
-                throw new ArgumentException("Input must contain only numeric digits.");
+            if (c < '0' || c > '9')
+                return false;
         }
-
-        return text;
-    }
-
-    /// <summary>
-    /// Calculates a simple modulo‑10 checksum and appends it to the numeric string.
-    /// </summary>
-    /// <param name="numeric">The numeric string without checksum.</param>
-    /// <returns>The numeric string with the checksum digit appended.</returns>
-    static string AppendChecksum(string numeric)
-    {
-        int sum = 0;
-
-        // Sum all digit values.
-        foreach (char c in numeric)
-        {
-            sum += c - '0';
-        }
-
-        // Modulo‑10 checksum.
-        int checksum = sum % 10;
-
-        // Append checksum to the original numeric string.
-        return numeric + checksum.ToString();
+        return true;
     }
 }

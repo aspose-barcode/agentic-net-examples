@@ -1,6 +1,6 @@
-// Title: Generate OneCode 2‑state postal barcode with 8‑digit numeric string
-// Description: Demonstrates creating a OneCode 2‑state postal barcode from an 8‑digit numeric value using default settings and saving it as a PNG image.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to use the BarcodeGenerator class with EncodeTypes.OneCode to produce postal barcodes. Typical use cases include encoding postal routing information for mail automation. Developers often need to generate barcode images for printing or digital workflows, and this snippet shows the basic steps: instantiate the generator, optionally configure properties, and save the image.
+// Title: Generate OneCode 2‑state postal barcode from 8‑digit numeric string
+// Description: Demonstrates creating a OneCode 2‑state postal barcode using Aspose.BarCode with an 8‑digit numeric input and saving it as a PNG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on postal symbologies. It shows how to use the BarcodeGenerator class with EncodeTypes.OneCode to produce a OneCode 2‑state barcode, a common requirement for postal automation and mailing systems. Developers often need to generate such barcodes programmatically for batch processing, label printing, or integration with mailing software.
 // Prompt: Generate a OneCode 2‑state postal barcode using an 8‑digit numeric string and default settings.
 // Tags: onecode, postal barcode, generation, png, aspose.barcode, csharp
 
@@ -15,33 +15,35 @@ using Aspose.BarCode.Generation;
 class Program
 {
     /// <summary>
-    /// Entry point. Creates the barcode image and writes the output path to the console.
+    /// Entry point. Generates the barcode and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define a temporary directory for the output image
-        string outputDir = Path.Combine(Path.GetTempPath(), "OneCodeDemo");
-        Directory.CreateDirectory(outputDir); // Ensure the directory exists
+        // Define the 8‑digit numeric string to encode.
+        string codeText = "12345678";
 
-        // Build the full file path for the PNG image
-        string outputPath = Path.Combine(outputDir, "OneCode8Digits.png");
+        // Build the output directory path relative to the current working directory.
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
+        Directory.CreateDirectory(outputDir); // Ensure the directory exists.
+
+        // Full path for the generated PNG image.
+        string outputPath = Path.Combine(outputDir, "OneCode_8Digits.png");
 
         try
         {
-            // Initialize the generator with OneCode symbology and an 8‑digit numeric string
-            using (var generator = new BarcodeGenerator(EncodeTypes.OneCode, "12345678"))
+            // Initialize the barcode generator with OneCode symbology and the provided text.
+            using (var generator = new BarcodeGenerator(EncodeTypes.OneCode, codeText))
             {
-                // No additional settings are changed; default configuration is used
-                generator.Save(outputPath, BarCodeImageFormat.Png); // Save the barcode as PNG
+                // Save the barcode using default settings to a PNG file.
+                generator.Save(outputPath, BarCodeImageFormat.Png);
             }
 
-            // Inform the user where the barcode image was saved
-            Console.WriteLine($"OneCode barcode saved to: {outputPath}");
+            Console.WriteLine($"Barcode generated successfully: {outputPath}");
         }
         catch (Exception ex)
         {
-            // Output any errors that occur during barcode generation
-            Console.WriteLine($"Error generating OneCode barcode: {ex.Message}");
+            // Output any errors that occur during generation.
+            Console.WriteLine($"Failed to generate OneCode barcode: {ex.Message}");
         }
     }
 }

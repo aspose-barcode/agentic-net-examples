@@ -1,18 +1,18 @@
-// Title: Generate Dutch KIX Barcodes from JSON and Save as BMP
-// Description: This example reads a JSON array of identifiers, creates a Dutch KIX barcode for each identifier using Aspose.BarCode, and saves the images as BMP files.
-// Category-Description: Demonstrates Aspose.BarCode generation of Dutch KIX symbology. Shows how to deserialize JSON input, configure barcode parameters, and export images in BMP format. Useful for developers needing to batch‑create KIX barcodes for inventory, logistics, or retail applications.
+// Title: Generate Dutch KIX barcodes from JSON identifiers and save as BMP
+// Description: This example reads a JSON array of identifier strings, creates Dutch KIX barcodes for each, and saves them as BMP image files in a temporary folder.
+// Category-Description: Demonstrates Aspose.BarCode barcode generation using the BarcodeGenerator class with EncodeTypes.DutchKIX. Typical scenarios include batch creation of barcode images from data sources such as JSON, XML, or databases, and exporting them to common image formats for printing or digital use. Developers working with barcode symbologies often need to configure dimensions, output paths, and handle input parsing, which this example illustrates.
 // Prompt: Generate Dutch KIX barcodes using a JSON array of identifiers and export each as BMP images.
-// Tags: barcode, dutchkix, json, bmp, aspose.barcode, generation, c#
+// Tags: dutchkix, barcode, generation, bmp, json, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that generates Dutch KIX barcodes from a JSON array of identifiers
-/// and saves each barcode as a BMP image using the Aspose.BarCode library.
+/// Sample program that generates Dutch KIX barcodes from a JSON array and saves them as BMP files.
 /// </summary>
 class Program
 {
@@ -21,23 +21,16 @@ class Program
     /// </summary>
     static void Main()
     {
-        // ------------------------------------------------------------
-        // Define a JSON array containing the identifiers to encode.
-        // ------------------------------------------------------------
-        string json = "[\"123456ASPOSE\",\"ABC123\",\"9876543210\"]";
+        // Sample JSON array containing the identifiers to encode as barcodes
+        string json = "[\"123456ASPOSE\",\"9876543210\",\"ABCDEF\"]";
 
-        // ------------------------------------------------------------
-        // Deserialize the JSON into a string array.
-        // ------------------------------------------------------------
+        // Parse the JSON string into a string array; handle any parsing errors gracefully
         string[] identifiers;
         try
         {
             identifiers = JsonSerializer.Deserialize<string[]>(json);
             if (identifiers == null)
-            {
-                Console.WriteLine("No identifiers found in JSON.");
-                return;
-            }
+                throw new ArgumentException("JSON does not contain a valid array.");
         }
         catch (Exception ex)
         {
@@ -45,51 +38,30 @@ class Program
             return;
         }
 
-        // ------------------------------------------------------------
-        // Prepare the output directory for the generated BMP files.
-        // ------------------------------------------------------------
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "DutchKIX_Barcodes");
-        try
-        {
-            Directory.CreateDirectory(outputDir);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to create output directory: {ex.Message}");
-            return;
-        }
+        // Create a unique temporary output folder for the generated BMP images
+        string outputFolder = Path.Combine(Path.GetTempPath(), "DutchKIX_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputFolder);
 
-        // ------------------------------------------------------------
-        // Iterate over each identifier, generate a barcode, and save it.
-        // ------------------------------------------------------------
-        foreach (string id in identifiers)
+        // Iterate over each identifier, generate a barcode, and save it as a BMP file
+        for (int i = 0; i < identifiers.Length; i++)
         {
-            // Skip empty or whitespace identifiers.
-            if (string.IsNullOrWhiteSpace(id))
-                continue;
+            string codeText = identifiers[i];
+            string filePath = Path.Combine(outputFolder, $"DutchKIX_{i}.bmp");
 
-            // Build the full file path for the BMP image.
-            string filePath = Path.Combine(outputDir, $"{id}_DutchKIX.bmp");
-
-            try
+            // Initialize the barcode generator with Dutch KIX symbology and the current identifier
+            using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, codeText))
             {
-                // Create a barcode generator for Dutch KIX symbology.
-                using (var generator = new BarcodeGenerator(EncodeTypes.DutchKIX, id))
-                {
-                    // Optional: adjust size parameters for better readability.
-                    generator.Parameters.Barcode.XDimension.Pixels = 4f;
-                    generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+                // Optional: configure barcode dimensions (pixel size and height)
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+                generator.Parameters.Barcode.BarHeight.Pixels = 50;
 
-                    // Save the generated barcode as a BMP image.
-                    generator.Save(filePath, BarCodeImageFormat.Bmp);
-                }
+                // Save the generated barcode image as BMP to the specified file path
+                generator.Save(filePath, BarCodeImageFormat.Bmp);
+            }
 
-                Console.WriteLine($"Generated barcode for '{id}' at '{filePath}'.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error generating barcode for '{id}': {ex.Message}");
-            }
+            Console.WriteLine($"Generated barcode for '{codeText}' at: {filePath}");
         }
+
+        Console.WriteLine("All barcodes have been generated.");
     }
 }

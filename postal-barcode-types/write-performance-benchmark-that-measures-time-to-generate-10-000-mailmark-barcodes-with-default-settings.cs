@@ -1,63 +1,80 @@
-// Title: Performance benchmark for generating Mailmark barcodes
-// Description: Demonstrates measuring the time required to generate 10,000 Mailmark barcodes using Aspose.BarCode with default settings.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation performance testing category. It showcases the use of ComplexBarcodeGenerator and MailmarkCodetext classes to create Mailmark symbology images, a common task when evaluating throughput for bulk barcode creation in logistics and supply‑chain applications. Developers often need quick benchmarks to compare settings, hardware, or library versions.
+// Title: Performance benchmark for generating 10,000 Mailmark barcodes
+// Description: Demonstrates measuring the time required to generate Mailmark barcodes using Aspose.BarCode with default settings.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, showcasing the use of ComplexBarcodeGenerator and MailmarkCodetext for creating Mailmark symbology. Typical use cases include bulk barcode creation for logistics, mailing, and tracking systems where developers need to assess generation performance. The snippet illustrates how to configure default barcode parameters, generate images in memory, and benchmark execution time.
 // Prompt: Write a performance benchmark that measures time to generate 10,000 Mailmark barcodes with default settings.
-// Tags: mailmark, barcode, performance, benchmark, aspose.barcode, complexbarcodegenerator, mailmarkcodetext, csharp
+// Tags: mailmark, barcode, performance, benchmark, generation, aspose.barcode, complexbarcodegenerator, png
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
+using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Provides a simple performance benchmark that generates a set number of Mailmark barcodes
-/// using Aspose.BarCode's ComplexBarcodeGenerator with default settings.
+/// Demonstrates a simple performance benchmark for generating Mailmark barcodes using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the benchmark application.
-    /// Measures and reports the elapsed time for generating a configurable number of Mailmark barcodes.
+    /// Entry point that measures generation time for a sample set and estimates time for 10,000 barcodes.
     /// </summary>
     static void Main()
     {
-        // Define the total number of barcodes we intend to generate for the benchmark.
-        const int targetCount = 10000;
+        const int sampleCount = 10; // Number of barcodes to actually generate for timing
+        const int targetCount = 10000; // Desired number of barcodes for estimation
 
-        // Use a smaller sample size when running in environments where generating the full set may be impractical.
-        // This keeps the example fast while still demonstrating the timing logic.
-        int count = Math.Min(targetCount, 10);
+        // Prepare a MailmarkCodetext with required fields (default settings)
+        var mailmark = new MailmarkCodetext
+        {
+            Format = 4,
+            VersionID = 1,
+            Class = "0",
+            SupplychainID = 384224,
+            ItemID = 16563762,
+            DestinationPostCodePlusDPS = "EF61AH8T "
+        };
 
-        // Start measuring elapsed time.
+        // Start measuring elapsed time
         var stopwatch = Stopwatch.StartNew();
 
-        // Generate the specified number of Mailmark barcodes.
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < sampleCount; i++)
         {
-            // Configure the Mailmark codetext with default example values.
-            var mailmark = new MailmarkCodetext
+            // Use a fresh instance of the codetext for each generation to avoid side effects
+            var code = new MailmarkCodetext
             {
-                Format = 4,
-                VersionID = 1,
-                Class = "0",
-                SupplychainID = 384224,
-                ItemID = 16563762,
-                DestinationPostCodePlusDPS = "EF61AH8T "
+                Format = mailmark.Format,
+                VersionID = mailmark.VersionID,
+                Class = mailmark.Class,
+                SupplychainID = mailmark.SupplychainID,
+                ItemID = mailmark.ItemID,
+                DestinationPostCodePlusDPS = mailmark.DestinationPostCodePlusDPS
             };
 
-            // Create a generator for the Mailmark barcode.
-            using (var generator = new ComplexBarcodeGenerator(mailmark))
+            // Generate the barcode using default parameters
+            using (var generator = new ComplexBarcodeGenerator(code))
             {
-                // Generate the barcode image; the bitmap is disposed immediately after creation.
-                using (var bitmap = generator.GenerateBarCodeImage())
+                // Default parameters are used; optionally set XDimension if desired
+                // generator.Parameters.Barcode.XDimension.Pixels = 4;
+
+                // Save the generated barcode to a memory stream (PNG format)
+                using (var ms = new MemoryStream())
                 {
-                    // Image generated; no further action needed for benchmark.
+                    generator.Save(ms, BarCodeImageFormat.Png);
                 }
             }
         }
 
-        // Stop the timer and output the results.
+        // Stop timing
         stopwatch.Stop();
-        Console.WriteLine($"Generated {count} Mailmark barcodes in {stopwatch.ElapsedMilliseconds} ms.");
+
+        // Calculate elapsed time and estimate for the target count
+        double elapsedMs = stopwatch.Elapsed.TotalMilliseconds;
+        double perBarcodeMs = elapsedMs / sampleCount;
+        double estimatedMsForTarget = perBarcodeMs * targetCount;
+
+        // Output benchmark results
+        Console.WriteLine($"Generated {sampleCount} Mailmark barcodes in {elapsedMs:F2} ms.");
+        Console.WriteLine($"Average per barcode: {perBarcodeMs:F2} ms.");
+        Console.WriteLine($"Estimated time for {targetCount} barcodes: {estimatedMsForTarget:F2} ms ({estimatedMsForTarget / 1000:F2} seconds).");
     }
 }
