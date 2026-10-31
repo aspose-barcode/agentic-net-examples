@@ -1,38 +1,44 @@
-// Title: Generate QR code with custom display URL
-// Description: Demonstrates how to replace the displayed text of a QR code with a custom URL using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize QR code appearance via the CodeTextParameters API. It shows setting TwoDDisplayText to a URL while keeping the encoded data unchanged, a common requirement for branding or linking purposes. Developers working with QR code generation often need to modify the human‑readable text without affecting the encoded payload.
+// Title: Replace QR Code Display Text with Custom URL
+// Description: Demonstrates how to change the text displayed beneath a QR code to a custom URL while keeping the encoded data unchanged.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize QR code appearance using the BarcodeGenerator class and its CodeTextParameters. Typical use cases include branding QR codes, providing friendly URLs, or adding contextual information without altering the encoded payload. Developers working with 2‑D barcodes often need to modify displayed text while preserving scan data, and this snippet shows the essential API calls.
 // Prompt: Replace displayed text of a QR code with a custom URL by setting CodetextParameters.Text.
-// Tags: qr code, custom url, display text, aspose.barcode, generation, png
+// Tags: qr, barcode, replace-text, png, barcodegenerator, codetextparameters
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a QR code image where the displayed text is replaced with a custom URL.
+/// Example program that generates a QR code and replaces its displayed text with a custom URL.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the QR code and saves it as a PNG file.
+    /// Entry point of the application. Generates a QR code, customizes the displayed text, and saves the image.
     /// </summary>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine output file path in the current directory
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "qr_custom_url.png");
+        // Define the output directory and ensure it exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
+        Directory.CreateDirectory(outputDir);
 
-        // Create a QR code generator with initial data
+        // Full path for the generated PNG file
+        string outputPath = Path.Combine(outputDir, "QrWithCustomUrl.png");
+
+        // Create a QR code generator with initial data ("OriginalData")
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "OriginalData"))
         {
-            // Set the human‑readable text displayed under the QR code to a custom URL
+            // Replace the text shown under the QR code with a custom URL
             generator.Parameters.Barcode.CodeTextParameters.TwoDDisplayText = "https://example.com";
 
-            // Save the generated QR code as a PNG image
+            // Save the QR code image in PNG format
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the image was saved
-        Console.WriteLine($"QR code image saved to: {outputPath}");
+        // Inform the user where the file was saved
+        Console.WriteLine($"QR code saved to: {outputPath}");
     }
 }

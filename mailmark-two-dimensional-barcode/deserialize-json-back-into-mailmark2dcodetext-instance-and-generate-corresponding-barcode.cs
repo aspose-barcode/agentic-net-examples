@@ -1,28 +1,47 @@
-// Title: Generate Mailmark 2D Barcode from JSON
-// Description: Demonstrates deserializing a JSON string into a Mailmark2DCodetext object and creating the corresponding Mailmark 2‑D barcode image using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator and related parameter classes to produce high‑density 2‑D barcodes such as Mailmark. Typical scenarios include converting structured data (e.g., JSON) into printable barcode images for logistics, mailing, and tracking applications. Developers often need to deserialize data, configure barcode settings, and save the output in common image formats.
+// Title: Generate Mailmark2D Barcode from JSON Data
+// Description: This example deserializes a JSON string into a Mailmark2DCodetext object and creates a Mailmark2D barcode image.
+// Category-Description: Demonstrates Aspose.BarCode complex barcode generation for the Mailmark2D symbology. It covers deserialization of JSON into the Mailmark2DCodetext DTO, barcode creation with ComplexBarcodeGenerator, saving as PNG, and optional decoding using BarCodeReader. Developers working with postal barcodes, data matrix codes, or any Aspose.BarCode complex barcode scenarios will find this pattern useful for integrating JSON-driven barcode generation into their applications.
 // Prompt: Deserialize JSON back into a Mailmark2DCodetext instance and generate the corresponding barcode.
-// Tags: barcode, mailmark, json, deserialization, complexbarcode, generation, png, aspose.barcode
+// Tags: mailmark2d, json, deserialization, barcode-generation, aspose.barcode, complexbarcode
 
 using System;
 using System.IO;
 using System.Text.Json;
 using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that deserializes a JSON representation of a <see cref="Mailmark2DCodetext"/>
-/// and generates a Mailmark 2‑D barcode image.
+/// Demonstrates deserialization of JSON into a Mailmark2DCodetext object and generation of a Mailmark2D barcode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Performs JSON deserialization, prepares the output folder,
-    /// creates the barcode with <see cref="ComplexBarcodeGenerator"/>, and saves it as PNG.
+    /// DTO matching the JSON structure for deserialization.
+    /// </summary>
+    private class Mailmark2DJson
+    {
+        public string UPUCountryID { get; set; }
+        public string InformationTypeID { get; set; }
+        public string VersionID { get; set; }
+        public string Class { get; set; }
+        public string RTSFlag { get; set; }
+        public int SupplyChainID { get; set; }
+        public int ItemID { get; set; }
+        public string DestinationPostCodeAndDPS { get; set; }
+        public string ReturnToSenderPostCode { get; set; }
+        public string CustomerContent { get; set; }
+        public string CustomerContentEncodeMode { get; set; }
+        public string DataMatrixType { get; set; }
+    }
+
+    /// <summary>
+    /// Entry point of the example. Deserializes JSON, creates a Mailmark2D barcode, saves it, and optionally decodes it.
     /// </summary>
     static void Main()
     {
-        // JSON string containing sample Mailmark2DCodetext fields
+        // Sample JSON representing a Mailmark2DCodetext
         string json = @"{
             ""UPUCountryID"": ""JGB "",
             ""InformationTypeID"": ""0"",
@@ -32,48 +51,72 @@ class Program
             ""SupplyChainID"": 384224,
             ""ItemID"": 16563762,
             ""DestinationPostCodeAndDPS"": ""EF61AH8T "",
-            ""CustomerContent"": ""CUSTOMER123"",
+            ""ReturnToSenderPostCode"": "" QWE2 "",
+            ""CustomerContent"": ""CUSTOM DATA"",
             ""CustomerContentEncodeMode"": ""C40"",
-            ""DataMatrixType"": ""Type_7""
+            ""DataMatrixType"": ""Type_9""
         }";
 
-        // Attempt to deserialize the JSON into a Mailmark2DCodetext instance
-        Mailmark2DCodetext mailmark2D;
-        try
+        // Deserialize JSON into the DTO
+        Mailmark2DJson data = JsonSerializer.Deserialize<Mailmark2DJson>(json);
+        if (data == null)
         {
-            mailmark2D = JsonSerializer.Deserialize<Mailmark2DCodetext>(json);
-            if (mailmark2D == null)
-            {
-                Console.WriteLine("Deserialization returned null.");
-                return;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error deserializing JSON: {ex.Message}");
+            Console.WriteLine("Failed to deserialize JSON.");
             return;
         }
 
-        // Ensure the output directory exists (creates it if missing)
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
-        if (!Directory.Exists(outputDir))
+        // Map DTO fields to a Mailmark2DCodetext instance
+        var mailmark2d = new Mailmark2DCodetext
         {
-            Directory.CreateDirectory(outputDir);
-        }
+            UPUCountryID = data.UPUCountryID,
+            InformationTypeID = data.InformationTypeID,
+            VersionID = data.VersionID,
+            Class = data.Class,
+            RTSFlag = data.RTSFlag,
+            SupplyChainID = data.SupplyChainID,
+            ItemID = data.ItemID,
+            DestinationPostCodeAndDPS = data.DestinationPostCodeAndDPS,
+            ReturnToSenderPostCode = data.ReturnToSenderPostCode,
+            CustomerContent = data.CustomerContent,
+            CustomerContentEncodeMode = Enum.Parse<DataMatrixEncodeMode>(data.CustomerContentEncodeMode),
+            DataMatrixType = Enum.Parse<Mailmark2DType>(data.DataMatrixType)
+        };
 
-        // Full path for the generated barcode image
-        string outputPath = Path.Combine(outputDir, "Mailmark2D.png");
+        // Prepare output directory and file path
+        string outputDir = Path.Combine(Path.GetTempPath(), "Mailmark2DExample");
+        Directory.CreateDirectory(outputDir);
+        string barcodePath = Path.Combine(outputDir, "Mailmark2D.png");
 
-        // Generate the barcode using ComplexBarcodeGenerator
-        using (var generator = new ComplexBarcodeGenerator(mailmark2D))
+        // Generate the Mailmark2D barcode and save as PNG
+        using (var generator = new ComplexBarcodeGenerator(mailmark2d))
         {
-            // Optional: set the module (pixel) size for better readability
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
-
-            // Save the barcode image in PNG format
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        Console.WriteLine($"Barcode generated and saved to: {outputPath}");
+        Console.WriteLine($"Barcode saved to: {barcodePath}");
+
+        // Decode the generated barcode to verify the content
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.DataMatrix))
+        {
+            foreach (BarCodeResult result in reader.ReadBarCodes())
+            {
+                Mailmark2DCodetext decoded = ComplexCodetextReader.TryDecodeMailmark2D(result.CodeText);
+                if (decoded != null)
+                {
+                    Console.WriteLine("Decoded Mailmark2D fields:");
+                    Console.WriteLine($"UPUCountryID: {decoded.UPUCountryID}");
+                    Console.WriteLine($"InformationTypeID: {decoded.InformationTypeID}");
+                    Console.WriteLine($"VersionID: {decoded.VersionID}");
+                    Console.WriteLine($"Class: {decoded.Class}");
+                    Console.WriteLine($"RTSFlag: {decoded.RTSFlag}");
+                    Console.WriteLine($"SupplyChainID: {decoded.SupplyChainID}");
+                    Console.WriteLine($"ItemID: {decoded.ItemID}");
+                    Console.WriteLine($"DestinationPostCodeAndDPS: {decoded.DestinationPostCodeAndDPS}");
+                    Console.WriteLine($"ReturnToSenderPostCode: {decoded.ReturnToSenderPostCode}");
+                    Console.WriteLine($"CustomerContent: {decoded.CustomerContent}");
+                }
+            }
+        }
     }
 }

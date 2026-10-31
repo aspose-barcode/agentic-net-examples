@@ -1,95 +1,93 @@
-// Title: Batch barcode generation, recognition, and XML export example
-// Description: Demonstrates creating multiple barcode images, reading them to extract barcode data, and exporting each recognition state to an XML file.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to use BarcodeGenerator for image creation, BarCodeReader for multi‑symbology detection, and the ExportToXml method to persist recognition results. Typical use cases include automated scanning pipelines, bulk verification, and archival of barcode data. Developers often need to generate test images, process large sets of files, and store results in a structured format for downstream systems.
+// Title: Batch barcode generation, recognition, and XML export
+// Description: Demonstrates how to generate multiple barcode images, read them in a batch, and export each recognition result to an XML file.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing the use of BarcodeGenerator for creating barcodes, BarCodeReader for recognizing them, and ExportToXml for persisting recognition state. Typical use cases include automated scanning pipelines, bulk data extraction, and archival of barcode metadata. Developers often need to process many images efficiently and store results in a structured format such as XML.
 // Prompt: Create a batch process that reads multiple images, extracts barcodes, and writes each state to separate XML files.
-// Tags: barcode generation, barcode recognition, batch processing, xml export, aspose.barcode, csharp
+// Tags: barcode generation, barcode recognition, batch processing, xml export, aspose.barcode, code128, qr, datamatrix, pdf417, aztec
 
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation of barcodes, recognition of those barcodes, and exporting the recognition state to XML files.
+/// Demonstrates batch generation of barcode images, recognition of each image, and exporting the recognition state to XML files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates sample barcode images, reads them, and writes recognition results to XML.
+    /// Entry point. Generates sample barcodes, processes them, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the sample files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchBarcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Create a unique temporary folder for the batch process
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // Define sample data for barcode generation (file name, text, and symbology)
-        var samples = new List<(string fileName, string codeText, BaseEncodeType encodeType)>
+        // List to hold generated image file paths
+        List<string> imageFiles = new List<string>();
+
+        // Sample data for barcode generation (symbology and corresponding text)
+        var samples = new (BaseEncodeType encode, string text)[]
         {
-            ("qr1.png", "Sample QR 1", EncodeTypes.QR),
-            ("code128_1.png", "ABC12345", EncodeTypes.Code128),
-            ("datamatrix_1.png", "DM123", EncodeTypes.DataMatrix)
+            (EncodeTypes.Code128, "CODE128_SAMPLE"),
+            (EncodeTypes.QR, "https://example.com"),
+            (EncodeTypes.DataMatrix, "DM123456"),
+            (EncodeTypes.Pdf417, "PDF417_SAMPLE_TEXT"),
+            (EncodeTypes.Aztec, "AZTEC_SAMPLE")
         };
 
-        // -----------------------------------------------------------------
-        // Generate barcode images based on the sample data
-        // -----------------------------------------------------------------
-        foreach (var sample in samples)
+        // Generate barcode images and store their file paths
+        foreach (var (encode, text) in samples)
         {
-            string imagePath = Path.Combine(tempFolder, sample.fileName);
-            using (BarcodeGenerator generator = new BarcodeGenerator(sample.encodeType, sample.codeText))
+            string fileName = Path.Combine(batchFolder, $"{encode}_{Guid.NewGuid().ToString("N")}.png");
+            using (BarcodeGenerator generator = new BarcodeGenerator(encode, text))
             {
-                generator.Save(imagePath, BarCodeImageFormat.Png);
+                // Save the generated barcode as a PNG image
+                generator.Save(fileName, BarCodeImageFormat.Png);
             }
+            imageFiles.Add(fileName);
         }
 
-        // -----------------------------------------------------------------
-        // Process each generated image: read barcodes and export recognition state to XML
-        // -----------------------------------------------------------------
-        foreach (var sample in samples)
+        // Process each image: read barcodes and export recognition state to XML
+        foreach (string imagePath in imageFiles)
         {
-            string imagePath = Path.Combine(tempFolder, sample.fileName);
             if (!File.Exists(imagePath))
             {
                 Console.WriteLine($"File not found: {imagePath}");
                 continue;
             }
 
-            string xmlPath = Path.Combine(tempFolder, Path.GetFileNameWithoutExtension(sample.fileName) + ".xml");
+            // Determine the XML file name based on the image name
+            string xmlPath = Path.ChangeExtension(imagePath, ".xml");
+
             try
             {
                 using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
                 {
-                    // Read all barcodes present in the image
+                    // Perform recognition and obtain results
                     BarCodeResult[] results = reader.ReadBarCodes();
-                    Console.WriteLine($"Processed {sample.fileName}: {results.Length} barcode(s) detected.");
 
-                    // Output each detected barcode's type and text
-                    foreach (BarCodeResult result in results)
-                    {
-                        Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
-                    }
-
-                    // Export the complete reader state (including detected barcodes) to an XML file
+                    // Export the reader state (including recognized barcodes) to XML
                     reader.ExportToXml(xmlPath);
-                    Console.WriteLine($"Exported recognition state to: {xmlPath}");
+
+                    Console.WriteLine($"Processed '{Path.GetFileName(imagePath)}' - {results.Length} barcode(s) found. XML saved to '{Path.GetFileName(xmlPath)}'.");
                 }
             }
             catch (ArgumentException ex)
             {
-                Console.WriteLine($"Failed to read {sample.fileName}: {ex.Message}");
+                // Handle image loading failures gracefully
+                Console.WriteLine($"Warning: Could not load image '{imagePath}'. {ex.Message}");
             }
         }
 
-        // -----------------------------------------------------------------
-        // Cleanup: delete the temporary folder and its contents
-        // -----------------------------------------------------------------
+        // Cleanup: optionally delete the temporary folder and its contents
+        // Comment out the following block if you want to inspect the generated files.
         try
         {
-            Directory.Delete(tempFolder, true);
-            Console.WriteLine("Temporary files cleaned up.");
+            Directory.Delete(batchFolder, true);
         }
         catch (Exception ex)
         {

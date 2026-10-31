@@ -1,8 +1,8 @@
-// Title: Dependency Injection Example for Barcode Generation with Aspose.BarCode
-// Description: Demonstrates how to use a simple DI container to inject a barcode generation service and create a Code128 barcode image.
-// Category-Description: Shows Aspose.BarCode generation operations, focusing on the BarcodeGenerator class and related parameters. This example belongs to the barcode creation category, illustrating typical use cases such as setting colors, resolution, and saving to PNG. Developers looking for DI patterns with Aspose.BarCode can reference this snippet for quick integration.
+// Title: Dependency Injection Example for Aspose.BarCode Generation
+// Description: Demonstrates how to use a simple DI container to inject a barcode generation service and create a PNG barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and related classes. It illustrates typical scenarios where developers need to generate barcodes dynamically via a service layer, employing dependency injection for better testability and modularity. Ideal for applications requiring runtime barcode creation such as inventory, shipping, or ticketing systems.
 // Prompt: Implement dependency injection to provide a barcode generation service throughout the application.
-// Tags: barcode, dependency injection, code128, png, aspose.barcode, generation, service, di
+// Tags: barcode generation, dependency injection, code128, png, aspose.barcode, service locator
 
 using System;
 using System.Collections.Generic;
@@ -10,61 +10,69 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 namespace BarcodeDIExample
 {
     // Service contract for barcode generation
-    public interface IBarcodeGeneratorService
+    public interface IBarcodeService
     {
-        void GenerateBarcode(string codeText, string outputPath);
+        void Generate(string text, string symbologyName, string outputPath);
     }
 
-    // Concrete implementation using Aspose.BarCode
-    public class BarcodeGeneratorService : IBarcodeGeneratorService
+    // Concrete implementation of the barcode service
+    public class BarcodeService : IBarcodeService
     {
-        public void GenerateBarcode(string codeText, string outputPath)
+        public void Generate(string text, string symbologyName, string outputPath)
         {
-            // Validate input
-            if (string.IsNullOrWhiteSpace(codeText))
-                throw new ArgumentException("Code text must not be empty.", nameof(codeText));
+            // Validate input parameters
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentException("Code text must not be empty.", nameof(text));
 
-            // Ensure output directory exists
+            if (string.IsNullOrWhiteSpace(symbologyName))
+                throw new ArgumentException("Symbology name must not be empty.", nameof(symbologyName));
+
+            // Resolve the EncodeTypes enum value from the provided symbology name
+            var field = typeof(EncodeTypes).GetField(symbologyName);
+            if (field == null)
+                throw new ArgumentException($"Unknown symbology: {symbologyName}", nameof(symbologyName));
+
+            BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
+
+            // Ensure the output directory exists
             string directory = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            // Create and configure the barcode generator
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+            // Generate and save the barcode image
+            using (var generator = new BarcodeGenerator(encodeType, text))
             {
-                // Set visual parameters
-                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-                generator.Parameters.Resolution = 300f;
-
-                // Save the barcode image as PNG
+                // Example of setting a simple parameter: font size
+                generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
                 generator.Save(outputPath, BarCodeImageFormat.Png);
             }
         }
     }
 
-    // Very simple service container for singleton registrations
+    // Very small service container for registering and resolving dependencies
     public class ServiceProvider
     {
-        private readonly Dictionary<Type, object> _services = new Dictionary<Type, object>();
+        private readonly Dictionary<Type, Func<object>> _registrations = new Dictionary<Type, Func<object>>();
 
-        // Register a singleton instance
-        public void AddSingleton<TService>(TService implementation) where TService : class
+        // Register a concrete implementation for an interface
+        public void Register<TInterface, TImplementation>()
+            where TImplementation : TInterface, new()
         {
-            _services[typeof(TService)] = implementation ?? throw new ArgumentNullException(nameof(implementation));
+            _registrations[typeof(TInterface)] = () => new TImplementation();
         }
 
-        // Resolve a registered service
-        public TService GetService<TService>() where TService : class
+        // Resolve an instance of the requested service
+        public TInterface Resolve<TInterface>()
         {
-            if (_services.TryGetValue(typeof(TService), out var service))
-                return service as TService;
+            if (_registrations.TryGetValue(typeof(TInterface), out var factory))
+                return (TInterface)factory();
 
-            throw new InvalidOperationException($"Service of type {typeof(TService).FullName} is not registered.");
+            throw new InvalidOperationException($"Service of type {typeof(TInterface).FullName} is not registered.");
         }
     }
 
@@ -74,36 +82,32 @@ namespace BarcodeDIExample
     class Program
     {
         /// <summary>
-        /// Configures the DI container, resolves the barcode service, and generates a sample barcode image.
+        /// Configures the service provider, resolves the barcode service, and generates a sample barcode image.
         /// </summary>
         static void Main()
         {
-            // Set up simple DI container
-            var serviceProvider = new ServiceProvider();
-            serviceProvider.AddSingleton<IBarcodeGeneratorService>(new BarcodeGeneratorService());
+            // Set up the simple DI container
+            var services = new ServiceProvider();
+            services.Register<IBarcodeService, BarcodeService>();
 
-            // Resolve the barcode generation service
-            var barcodeService = serviceProvider.GetService<IBarcodeGeneratorService>();
+            // Resolve the barcode service from the container
+            var barcodeService = services.Resolve<IBarcodeService>();
 
-            // Prepare temporary output folder
-            string tempPath = Path.Combine(Path.GetTempPath(), "barcode_example");
-            if (!Directory.Exists(tempPath))
-                Directory.CreateDirectory(tempPath);
-
-            // Define output file and sample text
-            string outputFile = Path.Combine(tempPath, "sample_barcode.png");
-            string sampleText = "Sample123";
+            // Sample data for barcode generation
+            string sampleText = "1234567890";
+            string symbology = "Code128"; // matches EncodeTypes.Code128
+            string outputFile = Path.Combine(Path.GetTempPath(), "sample_barcode.png");
 
             try
             {
-                // Generate the barcode image
-                barcodeService.GenerateBarcode(sampleText, outputFile);
+                // Generate the barcode and write the output path to console
+                barcodeService.Generate(sampleText, symbology, outputFile);
                 Console.WriteLine($"Barcode generated at: {outputFile}");
             }
             catch (Exception ex)
             {
-                // Log any errors that occur during generation
-                Console.WriteLine($"Error generating barcode: {ex.Message}");
+                // Output any errors that occur during generation
+                Console.WriteLine($"Error: {ex.Message}");
             }
         }
     }

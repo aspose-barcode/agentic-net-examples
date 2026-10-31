@@ -1,17 +1,16 @@
-// Title: Create MaxiCode Mode 3 barcode with structured secondary message and save as JPEG
-// Description: Demonstrates how to generate a MaxiCode Mode 3 barcode, embed a structured secondary message, and export the image as a JPEG file.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of MaxiCodeCodetextMode3, MaxiCodeStructuredSecondMessage, and ComplexBarcodeGenerator classes to produce high‑density 2‑D barcodes. Typical scenarios include shipping labels, parcel tracking, and logistics where MaxiCode Mode 3 is required. Developers often need to add secondary address information and export the result in common image formats.
+// Title: Generate MaxiCode Mode 3 barcode with structured secondary message and save as JPEG
+// Description: Demonstrates how to create a MaxiCode Mode 3 barcode, include a structured secondary message, and export the result as a JPEG image.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as MaxiCode. It showcases the use of ComplexBarcodeGenerator, MaxiCodeCodetextMode3, and MaxiCodeStructuredSecondMessage classes to build a barcode with primary and secondary data. Developers working with shipping, logistics, or inventory systems often need to generate MaxiCode symbols for package tracking, and this snippet illustrates the typical workflow.
 // Prompt: Create a MaxiCode Mode 3 barcode using a structured secondary message and export the image as JPEG.
-// Tags: maxicode, mode3, structured secondary message, jpeg, aspose.barcode, complexbarcode, barcode generation
+// Tags: maxicode, mode3, structured secondary message, jpeg, barcode generation, aspnet.barcode, complexbarcodegenerator, maxicode codetext
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.BarCode.Generation;
-using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a MaxiCode Mode 3 barcode with a structured secondary message and saves it as a JPEG file.
+/// Demonstrates creating a MaxiCode Mode 3 barcode with a structured secondary message and saving it as a JPEG file.
 /// </summary>
 class Program
 {
@@ -20,32 +19,21 @@ class Program
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare the output directory where the generated image will be stored
-        // --------------------------------------------------------------------
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        if (!Directory.Exists(outputDir))
-        {
-            Directory.CreateDirectory(outputDir);
-        }
+        // Prepare the output directory and file path
+        string outputDir = Path.Combine(Path.GetTempPath(), "MaxiCodeExample");
+        Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "MaxiCodeMode3Structured.jpg");
 
-        // Define the full file path for the resulting JPEG image
-        string outputPath = Path.Combine(outputDir, "MaxiCodeMode3StructuredSecondMessage.jpg");
-
-        // --------------------------------------------------------------
-        // Create the MaxiCode codetext for Mode 3 and set required fields
-        // --------------------------------------------------------------
-        MaxiCodeCodetextMode3 maxiCodeCodetext = new MaxiCodeCodetextMode3
+        // Create MaxiCode codetext for Mode 3 (primary data)
+        var maxiCodeCodetext = new MaxiCodeCodetextMode3
         {
             PostalCode = "B1050",
             CountryCode = 56,
             ServiceCategory = 999
         };
 
-        // --------------------------------------------------------------
         // Build a structured secondary message (address information)
-        // --------------------------------------------------------------
-        MaxiCodeStructuredSecondMessage structuredMessage = new MaxiCodeStructuredSecondMessage();
+        var structuredMessage = new MaxiCodeStructuredSecondMessage();
         structuredMessage.Add("634 ALPHA DRIVE");
         structuredMessage.Add("PITTSBURGH");
         structuredMessage.Add("PA");
@@ -54,15 +42,13 @@ class Program
         // Attach the secondary message to the MaxiCode codetext
         maxiCodeCodetext.SecondMessage = structuredMessage;
 
-        // --------------------------------------------------------------
-        // Generate the barcode image and save it as a JPEG file
-        // --------------------------------------------------------------
-        using (ComplexBarcodeGenerator complexGenerator = new ComplexBarcodeGenerator(maxiCodeCodetext))
+        // Generate the barcode and save it as a JPEG image
+        using (var generator = new ComplexBarcodeGenerator(maxiCodeCodetext))
         {
-            complexGenerator.Save(outputPath, BarCodeImageFormat.Jpeg);
+            generator.Save(outputPath);
         }
 
-        // Inform the user where the file has been saved
+        // Inform the user where the file was saved
         Console.WriteLine($"MaxiCode Mode 3 barcode saved to: {outputPath}");
     }
 }

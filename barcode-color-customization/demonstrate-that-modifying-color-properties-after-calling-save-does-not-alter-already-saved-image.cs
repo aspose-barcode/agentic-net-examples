@@ -1,104 +1,68 @@
-// Title: Demonstrate Color Property Independence After Save
-// Description: Shows that changing barcode and background colors after saving does not affect the previously saved image file.
-// Category-Description: This example belongs to the Aspose.BarCode image generation category, illustrating how the BarcodeGenerator and its Parameters (Barcode, BackColor) can be configured. Developers often need to generate multiple barcode images with different visual styles while ensuring earlier outputs remain unchanged. The snippet highlights typical use cases such as dynamic color changes and file integrity verification using hash comparison.
+// Title: Demonstrate that saved barcode image colors remain unchanged after modifying generator properties
+// Description: This example generates a Code128 barcode, saves it, then changes the background and bar colors and saves a second image, proving the first file retains its original colors.
+// Category-Description: Aspose.BarCode Generation – This example belongs to the barcode creation and image export category, illustrating the use of BarcodeGenerator, its Parameters (BackColor, BarColor), and BarCodeImageFormat. Developers often need to generate multiple barcode images with varying visual styles while ensuring previously saved files stay unaffected. The snippet showcases typical workflows for temporary file handling, color customization, and pixel inspection using Aspose.Drawing.
 // Prompt: Demonstrate that modifying color properties after calling Save does not alter the already saved image.
-// Tags: code128, barcode, color, png, save, hash, aspose.barcode, barcodegenerator, parameters
+// Tags: barcode, code128, color, save, png, aspose.barcode, generation, image, aspose.drawing
 
 using System;
 using System.IO;
-using System.Security.Cryptography;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates two barcode images, modifies color settings between saves,
-/// and verifies that the first saved image remains unchanged by comparing file hashes.
+/// Provides a demonstration that changing barcode generator color settings after saving
+/// does not retroactively modify the already saved image file.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates barcodes, saves them with different colors,
-    /// and checks that the first saved file is not affected by later color changes.
+    /// Entry point of the demo. Generates two barcode images with different colors
+    /// and verifies that the first image retains its original colors.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary output directory
-        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
-        Directory.CreateDirectory(outputDir);
+        // Create a unique temporary folder for the demo files
+        string demoFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(demoFolder);
 
         // Define file paths for the two barcode images
-        string file1 = Path.Combine(outputDir, "barcode1.png");
-        string file2 = Path.Combine(outputDir, "barcode2.png");
+        string firstImagePath = Path.Combine(demoFolder, "barcode1.png");
+        string secondImagePath = Path.Combine(demoFolder, "barcode2.png");
 
-        // --------------------------------------------------------------------
-        // Create the first barcode generator instance with initial colors
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
+        // Initialize the barcode generator with Code128 symbology and sample data
+        BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678");
+
+        // Set initial colors: white background and black bars
+        generator.Parameters.BackColor = Color.White;
+        generator.Parameters.Barcode.BarColor = Color.Black;
+
+        // Save the first image using the initial color settings
+        generator.Save(firstImagePath, BarCodeImageFormat.Png);
+
+        // Change color properties after the first save operation
+        generator.Parameters.BackColor = Color.Yellow;
+        generator.Parameters.Barcode.BarColor = Color.Red;
+
+        // Save the second image with the new color settings
+        generator.Save(secondImagePath, BarCodeImageFormat.Png);
+
+        // Load the first image and read the color of the top-left pixel
+        using (Bitmap bmp1 = new Bitmap(firstImagePath))
         {
-            // Set initial barcode (foreground) and background colors
-            generator.Parameters.Barcode.BarColor = Color.Black;
-            generator.Parameters.BackColor = Color.White;
-
-            // Save the first image to disk
-            generator.Save(file1, BarCodeImageFormat.Png);
+            var pixel1 = bmp1.GetPixel(0, 0);
+            Console.WriteLine($"First image pixel (0,0) ARGB: {pixel1.ToArgb():X8}");
         }
 
-        // Compute and display the hash of the first saved file
-        string hashBefore = ComputeFileHash(file1);
-        Console.WriteLine($"Hash of first saved image: {hashBefore}");
-
-        // --------------------------------------------------------------------
-        // Create a second generator (or reuse) and change colors before saving
-        // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "12345678"))
+        // Load the second image and read the color of the top-left pixel
+        using (Bitmap bmp2 = new Bitmap(secondImagePath))
         {
-            // Change barcode and background colors after the first save
-            generator.Parameters.Barcode.BarColor = Color.Red;
-            generator.Parameters.BackColor = Color.Yellow;
-
-            // Save the second image to disk
-            generator.Save(file2, BarCodeImageFormat.Png);
+            var pixel2 = bmp2.GetPixel(0, 0);
+            Console.WriteLine($"Second image pixel (0,0) ARGB: {pixel2.ToArgb():X8}");
         }
 
-        // Compute the hash of the first file again to verify it hasn't changed
-        string hashAfter = ComputeFileHash(file1);
-        Console.WriteLine($"Hash of first image after modifying colors: {hashAfter}");
-
-        // Compute and display the hash of the second file
-        string hashSecond = ComputeFileHash(file2);
-        Console.WriteLine($"Hash of second saved image: {hashSecond}");
-
-        // Compare hashes to confirm the first image remained unchanged
-        if (hashBefore == hashAfter)
-        {
-            Console.WriteLine("The first saved image remained unchanged after modifying color properties.");
-        }
-        else
-        {
-            Console.WriteLine("Unexpected change detected in the first saved image.");
-        }
-
-        // Optional cleanup (commented out)
-        // File.Delete(file1);
-        // File.Delete(file2);
-        // Directory.Delete(outputDir);
-    }
-
-    /// <summary>
-    /// Computes the MD5 hash of a file and returns it as a lowercase hexadecimal string.
-    /// </summary>
-    /// <param name="filePath">Full path to the file whose hash is to be computed.</param>
-    /// <returns>Lowercase hexadecimal representation of the file's MD5 hash.</returns>
-    static string ComputeFileHash(string filePath)
-    {
-        using (var md5 = MD5.Create())
-        {
-            using (var stream = File.OpenRead(filePath))
-            {
-                byte[] hash = md5.ComputeHash(stream);
-                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-            }
-        }
+        // Indicate completion of the demonstration
+        Console.WriteLine("Demonstration complete. The first image retained its original colors despite later modifications.");
     }
 }

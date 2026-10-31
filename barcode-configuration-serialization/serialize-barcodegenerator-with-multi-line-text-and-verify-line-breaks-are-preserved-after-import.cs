@@ -1,8 +1,8 @@
 // Title: Serialize BarcodeGenerator with Multi‑Line Text and Verify Line Break Preservation
-// Description: Demonstrates how to generate a PDF417 barcode containing multi‑line text, export the generator configuration to XML, import it back, and confirm that line breaks are retained.
-// Category-Description: This example belongs to the Aspose.BarCode serialization and configuration category. It shows how to use BarcodeGenerator, its Parameters, ExportToXml, and ImportFromXml methods to persist barcode settings. Typical use cases include saving barcode configurations for later reuse, sharing across services, or version‑controlling barcode definitions. Developers often need to serialize generators, modify XML, and ensure text formatting such as line breaks remains intact.
+// Description: Demonstrates how to serialize a BarcodeGenerator containing multi‑line text to XML, then import it back and confirm that line breaks are retained.
+// Category-Description: This example belongs to the Aspose.BarCode serialization and deserialization category. It shows usage of BarcodeGenerator, its ExportToXml and ImportFromXml methods, and how to handle multi‑line CodeText. Developers often need to persist barcode settings, share them across services, or store them for later regeneration, making serialization essential.
 // Prompt: Serialize a BarcodeGenerator with multi‑line text and verify line breaks are preserved after import.
-// Tags: pdf417, barcode, serialization, xml, multiline, codetext, aspnet, aspose.barcode, export, import
+// Tags: barcode, pdf417, serialization, deserialization, multiline, codetext, xml, aspose.barcode, png
 
 using System;
 using System.IO;
@@ -10,60 +10,45 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Demonstrates serialization of a <see cref="BarcodeGenerator"/> with multi‑line text and verification of line‑break preservation.
+/// Demonstrates serialization of a BarcodeGenerator with multi‑line text and verification of line‑break preservation after import.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates a barcode, exports to XML, re‑imports, and validates code text integrity.
+    /// Entry point that creates a PDF417 barcode with multi‑line text, exports it to XML, re‑imports it, and checks line‑break integrity.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for output files
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
+        // Prepare a unique temporary working folder
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeMultiLine_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Define file paths for the XML configuration and PNG images
-        string xmlPath = Path.Combine(tempDir, "generator.xml");
-        string originalImagePath = Path.Combine(tempDir, "original.png");
-        string loadedImagePath = Path.Combine(tempDir, "loaded.png");
+        // Define file paths for XML and PNG images
+        string xmlPath = Path.Combine(tempFolder, "generator.xml");
+        string originalImagePath = Path.Combine(tempFolder, "barcode_original.png");
+        string importedImagePath = Path.Combine(tempFolder, "barcode_imported.png");
 
-        // Multi‑line barcode text (line breaks are represented by '\n')
-        string multiLineText = "First line\nSecond line\nThird line";
+        // Multi‑line code text (uses CRLF line breaks)
+        string multiLineText = "Line1\r\nLine2";
 
-        // Generate barcode and export its state to XML
+        // Create a BarcodeGenerator, configure parameters, export to XML, and save the original image
         using (var generator = new BarcodeGenerator(EncodeTypes.Pdf417, multiLineText))
         {
-            // Ensure line breaks are allowed (default is false, which allows wrapping)
-            generator.Parameters.Barcode.CodeTextParameters.NoWrap = false;
-
-            // Save the original barcode image to PNG
-            generator.Save(originalImagePath, BarCodeImageFormat.Png);
-
-            // Export the generator configuration to an XML file
-            generator.ExportToXml(xmlPath);
+            generator.Parameters.Barcode.XDimension.Pixels = 2; // Set module size
+            generator.ExportToXml(xmlPath);                     // Serialize settings to XML
+            generator.Save(originalImagePath, BarCodeImageFormat.Png); // Save barcode image
         }
 
-        // Import barcode generator from the previously saved XML configuration
-        BarcodeGenerator importedGenerator = BarcodeGenerator.ImportFromXml(xmlPath);
+        // Import the generator from the previously saved XML and verify line‑break preservation
+        using (var imported = BarcodeGenerator.ImportFromXml(xmlPath))
+        {
+            string importedText = imported.CodeText;
+            bool lineBreaksPreserved = importedText == multiLineText;
+            Console.WriteLine("Line breaks preserved after import: " + lineBreaksPreserved);
+            imported.Save(importedImagePath, BarCodeImageFormat.Png); // Save imported barcode image
+        }
 
-        // Save the barcode image generated from the imported configuration
-        importedGenerator.Save(loadedImagePath, BarCodeImageFormat.Png);
-
-        // Verify that the code text (including line breaks) is preserved after import
-        bool isPreserved = string.Equals(
-            importedGenerator.CodeText,
-            multiLineText,
-            StringComparison.Ordinal);
-
-        // Output verification results and file locations
-        Console.WriteLine("Original CodeText:");
-        Console.WriteLine(multiLineText);
-        Console.WriteLine();
-        Console.WriteLine("Imported CodeText:");
-        Console.WriteLine(importedGenerator.CodeText);
-        Console.WriteLine();
-        Console.WriteLine("Line breaks preserved: " + isPreserved);
-        Console.WriteLine("Files written to: " + tempDir);
+        // Optional cleanup: delete the temporary folder and its contents
+        // Directory.Delete(tempFolder, true);
     }
 }

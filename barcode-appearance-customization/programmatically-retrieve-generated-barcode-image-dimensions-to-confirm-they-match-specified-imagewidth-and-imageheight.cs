@@ -1,8 +1,8 @@
-// Title: Retrieve and Verify Barcode Image Dimensions
-// Description: Demonstrates how to generate a barcode image with specific dimensions and programmatically verify that the actual image size matches the requested width and height.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, its Parameters, and image handling classes such as Bitmap and ImageFormat. Developers often need to control output image size for UI layout, printing, or further processing, and must confirm that the generated image respects the specified ImageWidth and ImageHeight settings.
+// Title: Retrieve Generated Barcode Image Dimensions
+// Description: Demonstrates how to generate a barcode with specific image dimensions and programmatically verify the resulting image size.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, AutoSizeMode, and image sizing properties (ImageWidth, ImageHeight). Developers often need to create barcodes that fit exact layout constraints, such as printing labels or embedding images in documents, and must confirm that the generated bitmap matches those constraints.
 // Prompt: Programmatically retrieve the generated barcode image dimensions to confirm they match the specified ImageWidth and ImageHeight.
-// Tags: barcode, code128, image size, verification, aspose.barcode, generation, bitmap, png
+// Tags: barcode, generation, image dimensions, autosizemode, code128, aspose.barcode, aspnet
 
 using System;
 using System.IO;
@@ -12,61 +12,44 @@ using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates barcode generation with size verification using Aspose.BarCode.
+/// Example program that generates a Code128 barcode with predefined image dimensions
+/// and validates that the produced bitmap matches those dimensions.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, saves it, and checks that the bitmap dimensions match the requested size.
+    /// Entry point of the example. Generates the barcode, checks its size, and saves it to a file.
     /// </summary>
     static void Main()
     {
-        // Define the text to encode and the barcode symbology.
-        string codeText = "ASPOSE";
-        BaseEncodeType encodeType = EncodeTypes.Code128;
+        // Desired dimensions for the barcode image (in pixels)
+        float desiredWidth = 300f;
+        float desiredHeight = 150f;
 
-        // Expected image dimensions in pixels.
-        int expectedWidth = 300;
-        int expectedHeight = 200;
-
-        // Create a temporary file path for the generated PNG image.
-        string outputPath = Path.Combine(Path.GetTempPath(), "barcode.png");
-
-        // Initialize the barcode generator with the chosen symbology and text.
-        using (var generator = new BarcodeGenerator(encodeType, codeText))
+        // Initialize the barcode generator with Code128 symbology and sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            // Configure the generator to use the nearest auto‑size mode.
-            generator.Parameters.AutoSizeMode = AutoSizeMode.Nearest;
+            // Configure the generator to respect the explicit ImageWidth and ImageHeight values
+            generator.Parameters.AutoSizeMode = AutoSizeMode.Interpolation;
+            generator.Parameters.ImageWidth.Pixels = desiredWidth;
+            generator.Parameters.ImageHeight.Pixels = desiredHeight;
 
-            // Set the desired image width and height.
-            generator.Parameters.ImageWidth.Pixels = expectedWidth;
-            generator.Parameters.ImageHeight.Pixels = expectedHeight;
-
-            // Generate the barcode as a bitmap.
-            using (Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Generate the barcode image as a bitmap
+            using (var bitmap = generator.GenerateBarCodeImage())
             {
-                // Save the bitmap to a file for optional visual verification.
-                using (var stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
-                {
-                    bitmap.Save(stream, ImageFormat.Png);
-                }
-
-                // Retrieve the actual dimensions of the generated bitmap.
+                // Retrieve actual dimensions of the generated bitmap
                 int actualWidth = bitmap.Width;
                 int actualHeight = bitmap.Height;
 
-                // Output the expected vs. actual dimensions.
-                Console.WriteLine($"Expected Width: {expectedWidth}px, Actual Width: {actualWidth}px");
-                Console.WriteLine($"Expected Height: {expectedHeight}px, Actual Height: {actualHeight}px");
+                // Output the dimensions to the console for verification
+                Console.WriteLine($"Generated image size: {actualWidth}x{actualHeight}");
+                bool matches = actualWidth == (int)desiredWidth && actualHeight == (int)desiredHeight;
+                Console.WriteLine($"Matches specified dimensions: {matches}");
 
-                // Verify that the dimensions match the specified values.
-                if (actualWidth == expectedWidth && actualHeight == expectedHeight)
+                // Save the bitmap to a PNG file for visual inspection
+                using (var fileStream = new FileStream("barcode.png", FileMode.Create, FileAccess.Write))
                 {
-                    Console.WriteLine("Image dimensions match the specified ImageWidth and ImageHeight.");
-                }
-                else
-                {
-                    Console.WriteLine("Image dimensions do NOT match the specified values.");
+                    bitmap.Save(fileStream, ImageFormat.Png);
                 }
             }
         }

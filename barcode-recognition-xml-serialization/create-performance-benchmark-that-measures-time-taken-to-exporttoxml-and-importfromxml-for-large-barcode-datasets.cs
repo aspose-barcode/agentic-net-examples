@@ -1,8 +1,8 @@
-// Title: Performance benchmark for ExportToXml and ImportFromXml with large barcode datasets
-// Description: Demonstrates measuring the time required to export barcode definitions to XML and import them back using Aspose.BarCode, useful for evaluating performance on sizable collections.
-// Category-Description: This example belongs to the Aspose.BarCode performance testing category, showcasing how to use BarcodeGenerator, ExportToXml, and ImportFromXml for bulk barcode operations. Developers often need to serialize large numbers of barcodes for storage, transmission, or later regeneration, and measuring the execution time helps in capacity planning and optimization.
+// Title: Benchmark ExportToXml and ImportFromXml for large barcode datasets
+// Description: Demonstrates measuring the performance of exporting and importing barcode definitions to and from XML using Aspose.BarCode. Useful for evaluating throughput when handling many barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode performance benchmarking category, showcasing the use of BarcodeGenerator, ExportToXml, and ImportFromXml APIs. Developers often need to assess serialization speed for bulk barcode processing, such as batch generation, storage, or transmission scenarios. The snippet illustrates typical patterns for timing these operations in .NET applications.
 // Prompt: Create a performance benchmark that measures time taken to ExportToXml and ImportFromXml for large barcode datasets.
-// Tags: barcode symbology, performance, export, import, xml, aspose.barcode, benchmark, generation
+// Tags: barcode, performance, benchmark, exporttoxml, importfromxml, aspose.barcode, serialization
 
 using System;
 using System.Collections.Generic;
@@ -10,82 +10,78 @@ using System.Diagnostics;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Provides a simple performance benchmark that measures the time taken to export
-/// barcode definitions to XML and import them back using Aspose.BarCode.
+/// Demonstrates a performance benchmark for ExportToXml and ImportFromXml using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the benchmark application.
+    /// Entry point. Generates sample barcodes, measures export and import times, and outputs results.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the number of barcode samples to process.
-        int sampleCount = 5;
-
-        // Prepare a list of barcode symbologies to test.
-        List<BaseEncodeType> encodeTypes = new List<BaseEncodeType>
+        // Prepare a collection of sample barcode definitions (symbology type and text).
+        var samples = new List<(BaseEncodeType Encode, string Text)>
         {
-            EncodeTypes.QR,
-            EncodeTypes.Code128,
-            EncodeTypes.DataMatrix,
-            EncodeTypes.Pdf417,
-            EncodeTypes.Aztec
+            (EncodeTypes.QR, "SampleQR1"),
+            (EncodeTypes.Code128, "CODE12812345"),
+            (EncodeTypes.Pdf417, "PDF417_SAMPLE_TEXT"),
+            (EncodeTypes.DataMatrix, "DMATRIX123"),
+            (EncodeTypes.Aztec, "AZTEC_SAMPLE")
         };
 
-        // Collection that will hold the XML streams generated for each barcode.
-        List<MemoryStream> xmlStreams = new List<MemoryStream>();
-
-        // -------------------- ExportToXml Benchmark --------------------
-        Stopwatch exportSw = Stopwatch.StartNew();
-
-        for (int i = 0; i < sampleCount; i++)
+        // Create a BarcodeGenerator for each sample and apply a simple parameter change.
+        var generators = new List<BarcodeGenerator>();
+        foreach (var (encode, text) in samples)
         {
-            // Cycle through the prepared encode types.
-            BaseEncodeType encode = encodeTypes[i % encodeTypes.Count];
-
-            // Create a relatively long code text to simulate a large dataset.
-            string codeText = $"Sample{i + 1}_LongText_{new string('X', 50)}";
-
-            // Generate the barcode and export its definition to an XML stream.
-            using (BarcodeGenerator generator = new BarcodeGenerator(encode, codeText))
-            {
-                // Example configuration (optional): set X‑dimension to 2 pixels.
-                generator.Parameters.Barcode.XDimension.Pixels = 2;
-
-                // Export the barcode definition to a memory stream.
-                MemoryStream ms = new MemoryStream();
-                generator.ExportToXml(ms);
-                ms.Position = 0; // Reset stream position for later import.
-                xmlStreams.Add(ms);
-            }
+            var gen = new BarcodeGenerator(encode, text);
+            // Adjust the X-dimension to a specific pixel size.
+            gen.Parameters.Barcode.XDimension.Pixels = 2f;
+            generators.Add(gen);
         }
 
-        exportSw.Stop();
-
-        // -------------------- ImportFromXml Benchmark --------------------
-        Stopwatch importSw = Stopwatch.StartNew();
-
-        foreach (MemoryStream ms in xmlStreams)
+        // Benchmark the ExportToXml operation for all generators.
+        var exportStreams = new List<MemoryStream>();
+        var swExport = Stopwatch.StartNew();
+        foreach (var gen in generators)
         {
-            // Import the barcode definition from the XML stream.
-            using (BarcodeGenerator generator = BarcodeGenerator.ImportFromXml(ms))
-            {
-                // Optional: generate an image to verify the imported object works.
-                // generator.Save("temp.png", BarCodeImageFormat.Png);
-            }
+            var ms = new MemoryStream();
+            gen.ExportToXml(ms);
+            ms.Position = 0; // Reset stream position for subsequent reading.
+            exportStreams.Add(ms);
+        }
+        swExport.Stop();
 
-            // Dispose the memory stream after import.
-            ms.Dispose();
+        // Benchmark the ImportFromXml operation for all previously exported streams.
+        var importedGenerators = new List<BarcodeGenerator>();
+        var swImport = Stopwatch.StartNew();
+        foreach (var ms in exportStreams)
+        {
+            var importedGen = BarcodeGenerator.ImportFromXml(ms);
+            importedGenerators.Add(importedGen);
+        }
+        swImport.Stop();
+
+        // Output the measured times to the console.
+        Console.WriteLine($"ExportToXml total time for {generators.Count} items: {swExport.ElapsedMilliseconds} ms");
+        Console.WriteLine($"ImportFromXml total time for {exportStreams.Count} items: {swImport.ElapsedMilliseconds} ms");
+
+        // Clean up resources: dispose generators and memory streams.
+        foreach (var gen in generators)
+        {
+            using (gen) { }
         }
 
-        importSw.Stop();
+        foreach (var gen in importedGenerators)
+        {
+            using (gen) { }
+        }
 
-        // Output benchmark results.
-        Console.WriteLine($"ExportToXml total time: {exportSw.ElapsedMilliseconds} ms");
-        Console.WriteLine($"ImportFromXml total time: {importSw.ElapsedMilliseconds} ms");
+        foreach (var ms in exportStreams)
+        {
+            using (ms) { }
+        }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate a UPC-A barcode with a purple caption using Aspose.BarCode
-// Description: Demonstrates how to create a UPC-A barcode image and set the caption color to purple via Color.FromName.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and caption parameters. Developers often need to customize barcode appearance, such as adding captions with specific colors, for product labeling and inventory systems. The snippet shows typical steps: initializing the generator, configuring caption visibility, text, and color, and saving the image.
+// Title: Generate UPC-A Barcode with Purple Caption Using Aspose.BarCode
+// Description: Demonstrates how to create a UPC-A barcode image and set the caption color to purple using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to customize barcode captions. It uses the BarcodeGenerator class with EncodeTypes, modifies CaptionAbove parameters, and saves the result as PNG. Developers often need to adjust caption visibility, text, and color when generating barcodes for product labeling or inventory systems.
 // Prompt: Use Color.FromName to set caption color to "Purple" for a UPC-A barcode.
-// Tags: upc-a, barcode generation, caption color, color.fromname, png, aspose.barcode, aspose.drawing
+// Tags: upc-a, barcode, caption, color, generation, png, aspose.barcode, c#, aspnet
 
 using System;
 using System.IO;
@@ -11,44 +11,40 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a UPC-A barcode with a purple caption and saves it as a PNG file.
+/// Example program that generates a UPC-A barcode with a purple caption using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates the barcode, configures caption settings, and writes the image to disk.
+    /// Entry point of the application. Creates a temporary output folder, generates the barcode,
+    /// customizes the caption, saves the image, and writes the output path to the console.
     /// </summary>
     static void Main()
     {
-        // Determine the output directory relative to the current working folder
-        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "Output");
-        if (!Directory.Exists(outputDir))
+        // Define a temporary directory to store the generated barcode image.
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
+
+        // Full file path for the resulting PNG image.
+        string outputPath = Path.Combine(outputDir, "upc_a_purple_caption.png");
+
+        // Initialize the barcode generator for UPC-A symbology with the specified data.
+        using (var generator = new BarcodeGenerator(EncodeTypes.UPCA, "123456789012"))
         {
-            // Create the directory if it does not already exist
-            Directory.CreateDirectory(outputDir);
-        }
-
-        // Full path for the resulting PNG image
-        string outputPath = Path.Combine(outputDir, "UPCA_PurpleCaption.png");
-
-        // UPC-A requires exactly 12 numeric characters
-        string codeText = "012345678905";
-
-        // Initialize the barcode generator with UPC-A symbology and the data string
-        using (var generator = new BarcodeGenerator(EncodeTypes.UPCA, codeText))
-        {
-            // Enable the caption above the barcode and set its displayed text
+            // Enable the caption above the barcode.
             generator.Parameters.CaptionAbove.Visible = true;
+
+            // Set the caption text.
             generator.Parameters.CaptionAbove.Text = "Sample Caption";
 
-            // Apply a purple color to the caption text using Color.FromName
+            // Set the caption text color to purple using Color.FromName.
             generator.Parameters.CaptionAbove.TextColor = Color.FromName("Purple");
 
-            // Save the generated barcode as a PNG file
+            // Save the barcode image as PNG to the specified path.
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image was saved
+        // Inform the user where the barcode image was saved.
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

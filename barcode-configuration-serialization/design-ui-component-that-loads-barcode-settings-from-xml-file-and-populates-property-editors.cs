@@ -1,8 +1,8 @@
-// Title: Export and Import Barcode Generator Settings via XML
-// Description: Demonstrates creating a barcode generator, exporting its configuration to an XML file, and reloading those settings. Useful for persisting UI‑based barcode options.
-// Category-Description: This example belongs to the Aspose.BarCode generation settings management category. It showcases the BarcodeGenerator class, its Parameters property, and the ExportToXml / ImportFromXml methods. Developers often need to save user‑defined barcode options to XML for later reuse in UI components or configuration files.
+// Title: Export and Import Barcode Settings via XML
+// Description: Demonstrates generating a QR barcode, exporting its configuration to an XML file, and re‑importing those settings for reuse.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to persist barcode parameters using ExportToXml and ImportFromXml. Developers working with dynamic barcode creation often need to save and reload settings for consistency across sessions or to share configurations between applications. Key API classes include BarcodeGenerator, EncodeTypes, and QRErrorLevel.
 // Prompt: Design a UI component that loads barcode settings from an XML file and populates property editors.
-// Tags: barcode symbology, export, import, xml, settings, generation, aspose.barcode, ui
+// Tags: barcode, symbology, export, import, xml, settings, aspose.barcode, generation, qr, color
 
 using System;
 using System.IO;
@@ -11,51 +11,73 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates exporting and importing barcode generator settings using XML.
+/// Example program that exports barcode generation settings to XML,
+/// then imports them back to demonstrate persistence of configuration.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates a sample configuration if missing, then loads and displays settings.
+    /// Entry point of the example. Generates a QR barcode, saves its settings,
+    /// reloads them, and displays the imported values.
     /// </summary>
     static void Main()
     {
-        // Determine path for the XML configuration file in the current directory
-        string xmlPath = Path.Combine(Directory.GetCurrentDirectory(), "generatorSettings.xml");
+        // --------------------------------------------------------------------
+        // Create a temporary folder for the demo files
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeXmlDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // If the configuration file does not exist, create a sample generator and export its settings
-        if (!File.Exists(xmlPath))
+        // Path to the XML settings file that will store the barcode configuration
+        string xmlPath = Path.Combine(tempFolder, "settings.xml");
+
+        // --------------------------------------------------------------------
+        // Generate a sample QR barcode and export its settings to XML
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello World"))
         {
-            // Initialize a QR code generator with sample text
-            using (var gen = new BarcodeGenerator(EncodeTypes.QR, "Sample123"))
-            {
-                // Configure visual appearance and code text parameters
-                gen.Parameters.Barcode.BarColor = Color.Blue;
-                gen.Parameters.Barcode.FilledBars = false;
-                gen.Parameters.Barcode.XDimension.Point = 2f;
-                gen.Parameters.Barcode.CodeTextParameters.Location = CodeLocation.Below;
-                gen.Parameters.Barcode.CodeTextParameters.Font.FamilyName = "Arial";
-                gen.Parameters.Barcode.CodeTextParameters.Font.Size.Point = 12f;
+            // Configure sample properties for demonstration purposes
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
+            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelH;
 
-                // Export the configured parameters to an XML file
-                gen.ExportToXml(xmlPath);
-                Console.WriteLine($"Sample XML configuration created at: {xmlPath}");
-            }
+            // Persist the configured parameters to an XML file
+            generator.ExportToXml(xmlPath);
         }
 
-        // Load barcode generation settings from the previously created (or existing) XML file
-        using (var generator = BarcodeGenerator.ImportFromXml(xmlPath))
+        // --------------------------------------------------------------------
+        // Verify that the XML file was created and load the settings back
+        // --------------------------------------------------------------------
+        if (!File.Exists(xmlPath))
         {
-            // Output loaded settings to the console for verification
-            Console.WriteLine("Loaded barcode generation settings from XML:");
-            Console.WriteLine($"Encode Type: {generator.BarcodeType}");
-            Console.WriteLine($"Code Text: {generator.CodeText}");
-            Console.WriteLine($"Bar Color: {generator.Parameters.Barcode.BarColor}");
-            Console.WriteLine($"Filled Bars: {generator.Parameters.Barcode.FilledBars}");
-            Console.WriteLine($"X Dimension (points): {generator.Parameters.Barcode.XDimension.Point}");
-            Console.WriteLine($"Code Text Location: {generator.Parameters.Barcode.CodeTextParameters.Location}");
-            Console.WriteLine($"Code Text Font Family: {generator.Parameters.Barcode.CodeTextParameters.Font.FamilyName}");
-            Console.WriteLine($"Code Text Font Size (points): {generator.Parameters.Barcode.CodeTextParameters.Font.Size.Point}");
+            Console.WriteLine("XML settings file not found: " + xmlPath);
+            return;
+        }
+
+        using (var loadedGenerator = BarcodeGenerator.ImportFromXml(xmlPath))
+        {
+            // Output the imported barcode settings to the console
+            Console.WriteLine("Loaded Barcode Settings:");
+            Console.WriteLine($"Encode Type   : {loadedGenerator.BarcodeType}");
+            Console.WriteLine($"Code Text     : {loadedGenerator.CodeText}");
+            Console.WriteLine($"XDimension (px): {loadedGenerator.Parameters.Barcode.XDimension.Pixels}");
+            Console.WriteLine($"Bar Color     : {loadedGenerator.Parameters.Barcode.BarColor}");
+            Console.WriteLine($"Back Color    : {loadedGenerator.Parameters.BackColor}");
+            Console.WriteLine($"QR Error Level: {loadedGenerator.Parameters.Barcode.QR.ErrorLevel}");
+        }
+
+        // --------------------------------------------------------------------
+        // Clean up temporary files (optional)
+        // --------------------------------------------------------------------
+        try
+        {
+            File.Delete(xmlPath);
+            Directory.Delete(tempFolder);
+        }
+        catch
+        {
+            // Ignore any cleanup errors to avoid interrupting the demo flow
         }
     }
 }

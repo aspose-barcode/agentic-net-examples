@@ -1,8 +1,8 @@
 // Title: Generate High‑Resolution Code128 Barcode for Label Printing
-// Description: Creates a Code128 barcode image with 300 dpi resolution and appropriate padding, suitable for high‑resolution label printing.
-// Category-Description: This example demonstrates how to configure Aspose.BarCode's BarcodeGenerator for high‑resolution output. It covers setting the image resolution, module size, padding, and colors using the Parameters property. Developers working on label printing, packaging, or any scenario requiring crisp, printable barcodes can use these settings as a reference.
+// Description: Creates a Code128 barcode image with 300 dpi resolution and fine X‑dimension, suitable for high‑resolution label printing.
+// Category-Description: This example demonstrates Aspose.BarCode generation features, focusing on resolution, X‑dimension, padding, and color settings. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to produce printable barcode images. Developers working on label design, packaging, or high‑quality print workflows often need to configure these parameters to meet printer specifications.
 // Prompt: Adjust generator settings to produce a barcode image suitable for high‑resolution printing on labels.
-// Tags: code128, high resolution, barcode generation, png, aspose.barcode, printing, label
+// Tags: code128, barcode generation, high resolution, png, aspose.barcode, printing, label
 
 using System;
 using System.IO;
@@ -11,43 +11,46 @@ using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a high‑resolution Code128 barcode image suitable for label printing.
+/// Demonstrates generating a high‑resolution Code128 barcode image for label printing.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode and saves it as a PNG file.
+    /// Entry point that creates the barcode image and saves it to a temporary directory.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Define the output file path in the temporary directory.
-        string outputPath = Path.Combine(Path.GetTempPath(), "highres_barcode.png");
+        // Define output directory in the system's temporary folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Initialize the barcode generator with Code128 symbology and sample data.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
+        // Full path for the generated PNG file
+        string outputPath = Path.Combine(outputDir, "HighResLabel.png");
+
+        // Initialize the barcode generator with Code128 symbology and data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "HIGHRES12345"))
         {
-            // Set image resolution to 300 dpi for high‑quality printing.
+            // Set printer‑friendly resolution (300 dpi)
             generator.Parameters.Resolution = 300f;
 
-            // Configure the X‑dimension (module size) to 0.5 mm for fine detail.
+            // Configure a small X‑dimension for higher barcode density
             generator.Parameters.Barcode.XDimension.Millimeters = 0.5f;
 
-            // Add uniform padding of 2 mm on all sides to ensure clear whitespace.
+            // Add uniform padding around the barcode (2 mm on each side)
             generator.Parameters.Barcode.Padding.Left.Millimeters = 2f;
             generator.Parameters.Barcode.Padding.Top.Millimeters = 2f;
             generator.Parameters.Barcode.Padding.Right.Millimeters = 2f;
             generator.Parameters.Barcode.Padding.Bottom.Millimeters = 2f;
 
-            // Set the barcode foreground color to black and background to white.
+            // Define foreground (barcode) and background colors
             generator.Parameters.Barcode.BarColor = Color.Black;
             generator.Parameters.BackColor = Color.White;
 
-            // Save the generated barcode as a PNG image.
+            // Save the barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode image saved to: {outputPath}");
+        // Inform the user where the file was saved
+        Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }
