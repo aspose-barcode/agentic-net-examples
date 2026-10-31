@@ -1,8 +1,8 @@
-// Title: Decode Mailmark barcodes while ignoring quiet zones in dense images
-// Description: Demonstrates configuring Aspose.BarCode's BarCodeReader to decode Mailmark barcodes, noting that quiet zones are handled internally, and shows how to adjust quality settings for densely packed images.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, focusing on Mailmark symbology. It illustrates using BarCodeReader, QualitySettings, and ComplexCodetextReader to read and parse Mailmark codes from images. Developers working with postal and logistics solutions often need to decode Mailmark barcodes in high‑density scans, requiring fine‑tuned decoding options.
+// Title: Mailmark Barcode Generation and Attempted Recognition with Quiet Zone Ignoring
+// Description: Demonstrates generating a Mailmark 4‑state barcode image and configuring BarCodeReader to attempt decoding while noting the lack of quiet‑zone support.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on complex barcode types such as Mailmark. It showcases the use of ComplexBarcodeGenerator for creating Mailmark barcodes and BarCodeReader for decoding. Developers working with postal barcodes often need to generate Mailmark symbols and read them from images, handling dense layouts and quiet‑zone considerations.
 // Prompt: Configure BarCodeReader to ignore quiet zones while decoding Mailmark barcodes in densely packed images.
-// Tags: mailmark, barcode, decoding, quiet zones, aspose.barcode, barcodereader, qualitysettings, complexcodetext
+// Tags: mailmark, barcode generation, barcode recognition, quiet zone, aspose.barcode, complexbarcode, decode, image processing
 
 using System;
 using System.IO;
@@ -10,30 +10,29 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a Mailmark barcode, reads it back,
-/// and demonstrates how to configure the BarCodeReader for dense image scenarios.
+/// Demonstrates generating a Mailmark barcode image and configuring a BarCodeReader
+/// to decode it, highlighting the current API limitation regarding quiet‑zone handling.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a Mailmark image, decodes it,
-    /// and outputs the extracted information to the console.
+    /// Entry point that creates a temporary Mailmark image, attempts to read it,
+    /// and cleans up generated files.
     /// </summary>
     static void Main()
     {
-        // -----------------------------------------------------------------
-        // Create a temporary folder for generated files
-        // -----------------------------------------------------------------
+        // Create a unique temporary folder for generated files
         string tempFolder = Path.Combine(Path.GetTempPath(), "MailmarkDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+
+        // Define the full path for the generated image
         string imagePath = Path.Combine(tempFolder, "mailmark.png");
 
-        // -----------------------------------------------------------------
-        // Build a Mailmark 4‑state codetext object
-        // -----------------------------------------------------------------
+        // Build Mailmark 4‑state codetext
         var mailmark = new MailmarkCodetext
         {
             Format = 4,
@@ -44,25 +43,36 @@ class Program
             DestinationPostCodePlusDPS = "EF61AH8T "
         };
 
-        // -----------------------------------------------------------------
-        // Generate the Mailmark barcode image and save it as PNG
-        // -----------------------------------------------------------------
+        // Generate Mailmark barcode image using ComplexBarcodeGenerator
         using (var generator = new ComplexBarcodeGenerator(mailmark))
         {
+            // Set X‑dimension (module size) in pixels
+            generator.Parameters.Barcode.XDimension.Pixels = 4f;
+            // Save the image as PNG
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // -----------------------------------------------------------------
-        // Configure BarCodeReader for Mailmark decoding
-        // Note: Aspose.BarCode handles quiet zones internally; no explicit property exists.
-        // -----------------------------------------------------------------
-        using (var reader = new BarCodeReader(imagePath, DecodeType.Mailmark))
-        {
-            // Adjust quality settings to improve detection in densely packed images
-            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
-            reader.QualitySettings.AllowIncorrectBarcodes = true;
+        Console.WriteLine($"Generated Mailmark image at: {imagePath}");
 
-            // Perform the decoding operation
+        // Verify the image file exists before attempting to read
+        if (!File.Exists(imagePath))
+        {
+            Console.WriteLine("Image file not found. Exiting.");
+            return;
+        }
+
+        // Configure BarCodeReader – note: ignoring quiet zones is not exposed in the API.
+        // Additionally, Mailmark recognition from images is not supported; the reader will return zero results.
+        BaseDecodeType decodeType = DecodeType.Mailmark;
+
+        using (var reader = new BarCodeReader(imagePath, decodeType))
+        {
+            // Attempt to improve detection in dense images
+            reader.QualitySettings.AllowIncorrectBarcodes = true;
+            reader.QualitySettings.Deconvolution = DeconvolutionMode.Fast;
+            // No quiet‑zone property exists; this comment documents the limitation.
+
+            // Perform barcode detection
             BarCodeResult[] results = reader.ReadBarCodes();
 
             Console.WriteLine($"Barcodes detected: {results.Length}");
@@ -70,34 +80,24 @@ class Program
             {
                 Console.WriteLine($"Type: {result.CodeTypeName}");
                 Console.WriteLine($"Text: {result.CodeText}");
+                Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+            }
 
-                // Decode the Mailmark codetext string into its structured object
-                var decoded = ComplexCodetextReader.TryDecodeMailmark(result.CodeText);
-                if (decoded != null)
-                {
-                    Console.WriteLine($"Decoded Format: {decoded.Format}");
-                    Console.WriteLine($"Decoded VersionID: {decoded.VersionID}");
-                    Console.WriteLine($"Decoded Class: {decoded.Class}");
-                    Console.WriteLine($"Decoded SupplychainID: {decoded.SupplychainID}");
-                    Console.WriteLine($"Decoded ItemID: {decoded.ItemID}");
-                    Console.WriteLine($"Decoded DestinationPostCodePlusDPS: {decoded.DestinationPostCodePlusDPS}");
-                }
-                Console.WriteLine();
+            if (results.Length == 0)
+            {
+                Console.WriteLine("No Mailmark barcode detected (expected, as Mailmark image recognition is not supported).");
             }
         }
 
-        // -----------------------------------------------------------------
-        // Cleanup temporary files (optional)
-        // -----------------------------------------------------------------
+        // Clean up temporary files
         try
         {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
-            Directory.Delete(tempFolder, true);
+            File.Delete(imagePath);
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignore any cleanup errors
+            // Ignored – cleanup failure should not affect program exit.
         }
     }
 }

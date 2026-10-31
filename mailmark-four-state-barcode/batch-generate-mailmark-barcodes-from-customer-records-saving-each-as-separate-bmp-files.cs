@@ -1,82 +1,83 @@
-// Title: Batch generate Mailmark barcodes and save each as a BMP file
-// Description: Demonstrates how to create Mailmark 4‑State barcodes for multiple customer records using Aspose.BarCode and save each barcode as an individual BMP image.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as Mailmark. It showcases the use of ComplexBarcodeGenerator, MailmarkCodetext, and image export settings, which are common tasks when developers need to produce high‑volume, custom‑formatted barcodes for logistics or mailing applications.
+// Title: Batch generation of Mailmark barcodes to BMP files
+// Description: Demonstrates how to generate multiple Mailmark barcodes from customer data and save each as an individual BMP image.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, focusing on the ComplexBarcodeGenerator and MailmarkCodetext classes. It shows a typical batch‑processing scenario where developers create a series of Mailmark barcodes from records and export them as bitmap files for downstream systems such as printing or archival.
 // Prompt: Batch generate Mailmark barcodes from customer records, saving each as separate BMP files.
-// Tags: mailmark, barcode, batch, bmp, generation, complexbarcode, aspose.barcode
+// Tags: mailmark, barcode, batch, bmp, generation, aspose.barcode, complexbarcodegenerator
 
 using System;
-using System.IO;
 using System.Collections.Generic;
-using Aspose.BarCode;
-using Aspose.BarCode.ComplexBarcode;
+using System.IO;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates batch generation of Mailmark 4‑State barcodes and saving them as BMP files.
+/// Demonstrates batch creation of Mailmark barcodes and saving them as BMP files.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that creates sample customer data, generates Mailmark barcodes, and writes each to a BMP file.
+    /// Entry point. Generates sample Mailmark records, creates barcodes, and writes BMP files to a temporary folder.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the output images
+        // Create a unique temporary output folder for the generated BMP files
         string outputFolder = Path.Combine(Path.GetTempPath(), "MailmarkBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputFolder);
 
-        // Sample list of customer records to encode into barcodes
-        var customers = new List<CustomerRecord>
+        // Prepare a list of sample customer records represented as MailmarkCodetext objects
+        var records = new List<MailmarkCodetext>
         {
-            new CustomerRecord { Class = "0", SupplychainID = 384224, ItemID = 16563762 },
-            new CustomerRecord { Class = "1", SupplychainID = 384225, ItemID = 16563763 },
-            new CustomerRecord { Class = "2", SupplychainID = 384226, ItemID = 16563764 },
-            new CustomerRecord { Class = "3", SupplychainID = 384227, ItemID = 16563765 },
-            new CustomerRecord { Class = "4", SupplychainID = 384228, ItemID = 16563766 }
+            CreateMailmark(4, 1, "0", 384224, 16563760),
+            CreateMailmark(4, 1, "0", 384224, 16563761),
+            CreateMailmark(4, 1, "0", 384224, 16563762),
+            CreateMailmark(4, 1, "0", 384224, 16563763),
+            CreateMailmark(4, 1, "0", 384224, 16563764)
         };
 
+        // Iterate over each record, generate a barcode, and save it as a BMP file
         int index = 1;
-        foreach (var cust in customers)
+        foreach (var mailmark in records)
         {
-            // Build Mailmark 4‑State codetext using the current customer's data
-            var mailmark = new MailmarkCodetext
-            {
-                Format = 4,
-                VersionID = 1,
-                Class = cust.Class,
-                SupplychainID = cust.SupplychainID,
-                ItemID = cust.ItemID,
-                DestinationPostCodePlusDPS = "EF61AH8T "
-            };
+            string filePath = Path.Combine(outputFolder, $"Mailmark_{index}.bmp");
 
-            // Generate the barcode image with the specified codetext
+            // Use ComplexBarcodeGenerator to create the Mailmark barcode from the codetext
             using (var generator = new ComplexBarcodeGenerator(mailmark))
             {
-                // Set the X‑dimension (module width) to 4 pixels for better readability
-                generator.Parameters.Barcode.XDimension.Pixels = 4f;
+                // Set the X-dimension (module width) to 4 pixels for better readability
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
 
-                // Define the full file path for the BMP output
-                string filePath = Path.Combine(outputFolder, $"Mailmark_{index}.bmp");
-
-                // Save the generated barcode as a BMP file
+                // Save the generated barcode image in BMP format
                 generator.Save(filePath, BarCodeImageFormat.Bmp);
-
-                // Log the successful save operation
-                Console.WriteLine($"Saved barcode {index} to: {filePath}");
             }
 
+            Console.WriteLine($"Saved: {filePath}");
             index++;
         }
 
-        // Indicate that the batch process has finished
         Console.WriteLine("Batch generation completed.");
     }
 
-    // Simple data holder for customer information used in barcode generation
-    class CustomerRecord
+    /// <summary>
+    /// Helper method that builds a MailmarkCodetext instance from supplied field values.
+    /// </summary>
+    /// <param name="format">Mailmark format identifier.</param>
+    /// <param name="versionId">Version identifier.</param>
+    /// <param name="classValue">Class value as a string.</param>
+    /// <param name="supplyChainId">Supply chain identifier.</param>
+    /// <param name="itemId">Item identifier.</param>
+    /// <returns>A populated MailmarkCodetext object.</returns>
+    static MailmarkCodetext CreateMailmark(int format, int versionId, string classValue, int supplyChainId, int itemId)
     {
-        public string Class { get; set; }
-        public int SupplychainID { get; set; }
-        public int ItemID { get; set; }
+        var mailmark = new MailmarkCodetext
+        {
+            Format = format,
+            VersionID = versionId,
+            Class = classValue,
+            SupplychainID = supplyChainId,
+            ItemID = itemId,
+            DestinationPostCodePlusDPS = "EF61AH8T "
+        };
+        return mailmark;
     }
 }

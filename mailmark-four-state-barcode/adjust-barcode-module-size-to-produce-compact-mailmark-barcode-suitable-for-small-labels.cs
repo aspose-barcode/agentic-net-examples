@@ -1,8 +1,8 @@
-// Title: Compact Mailmark Barcode Generation with Adjusted Module Size
-// Description: Demonstrates how to generate a Mailmark barcode with a reduced module size for compact printing on small labels.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Mailmark symbology. It showcases the use of BarcodeGenerator, EncodeTypes, and barcode parameters such as XDimension and BarHeight to customize the appearance. Developers often need to create high‑density barcodes for limited‑space applications like small product labels or packaging.
+// Title: Generate Compact Mailmark Barcode for Small Labels
+// Description: Demonstrates how to create a Mailmark barcode with reduced module size and bar height, producing a compact image suitable for small label printing.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on Mailmark symbology. It shows how to configure XDimension and BarHeight via the BarcodeGenerator.Parameters.Barcode API to tailor barcode size. Developers often need to adjust these settings when printing barcodes on limited‑space media such as shipping labels or product tags.
 // Prompt: Adjust barcode module size to produce a compact Mailmark barcode suitable for small labels.
-// Tags: mailmark, barcode generation, module size, compact, png, aspose.barcode, barcodegenerator, parameters
+// Tags: mailmark, barcode, generation, compact, label, xdimension, barheight, png, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,42 +10,40 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Generates a compact Mailmark barcode with customized module size and saves it as a PNG file.
+/// Demonstrates generating a compact Mailmark barcode suitable for small labels.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates output folder, configures barcode parameters, and saves the image.
+    /// Entry point that creates a temporary folder, generates a compact Mailmark barcode,
+    /// and saves it as a PNG file.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output folder with a unique name
+        // Create a unique temporary output folder
         string outputFolder = Path.Combine(Path.GetTempPath(), "MailmarkDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputFolder);
 
-        // Mailmark code to encode
-        string mailmarkCode = "21B2254800659JW5O9QA6Y";
-
-        // Full path for the resulting PNG file
+        // Define the full path for the resulting PNG image
         string outputPath = Path.Combine(outputFolder, "MailmarkCompact.png");
+
+        // Sample Mailmark C-type code (valid format)
+        string mailmarkCode = "21B2254800659JW5O9QA6Y";
 
         // Initialize the barcode generator for Mailmark symbology
         using (var generator = new BarcodeGenerator(EncodeTypes.Mailmark, mailmarkCode))
         {
-            // Reduce the module (X) dimension to make the barcode more compact
+            // Reduce module size (XDimension) to make the barcode more compact
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
 
-            // Set a modest bar height suitable for small labels
+            // Reduce bar height to keep the overall barcode size small
             generator.Parameters.Barcode.BarHeight.Pixels = 30f;
 
-            // Hide the border to save space
-            generator.Parameters.Border.Visible = false;
-
-            // Save the barcode as a PNG image
+            // Save the generated barcode as a PNG image
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
         // Inform the user where the barcode image was saved
-        Console.WriteLine("Mailmark barcode saved to: " + outputPath);
+        Console.WriteLine($"Compact Mailmark barcode saved to: {outputPath}");
     }
 }
