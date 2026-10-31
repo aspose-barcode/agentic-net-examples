@@ -1,61 +1,59 @@
-// Title: Generate a HIBCLICCombined Code 39 barcode with lot number and unit of measure
-// Description: Demonstrates how to create a HIBCLICCombinedCodetext, assign lot number and unit of measure, and render a Code 39 barcode image.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It shows usage of HIBCLICCombinedCodetext, PrimaryData, SecondaryAndAdditionalData, and ComplexBarcodeGenerator to produce HIBC Code 39 LIC barcodes. Developers creating healthcare or industrial labels often need to embed product identifiers, lot numbers, and measurement units in a single barcode; this snippet illustrates the typical workflow for such scenarios.
+// Title: Generate HIBCLIC Combined Code39 Barcode with Lot Number and Unit of Measure
+// Description: Demonstrates creating a HIBCLICCombinedCodetext, setting the lot number and unit of measure, and generating a Code 39 barcode image.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of HIBCLICCombinedCodetext, PrimaryData, and SecondaryAndAdditionalData classes to build healthcare‑related barcodes. Typical use cases include labeling medical devices or pharmaceuticals where lot tracking and unit of measure are required. Developers often need to combine multiple data segments into a single barcode using the ComplexBarcodeGenerator API.
 // Prompt: Create a HIBCLICCombinedCodetext, set lot number and unit of measure, then generate a Code 39 barcode.
-// Tags: code39, hibc, combinedcodetext, lot-number, unit-of-measure, barcode-generation, aspnet, aspnet-core, aspose.barcode
+// Tags: barcode, code39, hibclic, complexbarcode, generation, png, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generation of a HIBCLICCombined Code 39 barcode with lot number and unit of measure.
+/// Demonstrates generating a HIBCLIC combined Code 39 barcode with lot number and unit of measure.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Creates the combined codetext, configures data, and saves the barcode image.
+    /// Entry point that creates the combined codetext, configures data, and saves the barcode image.
     /// </summary>
     static void Main()
     {
-        // Define the output file path for the generated PNG image
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "HIBCLICCombined.png");
+        // Prepare output directory in the system temporary folder
+        string outputDir = Path.Combine(Path.GetTempPath(), "HIBCLICExample");
+        Directory.CreateDirectory(outputDir);
+        string outputPath = Path.Combine(outputDir, "HIBCLICCombined_Code39.png");
 
-        // Instantiate the combined HIBC LIC codetext object
-        HIBCLICCombinedCodetext combinedCodetext = new HIBCLICCombinedCodetext
+        // Create combined HIBCLIC codetext and specify the barcode symbology
+        var combinedCodetext = new HIBCLICCombinedCodetext
         {
-            // Specify the barcode symbology (HIBC Code 39 LIC)
             BarcodeType = EncodeTypes.HIBCCode39LIC
         };
 
-        // Populate primary data fields (product number, labeler ID, unit of measure)
+        // Set primary data (product information and unit of measure)
         combinedCodetext.PrimaryData = new PrimaryData
         {
             ProductOrCatalogNumber = "12345",
             LabelerIdentificationCode = "A999",
-            UnitOfMeasureID = 1 // unit of measure identifier
+            UnitOfMeasureID = 1
         };
 
-        // Populate secondary data fields (lot number)
+        // Set secondary data (lot number)
         combinedCodetext.SecondaryAndAdditionalData = new SecondaryAndAdditionalData
         {
-            LotNumber = "LOT123" // lot number identifier
+            LotNumber = "LOT123"
         };
 
-        // Generate the barcode using the complex barcode generator
-        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(combinedCodetext))
+        // Generate the barcode using ComplexBarcodeGenerator
+        using (var generator = new ComplexBarcodeGenerator(combinedCodetext))
         {
-            // Set the X-dimension (module width) in pixels for better readability
+            // Adjust X-dimension for better readability
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
-
-            // Save the generated barcode image to the specified path in PNG format
+            // Save the barcode image as PNG
             generator.Save(outputPath, BarCodeImageFormat.Png);
         }
 
-        // Inform the user where the barcode image has been saved
         Console.WriteLine($"Barcode saved to: {outputPath}");
     }
 }

@@ -1,8 +1,8 @@
 // Title: Read and Decode HIBC LIC Barcode Using ComplexCodetextReader
-// Description: Demonstrates generating a HIBC QR LIC barcode, saving it to a temporary file, and decoding its complex codetext from a file stream.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation and recognition category. It showcases the use of ComplexBarcodeGenerator to create HIBC LIC barcodes, BarCodeReader for image decoding, and ComplexCodetextReader for parsing the complex codetext. Typical scenarios include healthcare product labeling and inventory tracking where HIBC standards are required. Developers often need to generate, read, and interpret primary, secondary, or combined HIBC data using these APIs.
+// Description: Demonstrates generating a HIBC LIC QR barcode, saving it to a temporary file, and decoding it with ComplexCodetextReader to extract primary, secondary, or combined data.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on HIBC (Health Industry Bar Code) LIC symbology. It showcases the use of ComplexBarcodeGenerator, BarCodeReader, and ComplexCodetextReader classes to create, read, and parse complex HIBC LIC code texts—common tasks for healthcare and pharmaceutical applications that need to encode product, lot, and expiry information.
 // Prompt: Read a HIBC LIC barcode from a file stream and decode it using ComplexCodetextReader.
-// Tags: hibc, lic, barcode, generation, recognition, complexcodetextreader, aspose.barcode
+// Tags: hibc, lic, barcode, decoding, complexcodetextreader, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,106 +12,119 @@ using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.ComplexBarcode;
 
 /// <summary>
-/// Demonstrates creating a HIBC QR LIC barcode, saving it to a temporary file,
-/// and decoding its complex codetext using Aspose.BarCode APIs.
+/// Sample program that generates a HIBC LIC QR barcode, saves it to a temporary file,
+/// reads it back, and decodes the complex code text using <see cref="ComplexCodetextReader"/>.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, reads it from a file stream,
-    /// and outputs decoded primary, secondary, or combined data.
+    /// Entry point of the sample. Performs barcode generation, reading, decoding, and cleanup.
     /// </summary>
-    /// <param name="args">Command‑line arguments (not used).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Create a temporary folder for the barcode image
-        string tempDir = Path.Combine(Path.GetTempPath(), "HIBCLICDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string barcodePath = Path.Combine(tempDir, "hibclic.png");
+        // Create a temporary folder for the sample barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "HIBCLIC_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "hibclic.png");
 
-        // Build primary data codetext for a HIBC QR LIC barcode
-        HIBCLICPrimaryDataCodetext primaryCodetext = new HIBCLICPrimaryDataCodetext
+        // Generate a sample HIBC LIC Primary Data barcode
+        try
         {
-            BarcodeType = EncodeTypes.HIBCQRLIC,
-            Data = new PrimaryData
+            HIBCLICPrimaryDataCodetext primaryCodetext = new HIBCLICPrimaryDataCodetext();
+            primaryCodetext.BarcodeType = EncodeTypes.HIBCQRLIC;
+            primaryCodetext.Data = new PrimaryData
             {
                 ProductOrCatalogNumber = "12345",
                 LabelerIdentificationCode = "A999",
                 UnitOfMeasureID = 1
+            };
+
+            using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(primaryCodetext))
+            {
+                // Set barcode visual parameters
+                generator.Parameters.Barcode.XDimension.Pixels = 5f;
+                generator.Save(barcodePath);
             }
-        };
-
-        // Generate the barcode image and save it to the temporary file
-        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(primaryCodetext))
-        {
-            generator.Parameters.Barcode.XDimension.Pixels = 10;
-            generator.Save(barcodePath);
         }
-
-        // Verify the file was created before attempting to read it
-        if (!File.Exists(barcodePath))
+        catch (Exception ex)
         {
-            Console.WriteLine("Failed to create barcode image.");
+            Console.WriteLine("Error generating barcode: " + ex.Message);
             return;
         }
 
-        // Read and decode the barcode from a file stream
-        using (FileStream fs = new FileStream(barcodePath, FileMode.Open, FileAccess.Read))
-        using (BarCodeReader reader = new BarCodeReader(fs, DecodeType.HIBCQRLIC))
+        // Verify the file exists before attempting to read
+        if (!File.Exists(barcodePath))
         {
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                // Decode the complex HIBC LIC codetext
-                var complex = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
-                if (complex == null)
-                {
-                    Console.WriteLine("Unable to decode complex codetext.");
-                    continue;
-                }
+            Console.WriteLine("Barcode file not found: " + barcodePath);
+            return;
+        }
 
-                // Primary data only
-                if (complex is HIBCLICPrimaryDataCodetext primary)
+        // Read and decode the HIBC LIC barcode from a file stream
+        try
+        {
+            using (FileStream stream = new FileStream(barcodePath, FileMode.Open, FileAccess.Read))
+            {
+                using (BarCodeReader reader = new BarCodeReader(stream, DecodeType.HIBCQRLIC))
                 {
-                    Console.WriteLine("=== Primary Data ===");
-                    Console.WriteLine($"Product or catalog number: {primary.Data.ProductOrCatalogNumber}");
-                    Console.WriteLine($"Labeler identification code: {primary.Data.LabelerIdentificationCode}");
-                    Console.WriteLine($"Unit of measure ID: {primary.Data.UnitOfMeasureID}");
-                }
-                // Secondary data only
-                else if (complex is HIBCLICSecondaryAndAdditionalDataCodetext secondary)
-                {
-                    Console.WriteLine("=== Secondary Data ===");
-                    var d = secondary.Data;
-                    Console.WriteLine($"Expiry date: {d.ExpiryDate}");
-                    Console.WriteLine($"Quantity: {d.Quantity}");
-                    Console.WriteLine($"Lot number: {d.LotNumber}");
-                    Console.WriteLine($"Serial number: {d.SerialNumber}");
-                    Console.WriteLine($"Date of manufacture: {d.DateOfManufacture}");
-                    Console.WriteLine($"Link character: {secondary.LinkCharacter}");
-                }
-                // Combined primary and secondary data
-                else if (complex is HIBCLICCombinedCodetext combined)
-                {
-                    Console.WriteLine("=== Combined Data ===");
-                    var p = combined.PrimaryData;
-                    var s = combined.SecondaryAndAdditionalData;
-                    Console.WriteLine($"Product or catalog number: {p.ProductOrCatalogNumber}");
-                    Console.WriteLine($"Labeler identification code: {p.LabelerIdentificationCode}");
-                    Console.WriteLine($"Unit of measure ID: {p.UnitOfMeasureID}");
-                    Console.WriteLine($"Expiry date: {s.ExpiryDate}");
-                    Console.WriteLine($"Quantity: {s.Quantity}");
-                    Console.WriteLine($"Lot number: {s.LotNumber}");
-                    Console.WriteLine($"Serial number: {s.SerialNumber}");
-                    Console.WriteLine($"Date of manufacture: {s.DateOfManufacture}");
-                }
-                else
-                {
-                    Console.WriteLine("Decoded codetext type is unrecognized.");
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    {
+                        Console.WriteLine("Raw CodeText: " + result.CodeText);
+                        HIBCLICComplexCodetext complex = ComplexCodetextReader.TryDecodeHIBCLIC(result.CodeText);
+                        if (complex is HIBCLICPrimaryDataCodetext primary)
+                        {
+                            Console.WriteLine("Decoded as Primary Data:");
+                            Console.WriteLine("  Product or Catalog Number: " + primary.Data.ProductOrCatalogNumber);
+                            Console.WriteLine("  Labeler Identification Code: " + primary.Data.LabelerIdentificationCode);
+                            Console.WriteLine("  Unit of Measure ID: " + primary.Data.UnitOfMeasureID);
+                        }
+                        else if (complex is HIBCLICSecondaryAndAdditionalDataCodetext secondary)
+                        {
+                            Console.WriteLine("Decoded as Secondary Data:");
+                            Console.WriteLine("  Expiry Date: " + secondary.Data.ExpiryDate);
+                            Console.WriteLine("  Quantity: " + secondary.Data.Quantity);
+                            Console.WriteLine("  Lot Number: " + secondary.Data.LotNumber);
+                            Console.WriteLine("  Serial Number: " + secondary.Data.SerialNumber);
+                            Console.WriteLine("  Date of Manufacture: " + secondary.Data.DateOfManufacture);
+                            Console.WriteLine("  Link Character: " + secondary.LinkCharacter);
+                        }
+                        else if (complex is HIBCLICCombinedCodetext combined)
+                        {
+                            Console.WriteLine("Decoded as Combined Data:");
+                            Console.WriteLine("  Primary - Product or Catalog Number: " + combined.PrimaryData.ProductOrCatalogNumber);
+                            Console.WriteLine("  Primary - Labeler Identification Code: " + combined.PrimaryData.LabelerIdentificationCode);
+                            Console.WriteLine("  Primary - Unit of Measure ID: " + combined.PrimaryData.UnitOfMeasureID);
+                            Console.WriteLine("  Secondary - Expiry Date: " + combined.SecondaryAndAdditionalData.ExpiryDate);
+                            Console.WriteLine("  Secondary - Quantity: " + combined.SecondaryAndAdditionalData.Quantity);
+                            Console.WriteLine("  Secondary - Lot Number: " + combined.SecondaryAndAdditionalData.LotNumber);
+                            Console.WriteLine("  Secondary - Serial Number: " + combined.SecondaryAndAdditionalData.SerialNumber);
+                            Console.WriteLine("  Secondary - Date of Manufacture: " + combined.SecondaryAndAdditionalData.DateOfManufacture);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Decoded to an unknown HIBC LIC type.");
+                        }
+                    }
                 }
             }
         }
-
-        // Cleanup temporary files (optional)
-        // Directory.Delete(tempDir, true);
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error reading barcode: " + ex.Message);
+        }
+        finally
+        {
+            // Clean up temporary files
+            try
+            {
+                if (File.Exists(barcodePath))
+                    File.Delete(barcodePath);
+                if (Directory.Exists(tempFolder))
+                    Directory.Delete(tempFolder, true);
+            }
+            catch
+            {
+                // Suppress any cleanup errors
+            }
+        }
     }
 }

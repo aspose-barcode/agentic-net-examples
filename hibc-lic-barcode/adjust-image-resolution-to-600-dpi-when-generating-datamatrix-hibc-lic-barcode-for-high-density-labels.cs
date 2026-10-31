@@ -1,48 +1,61 @@
-// Title: Generate DataMatrix HIBC LIC Barcode at 600 DPI
-// Description: Demonstrates how to create a DataMatrix HIBC LIC barcode with a 600 DPI image resolution for high‑density label printing.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and resolution settings to produce high‑resolution barcodes. Typical scenarios include printing dense labels for medical, pharmaceutical, or logistics applications where barcode readability at small sizes is critical. Developers often need to adjust image DPI, module size, and output format to meet label specifications.
+// Title: Generate DataMatrix HIBC LIC barcode with 600 DPI resolution
+// Description: Demonstrates creating a DataMatrix HIBC LIC barcode at 600 DPI for high‑density label printing.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as HIBC LIC. It shows how to configure resolution, X‑dimension, and save the image using the ComplexBarcodeGenerator and related parameter classes. Developers working with pharmaceutical or logistics labeling often need high‑resolution DataMatrix barcodes for small‑format labels.
 // Prompt: Adjust the image resolution to 600 DPI when generating a DataMatrix HIBC LIC barcode for high‑density labels.
-// Tags: datamatrix, hibc, barcode, resolution, png, aspose.barcode, image generation
+// Tags: datamatrix, hibc, lic, resolution, barcode generation, complexbarcode, aspnet, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.ComplexBarcode;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Generates a DataMatrix HIBC LIC barcode image with a 600 DPI resolution,
-/// suitable for high‑density label printing.
+/// Demonstrates generating a DataMatrix HIBC LIC barcode with a 600 DPI resolution.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode and saves it as a PNG file.
+    /// Entry point that creates the barcode, configures parameters, and saves the image.
     /// </summary>
     static void Main()
     {
-        // Define the HIBC DataMatrix code text (must start with '+')
-        string codeText = "+A123B456C789";
-
-        // Build a temporary output directory and file path
-        string outputDir = Path.Combine(Path.GetTempPath(), "HIBC_DataMatrix");
+        // Define the output directory and ensure it exists
+        string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "output");
         Directory.CreateDirectory(outputDir);
-        string outputPath = Path.Combine(outputDir, "HIBC_DataMatrix_600dpi.png");
+        string outPath = Path.Combine(outputDir, "DataMatrix_HIBC_LIC.png");
 
-        // Initialize the barcode generator for DataMatrix with the specified text
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
+        // Prepare the primary data required for the HIBC LIC barcode
+        var primaryData = new PrimaryData
         {
-            // Set the image resolution to 600 DPI for high‑density output
+            ProductOrCatalogNumber = "12345",
+            LabelerIdentificationCode = "A999",
+            UnitOfMeasureID = 1
+        };
+
+        // Build the complex codetext object specifying the barcode type and data
+        var complexCodetext = new HIBCLICPrimaryDataCodetext
+        {
+            BarcodeType = EncodeTypes.HIBCDataMatrixLIC,
+            Data = primaryData
+        };
+
+        // Generate the barcode using the complex barcode generator
+        using (var generator = new ComplexBarcodeGenerator(complexCodetext))
+        {
+            // Set image resolution to 600 DPI for high‑density printing
             generator.Parameters.Resolution = 600f;
 
-            // Optionally define the module size (X‑dimension) in millimeters
+            // Define the X‑dimension (module size) in millimeters
             generator.Parameters.Barcode.XDimension.Millimeters = 0.5f;
 
             // Save the generated barcode as a PNG file
-            generator.Save(outputPath, BarCodeImageFormat.Png);
+            generator.Save(outPath, BarCodeImageFormat.Png);
         }
 
         // Inform the user where the barcode image was saved
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        Console.WriteLine($"Barcode saved to {outPath}");
     }
 }

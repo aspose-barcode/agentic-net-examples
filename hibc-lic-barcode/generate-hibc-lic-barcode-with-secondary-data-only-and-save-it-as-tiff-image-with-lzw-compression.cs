@@ -1,91 +1,76 @@
-// Title: Generate HIBC LIC barcode with secondary data and save as LZW‑compressed TIFF
+// Title: Generate HIBC LIC barcode with secondary data only and save as TIFF (LZW)
 // Description: Demonstrates creating a HIBC LIC barcode that contains only secondary data, then saving the image as a TIFF file using LZW compression.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode types such as HIBC LIC. It shows how to use the ComplexBarcodeGenerator with HIBCLICSecondaryAndAdditionalDataCodetext, configure barcode parameters, and export the result to a TIFF image with specific encoder settings. Developers working with healthcare or logistics labeling often need to embed secondary information (lot, serial, dates) in HIBC barcodes and require lossless compression for archival storage.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It shows how to use the ComplexBarcodeGenerator class together with HIBCLICSecondaryAndAdditionalDataCodetext to encode secondary information such as expiry date, lot number, and serial number. Typical use cases include pharmaceutical labeling and inventory tracking where only supplemental data is required. Developers often need to customize image dimensions and compression settings for downstream systems.
 // Prompt: Generate a HIBC LIC barcode with secondary data only and save it as a TIFF image with LZW compression.
-// Tags: hibc, lic, barcode, secondary-data, tiff, lzw, compression, aspnet, barcodelib, generation
+// Tags: hibc lic barcode, secondary data, tiff, lzw compression, aspose.barcode, complexbarcodegenerator, barcode generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
-using Aspose.BarCode.Generation;
 using Aspose.BarCode.ComplexBarcode;
+using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates a HIBC LIC barcode containing only secondary data
-/// and saves it as a TIFF image with LZW compression.
+/// Example program that generates a HIBC LIC barcode with secondary data only
+/// and saves it as a TIFF image using LZW compression.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates the barcode, configures image encoding,
-    /// and writes the output file to the current directory.
+    /// Entry point of the example. Creates the barcode, configures image parameters,
+    /// and writes the result to a TIFF file.
     /// </summary>
     static void Main()
     {
         // Define the output file path in the current working directory.
         string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "HIBCLICSecondary.tif");
 
-        // Create a complex codetext object for HIBC LIC with secondary and additional data.
-        HIBCLICSecondaryAndAdditionalDataCodetext complexCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
+        // Prepare secondary data for the HIBC LIC barcode.
+        var secondaryCodetext = new HIBCLICSecondaryAndAdditionalDataCodetext
         {
-            BarcodeType = EncodeTypes.HIBCQRLIC, // QR‑based HIBC LIC symbology
-            LinkCharacter = '+' // Required link character for HIBC
+            BarcodeType = EncodeTypes.HIBCQRLIC,
+            Data = new SecondaryAndAdditionalData
+            {
+                ExpiryDate = DateTime.Now.AddDays(30),
+                ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
+                Quantity = 10,
+                LotNumber = "LOT123",
+                SerialNumber = "SERIAL123",
+                DateOfManufacture = DateTime.Now.AddMonths(-1)
+            },
+            LinkCharacter = '+'
         };
 
-        // Populate the secondary data fields (lot, serial, quantity, dates).
-        complexCodetext.Data = new SecondaryAndAdditionalData
+        // Generate the barcode image using ComplexBarcodeGenerator.
+        using (var generator = new ComplexBarcodeGenerator(secondaryCodetext))
         {
-            LotNumber = "LOT123",
-            SerialNumber = "SERIAL123",
-            Quantity = 30,
-            ExpiryDate = DateTime.Now,
-            ExpiryDateFormat = HIBCLICDateFormat.MMDDYY,
-            DateOfManufacture = DateTime.Now
-        };
+            // Set the X-dimension (module width) to 5 pixels for better readability.
+            generator.Parameters.Barcode.XDimension.Pixels = 5f;
 
-        // Initialize the complex barcode generator with the prepared codetext.
-        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(complexCodetext))
-        {
-            // Set the X‑dimension (module width) of the barcode in pixels.
-            generator.Parameters.Barcode.XDimension.Pixels = 10f;
-
-            // Generate the barcode image as a bitmap.
+            // Produce the bitmap representation of the barcode.
             using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Locate the TIFF image encoder from the system's available encoders.
-                ImageCodecInfo tiffCodec = null;
-                foreach (ImageCodecInfo codec in ImageCodecInfo.GetImageEncoders())
-                {
-                    if (codec.FormatID == ImageFormat.Tiff.Guid)
-                    {
-                        tiffCodec = codec;
-                        break;
-                    }
-                }
-
-                // If the TIFF encoder is not found, abort with a message.
+                // Locate the TIFF image codec required for saving.
+                var codecs = ImageCodecInfo.GetImageEncoders();
+                var tiffCodec = Array.Find(codecs, c => c.FormatID == ImageFormat.Tiff.Guid);
                 if (tiffCodec == null)
                 {
-                    Console.WriteLine("TIFF encoder not found.");
+                    Console.WriteLine("TIFF codec not found.");
                     return;
                 }
 
-                // Configure LZW compression for the TIFF output.
-                Encoder compressionEncoder = Encoder.Compression;
-                EncoderParameter compressionParam = new EncoderParameter(compressionEncoder, (long)EncoderValue.CompressionLZW);
-                using (EncoderParameters encoderParams = new EncoderParameters(1))
+                // Configure encoder parameters to use LZW compression.
+                using (var encoderParams = new EncoderParameters(1))
                 {
-                    encoderParams.Param[0] = compressionParam;
-
-                    // Save the bitmap to the specified path using the TIFF encoder and compression settings.
+                    encoderParams.Param[0] = new EncoderParameter(Encoder.Compression, (long)EncoderValue.CompressionLZW);
+                    // Save the bitmap as a TIFF file with the specified compression.
                     bitmap.Save(outputPath, tiffCodec, encoderParams);
                 }
             }
         }
 
-        // Inform the user where the barcode image has been saved.
-        Console.WriteLine($"Barcode saved to: {outputPath}");
+        Console.WriteLine($"HIBC LIC secondary data barcode saved to: {outputPath}");
     }
 }

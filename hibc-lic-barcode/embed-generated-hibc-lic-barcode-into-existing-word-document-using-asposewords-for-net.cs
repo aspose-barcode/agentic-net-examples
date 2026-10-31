@@ -1,8 +1,8 @@
-// Title: Embed HIBC LIC Barcode into a Word Document using Aspose.Words
-// Description: This example shows how to generate a HIBC LIC barcode with Aspose.BarCode and embed the resulting image into a Word document using Aspose.Words for .NET.
-// Category-Description: The sample belongs to the Aspose.BarCode generation and integration category, illustrating the use of ComplexBarcodeGenerator, HIBCLICPrimaryDataCodetext, and DocumentBuilder to create barcode images and insert them into Office documents. Developers often need to combine barcode creation with document automation for labeling, packaging, and compliance reporting. The example demonstrates typical workflows for generating high‑resolution barcodes and embedding them in DOCX files.
+// Title: Embed HIBC LIC Barcode into a Word Document using Aspose
+// Description: Demonstrates generating a HIBC LIC barcode with Aspose.BarCode and inserting it into a Word document via Aspose.Words.
+// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Words integration category, illustrating how to create complex barcodes (HIBC LIC) and embed them into Microsoft Word files. It showcases key API classes such as ComplexBarcodeGenerator, HIBCLICPrimaryDataCodetext, Document, and DocumentBuilder. Developers working on document automation, reporting, or labeling solutions often need to generate barcodes programmatically and place them into office documents for printing or distribution.
 // Prompt: Embed a generated HIBC LIC barcode into an existing Word document using Aspose.Words for .NET.
-// Tags: hibc, lic, barcode, generation, docx, aspose.barcode, aspose.words
+// Tags: barcode, hibc, lic, aspose.barcode, aspose.words, image, word, generation, embedding, .net
 
 using System;
 using System.IO;
@@ -13,19 +13,32 @@ using Aspose.Words;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a HIBC LIC barcode and inserting it into a Word document.
+/// Generates a HIBC LIC barcode and embeds it into a Word document.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, creates a DOCX file, and embeds the barcode image.
+    /// Entry point of the example. Creates a temporary Word file if needed,
+    /// generates a HIBC LIC barcode, and inserts the barcode image at the end of the document.
     /// </summary>
     static void Main()
     {
-        const int resolution = 300; // DPI for barcode image generation
+        const int resolution = 300; // DPI for high‑resolution barcode rendering
 
-        // Prepare primary data for HIBC LIC barcode
-        var primaryData = new HIBCLICPrimaryDataCodetext
+        // Define the path for the temporary Word document
+        string docPath = Path.Combine(Path.GetTempPath(), "HIBCLIC_Document.docx");
+
+        // Ensure the document exists; create a simple one if it does not
+        if (!File.Exists(docPath))
+        {
+            Document newDoc = new Document();
+            DocumentBuilder newBuilder = new DocumentBuilder(newDoc);
+            newBuilder.Writeln("Sample document with HIBC LIC barcode.");
+            newDoc.Save(docPath);
+        }
+
+        // Configure primary data for the HIBC LIC barcode
+        HIBCLICPrimaryDataCodetext primaryCodetext = new HIBCLICPrimaryDataCodetext
         {
             BarcodeType = EncodeTypes.HIBCCode128LIC,
             Data = new PrimaryData
@@ -36,45 +49,36 @@ class Program
             }
         };
 
-        // Generate the barcode using ComplexBarcodeGenerator
-        using (var generator = new ComplexBarcodeGenerator(primaryData))
+        // Generate the barcode image and embed it into the existing Word document
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(primaryCodetext))
         {
-            // Set image resolution (dots per inch)
-            generator.Parameters.Resolution = resolution;
-
-            // Create bitmap to obtain dimensions of the generated barcode
-            using (Aspose.Drawing.Bitmap bitmap = generator.GenerateBarCodeImage())
+            // Generate a bitmap to obtain the image dimensions in pixels
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                // Save barcode image to a memory stream in PNG format
-                using (var imageStream = new MemoryStream())
+                // Save the barcode image to a memory stream in PNG format
+                using (MemoryStream imageStream = new MemoryStream())
                 {
                     generator.Save(imageStream, BarCodeImageFormat.Png);
                     byte[] imageBytes = imageStream.ToArray();
 
-                    // Create a new Word document and a builder for content insertion
-                    var wordDoc = new Document();
-                    var builder = new DocumentBuilder(wordDoc);
+                    // Load the existing Word document
+                    Document doc = new Document(docPath);
+                    DocumentBuilder builder = new DocumentBuilder(doc);
 
-                    // Insert introductory text before the barcode
-                    builder.Writeln("Document with HIBC LIC barcode:");
+                    // Move the cursor to the end of the document and insert the barcode
+                    builder.MoveToDocumentEnd();
+                    builder.Writeln("HIBC LIC Barcode:");
+                    builder.InsertImage(
+                        imageBytes,
+                        (bitmap.Width * 72) / resolution,   // Convert width from pixels to points
+                        (bitmap.Height * 72) / resolution); // Convert height from pixels to points
 
-                    // Convert bitmap dimensions from pixels to points (1 inch = 72 points)
-                    double widthPoints = (bitmap.Width * 72.0) / resolution;
-                    double heightPoints = (bitmap.Height * 72.0) / resolution;
-
-                    // Insert the barcode image with calculated size
-                    builder.InsertImage(imageBytes, widthPoints, heightPoints);
-
-                    // Insert concluding text after the barcode
-                    builder.Writeln("\nEnd of document.");
-
-                    // Save the Word document to the current directory
-                    string outputPath = Path.Combine(Environment.CurrentDirectory, "HIBCLIC_Barcode.docx");
-                    wordDoc.Save(outputPath, SaveFormat.Docx);
-
-                    Console.WriteLine($"Word document saved to: {outputPath}");
+                    // Save the updated document back to the same path
+                    doc.Save(docPath);
                 }
             }
         }
+
+        Console.WriteLine($"Barcode embedded successfully into: {docPath}");
     }
 }

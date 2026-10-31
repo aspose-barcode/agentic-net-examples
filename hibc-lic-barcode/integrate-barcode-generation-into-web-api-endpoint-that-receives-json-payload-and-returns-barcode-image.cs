@@ -1,86 +1,88 @@
-// Title: Generate Barcode Image from JSON Request in Console Demo
-// Description: Demonstrates how to deserialize a JSON payload containing barcode parameters, generate a barcode using Aspose.BarCode, and output the image as a Base64 string.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, EncodeTypes, and image export APIs. Typical scenarios include creating barcodes on-the-fly for web services, reports, or mobile apps. Developers often need to map incoming data (e.g., JSON) to barcode symbologies and return the generated image in a format suitable for client consumption.
+// Title: Web API Barcode Generation Example
+// Description: Demonstrates generating a barcode image from a JSON payload using Aspose.BarCode and returning it as a Base64 string.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to use the BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create barcodes in server-side applications. Typical use cases include web services that accept barcode parameters via JSON, generate images on the fly, and deliver them to clients. Developers often need to map symbology names to EncodeTypes, configure image settings, and serialize the result for HTTP responses.
 // Prompt: Integrate barcode generation into a web API endpoint that receives JSON payload and returns the barcode image.
-// Tags: barcode, symbology, generation, png, base64, json, aspose.barcode, aspnet
+// Tags: barcode, symbology, generation, png, base64, aspnet, aspose.barcode, json, webapi
 
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Reflection;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
 
 /// <summary>
-/// Represents a request payload containing barcode symbology and text.
+/// Represents the JSON payload received by the web API containing barcode parameters.
 /// </summary>
 public class BarcodeRequest
 {
+    /// <summary>
+    /// Gets or sets the symbology name (e.g., "QR", "Code128").
+    /// </summary>
     public string Symbology { get; set; }
+
+    /// <summary>
+    /// Gets or sets the text to encode in the barcode.
+    /// </summary>
     public string CodeText { get; set; }
 }
 
 /// <summary>
-/// Console demo that simulates a web API endpoint for barcode generation.
+/// Demonstrates processing a JSON request, generating a barcode, and outputting the image as a Base64 string.
 /// </summary>
-public class Program
+class Program
 {
     /// <summary>
-    /// Entry point that processes a sample JSON request, generates a barcode, and writes the Base64 image to the console.
+    /// Entry point of the console application that simulates a web API barcode generation endpoint.
     /// </summary>
-    public static void Main()
+    static void Main()
     {
-        // Sample JSON payload simulating a web API request
-        string jsonPayload = "{\"Symbology\":\"Code128\",\"CodeText\":\"1234567890\"}";
+        // Simulated JSON payload received by a web API endpoint
+        string jsonPayload = "{\"symbology\":\"QR\",\"codeText\":\"Hello World\"}";
 
-        // Deserialize the request payload into a strongly‑typed object
-        BarcodeRequest request;
-        try
+        // Parse JSON into a request object
+        BarcodeRequest request = JsonSerializer.Deserialize<BarcodeRequest>(jsonPayload);
+        if (request == null || string.IsNullOrWhiteSpace(request.Symbology) || string.IsNullOrWhiteSpace(request.CodeText))
         {
-            request = JsonSerializer.Deserialize<BarcodeRequest>(jsonPayload);
-            if (request == null ||
-                string.IsNullOrWhiteSpace(request.Symbology) ||
-                string.IsNullOrWhiteSpace(request.CodeText))
-            {
-                Console.WriteLine("Invalid request payload.");
-                return;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"JSON deserialization error: {ex.Message}");
+            Console.WriteLine("Invalid request payload.");
             return;
         }
 
-        // Resolve the symbology name to the corresponding BaseEncodeType using reflection
-        var field = typeof(EncodeTypes).GetField(request.Symbology);
+        // Resolve symbology name to a BaseEncodeType using reflection
+        FieldInfo field = typeof(EncodeTypes).GetField(request.Symbology);
         if (field == null)
         {
             Console.WriteLine($"Unknown symbology: {request.Symbology}");
             return;
         }
-
         BaseEncodeType encodeType = (BaseEncodeType)field.GetValue(null);
 
-        // Create a BarcodeGenerator with the resolved symbology and provided code text
-        using (var generator = new BarcodeGenerator(encodeType, request.CodeText))
+        // Generate the barcode and output as Base64 string
+        using (var memoryStream = new MemoryStream())
         {
-            // Set visual appearance: black bars on white background
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.White;
-
-            // Save the generated barcode to a memory stream in PNG format
-            using (var ms = new MemoryStream())
+            using (var generator = new BarcodeGenerator(encodeType, request.CodeText))
             {
-                generator.Save(ms, BarCodeImageFormat.Png);
-                byte[] imageBytes = ms.ToArray();
+                // Example parameter customizations
+                generator.Parameters.Resolution = 300f;
+                generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Black;
+                generator.Parameters.BackColor = Aspose.Drawing.Color.White;
 
-                // Encode the PNG image as a Base64 string for transmission
-                string base64Image = Convert.ToBase64String(imageBytes);
-
-                // Simulated API response: output the Base64‑encoded PNG image
-                Console.WriteLine(base64Image);
+                try
+                {
+                    // Save the generated barcode image to the memory stream in PNG format
+                    generator.Save(memoryStream, BarCodeImageFormat.Png);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Barcode generation failed: {ex.Message}");
+                    return;
+                }
             }
+
+            // Convert the image bytes to a Base64 string for transmission
+            string base64Image = Convert.ToBase64String(memoryStream.ToArray());
+            Console.WriteLine(base64Image);
         }
     }
 }

@@ -1,8 +1,8 @@
-// Title: Generate HIBC LIC barcode with custom colors
-// Description: Demonstrates creating a HIBC QR LIC barcode with a blue foreground and light‑gray background, then saving it as a PNG file.
-// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with HIBCLICPrimaryDataCodetext and EncodeTypes to produce HIBC LIC barcodes. Typical use cases include product labeling, inventory tracking, and brand‑specific visual styling where custom colors and image formats are required. Developers often need to configure barcode parameters such as colors, dimensions, and output format before saving the image.
+// Title: Generate HIBC LIC Barcode with Custom Colors
+// Description: Demonstrates creating a HIBC LIC QR barcode with a blue foreground and light‑gray background, then saving it as a PNG file.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It showcases the use of ComplexBarcodeGenerator together with HIBCLICPrimaryDataCodetext to produce HIBC LIC (Health Industry Bar Code) QR codes. Typical scenarios include medical device labeling, pharmaceutical packaging, and any application requiring standardized product identification with brand‑specific colors. Developers often need to customize visual appearance (colors, dimensions) while preserving the required data structure.
 // Prompt: Generate HIBC LIC barcodes with custom foreground color (blue) and background color (light gray) for branding.
-// Tags: hibc, lic, barcode generation, color customization, png, complexbarcodegenerator, aspose.barcode, aspose.drawing
+// Tags: hibc, lic, color, png, generation, complexbarcode, aspose.barcode
 
 using System;
 using System.IO;
@@ -12,29 +12,24 @@ using Aspose.BarCode.ComplexBarcode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Example program that creates a HIBC LIC barcode with custom foreground and background colors
-/// and saves it as a PNG image.
+/// Example program that generates a HIBC LIC barcode with custom foreground and background colors.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, applies color settings, and writes the file.
+    /// Entry point. Creates a HIBC LIC QR barcode, applies custom colors, and saves it as a PNG image.
     /// </summary>
     static void Main()
     {
-        // Define a temporary output directory and ensure it exists
-        string outputDir = Path.Combine(Path.GetTempPath(), "HIBCLICDemo");
-        Directory.CreateDirectory(outputDir);
+        // Prepare output folder in the system temporary directory
+        string outputFolder = Path.Combine(Path.GetTempPath(), "HIBCLICDemo");
+        Directory.CreateDirectory(outputFolder);
+        string outputPath = Path.Combine(outputFolder, "HIBCLICPrimary.png");
 
-        // Full path for the resulting PNG file
-        string outPath = Path.Combine(outputDir, "HIBCLICPrimary.png");
-
-        // Prepare the HIBC LIC primary data codetext
-        var codetext = new HIBCLICPrimaryDataCodetext
+        // Build the primary data codetext required for a HIBC LIC QR barcode
+        HIBCLICPrimaryDataCodetext complexCodetext = new HIBCLICPrimaryDataCodetext
         {
-            // Set the barcode symbology to HIBC QR LIC
             BarcodeType = EncodeTypes.HIBCQRLIC,
-            // Populate the required data fields
             Data = new PrimaryData
             {
                 ProductOrCatalogNumber = "12345",
@@ -43,21 +38,22 @@ class Program
             }
         };
 
-        // Generate the barcode using ComplexBarcodeGenerator
-        using (var generator = new ComplexBarcodeGenerator(codetext))
+        // Generate the barcode with custom visual settings
+        using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(complexCodetext))
         {
-            // Apply custom colors: blue bars on a light‑gray background
-            generator.Parameters.Barcode.BarColor = Aspose.Drawing.Color.Blue;
-            generator.Parameters.BackColor = Aspose.Drawing.Color.LightGray;
-
-            // Set the X‑dimension (module width) in pixels
+            // Optional: set the module (pixel) size for higher resolution
             generator.Parameters.Barcode.XDimension.Pixels = 5f;
 
-            // Save the barcode image as PNG
-            generator.Save(outPath, BarCodeImageFormat.Png);
+            // Set the foreground (bars) color to blue
+            generator.Parameters.Barcode.BarColor = Color.Blue;
+
+            // Set the background color to light gray
+            generator.Parameters.BackColor = Color.LightGray;
+
+            // Save the generated barcode image to the specified path
+            generator.Save(outputPath);
         }
 
-        // Inform the user where the file was saved
-        Console.WriteLine($"Barcode saved to {outPath}");
+        Console.WriteLine($"HIBC LIC barcode saved to: {outputPath}");
     }
 }
