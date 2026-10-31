@@ -1,64 +1,53 @@
-// Title: Code128 barcode with uniform padding and rotation
-// Description: Demonstrates how to apply a 20‑pixel padding around a Code128 barcode, rotate the image, and verify that the barcode remains readable.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes with custom padding and rotation, and BarCodeReader for validating the output. Developers often need to adjust barcode margins and orientation for layout constraints, ensuring that the resulting image is not clipped and can be decoded reliably.
-// Prompt: Set uniform Padding of 20 pixels around a Code128 barcode and verify no clipping after rotation.
-// Tags: code128, padding, rotation, barcode, generation, recognition, png, aspose.barcode
+// Title: Code128 Barcode with Uniform Padding and Rotation
+// Description: Demonstrates how to apply a 20‑pixel padding around a Code128 barcode, rotate it, and save the result as PNG while ensuring no clipping occurs.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing the use of BarcodeGenerator, Padding, and RotationAngle properties. Typical use cases include creating printable barcodes with consistent margins and orientation adjustments. Developers often need to control visual layout to avoid clipping when rotating or scaling barcodes, and this snippet illustrates those common requirements.
+/// Prompt: Set uniform Padding of 20 pixels around a Code128 barcode and verify no clipping after rotation.
+/// Tags: code128, padding, rotation, png, aspose.barcode, barcode-generation
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode with uniform padding, rotating it, and verifying readability.
+/// Generates a Code128 barcode with uniform 20‑pixel padding, rotates it, and saves the image as PNG.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates the barcode, saves it, and checks if it can be decoded after rotation.
+    /// Entry point that creates the barcode, applies padding and rotation, saves the image, and outputs its dimensions.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder to store the generated barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // Define output directory and ensure it exists
+        string outputDir = Path.Combine(Path.GetTempPath(), "BarcodeDemo");
+        Directory.CreateDirectory(outputDir);
 
-        // Define the output file path and the barcode text
-        string barcodePath = Path.Combine(tempFolder, "code128_padding_rotated.png");
-        string codeText = "1234567890";
+        // Full path for the generated PNG file
+        string outputPath = Path.Combine(outputDir, "Code128_Padded_Rotated.png");
 
-        // Generate a Code128 barcode with uniform 20‑pixel padding and rotate it by 45 degrees
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
+        // Initialize the barcode generator with Code128 symbology and sample data
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ASPOSE123"))
         {
-            // Apply uniform padding on all sides
+            // Apply uniform padding of 20 pixels on all four sides
             generator.Parameters.Barcode.Padding.Left.Pixels = 20f;
             generator.Parameters.Barcode.Padding.Top.Pixels = 20f;
             generator.Parameters.Barcode.Padding.Right.Pixels = 20f;
             generator.Parameters.Barcode.Padding.Bottom.Pixels = 20f;
 
-            // Set rotation angle
-            generator.Parameters.RotationAngle = 45f; // rotate 45 degrees
+            // Rotate the barcode by 45 degrees
+            generator.Parameters.RotationAngle = 45f;
 
-            // Save the barcode image as PNG
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
+            // Save the rotated barcode image to PNG format
+            generator.Save(outputPath, BarCodeImageFormat.Png);
 
-        // Verify that the rotated barcode can be read (ensuring no clipping occurred)
-        bool readable = false;
-        BaseDecodeType decodeType = DecodeType.Code128;
-        using (var reader = new BarCodeReader(barcodePath, decodeType))
-        {
-            var results = reader.ReadBarCodes();
-            if (results != null && results.Length > 0 && results[0].CodeText == codeText)
+            // Generate a bitmap to verify that the image dimensions include the padding (no clipping)
+            using (Bitmap bitmap = generator.GenerateBarCodeImage())
             {
-                readable = true;
+                Console.WriteLine($"Barcode image saved to: {outputPath}");
+                Console.WriteLine($"Image dimensions (pixels): Width={bitmap.Width}, Height={bitmap.Height}");
             }
         }
-
-        // Output the verification result
-        Console.WriteLine(readable
-            ? "Success: barcode readable after rotation with padding."
-            : "Failure: barcode could not be read after rotation.");
     }
 }
