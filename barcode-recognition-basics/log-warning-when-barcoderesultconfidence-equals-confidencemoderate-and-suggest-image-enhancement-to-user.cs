@@ -1,76 +1,77 @@
-// Title: Barcode Generation, Recognition, and Confidence Warning Example
-// Description: Demonstrates generating a QR barcode, reading it, and logging a warning when the recognition confidence is moderate.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create barcodes and BarCodeReader to decode them. Developers often need to assess detection confidence using BarCodeResult.Confidence and provide guidance for image quality improvement when confidence is moderate.
+// Title: Demonstrate QR barcode generation, recognition, and confidence warning
+// Description: This example creates a QR code image, reads it back, and logs a warning when the detection confidence is moderate, advising image enhancement.
+// Category-Description: Shows how to use Aspose.BarCode for barcode generation and recognition, focusing on confidence evaluation. Key classes include BarcodeGenerator, BarCodeReader, and BarCodeResult. Typical use cases involve validating barcode readability and prompting image quality improvements, a common need for developers integrating barcode scanning in applications.
 // Prompt: Log a warning when BarCodeResult.Confidence equals Confidence.Moderate and suggest image enhancement to the user.
-// Tags: qr, barcode generation, barcode recognition, confidence warning, aspose.barcode, image processing
+// Tags: qr, barcode generation, barcode recognition, png, aspose.barcode, confidence
 
 using System;
 using System.IO;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.BarCode;
 using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that creates a QR barcode, reads it back, and reports confidence levels.
+/// Demonstrates QR barcode generation, reading, and confidence evaluation using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a barcode, reads it, and logs a warning if confidence is moderate.
+    /// Entry point. Generates a QR barcode, reads it, and warns if confidence is moderate.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to store the generated image.
+        // Prepare a unique temporary folder and file path for the barcode image
         string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Define the full path for the sample barcode image.
-        string imagePath = Path.Combine(tempFolder, "sample.png");
-
-        // Generate a sample QR barcode and save it as a PNG file.
+        // Generate a simple QR barcode image and save it as PNG
         using (var generator = new BarcodeGenerator(EncodeTypes.QR, "SampleText"))
         {
-            // Set a modest module size (X dimension) for better readability.
-            generator.Parameters.Barcode.XDimension.Point = 2f;
-            // Save the generated barcode image.
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Initialize a barcode reader to decode all supported types from the image.
-        using (var reader = new BarCodeReader(imagePath, DecodeType.AllSupportedTypes))
+        // Verify that the barcode image was created successfully
+        if (!File.Exists(barcodePath))
         {
-            // Read all barcodes found in the image.
-            BarCodeResult[] results = reader.ReadBarCodes();
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
 
-            // Iterate through each detection result.
-            foreach (var result in results)
+        // Set up the reader to decode all supported barcode types
+        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
+        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        {
+            // Read all barcodes found in the image
+            BarCodeResult[] results = reader.ReadBarCodes();
+            if (results == null || results.Length == 0)
             {
-                // Check if the confidence level is moderate.
+                Console.WriteLine("No barcodes detected.");
+                return;
+            }
+
+            // Iterate through each detected barcode and output its details
+            foreach (BarCodeResult result in results)
+            {
+                Console.WriteLine($"Detected barcode: Type={result.CodeTypeName}, Text={result.CodeText}, Confidence={result.Confidence}");
+                // Log a warning if the confidence level is moderate
                 if (result.Confidence == BarCodeConfidence.Moderate)
                 {
-                    // Log a warning suggesting image enhancement.
-                    Console.WriteLine("Warning: Barcode confidence is moderate. Consider enhancing the image for better recognition.");
-                }
-                else
-                {
-                    // Log the detected barcode text and its confidence level.
-                    Console.WriteLine($"Barcode detected: {result.CodeText}, Confidence: {result.Confidence}");
+                    Console.WriteLine("Warning: Moderate confidence detected. Consider enhancing the image (e.g., increase resolution, improve contrast).");
                 }
             }
         }
 
-        // Attempt to clean up temporary files and folder.
+        // Clean up temporary files and folder; ignore any errors during cleanup
         try
         {
-            if (File.Exists(imagePath))
-                File.Delete(imagePath);
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder, true);
+            File.Delete(barcodePath);
+            Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program exit.
+            // Ignored - cleanup failure should not affect program outcome
         }
     }
 }

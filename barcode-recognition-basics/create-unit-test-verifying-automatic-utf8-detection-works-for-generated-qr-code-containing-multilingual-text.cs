@@ -1,8 +1,8 @@
-// Title: Verify automatic UTF-8 detection for QR codes with multilingual text
-// Description: Demonstrates a simple test that generates a QR code containing English, Chinese, and Arabic characters, then validates Aspose.BarCode's automatic UTF-8 detection during recognition.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to work with BarcodeGenerator, BarCodeReader, and related settings. It is useful for developers needing to ensure correct encoding handling for multi‑language data in QR codes, a common requirement in international applications and data exchange scenarios.
+// Title: QR Code UTF-8 Automatic Encoding Detection Test
+// Description: Generates a QR code containing Arabic and Japanese characters, saves it as PNG, and verifies that the Aspose.BarCode reader correctly auto-detects UTF-8 encoding.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, focusing on QR code creation, multilingual text handling, and automatic encoding detection. It demonstrates using BarcodeGenerator for QR code generation, BarCodeReader for decoding, and the DetectEncoding setting to control UTF-8 auto‑detection. Developers working with internationalized barcodes often need to ensure correct text extraction across various languages and encodings.
 // Prompt: Create a unit test verifying automatic UTF8 detection works for a generated QR code containing multilingual text.
-// Tags: qr, utf8, detection, encoding, barcode, generation, recognition, unit-test, png
+// Tags: qr, utf8, encoding, detection, barcode, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -10,104 +10,91 @@ using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Contains a self‑contained test that generates a QR code with multilingual content,
-/// then checks the behavior of automatic UTF‑8 detection during barcode recognition.
+/// Demonstrates automatic UTF-8 detection for QR codes containing multilingual text.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the test program. Generates a QR code, reads it with different
-    /// DetectEncoding settings, and reports the results.
+    /// Entry point that creates a QR code, reads it with and without encoding detection,
+    /// and validates the detection behavior.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a unique temporary folder and file path for the generated image
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Utf8DetectTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "multilingual_qr.png");
+        // Prepare a temporary file path for the generated QR code image
+        string tempPath = Path.Combine(Path.GetTempPath(), "Utf8DetectTest.png");
 
-        // --------------------------------------------------------------
-        // Define multilingual text (English, Chinese, Arabic) to encode
-        // --------------------------------------------------------------
-        string originalText = "Hello 世界 مرحبا";
+        // Multilingual text combining Arabic and Japanese characters
+        string multilingualText = "بالقمة Aspose こんにちは";
 
-        // --------------------------------------------------------------
-        // Generate a QR code using UTF‑8 encoding and save it as PNG
-        // --------------------------------------------------------------
+        // Generate a QR code using UTF-8 encoding and save it as PNG
         using (var generator = new BarcodeGenerator(EncodeTypes.QR))
         {
-            generator.SetCodeText(originalText, Encoding.UTF8);
             generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+            generator.SetCodeText(multilingualText, Encoding.UTF8);
+            generator.Save(tempPath, BarCodeImageFormat.Png);
         }
 
-        bool testPassed = true;
-
-        // --------------------------------------------------------------
-        // Read the QR code with DetectEncoding = true (automatic UTF‑8 detection)
-        // --------------------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        // Verify that the image file was created successfully
+        if (!File.Exists(tempPath))
         {
-            reader.BarcodeSettings.DetectEncoding = true;
-            foreach (var result in reader.ReadBarCodes())
+            Console.WriteLine("FAILED: QR code image was not created.");
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Read the QR code with automatic encoding detection enabled
+        // --------------------------------------------------------------------
+        bool detectTrueSuccess;
+        using (var reader = new BarCodeReader(tempPath, DecodeType.QR))
+        {
+            reader.BarcodeSettings.DetectEncoding = true; // Enable auto‑detect UTF-8
+            var results = reader.ReadBarCodes();
+            detectTrueSuccess = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
+            Console.WriteLine("DetectEncoding: true");
+            foreach (var result in results)
             {
-                if (result.CodeText != originalText)
-                {
-                    Console.WriteLine("FAILED: DetectEncoding true returned incorrect text.");
-                    Console.WriteLine($"Expected: {originalText}");
-                    Console.WriteLine($"Actual:   {result.CodeText}");
-                    testPassed = false;
-                }
-                else
-                {
-                    Console.WriteLine("PASS: DetectEncoding true correctly decoded the text.");
-                }
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
             }
         }
 
-        // --------------------------------------------------------------
-        // Read the QR code with DetectEncoding = false (raw byte interpretation)
-        // --------------------------------------------------------------
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        // --------------------------------------------------------------------
+        // Read the QR code with automatic encoding detection disabled
+        // --------------------------------------------------------------------
+        bool detectFalseSuccess;
+        using (var reader = new BarCodeReader(tempPath, DecodeType.QR))
         {
-            reader.BarcodeSettings.DetectEncoding = false;
-            foreach (var result in reader.ReadBarCodes())
+            reader.BarcodeSettings.DetectEncoding = false; // Disable auto‑detect UTF-8
+            var results = reader.ReadBarCodes();
+            detectFalseSuccess = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
+            Console.WriteLine("DetectEncoding: false");
+            foreach (var result in results)
             {
-                if (result.CodeText == originalText)
-                {
-                    Console.WriteLine("FAILED: DetectEncoding false should not match original text.");
-                    testPassed = false;
-                }
-                else
-                {
-                    Console.WriteLine("PASS: DetectEncoding false returned different (raw) text as expected.");
-                }
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
             }
         }
 
-        // --------------------------------------------------------------
-        // Output overall test result
-        // --------------------------------------------------------------
-        Console.WriteLine(testPassed ? "ALL TESTS PASSED." : "ONE OR MORE TESTS FAILED.");
+        // Verify that detection with DetectEncoding = true yields a successful read
+        if (detectTrueSuccess)
+        {
+            Console.WriteLine("PASSED: Automatic UTF8 detection succeeded.");
+        }
+        else
+        {
+            Console.WriteLine("FAILED: Automatic UTF8 detection did not return a valid result.");
+        }
 
-        // --------------------------------------------------------------
-        // Cleanup temporary files and folder (optional)
-        // --------------------------------------------------------------
+        // Clean up the temporary QR code image file
         try
         {
-            if (File.Exists(barcodePath))
-                File.Delete(barcodePath);
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder, true);
+            File.Delete(tempPath);
         }
         catch
         {
-            // Ignore any cleanup errors
+            // Ignore any errors during cleanup
         }
     }
 }

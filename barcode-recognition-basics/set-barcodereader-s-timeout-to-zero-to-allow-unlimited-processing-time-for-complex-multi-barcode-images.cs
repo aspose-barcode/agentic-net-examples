@@ -1,86 +1,81 @@
-// Title: Unlimited Timeout for BarCodeReader with Multi-Barcode Image
-// Description: Demonstrates how to set BarCodeReader.Timeout to zero, allowing unlimited processing time when decoding a complex image that contains multiple barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode reading and generation category. It showcases the use of BarcodeGenerator to create individual barcodes, combines them into a single image with Aspose.Drawing, and then employs BarCodeReader (DecodeType.AllSupportedTypes) to recognize all barcodes. Developers often need to adjust the reader's timeout for large or dense images to prevent premature termination of the recognition process.
+// Title: Unlimited barcode reading timeout example
+// Description: Demonstrates setting BarCodeReader.Timeout to zero for unlimited processing time when reading complex images containing multiple barcodes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, illustrating how to configure the BarCodeReader for extended processing. It uses BarCodeReader, BarcodeGenerator, and related image classes to generate, combine, and decode QR and Code128 barcodes. Developers often need to adjust timeout settings for large or dense barcode images to prevent premature aborts.
 // Prompt: Set BarCodeReader's TimeOut to zero to allow unlimited processing time for complex multi‑barcode images.
-// Tags: barcode, generation, reading, timeout, multibarcode, aspose.barcode, aspose.drawing
+// Tags: barcode, timeout, unlimited, multibarcode, qrcode, code128, generation, recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
-using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates two different barcodes, merges them into a single image,
-/// and reads them back using an unlimited timeout setting.
+/// Demonstrates generating QR and Code128 barcodes, combining them, and reading them with an unlimited timeout.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates temporary files, generates barcodes, combines them,
-    /// reads them with unlimited timeout, and cleans up resources.
+    /// Entry point of the example. Generates barcodes, combines them, reads them with unlimited timeout, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for generated files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "MultiBarcode_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for all generated files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarCodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
         // Define file paths for the individual and combined barcode images
-        string code128Path = Path.Combine(tempFolder, "code128.png");
         string qrPath = Path.Combine(tempFolder, "qr.png");
-        string multiPath = Path.Combine(tempFolder, "multi.png");
+        string code128Path = Path.Combine(tempFolder, "code128.png");
+        string combinedPath = Path.Combine(tempFolder, "combined.png");
 
-        // Generate a Code128 barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "ABC123"))
+        // Generate a QR Code image
+        using (var qrGenerator = new BarcodeGenerator(EncodeTypes.QR, "Hello QR"))
         {
-            generator.Save(code128Path, BarCodeImageFormat.Png);
+            qrGenerator.Save(qrPath, BarCodeImageFormat.Png);
         }
 
-        // Generate a QR barcode and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Generate a Code128 barcode image
+        using (var code128Generator = new BarcodeGenerator(EncodeTypes.Code128, "1234567890"))
         {
-            generator.Save(qrPath, BarCodeImageFormat.Png);
+            code128Generator.Save(code128Path, BarCodeImageFormat.Png);
         }
 
         // Combine the two barcode images side by side into a single image
-        if (File.Exists(code128Path) && File.Exists(qrPath))
+        using (Bitmap img1 = new Bitmap(qrPath))
+        using (Bitmap img2 = new Bitmap(code128Path))
         {
-            using (Bitmap bmp1 = new Bitmap(code128Path))
-            using (Bitmap bmp2 = new Bitmap(qrPath))
+            int combinedWidth = img1.Width + img2.Width;
+            int combinedHeight = Math.Max(img1.Height, img2.Height);
+            using (Bitmap combined = new Bitmap(combinedWidth, combinedHeight))
             {
-                int combinedWidth = bmp1.Width + bmp2.Width;
-                int combinedHeight = Math.Max(bmp1.Height, bmp2.Height);
-                using (Bitmap combined = new Bitmap(combinedWidth, combinedHeight))
                 using (Graphics g = Graphics.FromImage(combined))
                 {
-                    g.DrawImage(bmp1, 0, 0, bmp1.Width, bmp1.Height);
-                    g.DrawImage(bmp2, bmp1.Width, 0, bmp2.Width, bmp2.Height);
-                    combined.Save(multiPath, ImageFormat.Png);
+                    g.DrawImage(img1, 0, 0);
+                    g.DrawImage(img2, img1.Width, 0);
                 }
+                combined.Save(combinedPath, Aspose.Drawing.Imaging.ImageFormat.Png);
             }
         }
 
-        // Verify that the combined image was created successfully
-        if (!File.Exists(multiPath))
+        // Verify that the combined image was successfully created
+        if (!File.Exists(combinedPath))
         {
             Console.WriteLine("Failed to create combined barcode image.");
+            Cleanup(tempFolder);
             return;
         }
 
-        // Read all barcodes from the combined image with an unlimited timeout
-        using (BarCodeReader reader = new BarCodeReader(multiPath, DecodeType.AllSupportedTypes))
+        // Read barcodes from the combined image with unlimited timeout (Timeout = 0)
+        using (BarCodeReader reader = new BarCodeReader(combinedPath, DecodeType.QR, DecodeType.Code128))
         {
-            // Setting Timeout to zero disables the time limit for recognition
-            reader.Timeout = 0;
-
+            reader.Timeout = 0; // Unlimited processing time
             try
             {
                 BarCodeResult[] results = reader.ReadBarCodes();
-                Console.WriteLine($"Barcodes found: {results.Length}");
-                foreach (BarCodeResult result in results)
+                Console.WriteLine($"Found {reader.FoundCount} barcode(s).");
+                foreach (BarCodeResult result in reader.FoundBarCodes)
                 {
                     Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
                 }
@@ -91,17 +86,30 @@ class Program
             }
         }
 
-        // Clean up temporary files and directory
+        // Clean up temporary files and folder
+        Cleanup(tempFolder);
+    }
+
+    /// <summary>
+    /// Deletes all files in the specified folder and removes the folder itself.
+    /// </summary>
+    /// <param name="folderPath">The path of the folder to clean up.</param>
+    static void Cleanup(string folderPath)
+    {
         try
         {
-            File.Delete(code128Path);
-            File.Delete(qrPath);
-            File.Delete(multiPath);
-            Directory.Delete(tempFolder, true);
+            if (Directory.Exists(folderPath))
+            {
+                foreach (string file in Directory.GetFiles(folderPath))
+                {
+                    File.Delete(file);
+                }
+                Directory.Delete(folderPath);
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignored - cleanup failures should not affect program outcome
+            Console.WriteLine($"Cleanup error: {ex.Message}");
         }
     }
 }

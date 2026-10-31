@@ -1,8 +1,8 @@
-// Title: Rotated Barcode Generation and Recognition Example
-// Description: Demonstrates generating Code128 barcodes at multiple rotation angles, saving them as PNG images, and then recognizing each image to verify correct decoding.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes with specific rotation angles and BarCodeReader for detecting and decoding them. Developers often need to handle barcodes that appear rotated in images, and this pattern illustrates typical API usage for such scenarios, making it searchable for solutions involving rotated barcode processing.
+// Title: Rotated QR Code Generation and Recognition Example
+// Description: Demonstrates generating QR code images at multiple rotation angles and verifying that Aspose.BarCode can correctly decode them regardless of orientation.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category, showcasing how to use BarcodeGenerator to create barcodes with specific rotation settings and BarCodeReader to detect and decode them. Typical use cases include testing barcode robustness in imaging pipelines, handling scanned documents with varied orientations, and ensuring reliable decoding across different rotation angles. Developers often need to generate test images, configure rotation parameters, and validate decoding results using these core API classes.
 // Prompt: Test recognition of rotated barcodes by loading images with varied orientation and verifying correct decoding.
-// Tags: barcode symbology, generation, recognition, rotation, code128, aspose.barcode
+// Tags: barcode, qr, rotation, generation, recognition, aspose.barcode, csharp
 
 using System;
 using System.IO;
@@ -10,45 +10,48 @@ using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Generates barcode images at various rotation angles and verifies their recognition using Aspose.BarCode.
+/// Example program that creates QR code images rotated at various angles and validates their decoding using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates rotated barcode images, reads them back, and outputs verification results.
+    /// Entry point. Generates rotated QR codes, reads them back, and prints decoding results.
     /// </summary>
     static void Main()
     {
-        // Prepare a unique temporary folder for generated images
+        // Create a unique temporary folder for the sample images
         string tempFolder = Path.Combine(Path.GetTempPath(), "RotatedBarcodes_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        string barcodeText = "Test123";
+        // Define rotation angles to test
         float[] angles = new float[] { 0f, 90f, 180f, 270f };
+        string codeText = "Test123";
+
+        // Store generated image file paths
         List<string> imageFiles = new List<string>();
 
-        // ------------------------------------------------------------
-        // Generate barcode images rotated at the specified angles
-        // ------------------------------------------------------------
+        // Generate QR code images with different rotations
         foreach (float angle in angles)
         {
-            string filePath = Path.Combine(tempFolder, $"barcode_{angle}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, barcodeText))
+            string filePath = Path.Combine(tempFolder, $"qr_{angle}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.QR, codeText))
             {
-                // Set the rotation angle for the barcode image
+                // Apply rotation to the barcode
                 generator.Parameters.RotationAngle = angle;
-                // Save the generated barcode as a PNG file
+                // Set module size (X dimension) for better readability
+                generator.Parameters.Barcode.XDimension.Point = 2f;
+                // Save the generated barcode image as PNG
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
             imageFiles.Add(filePath);
         }
 
-        // ------------------------------------------------------------
-        // Read each generated image and verify the decoded barcode
-        // ------------------------------------------------------------
+        // Prepare decode type for reading QR codes
+        BaseDecodeType decodeType = DecodeType.QR;
+
+        // Read each image and verify decoding
         foreach (string file in imageFiles)
         {
             if (!File.Exists(file))
@@ -57,53 +60,30 @@ class Program
                 continue;
             }
 
-            try
+            using (var reader = new BarCodeReader(file, decodeType))
             {
-                using (var reader = new BarCodeReader(file, DecodeType.Code128))
+                // Attempt to read all barcodes in the image
+                BarCodeResult[] results = reader.ReadBarCodes();
+                bool success = results.Length > 0 && !string.IsNullOrEmpty(results[0].CodeText);
+                string fileName = Path.GetFileName(file);
+                string anglePart = fileName.Split('_')[1].Replace(".png", "");
+
+                // Output decoding summary
+                Console.WriteLine($"File: {fileName} | Rotation: {anglePart}° | Decoded: {(success ? "Success" : "Failure")}");
+
+                if (success)
                 {
-                    // Explicitly set the image source (required by some API versions)
-                    reader.SetBarCodeImage(file);
-
-                    BarCodeResult[] results = reader.ReadBarCodes();
-                    if (results.Length == 0)
+                    // Output detailed information for each detected barcode
+                    foreach (var result in results)
                     {
-                        Console.WriteLine($"No barcode detected in {Path.GetFileName(file)}");
-                        continue;
-                    }
-
-                    foreach (BarCodeResult result in results)
-                    {
-                        Console.WriteLine($"File: {Path.GetFileName(file)}");
-                        Console.WriteLine($"Decoded Text: {result.CodeText}");
-                        Console.WriteLine($"Detected Type: {result.CodeTypeName}");
-                        Console.WriteLine($"Orientation Angle: {result.Region.Angle}");
-                        Console.WriteLine($"Match Expected: {result.CodeText == barcodeText}");
-                        Console.WriteLine();
+                        Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        Console.WriteLine($"  Detected Angle: {result.Region.Angle}");
                     }
                 }
             }
-            catch (ArgumentException ex)
-            {
-                Console.WriteLine($"Error reading {Path.GetFileName(file)}: {ex.Message}");
-            }
         }
 
-        // ------------------------------------------------------------
-        // Cleanup temporary files and folder
-        // ------------------------------------------------------------
-        try
-        {
-            foreach (string file in imageFiles)
-            {
-                if (File.Exists(file))
-                    File.Delete(file);
-            }
-            if (Directory.Exists(tempFolder))
-                Directory.Delete(tempFolder);
-        }
-        catch
-        {
-            // Ignore any errors during cleanup
-        }
+        // Optional cleanup: uncomment to delete temporary files
+        // Directory.Delete(tempFolder, true);
     }
 }

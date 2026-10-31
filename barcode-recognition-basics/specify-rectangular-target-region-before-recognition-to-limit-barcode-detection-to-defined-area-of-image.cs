@@ -1,61 +1,73 @@
-// Title: Limit barcode recognition to a specific rectangular region
-// Description: Demonstrates how to define a target rectangle on an image so that barcode detection is performed only within that area, improving performance and accuracy.
-// Category-Description: This example belongs to the Aspose.BarCode image processing category, illustrating the use of BarCodeGenerator for creating barcodes and BarCodeReader with a specified Rectangle to limit detection. Developers often need to focus recognition on a region of interest in larger images, such as scanning a label within a photo, and this pattern shows the typical API usage for that scenario.
+// Title: Specify Target Region for Barcode Recognition
+// Description: Demonstrates how to limit barcode detection to a rectangular area of an image using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category. It shows how to use the BarCodeReader class with a specified Rectangle to focus detection on a particular region of an image. Typical use cases include processing large images where only a portion contains barcodes, improving performance and accuracy. Developers often generate barcodes with BarcodeGenerator and then recognize them with BarCodeReader, optionally constraining the search area.
 // Prompt: Specify a rectangular target region before recognition to limit barcode detection to a defined area of the image.
-// Tags: qr, region, detection, png, barcodegenerator, barcodeimageformat, bitmap, barcodereader, rectangle
+// Tags: qr code, barcode recognition, target region, aspose.barcode, c#
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Sample program that generates a QR code, defines a target region, and reads the barcode only within that region.
+/// Example program that generates a QR code and reads it only within a defined rectangular region.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
+    /// Entry point. Generates a QR code, defines a target region, and reads barcodes within that region.
     /// </summary>
     static void Main()
     {
-        // Create a temporary folder for the sample image
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarcodeRegionDemo_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string imagePath = Path.Combine(tempDir, "barcode.png");
+        // Create a temporary working folder for the demo files
+        string workFolder = Path.Combine(Path.GetTempPath(), "BarcodeRegionDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workFolder);
 
-        // Generate a QR code image and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Path for the generated barcode image
+        string barcodePath = Path.Combine(workFolder, "sample.png");
+
+        // Generate a QR Code barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Hello Aspose"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Define a target region (top-left corner of the image) where recognition will be performed
-        var targetRegion = new Rectangle(0, 0, 200, 200);
-
-        // Load the image and read barcodes within the specified region
-        using (var bitmap = new Bitmap(imagePath))
+        // Verify that the image was successfully created
+        if (!File.Exists(barcodePath))
         {
-            using (var reader = new BarCodeReader(bitmap, targetRegion, DecodeType.QR))
+            Console.WriteLine("Failed to create barcode image.");
+            return;
+        }
+
+        // Load the image to obtain its dimensions and define a target region (top-left quarter)
+        using (Bitmap bmp = new Bitmap(barcodePath))
+        {
+            int regionWidth = bmp.Width / 2;
+            int regionHeight = bmp.Height / 2;
+            Rectangle targetRegion = new Rectangle(0, 0, regionWidth, regionHeight);
+
+            // Initialize the reader to scan only within the specified region for QR codes
+            using (BarCodeReader reader = new BarCodeReader(bmp, targetRegion, DecodeType.QR))
             {
-                Console.WriteLine("Reading with target region:");
-                foreach (var result in reader.ReadBarCodes())
+                Console.WriteLine("Reading barcodes within the defined region:");
+                foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
-                    Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    Console.WriteLine($"Type: {result.CodeTypeName}, Text: {result.CodeText}");
                 }
             }
         }
 
-        // Clean up temporary files
+        // Clean up temporary files and directory
         try
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempDir, true);
+            File.Delete(barcodePath);
+            Directory.Delete(workFolder);
         }
         catch
         {
-            // Ignore any cleanup errors
+            // Ignored – cleanup failures should not affect program outcome
         }
     }
 }

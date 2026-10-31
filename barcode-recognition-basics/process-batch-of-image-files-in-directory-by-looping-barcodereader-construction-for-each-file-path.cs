@@ -1,8 +1,8 @@
-// Title: Batch barcode generation and reading example
-// Description: Demonstrates generating multiple barcode images, storing them in a temporary folder, and reading each file with BarCodeReader.
-// Category-Description: This example belongs to the Aspose.BarCode image processing category, showcasing how to use BarcodeGenerator to create barcodes and BarCodeReader to decode them from files. Typical use cases include batch processing of scanned documents, automated inventory checks, and bulk verification of barcode data. Developers often need to loop over file paths, handle various symbologies, and manage temporary resources.
+// Title: Batch barcode generation and recognition using Aspose.BarCode
+// Description: Demonstrates creating multiple barcode images in a temporary folder, then reading each image to extract barcode data.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing collection, illustrating how to use BarcodeGenerator for image creation and BarCodeReader for decoding. Typical use cases include bulk barcode creation, automated scanning of generated files, and validation pipelines. Developers often need to loop over file paths, handle various symbologies, and manage temporary resources.
 // Prompt: Process a batch of image files in a directory by looping BarCodeReader construction for each file path.
-// Tags: barcode generation, barcode reading, batch processing, csharp, aspose.barcode, code128, qr, datamatrix
+// Tags: barcode, generation, recognition, batch processing, aspose.barcode, csharp, symbology
 
 using System;
 using System.IO;
@@ -12,7 +12,7 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates batch creation of barcode images and subsequent reading using Aspose.BarCode.
+/// Demonstrates batch creation of barcode images and subsequent reading of each image using Aspose.BarCode.
 /// </summary>
 class Program
 {
@@ -21,78 +21,94 @@ class Program
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the sample
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
+        // --------------------------------------------------------------------
+        // Create a unique temporary folder for the sample batch
+        // --------------------------------------------------------------------
+        string batchFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(batchFolder);
 
-        // Prepare a list to hold the generated barcode image file paths
-        List<string> barcodeFiles = new List<string>();
-
-        // Sample data for barcode generation (different symbologies)
-        var samples = new[]
+        // --------------------------------------------------------------------
+        // Prepare sample barcode data (symbology, text, and output file name)
+        // --------------------------------------------------------------------
+        var samples = new List<(BaseEncodeType Encode, string Text, string FileName)>
         {
-            new { Encode = EncodeTypes.Code128, Text = "Sample001" },
-            new { Encode = EncodeTypes.QR, Text = "https://example.com" },
-            new { Encode = EncodeTypes.DataMatrix, Text = "DM12345" }
+            (EncodeTypes.Code128, "CODE128_SAMPLE", "code128.png"),
+            (EncodeTypes.QR, "QR_SAMPLE", "qr.png"),
+            (EncodeTypes.DataMatrix, "DM_SAMPLE", "datamatrix.png"),
+            (EncodeTypes.Aztec, "AZTEC_SAMPLE", "aztec.png"),
+            (EncodeTypes.Pdf417, "PDF417_SAMPLE", "pdf417.png")
         };
 
-        // Generate barcode images into the temporary folder
-        foreach (var sample in samples)
+        // --------------------------------------------------------------------
+        // Generate barcode images and collect their file paths
+        // --------------------------------------------------------------------
+        var filePaths = new List<string>();
+        foreach (var (encode, text, fileName) in samples)
         {
-            string filePath = Path.Combine(tempFolder, $"{sample.Encode}_{Guid.NewGuid().ToString("N")}.png");
-            using (var generator = new BarcodeGenerator(sample.Encode, sample.Text))
+            string filePath = Path.Combine(batchFolder, fileName);
+            using (var generator = new BarcodeGenerator(encode, text))
             {
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            barcodeFiles.Add(filePath);
+            filePaths.Add(filePath);
         }
 
-        // Process each barcode image file using BarCodeReader
-        foreach (string file in barcodeFiles)
+        Console.WriteLine($"Generated {filePaths.Count} barcode images in: {batchFolder}");
+        Console.WriteLine();
+
+        // --------------------------------------------------------------------
+        // Read each barcode image using BarCodeReader
+        // --------------------------------------------------------------------
+        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
+        foreach (string path in filePaths)
         {
-            if (!File.Exists(file))
+            if (!File.Exists(path))
             {
-                Console.WriteLine($"File not found: {file}");
+                Console.WriteLine($"File not found: {path}");
                 continue;
             }
 
             try
             {
-                // Initialize reader for the current file, supporting all barcode types
-                using (var reader = new BarCodeReader(file, DecodeType.AllSupportedTypes))
+                using (var reader = new BarCodeReader(path, decodeType))
                 {
-                    // Iterate through all detected barcodes in the image
-                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    if (results.Length == 0)
                     {
-                        Console.WriteLine($"{Path.GetFileName(file)}: {result.CodeTypeName} - {result.CodeText}");
+                        Console.WriteLine($"No barcodes detected in file: {Path.GetFileName(path)}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Barcodes in {Path.GetFileName(path)}:");
+                        foreach (BarCodeResult result in results)
+                        {
+                            Console.WriteLine($"  Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                        }
                     }
                 }
             }
-            catch (ArgumentException ex)
+            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
             {
-                Console.WriteLine($"Failed to read {Path.GetFileName(file)}: {ex.Message}");
+                Console.WriteLine($"Failed to load image '{Path.GetFileName(path)}': {ex.Message}");
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing '{Path.GetFileName(path)}': {ex.Message}");
+            }
+
+            Console.WriteLine();
         }
 
-        // Cleanup: delete temporary files and folder
+        // --------------------------------------------------------------------
+        // Cleanup: delete temporary folder and its contents
+        // --------------------------------------------------------------------
         try
         {
-            foreach (string file in barcodeFiles)
-            {
-                if (File.Exists(file))
-                {
-                    File.Delete(file);
-                }
-            }
-
-            if (Directory.Exists(tempFolder))
-            {
-                Directory.Delete(tempFolder, true);
-            }
+            Directory.Delete(batchFolder, true);
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Cleanup error: {ex.Message}");
+            // If deletion fails (e.g., files in use), ignore – the OS will clean up temp files later.
         }
     }
 }

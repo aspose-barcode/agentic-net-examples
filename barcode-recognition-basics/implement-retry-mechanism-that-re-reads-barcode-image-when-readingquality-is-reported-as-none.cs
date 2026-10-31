@@ -1,40 +1,42 @@
-// Title: Barcode read retry based on ReadingQuality
-// Description: Demonstrates generating a QR code and attempting to read it multiple times, retrying when the reading quality is reported as None.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to implement retry logic when barcode quality varies, using classes like BarcodeGenerator, BarCodeReader, BarCodeResult, and related parameters to ensure reliable scanning in real‑world applications.
+// Title: Barcode reading with retry on low reading quality
+// Description: Demonstrates generating a Code128 barcode, reading it, and retrying when the reading quality is reported as None.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to handle cases where the scanner reports poor quality (ReadingQuality = None) and implement retry logic to improve reliability in automated processing pipelines.
 // Prompt: Implement a retry mechanism that re‑reads a barcode image when ReadingQuality is reported as None.
-// Tags: qr, barcode, readingquality, retry, generation, recognition, aspose.barcode
+// Tags: code128, barcode generation, barcode recognition, readingquality, retry, aspose.barcode, c#
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates a retry mechanism for reading a barcode image when the reading quality is reported as None.
+/// Demonstrates generating a barcode image, reading it with Aspose.BarCode,
+/// and retrying the read operation when the reported <c>ReadingQuality</c> is None.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a QR code, then attempts to read it up to a maximum number of attempts,
-    /// retrying when the reading quality is None.
+    /// Entry point of the example. Creates a temporary barcode image,
+    /// attempts to read it up to a maximum number of retries,
+    /// and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary folder and file path for the generated barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeRetry_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for the demo
+        string tempFolder = Path.Combine(Path.GetTempPath(), "RetryDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+
+        // Path for the generated barcode image
         string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Generate a simple QR code image and save it as PNG
-        using (var generator = new BarcodeGenerator(EncodeTypes.QR, "https://example.com"))
+        // Generate a simple Code128 barcode and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
         {
-            generator.Parameters.Barcode.QR.ErrorLevel = QRErrorLevel.LevelM;
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was created successfully
+        // Verify that the image was created successfully
         if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
@@ -44,56 +46,63 @@ class Program
         const int maxAttempts = 3;
         bool success = false;
 
-        // Attempt to read the barcode up to the maximum number of attempts
+        // Retry loop: attempt to read the barcode up to maxAttempts times
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            Console.WriteLine($"Attempt {attempt} to read barcode...");
-
-            using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+            using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
             {
-                // Read all barcodes found in the image
-                BarCodeResult[] results = reader.ReadBarCodes();
-
-                if (results.Length == 0)
+                BarCodeResult[] results;
+                try
                 {
-                    Console.WriteLine("No barcode detected.");
+                    // Attempt to read all barcodes from the image
+                    results = reader.ReadBarCodes();
+                }
+                catch (Exception ex)
+                {
+                    // Log any exception and abort further attempts
+                    Console.WriteLine($"Attempt {attempt}: Exception during reading - {ex.Message}");
+                    break;
+                }
+
+                if (results == null || results.Length == 0)
+                {
+                    // No barcodes detected; treat as low quality and possibly retry
+                    Console.WriteLine($"Attempt {attempt}: No barcodes detected.");
                 }
                 else
                 {
-                    // Process each detected barcode result
+                    bool anyNone = false;
+
+                    // Output details for each detected barcode
                     foreach (var result in results)
                     {
-                        Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                        Console.WriteLine($"CodeText: {result.CodeText}");
-                        Console.WriteLine($"ReadingQuality: {result.ReadingQuality}");
+                        Console.WriteLine($"Attempt {attempt}: Type={result.CodeTypeName}, Text={result.CodeText}, ReadingQuality={result.ReadingQuality}");
+                        if (result.ReadingQuality == 0) // 0 corresponds to ReadingQuality.None
+                            anyNone = true;
+                    }
 
-                        // ReadingQuality of 0 indicates 'None' – retry if possible
-                        if (result.ReadingQuality != 0) // Non-None quality
-                        {
-                            Console.WriteLine("Barcode read with acceptable quality.");
-                            success = true;
-                            break;
-                        }
-                        else
-                        {
-                            Console.WriteLine("ReadingQuality is None; will retry if attempts remain.");
-                        }
+                    // If none of the results have ReadingQuality.None, stop retrying
+                    if (!anyNone)
+                    {
+                        Console.WriteLine("Reading quality acceptable, stopping retries.");
+                        success = true;
+                        break;
                     }
                 }
 
-                // Exit the retry loop early if a successful read occurred
-                if (success)
-                    break;
+                // Provide feedback about retry status
+                if (attempt < maxAttempts)
+                {
+                    Console.WriteLine("ReadingQuality is None, retrying...");
+                }
+                else
+                {
+                    Console.WriteLine("Maximum attempts reached.");
+                }
             }
         }
 
-        // Report final outcome after all attempts
-        if (!success)
-        {
-            Console.WriteLine("Failed to read barcode with acceptable quality after maximum attempts.");
-        }
-
-        // Clean up temporary files and directories
+        // Cleanup temporary files and directories
         try
         {
             if (File.Exists(barcodePath))
@@ -105,5 +114,8 @@ class Program
         {
             // Ignored - cleanup failure should not affect program exit
         }
+
+        // Final outcome message
+        Console.WriteLine(success ? "Barcode read successfully." : "Failed to obtain acceptable reading quality.");
     }
 }

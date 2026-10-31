@@ -1,15 +1,14 @@
 // Title: Read Code 11 barcode with checksum validation
 // Description: Demonstrates generating a Code 11 barcode image, saving it as PNG, and reading it back while enforcing mandatory checksum verification.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating 1D barcodes and BarCodeReader for decoding them, highlighting how to enable checksum validation (ChecksumValidation.On) to ensure data integrity. Developers working with inventory, tracking, or legacy systems often need to generate and validate Code 11 barcodes, making this pattern a common requirement.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create 1‑D barcodes and BarCodeReader to decode them, highlighting the ChecksumValidation setting for reliable data integrity checks. Developers working with inventory, tracking, or legacy systems often need to generate and validate Code 11 barcodes, making this pattern a common requirement in barcode‑centric applications.
 // Prompt: Read a single Code 11 barcode image after enabling obligatory checksum verification with ChecksumValidation.On.
-// Tags: code11, barcode, checksum, read, generate, png, aspose.barcode, csharp
+// Tags: code11, barcode, checksum, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
 /// Example program that creates a Code 11 barcode, saves it to a temporary PNG file,
@@ -19,71 +18,70 @@ class Program
 {
     /// <summary>
     /// Entry point of the example. Generates a barcode, reads it with checksum verification,
-    /// outputs the results, and cleans up temporary resources.
+    /// and outputs the decoded information to the console.
     /// </summary>
-    static void Main()
+    static void Main(string[] args)
     {
-        // --------------------------------------------------------------------
-        // Prepare a unique temporary folder and file path for the barcode image
-        // --------------------------------------------------------------------
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Code11Sample_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-        string imagePath = Path.Combine(tempFolder, "code11.png");
+        // Create a unique temporary directory for the demo files
+        string tempDir = Path.Combine(Path.GetTempPath(), "Code11Demo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string imagePath = Path.Combine(tempDir, "code11.png");
 
-        // --------------------------------------------------------------
-        // Generate a Code 11 barcode image and save it as PNG to disk
-        // --------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
+        // ------------------------------------------------------------
+        // Generate a Code 11 barcode image and save it as PNG
+        // ------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code11, "123456"))
         {
             // Set the X-dimension (module width) to 2 pixels for better readability
             generator.Parameters.Barcode.XDimension.Pixels = 2f;
             generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
-        // --------------------------------------------------------------
-        // Verify that the image file was created before attempting to read it
-        // --------------------------------------------------------------
+        // Verify that the image file was created successfully
         if (!File.Exists(imagePath))
         {
-            Console.WriteLine("Barcode image not found: " + imagePath);
+            Console.WriteLine("Barcode image not found.");
             return;
         }
 
-        // --------------------------------------------------------------
-        // Read the barcode from the image with checksum validation turned on
-        // --------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code11))
+        // ------------------------------------------------------------
+        // Read the barcode with checksum validation set to On
+        // ------------------------------------------------------------
+        using (var reader = new BarCodeReader(imagePath, DecodeType.Code11))
         {
-            // Enable mandatory checksum verification; reading fails if checksum is invalid
+            // Enforce mandatory checksum verification
             reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
 
-            bool anyResult = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
-            {
-                anyResult = true;
-                Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                Console.WriteLine($"CodeText: {result.CodeText}");
-                Console.WriteLine($"1D Value: {result.Extended.OneD.Value}");
-                Console.WriteLine($"1D CheckSum: {result.Extended.OneD.CheckSum}");
-            }
+            // Attempt to read all barcodes from the image
+            BarCodeResult[] results = reader.ReadBarCodes();
 
-            if (!anyResult)
+            if (results.Length == 0)
             {
                 Console.WriteLine("No barcode detected or checksum validation failed.");
             }
+            else
+            {
+                // Output details of each detected barcode
+                foreach (BarCodeResult result in results)
+                {
+                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                    Console.WriteLine($"CodeText: {result.CodeText}");
+                    Console.WriteLine($"1D Value: {result.Extended.OneD.Value}");
+                    Console.WriteLine($"1D CheckSum: {result.Extended.OneD.CheckSum}");
+                }
+            }
         }
 
-        // --------------------------------------------------------------
-        // Clean up temporary files and folder
-        // --------------------------------------------------------------
+        // ------------------------------------------------------------
+        // Clean up temporary files and directory
+        // ------------------------------------------------------------
         try
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempFolder);
+            Directory.Delete(tempDir, true);
         }
         catch
         {
-            // Ignored – cleanup failures should not affect program outcome
+            // Ignore any errors that occur during cleanup
         }
     }
 }

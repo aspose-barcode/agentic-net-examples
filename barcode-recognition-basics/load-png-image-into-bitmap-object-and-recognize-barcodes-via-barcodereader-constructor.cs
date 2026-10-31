@@ -1,68 +1,76 @@
-// Title: Load PNG into Bitmap and recognize Code128 barcode using BarCodeReader
-// Description: Demonstrates loading a generated PNG barcode image into a Bitmap object and using Aspose.BarCode's BarCodeReader to detect and read a Code128 barcode.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to work with image files, Bitmap objects, and the BarCodeReader API. It illustrates typical use cases such as scanning saved barcode images, extracting encoded data, and handling temporary files. Developers often need to integrate barcode reading into image processing pipelines, and this snippet provides a concise reference.
+// Title: Load PNG into Bitmap and Recognize Barcodes with BarCodeReader
+// Description: Demonstrates loading a generated PNG barcode image into a Bitmap object and using Aspose.BarCode's BarCodeReader to detect and read all supported barcode types.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to create a barcode image, Aspose.Drawing.Bitmap to load the image, and BarCodeReader to recognize barcodes. Typical scenarios include scanning saved images, processing scanned documents, and integrating barcode reading into automated workflows. Developers often need to combine these APIs to handle image-based barcode detection efficiently.
 // Prompt: Load a PNG image into a Bitmap object and recognize barcodes via BarCodeReader constructor.
-// Tags: code128, barcode recognition, png, bitmap, aspose.barcode, aspose.drawing
+// Tags: code128, barcode recognition, png, aspose.barcode, aspose.drawing
 
 using System;
 using System.IO;
+using Aspose.Drawing;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating a Code128 barcode, saving it as PNG, loading it into a Bitmap,
-/// and recognizing the barcode using Aspose.BarCode's BarCodeReader.
+/// Sample program that generates a Code128 barcode, saves it as PNG,
+/// loads the image into a Bitmap, and reads the barcode using BarCodeReader.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary PNG barcode image,
-    /// reads it with BarCodeReader, outputs the result, and cleans up resources.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the demo files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // Create a temporary folder for the sample barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "sample.png");
 
-        // Define the full path for the sample PNG image
-        string imagePath = Path.Combine(tempFolder, "sample.png");
-
-        // Generate a Code128 barcode and save it as a PNG file
+        // Generate a simple Code128 barcode and save as PNG
         using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "123456789"))
         {
-            generator.Save(imagePath, BarCodeImageFormat.Png);
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image was created successfully
-        if (!File.Exists(imagePath))
+        // Verify the image file exists
+        if (!File.Exists(barcodePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
-        // Load the PNG image into a Bitmap and initialize the BarCodeReader for Code128 decoding
-        using (var bitmap = new Bitmap(imagePath))
-        using (var reader = new BarCodeReader(bitmap, DecodeType.Code128))
+        // Load the PNG image into a Bitmap and recognize barcodes
+        using (Bitmap bitmap = new Bitmap(barcodePath))
         {
-            // Iterate through all detected barcodes and display their type and text
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Initialize BarCodeReader to scan all supported barcode types
+            using (BarCodeReader reader = new BarCodeReader(bitmap, DecodeType.AllSupportedTypes))
             {
-                Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                BarCodeResult[] results = reader.ReadBarCodes();
+
+                // Output the recognition results
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("No barcodes detected.");
+                }
+                else
+                {
+                    foreach (BarCodeResult result in results)
+                    {
+                        Console.WriteLine($"{result.CodeTypeName}: {result.CodeText}");
+                    }
+                }
             }
         }
 
-        // Clean up temporary files and folder
+        // Clean up temporary files
         try
         {
-            File.Delete(imagePath);
             Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Ignored - cleanup failure should not affect program outcome
+            // Ignored - cleanup failure should not affect program exit
         }
     }
 }

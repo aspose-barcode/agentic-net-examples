@@ -1,78 +1,99 @@
 // Title: High‑Resolution DataMatrix Barcode Generation and Recognition
-// Description: Generates a small DataMatrix barcode at 600 DPI and demonstrates how to recognize it using high‑quality settings to improve detection of tiny codes.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them. Developers often need to produce high‑resolution images for small‑sized symbols and configure quality settings to ensure reliable detection in scanning applications.
+// Description: Demonstrates generating a high‑resolution DataMatrix barcode and reading it with enhanced detection settings to improve accuracy for small‑sized codes.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and QualitySettings classes to create high‑DPI images and configure recognition parameters such as XDimension. Developers working with small or low‑contrast barcodes often need to increase image resolution and adjust detection settings to achieve reliable scanning.
 // Prompt: Apply a high‑resolution bitmap source to improve detection accuracy of small‑sized DataMatrix codes.
-// Tags: datamatrix, barcode, generation, recognition, high resolution, aspose.barcode, c#
+// Tags: datamatrix, barcode, generation, recognition, high resolution, quality settings, aspose.barcode, c#
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates generating a high‑resolution small DataMatrix barcode and recognizing it with
-/// quality settings optimized for tiny symbols.
+/// Generates a high‑resolution DataMatrix barcode, saves it to a temporary file,
+/// and then reads it back using high‑quality recognition settings to demonstrate
+/// improved detection of small‑sized codes.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Creates a temporary folder, generates a high‑DPI DataMatrix barcode,
-    /// reads it back using enhanced quality settings, and cleans up resources.
+    /// Entry point of the example. Executes barcode generation, verification, reading,
+    /// and cleanup of temporary resources.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // Create a unique temporary folder for the barcode image
+        // Prepare a unique temporary folder for the demo files
         // --------------------------------------------------------------------
         string tempFolder = Path.Combine(Path.GetTempPath(), "DataMatrixDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "datamatrix.png");
 
         // --------------------------------------------------------------------
-        // Generate a small DataMatrix barcode with high resolution (600 DPI)
+        // Define barcode content and output image path
         // --------------------------------------------------------------------
-        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, "ABC123"))
+        string codeText = "ABCD";
+        string imagePath = Path.Combine(tempFolder, "datamatrix.png");
+
+        // --------------------------------------------------------------------
+        // Generate a high‑resolution DataMatrix barcode image
+        // --------------------------------------------------------------------
+        using (var generator = new BarcodeGenerator(EncodeTypes.DataMatrix, codeText))
         {
-            // Set DPI to produce a high‑resolution bitmap
-            generator.Parameters.Resolution = 600f;
-            // Reduce module size to keep the physical barcode small
+            // Set a high DPI to improve detection of small modules
+            generator.Parameters.Resolution = 600f; // DPI
+
+            // Reduce the module (X‑dimension) size for a compact barcode
             generator.Parameters.Barcode.XDimension.Point = 0.5f;
-            // Save the barcode as a PNG image
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
+
+            // Optional: define foreground and background colors
+            generator.Parameters.Barcode.BarColor = Color.Black;
+            generator.Parameters.BackColor = Color.White;
+
+            // Save the generated barcode as a PNG file
+            generator.Save(imagePath, BarCodeImageFormat.Png);
         }
 
         // --------------------------------------------------------------------
         // Verify that the barcode image was successfully created
         // --------------------------------------------------------------------
-        if (!File.Exists(barcodePath))
+        if (!File.Exists(imagePath))
         {
             Console.WriteLine("Failed to create barcode image.");
             return;
         }
 
         // --------------------------------------------------------------------
-        // Read the barcode using high‑resolution quality settings
+        // Read the barcode using high‑quality recognition settings
         // --------------------------------------------------------------------
         BaseDecodeType decodeType = DecodeType.DataMatrix;
-        using (var reader = new BarCodeReader(barcodePath, decodeType))
+        using (var reader = new BarCodeReader(imagePath, decodeType))
         {
-            // Configure reader for small barcodes
-            reader.QualitySettings.XDimension = XDimensionMode.Small;
+            // Apply high‑quality settings to enhance detection
+            reader.QualitySettings = QualitySettings.HighQuality;
+
+            // Configure X‑dimension handling for small barcodes
+            reader.QualitySettings.XDimension = XDimensionMode.UseMinimalXDimension;
             reader.QualitySettings.MinimalXDimension = 1f;
-            reader.QualitySettings.BarcodeQuality = BarcodeQualityMode.High;
 
-            // Perform recognition and output results
-            bool found = false;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Perform the recognition
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // Output the recognition results
+            if (results.Length == 0)
             {
-                Console.WriteLine($"Detected DataMatrix code: {result.CodeText}");
-                found = true;
+                Console.WriteLine("No barcode detected.");
             }
-
-            if (!found)
+            else
             {
-                Console.WriteLine("No DataMatrix barcode detected.");
+                foreach (var result in results)
+                {
+                    Console.WriteLine($"Detected CodeText: {result.CodeText}");
+                    Console.WriteLine($"Detected Type: {result.CodeTypeName}");
+                    Console.WriteLine($"Reading Quality: {result.ReadingQuality}");
+                }
             }
         }
 
@@ -81,12 +102,12 @@ class Program
         // --------------------------------------------------------------------
         try
         {
-            File.Delete(barcodePath);
+            File.Delete(imagePath);
             Directory.Delete(tempFolder);
         }
         catch
         {
-            // Ignored – cleanup failure should not affect program outcome
+            // Ignore any errors during cleanup
         }
     }
 }

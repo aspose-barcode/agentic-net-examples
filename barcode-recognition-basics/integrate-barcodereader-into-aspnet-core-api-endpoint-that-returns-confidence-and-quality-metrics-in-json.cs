@@ -1,101 +1,88 @@
-// Title: ASP.NET Core API Barcode Reader Example
-// Description: Demonstrates using Aspose.BarCode's BarCodeReader to extract barcode text, type, confidence, and quality, then serializes the results to JSON.
-// Category-Description: This example belongs to the Aspose.BarCode reading operations category, showcasing how to employ BarCodeReader with DecodeType.AllSupportedTypes to recognize multiple symbologies. It highlights key API classes such as BarCodeReader, BarCodeResult, and QualitySettings, useful for developers building web services that need to return barcode metadata in JSON format.
+// Title: ASP.NET Core API barcode reader returning confidence and quality metrics
+// Description: Demonstrates generating a Code128 barcode, reading it with BarCodeReader, and outputting confidence and reading quality as JSON.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing how to use BarCodeGenerator, BarCodeReader, and related quality settings. Typical use cases include validating barcode readability in web services, extracting confidence scores, and providing structured JSON responses for client applications. Developers often need to generate barcodes, read them, and expose metrics via APIs.
 // Prompt: Integrate BarCodeReader into an ASP.NET Core API endpoint that returns confidence and quality metrics in JSON.
-// Tags: barcode, barcode-reader, confidence, quality, json, aspnet-core, apibarcode, aspose.barcode
+// Tags: barcode, code128, confidence, readingquality, json, aspnetcore, apirest, aspose.barcode, barcodereader, barcodelibrary
 
 using System;
 using System.IO;
-using System.Collections.Generic;
-using System.Text.Json;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Simple DTO that holds barcode recognition details for JSON serialization.
-/// </summary>
-class BarcodeInfo
-{
-    public string CodeText { get; set; }
-    public string CodeTypeName { get; set; }
-    public string Confidence { get; set; }
-    public double ReadingQuality { get; set; }
-}
-
-/// <summary>
-/// Demonstrates core barcode reading logic that would normally reside in an ASP.NET Core controller action.
+/// Sample console application that generates a barcode, reads it, and outputs confidence and quality metrics in JSON format.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point that generates a sample barcode (if missing), reads it, and outputs JSON with confidence and quality metrics.
+    /// Entry point of the program. Generates a temporary barcode image, reads it using BarCodeReader,
+    /// and writes JSON strings containing the barcode text, confidence, and reading quality to the console.
     /// </summary>
     static void Main()
     {
-        // In a real ASP.NET Core API this logic would be inside a controller action.
-        // The snippet runner cannot host a web server, so we demonstrate the core logic
-        // and output the JSON result to the console.
+        // Create a temporary directory for the sample barcode image
+        string tempDir = Path.Combine(Path.GetTempPath(), "AsposeBarcodeSample_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string barcodePath = Path.Combine(tempDir, "sample.png");
 
-        // Determine the path to the sample barcode image.
-        string imagePath = Path.Combine(Directory.GetCurrentDirectory(), "sample_barcode.png");
-
-        // Ensure a sample barcode image exists; create one if it does not.
-        if (!File.Exists(imagePath))
+        // Generate a Code128 barcode image and save it as PNG
+        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
         {
-            using (var generator = new BarcodeGenerator(EncodeTypes.QR, "Sample123"))
-            {
-                generator.Save(imagePath, BarCodeImageFormat.Png);
-            }
+            generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify the image was created successfully.
-        if (!File.Exists(imagePath))
+        // Verify the image file exists before attempting to read
+        if (!File.Exists(barcodePath))
         {
-            Console.WriteLine($"Error: Barcode image not found at '{imagePath}'.");
+            Console.WriteLine($"Error: Barcode image not found at '{barcodePath}'.");
             return;
         }
 
-        // Collection to hold recognition results.
-        var barcodeInfos = new List<BarcodeInfo>();
-
-        // Use all supported decode types to recognize any barcode present.
-        BaseDecodeType decodeType = DecodeType.AllSupportedTypes;
-
-        // Initialize the reader with the image path and decode type.
-        using (var reader = new BarCodeReader(imagePath, decodeType))
+        // Read the barcode and output confidence and reading quality as JSON
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AllSupportedTypes))
         {
-            // Example: keep default quality settings.
-            // reader.QualitySettings.AllowIncorrectBarcodes = false; // default
+            // Ensure incorrect barcodes are not allowed (default behavior)
+            reader.QualitySettings.AllowIncorrectBarcodes = false;
 
-            BarCodeResult[] results;
-            try
+            // Perform the barcode recognition
+            BarCodeResult[] results = reader.ReadBarCodes();
+
+            // If no barcodes were detected, output an error JSON
+            if (results.Length == 0)
             {
-                // Perform the recognition.
-                results = reader.ReadBarCodes();
-            }
-            catch (RecognitionAbortedException ex)
-            {
-                Console.WriteLine($"Recognition aborted: {ex.Message}");
+                Console.WriteLine("{\"error\":\"No barcodes detected.\"}");
                 return;
             }
 
-            // Transform each result into a DTO for JSON serialization.
-            foreach (BarCodeResult result in results)
+            // Iterate over each detected barcode and output its details in JSON format
+            foreach (var result in results)
             {
-                var info = new BarcodeInfo
-                {
-                    CodeText = result.CodeText,
-                    CodeTypeName = result.CodeTypeName,
-                    Confidence = result.Confidence.ToString(),
-                    ReadingQuality = result.ReadingQuality
-                };
-                barcodeInfos.Add(info);
+                string json = $"{{\"codeText\":\"{EscapeJson(result.CodeText)}\",\"confidence\":\"{result.Confidence}\",\"readingQuality\":{result.ReadingQuality}}}";
+                Console.WriteLine(json);
             }
         }
 
-        // Serialize the list of DTOs to formatted JSON.
-        string json = JsonSerializer.Serialize(barcodeInfos, new JsonSerializerOptions { WriteIndented = true });
-        Console.WriteLine(json);
+        // Clean up temporary files
+        try
+        {
+            File.Delete(barcodePath);
+            Directory.Delete(tempDir);
+        }
+        catch
+        {
+            // Ignored - cleanup failure should not affect program outcome
+        }
+    }
+
+    // Simple JSON string escaper for barcode text
+    static string EscapeJson(string s)
+    {
+        if (string.IsNullOrEmpty(s))
+            return string.Empty;
+
+        return s.Replace("\\", "\\\\").Replace("\"", "\\\"");
     }
 }
