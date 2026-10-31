@@ -1,113 +1,126 @@
-// Title: Decode encrypted barcode images in memory
-// Description: Demonstrates generating QR and Code128 barcodes, encrypting the image files with a simple XOR cipher, then decrypting them in memory and decoding the barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category, showcasing how to use BarcodeGenerator, BarCodeReader, and related classes for encryption‑aware workflows. Typical use cases include secure storage of barcode images and on‑the‑fly decoding without persisting plaintext files. Developers often need to combine file I/O, cryptographic transformations, and barcode APIs to meet security requirements.
+// Title: Decrypt and Decode Barcodes from Encrypted Image Files
+// Description: Demonstrates generating barcode images, encrypting them in memory, decrypting the data, and decoding the barcodes using Aspose.BarCode.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating QR, Code128, and DataMatrix barcodes, and BarCodeReader for extracting barcode information from image streams. Typical scenarios include secure storage of barcode images, batch processing of encrypted assets, and on‑the‑fly decoding without persisting plaintext files. Developers often need to combine image manipulation, simple encryption, and barcode APIs to meet security and automation requirements.
 // Prompt: Decode a set of barcodes from encrypted image files after decrypting them in memory.
-// Tags: qr, code128, barcode, decode, encryption, memory, aspose.barcode, aspose.drawing
+// Tags: barcode, encryption, decryption, generation, recognition, aspose.barcode, qr, code128, datamatrix, csharp
 
 using System;
 using System.IO;
-using System.Text;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that generates barcodes, encrypts the image files,
-/// decrypts them in memory, and decodes the barcodes using Aspose.BarCode.
+/// Example program that creates barcode images, encrypts them, decrypts them in memory,
+/// and then decodes the barcodes using Aspose.BarCode APIs.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Executes the generate‑encrypt‑decrypt‑decode workflow.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Create a temporary working folder for generated and encrypted files
-        string workFolder = Path.Combine(Path.GetTempPath(), "Barcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workFolder);
+        // --------------------------------------------------------------------
+        // 1. Prepare a temporary folder to store encrypted barcode image files.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "EncryptedBarcodes_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Simple XOR key used for both encryption and decryption
-        byte xorKey = 0xAA;
-
-        // Define the barcodes to generate: QR and Code128
-        var barcodes = new (BaseEncodeType Encode, string Text, string FileName)[]
+        // --------------------------------------------------------------
+        // 2. Define sample barcode data (symbology and corresponding text).
+        // --------------------------------------------------------------
+        var samples = new List<(BaseEncodeType encodeType, string codeText)>
         {
-            (EncodeTypes.QR, "Hello Aspose", "qr.png"),
-            (EncodeTypes.Code128, "1234567890", "code128.png")
+            (EncodeTypes.QR, "Sample QR Code"),
+            (EncodeTypes.Code128, "CODE12812345"),
+            (EncodeTypes.DataMatrix, "DM1234567890")
         };
 
-        // -----------------------------------------------------------------
-        // Generate barcode images and encrypt them on disk
-        // -----------------------------------------------------------------
-        foreach (var (encode, text, fileName) in barcodes)
+        // --------------------------------------------------------------
+        // 3. Simple XOR key used for encrypting the image byte arrays.
+        // --------------------------------------------------------------
+        byte xorKey = 0x5A;
+
+        // --------------------------------------------------------------
+        // 4. Generate barcode images, encrypt them, and write to disk.
+        // --------------------------------------------------------------
+        foreach (var (encodeType, codeText) in samples)
         {
-            string originalPath = Path.Combine(workFolder, fileName);
-            string encryptedPath = originalPath + ".enc";
-
-            // Generate barcode and save as PNG
-            using (var generator = new BarcodeGenerator(encode, text))
+            string filePath = Path.Combine(tempFolder, $"{Guid.NewGuid().ToString("N")}.png");
+            using (var generator = new BarcodeGenerator(encodeType, codeText))
             {
-                generator.Save(originalPath, BarCodeImageFormat.Png);
-            }
-
-            // Encrypt the PNG file using XOR and write the encrypted version
-            if (File.Exists(originalPath))
-            {
-                byte[] data = File.ReadAllBytes(originalPath);
-                for (int i = 0; i < data.Length; i++)
+                using (var ms = new MemoryStream())
                 {
-                    data[i] ^= xorKey;
-                }
-                File.WriteAllBytes(encryptedPath, data);
+                    // Save the barcode image to a memory stream in PNG format.
+                    generator.Save(ms, BarCodeImageFormat.Png);
+                    byte[] imageBytes = ms.ToArray();
 
-                // Remove the unencrypted file to keep only the encrypted copy
-                File.Delete(originalPath);
+                    // Encrypt the image bytes using XOR.
+                    for (int i = 0; i < imageBytes.Length; i++)
+                    {
+                        imageBytes[i] ^= xorKey;
+                    }
+
+                    // Persist the encrypted bytes to a file.
+                    File.WriteAllBytes(filePath, imageBytes);
+                }
             }
         }
 
-        // Prepare the list of barcode types that the reader should attempt to decode
-        BaseDecodeType[] decodeTypes = new BaseDecodeType[] { DecodeType.QR, DecodeType.Code128 };
-
-        // -----------------------------------------------------------------
-        // Decrypt each encrypted file in memory and decode the barcode
-        // -----------------------------------------------------------------
-        foreach (var (encode, text, fileName) in barcodes)
+        // --------------------------------------------------------------
+        // 5. Locate all encrypted PNG files for decryption and decoding.
+        // --------------------------------------------------------------
+        var encryptedFiles = new List<string>(Directory.GetFiles(tempFolder, "*.png"));
+        foreach (string encryptedPath in encryptedFiles)
         {
-            string encryptedPath = Path.Combine(workFolder, fileName + ".enc");
             if (!File.Exists(encryptedPath))
             {
-                Console.WriteLine($"Encrypted file not found: {encryptedPath}");
+                Console.WriteLine($"File not found: {encryptedPath}");
                 continue;
             }
 
-            // Read encrypted bytes and decrypt them using the same XOR key
-            byte[] encryptedData = File.ReadAllBytes(encryptedPath);
-            for (int i = 0; i < encryptedData.Length; i++)
+            // ----------------------------------------------------------
+            // 6. Read and decrypt the file contents back into a memory stream.
+            // ----------------------------------------------------------
+            byte[] encryptedBytes = File.ReadAllBytes(encryptedPath);
+            for (int i = 0; i < encryptedBytes.Length; i++)
             {
-                encryptedData[i] ^= xorKey;
+                encryptedBytes[i] ^= xorKey; // Reverse XOR encryption.
             }
 
-            // Decode the barcode from the decrypted memory stream
-            using (var ms = new MemoryStream(encryptedData))
-            using (var reader = new BarCodeReader(ms, decodeTypes))
+            using (var decryptedStream = new MemoryStream(encryptedBytes))
             {
-                foreach (BarCodeResult result in reader.ReadBarCodes())
+                // ------------------------------------------------------
+                // 7. Initialize a BarCodeReader for the supported symbologies.
+                // ------------------------------------------------------
+                using (var reader = new BarCodeReader(decryptedStream, DecodeType.QR, DecodeType.Code128, DecodeType.DataMatrix))
                 {
-                    Console.WriteLine($"Decoded Type: {result.CodeTypeName}, Text: {result.CodeText}");
+                    // --------------------------------------------------
+                    // 8. Iterate over detected barcodes and output results.
+                    // --------------------------------------------------
+                    foreach (BarCodeResult result in reader.ReadBarCodes())
+                    {
+                        Console.WriteLine($"File: {Path.GetFileName(encryptedPath)}");
+                        Console.WriteLine($"  Detected Type: {result.CodeTypeName}");
+                        Console.WriteLine($"  Code Text: {result.CodeText}");
+                    }
                 }
             }
         }
 
-        // -----------------------------------------------------------------
-        // Cleanup temporary files and folder
-        // -----------------------------------------------------------------
+        // --------------------------------------------------------------
+        // 9. Clean up the temporary folder and its contents.
+        // --------------------------------------------------------------
         try
         {
-            Directory.Delete(workFolder, true);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Suppress any cleanup errors (e.g., files still in use)
+            // Suppress any exceptions during cleanup (e.g., file locks).
         }
     }
 }

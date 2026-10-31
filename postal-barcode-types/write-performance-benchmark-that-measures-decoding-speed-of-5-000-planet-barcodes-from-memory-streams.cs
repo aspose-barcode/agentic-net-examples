@@ -1,8 +1,8 @@
 // Title: Performance benchmark for decoding Planet barcodes from memory streams
-// Description: Demonstrates measuring the time required to decode a set of Planet barcodes that are stored in memory streams.
-// Category-Description: This example belongs to the Aspose.BarCode decoding performance category. It showcases the use of BarCodeGenerator to create barcodes, MemoryStream for in‑memory image handling, and BarCodeReader for fast decoding. Developers often need to benchmark decoding speed when processing large batches of barcodes in high‑throughput applications.
+// Description: Demonstrates generating Planet barcodes in memory and measuring the time required to decode them using Aspose.BarCode APIs.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the BarcodeGenerator for creating barcodes, the BarCodeReader for decoding, and common performance‑testing patterns. Developers working with bulk barcode processing, automated scanning, or benchmarking barcode libraries will find this pattern useful for evaluating throughput and latency.
 // Prompt: Write a performance benchmark that measures decoding speed of 5,000 Planet barcodes from memory streams.
-// Tags: planet, barcode, decoding, performance, benchmark, memorystream, aspose.barcode
+// Tags: planet, barcode, performance, benchmark, memory, generation, recognition, aspose.barcode
 
 using System;
 using System.Collections.Generic;
@@ -11,77 +11,79 @@ using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
 using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Demonstrates a simple performance benchmark that decodes a collection of
-/// Planet barcodes generated in memory. The elapsed time is printed to the console.
+/// Example program that generates a set of Planet barcodes in memory,
+/// then benchmarks the time required to decode them using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
     /// Entry point of the benchmark application.
-    /// Generates a set of Planet barcodes, stores them in memory streams,
-    /// then measures how long it takes to decode all of them.
     /// </summary>
     static void Main()
     {
-        // Number of barcodes to generate and decode (sample size for the demo)
+        // Number of barcodes to generate and decode (adjustable for real benchmarks)
         const int barcodeCount = 10; // safe sample size
-        var streams = new List<MemoryStream>(barcodeCount);
+        var images = new List<byte[]>();
 
         // ------------------------------------------------------------
-        // Generate Planet barcodes and store each as a PNG in a MemoryStream
+        // Generate Planet barcodes and store each image as a PNG byte array
         // ------------------------------------------------------------
         for (int i = 0; i < barcodeCount; i++)
         {
-            string codeText = (i + 1).ToString(); // numeric code for the barcode
+            // Create a numeric code padded to 12 digits (e.g., "000000000001")
+            string codeText = (i + 1).ToString("D12");
 
-            // Create a generator for the Planet symbology with the current code text
+            // Initialize the generator for Planet symbology
             using (var generator = new BarcodeGenerator(EncodeTypes.Planet, codeText))
             {
-                // Set X-dimension to control barcode size (4 pixels per module)
+                // Set X-dimension to 4 pixels for better readability
                 generator.Parameters.Barcode.XDimension.Pixels = 4;
 
-                // Save the generated barcode image to a memory stream in PNG format
-                var ms = new MemoryStream();
-                generator.Save(ms, BarCodeImageFormat.Png);
-                ms.Position = 0; // reset stream position for later reading
-                streams.Add(ms);
+                // Generate the barcode image as a Bitmap
+                using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                {
+                    // Save the bitmap to a memory stream in PNG format
+                    using (var ms = new MemoryStream())
+                    {
+                        bitmap.Save(ms, ImageFormat.Png);
+                        // Store the raw PNG bytes for later decoding
+                        images.Add(ms.ToArray());
+                    }
+                }
             }
         }
 
         // ------------------------------------------------------------
-        // Benchmark: decode each barcode from its memory stream
+        // Benchmark decoding of the in‑memory barcode images
         // ------------------------------------------------------------
-        var stopwatch = new Stopwatch();
-        int totalDecoded = 0;
-        stopwatch.Start();
+        var stopwatch = Stopwatch.StartNew();
+        int decodedCount = 0;
+        BaseDecodeType decodeType = DecodeType.Planet;
 
-        foreach (var ms in streams)
+        foreach (var imgBytes in images)
         {
-            ms.Position = 0; // ensure stream is at the beginning before decoding
-            BaseDecodeType decodeType = DecodeType.Planet;
-
-            // Use BarCodeReader to decode the barcode from the stream
-            using (var reader = new BarCodeReader(ms, decodeType))
+            // Load the PNG bytes into a memory stream for the reader
+            using (var ms = new MemoryStream(imgBytes))
             {
-                var results = reader.ReadBarCodes();
-                totalDecoded += results.Length;
+                // Initialize the barcode reader for Planet symbology
+                using (var reader = new BarCodeReader(ms, decodeType))
+                {
+                    // Attempt to read all barcodes in the image
+                    BarCodeResult[] results = reader.ReadBarCodes();
+                    if (results.Length > 0)
+                        decodedCount++;
+                }
             }
         }
 
         stopwatch.Stop();
 
-        // Output the benchmark result
-        Console.WriteLine($"Decoded {totalDecoded} barcodes in {stopwatch.ElapsedMilliseconds} ms.");
-
-        // ------------------------------------------------------------
-        // Clean up: dispose all memory streams
-        // ------------------------------------------------------------
-        foreach (var ms in streams)
-        {
-            ms.Dispose();
-        }
+        // Output benchmark results
+        Console.WriteLine($"Decoded {decodedCount}/{barcodeCount} barcodes in {stopwatch.ElapsedMilliseconds} ms.");
+        Console.WriteLine($"Average per barcode: {stopwatch.Elapsed.TotalMilliseconds / barcodeCount:F2} ms.");
     }
 }

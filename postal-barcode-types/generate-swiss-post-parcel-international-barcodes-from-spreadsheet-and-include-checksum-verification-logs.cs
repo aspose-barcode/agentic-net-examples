@@ -1,106 +1,116 @@
-// Title: Generate Swiss Post Parcel Barcodes from Excel and Verify Checksums
-// Description: This example reads parcel identifiers from an Excel file, creates Swiss Post Parcel barcodes, decodes them to verify the checksum, and logs the results.
-// Category-Description: Demonstrates batch barcode generation and verification using Aspose.BarCode and Aspose.Cells. The example showcases the BarcodeGenerator for SwissPostParcel symbology, BarCodeReader for checksum validation, and Workbook handling for spreadsheet data. Ideal for developers automating barcode creation from data sources such as spreadsheets, needing reliable checksum checks and logging.
+// Title: Generate Swiss Post Parcel barcodes from Excel and log checksum verification
+// Description: Demonstrates creating Swiss Post Parcel barcodes from identifiers stored in an Excel spreadsheet, saving images, reading them back to verify checksum, and logging results.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for SwissPostParcel symbology, BarCodeReader for decoding, and Aspose.Cells for Excel handling. Typical scenarios include batch barcode creation from data sources, checksum validation, and automated logging for quality control.
 // Prompt: Generate Swiss Post Parcel international barcodes from a spreadsheet and include checksum verification logs.
-// Tags: barcode generation, barcode recognition, swisspostparcel, excel, aspose.barcode, aspose.cells, checksum verification, png, console
+// Tags: barcode, swisspostparcel, generation, recognition, checksum, excel, aspose.barcode, aspose.cells
 
 using System;
 using System.IO;
+using System.Text;
+using System.Collections.Generic;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Cells;
+using Aspose.Drawing;
 
 /// <summary>
-/// Reads parcel codes from an Excel file, generates Swiss Post Parcel barcodes,
-/// verifies them by decoding, and writes a verification log.
+/// Demonstrates generating Swiss Post Parcel barcodes from an Excel file,
+/// verifying them via reading, and logging checksum correction information.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Executes the full barcode generation and verification workflow.
+    /// Entry point. Creates temporary workspace, writes sample identifiers to an Excel file,
+    /// generates barcode images, reads them back to verify checksum, and writes a log file.
     /// </summary>
     static void Main()
     {
-        // ----------------------------------------------------------------------
-        // Define file system paths for the temporary Excel source, output directory,
-        // and verification log file.
-        // ----------------------------------------------------------------------
-        string excelPath = Path.Combine(Path.GetTempPath(), "SwissPostCodes.xlsx");
-        string outputDir = Path.Combine(Path.GetTempPath(), "SwissPostBarcodes_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(outputDir);
-        string logPath = Path.Combine(outputDir, "log.txt");
+        // Prepare a unique temporary directory for all generated files
+        string baseDir = Path.Combine(Path.GetTempPath(), "SwissPostDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(baseDir);
 
-        // ----------------------------------------------------------------------
-        // Create a sample Excel workbook if it does not already exist.
-        // The workbook contains three rows with different checksum scenarios.
-        // ----------------------------------------------------------------------
-        if (!File.Exists(excelPath))
+        // Define paths for the Excel source file and the checksum log file
+        string excelPath = Path.Combine(baseDir, "Identifiers.xlsx");
+        string logPath = Path.Combine(baseDir, "ChecksumLog.txt");
+
+        // Sample identifiers: one with correct checksum, one missing checksum, one with wrong checksum
+        List<string> sampleIds = new List<string>
         {
-            using (var wb = new Workbook())
+            "RM999605013CH", // correct checksum
+            "RM99960501CH",  // missing checksum
+            "RM999605017CH"  // wrong checksum
+        };
+
+        // Create an Excel workbook and write the sample identifiers into the first column
+        using (Workbook wb = new Workbook())
+        {
+            Worksheet ws = wb.Worksheets[0];
+            ws.Cells[0, 0].PutValue("Identifier");
+            for (int i = 0; i < sampleIds.Count; i++)
             {
-                var ws = wb.Worksheets[0];
-                ws.Cells[0, 0].PutValue("RM999605013CH"); // correct checksum
-                ws.Cells[1, 0].PutValue("RM999605017CH"); // wrong checksum
-                ws.Cells[2, 0].PutValue("RM99960501CH");  // missing checksum
-                wb.Save(excelPath);
+                ws.Cells[i + 1, 0].PutValue(sampleIds[i]);
+            }
+            wb.Save(excelPath, SaveFormat.Xlsx);
+        }
+
+        // Read identifiers back from the Excel file
+        List<string> identifiers = new List<string>();
+        using (Workbook wb = new Workbook(excelPath))
+        {
+            Worksheet ws = wb.Worksheets[0];
+            int row = 1;
+            while (!string.IsNullOrEmpty(ws.Cells[row, 0].StringValue))
+            {
+                identifiers.Add(ws.Cells[row, 0].StringValue);
+                row++;
             }
         }
 
-        // ----------------------------------------------------------------------
-        // Load the Excel file and iterate over each populated row.
-        // ----------------------------------------------------------------------
-        using (var workbook = new Workbook(excelPath))
+        // Process each identifier: generate barcode, read it back, compare checksums, and log the result
+        int index = 1;
+        foreach (string id in identifiers)
         {
-            var worksheet = workbook.Worksheets[0];
-            var cells = worksheet.Cells;
-            int maxRow = cells.MaxDataRow;
+            string imagePath = Path.Combine(baseDir, $"Barcode_{index}.png");
+            string readText = GenerateAndReadBarcode(id, imagePath);
+            bool checksumCorrected = !string.Equals(id, readText, StringComparison.Ordinal);
+            string logLine = $"Original:{id} | Generated:{readText} | ChecksumCorrected:{checksumCorrected}";
+            Console.WriteLine(logLine);
+            File.AppendAllText(logPath, logLine + Environment.NewLine);
+            index++;
+        }
 
-            for (int row = 0; row <= maxRow; row++)
+        Console.WriteLine($"Processing complete. Files saved to: {baseDir}");
+    }
+
+    /// <summary>
+    /// Generates a Swiss Post Parcel barcode image from the supplied text, saves it,
+    /// then reads the barcode back to obtain the possibly corrected code text.
+    /// </summary>
+    /// <param name="codeText">The identifier to encode.</param>
+    /// <param name="imagePath">File path where the barcode image will be saved.</param>
+    /// <returns>The code text read from the generated barcode image.</returns>
+    static string GenerateAndReadBarcode(string codeText, string imagePath)
+    {
+        // Generate barcode image using SwissPostParcel symbology
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, codeText))
+        {
+            generator.Parameters.Barcode.XDimension.Pixels = 2f;
+            generator.Parameters.Barcode.BarHeight.Pixels = 40f;
+            generator.Save(imagePath, BarCodeImageFormat.Png);
+        }
+
+        // Read the barcode back to verify checksum (or obtain corrected value)
+        string resultText = string.Empty;
+        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.SwissPostParcel))
+        {
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Retrieve and trim the parcel code from the first column.
-                string originalCode = cells[row, 0].StringValue?.Trim();
-                if (string.IsNullOrEmpty(originalCode))
-                    continue; // Skip empty rows.
-
-                // --------------------------------------------------------------
-                // Generate a Swiss Post Parcel barcode image for the current code.
-                // --------------------------------------------------------------
-                string imagePath = Path.Combine(outputDir, $"barcode_{row + 1}.png");
-                using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, originalCode))
-                {
-                    generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                    generator.Parameters.Barcode.BarHeight.Pixels = 40f;
-                    generator.Save(imagePath, BarCodeImageFormat.Png);
-                }
-
-                // --------------------------------------------------------------
-                // Decode the generated barcode to verify the checksum.
-                // --------------------------------------------------------------
-                string decodedCode = "";
-                using (var reader = new BarCodeReader(imagePath, DecodeType.SwissPostParcel))
-                {
-                    foreach (var result in reader.ReadBarCodes())
-                    {
-                        decodedCode = result.CodeText;
-                        break; // Only one barcode expected per image.
-                    }
-                }
-
-                // --------------------------------------------------------------
-                // Log the verification result: OK if codes match, otherwise Corrected.
-                // --------------------------------------------------------------
-                string checksumStatus = decodedCode.Equals(originalCode, StringComparison.Ordinal) ? "OK" : "Corrected";
-                string logEntry = $"Row {row + 1}: Original=\"{originalCode}\", Decoded=\"{decodedCode}\", Status={checksumStatus}{Environment.NewLine}";
-                File.AppendAllText(logPath, logEntry);
-                Console.WriteLine(logEntry.TrimEnd());
+                resultText = result.CodeText;
+                break; // only need the first result
             }
         }
 
-        // ----------------------------------------------------------------------
-        // Output final locations of generated barcodes and the log file.
-        // ----------------------------------------------------------------------
-        Console.WriteLine($"Barcodes saved to: {outputDir}");
-        Console.WriteLine($"Log file: {logPath}");
+        return resultText;
     }
 }

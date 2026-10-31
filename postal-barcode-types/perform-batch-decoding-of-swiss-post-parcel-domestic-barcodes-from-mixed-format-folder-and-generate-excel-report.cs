@@ -1,8 +1,8 @@
-// Title: Batch decode Swiss Post Parcel barcodes and generate Excel report
-// Description: Demonstrates generating Swiss Post Parcel barcode images in various formats, decoding them in bulk, and creating an Excel summary of the results.
-// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showcasing how to use BarcodeGenerator, BarCodeReader, and Aspose.Cells to handle multiple image files, decode specific symbologies, and produce structured reports. Developers often need to process large sets of barcode images, extract data, and export findings to spreadsheets for analysis or integration with business workflows.
+// Title: Batch decode Swiss Post Parcel barcodes and export to Excel
+// Description: Demonstrates how to generate sample Swiss Post Parcel barcode images, decode them in bulk, and create an Excel report summarizing the results.
+// Category-Description: This example belongs to the Aspose.BarCode batch processing category, showing how to use BarcodeGenerator, BarCodeReader, and Aspose.Cells to work with multiple barcode images. Typical use cases include automated scanning of shipping labels, validation of barcode data, and reporting. Developers often need to generate, read, and export barcode information to spreadsheets for analysis or integration with other systems.
 // Prompt: Perform batch decoding of Swiss Post Parcel domestic barcodes from a mixed‑format folder and generate an Excel report.
-// Tags: swisspostparcel, barcode, batch decoding, excel, aspose.barcode, aspose.cells, image generation
+// Tags: swisspost, parcel, barcode, batch decoding, excel, report, aspose.barcode, aspose.cells, generation, recognition
 
 using System;
 using System.IO;
@@ -11,139 +11,124 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Cells;
+using Aspose.Drawing;
 
 /// <summary>
-/// Example program that generates Swiss Post Parcel barcode images, decodes them in batch,
-/// and writes the results to an Excel report.
+/// Example program that creates sample Swiss Post Parcel barcode images,
+/// decodes them in a batch, and writes the results to an Excel report.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application. Performs image generation, batch decoding, and report creation.
+    /// Entry point of the application.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder for the sample files.
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchDecode_" + Guid.NewGuid().ToString("N"));
+        // --------------------------------------------------------------------
+        // 1. Create a unique temporary folder for the sample barcode images.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchSwissPost_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // List to hold the generated barcode image file paths.
-        List<string> barcodeFiles = new List<string>();
-
-        // Sample Swiss Post Parcel domestic barcode texts.
-        string[] sampleTexts = new string[]
+        // --------------------------------------------------------------------
+        // 2. Define sample barcode data (Swiss Post Parcel Domestic) with
+        //    desired file names and image formats.
+        // --------------------------------------------------------------------
+        var samples = new List<(string CodeText, string FileName, BarCodeImageFormat Format)>
         {
-            "98.34.123456.12345678",
-            "983412345612345678",
-            "99.12.654321.87654321"
+            ("98.34.123456.12345678", "DomesticOriginal.png", BarCodeImageFormat.Png),
+            ("983412345612345678", "DomesticDigits.png", BarCodeImageFormat.Png),
+            ("98.12.000001.00000001", "DomesticOriginal2.jpg", BarCodeImageFormat.Jpeg),
+            ("981200000100000001", "DomesticDigits2.jpg", BarCodeImageFormat.Jpeg)
         };
 
-        // Define image formats to be used for the generated barcodes.
-        string[] formats = new string[] { "png", "jpg", "bmp" };
+        var createdFiles = new List<string>();
 
-        // Generate barcode images in the specified formats.
-        for (int i = 0; i < sampleTexts.Length; i++)
+        // --------------------------------------------------------------------
+        // 3. Generate barcode images using BarcodeGenerator.
+        // --------------------------------------------------------------------
+        foreach (var sample in samples)
         {
-            string text = sampleTexts[i];
-            string format = formats[i % formats.Length];
-            string filePath = Path.Combine(tempFolder, $"SwissPost_{i + 1}.{format}");
-
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, text))
+            string filePath = Path.Combine(tempFolder, sample.FileName);
+            using (var generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, sample.CodeText))
             {
-                // Configure barcode appearance.
+                // Set visual parameters.
                 generator.Parameters.Barcode.XDimension.Pixels = 2f;
                 generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
-                // Map file extension to Aspose.BarCode image format.
-                BarCodeImageFormat imgFormat = format.ToLower() switch
-                {
-                    "png" => BarCodeImageFormat.Png,
-                    "jpg" => BarCodeImageFormat.Jpeg,
-                    "bmp" => BarCodeImageFormat.Bmp,
-                    _ => BarCodeImageFormat.Png
-                };
-
-                // Save the generated barcode image.
-                generator.Save(filePath, imgFormat);
+                // Save the barcode image to the specified format.
+                generator.Save(filePath, sample.Format);
             }
-
-            barcodeFiles.Add(filePath);
+            createdFiles.Add(filePath);
         }
 
-        // Prepare the Excel report workbook.
-        string reportPath = Path.Combine(tempFolder, "BatchDecodeReport.xlsx");
-        using (Workbook workbook = new Workbook())
+        // --------------------------------------------------------------------
+        // 4. Prepare a collection to hold rows for the Excel report.
+        // --------------------------------------------------------------------
+        var reportRows = new List<(string FileName, string BarcodeType, string BarcodeData)>();
+
+        // --------------------------------------------------------------------
+        // 5. Decode each generated barcode image using BarCodeReader.
+        // --------------------------------------------------------------------
+        foreach (string file in createdFiles)
         {
-            Worksheet sheet = workbook.Worksheets[0];
-
-            // Write header row.
-            sheet.Cells[0, 0].PutValue("File Name");
-            sheet.Cells[0, 1].PutValue("Barcode Type");
-            sheet.Cells[0, 2].PutValue("Decoded Text");
-
-            int currentRow = 1;
-
-            // Process each generated barcode file.
-            foreach (string file in barcodeFiles)
+            if (!File.Exists(file))
             {
-                if (!File.Exists(file))
-                {
-                    Console.WriteLine($"File not found: {file}");
-                    continue;
-                }
+                Console.WriteLine($"File not found: {file}");
+                continue;
+            }
 
-                try
+            try
+            {
+                using (var reader = new BarCodeReader(file, DecodeType.SwissPostParcel))
                 {
-                    // Initialize reader for Swiss Post Parcel symbology.
-                    using (BarCodeReader reader = new BarCodeReader(file, DecodeType.SwissPostParcel))
+                    BarCodeResult[] results = reader.ReadBarCodes();
+
+                    if (results.Length > 0)
                     {
-                        BarCodeResult[] results = reader.ReadBarCodes();
-
-                        if (results.Length == 0)
-                        {
-                            // No barcode detected in the image.
-                            sheet.Cells[currentRow, 0].PutValue(Path.GetFileName(file));
-                            sheet.Cells[currentRow, 1].PutValue("N/A");
-                            sheet.Cells[currentRow, 2].PutValue("No barcode detected");
-                            currentRow++;
-                        }
-                        else
-                        {
-                            // Write each detected barcode to the report.
-                            foreach (BarCodeResult result in results)
-                            {
-                                sheet.Cells[currentRow, 0].PutValue(Path.GetFileName(file));
-                                sheet.Cells[currentRow, 1].PutValue(result.CodeTypeName);
-                                sheet.Cells[currentRow, 2].PutValue(result.CodeText);
-                                currentRow++;
-                            }
-                        }
+                        // Use the first detected barcode result.
+                        var result = results[0];
+                        reportRows.Add((Path.GetFileName(file), result.CodeTypeName, result.CodeText));
+                    }
+                    else
+                    {
+                        // No barcode detected in the image.
+                        reportRows.Add((Path.GetFileName(file), "NotDetected", ""));
                     }
                 }
-                catch (ArgumentException ex)
-                {
-                    // Handle image loading failures or unsupported formats.
-                    Console.WriteLine($"Failed to read '{file}': {ex.Message}");
-                    sheet.Cells[currentRow, 0].PutValue(Path.GetFileName(file));
-                    sheet.Cells[currentRow, 1].PutValue("Error");
-                    sheet.Cells[currentRow, 2].PutValue(ex.Message);
-                    currentRow++;
-                }
-                catch (Exception ex)
-                {
-                    // Handle any unexpected errors during processing.
-                    Console.WriteLine($"Unexpected error processing '{file}': {ex.Message}");
-                    sheet.Cells[currentRow, 0].PutValue(Path.GetFileName(file));
-                    sheet.Cells[currentRow, 1].PutValue("Error");
-                    sheet.Cells[currentRow, 2].PutValue(ex.Message);
-                    currentRow++;
-                }
             }
-
-            // Save the Excel report to the temporary folder.
-            workbook.Save(reportPath, SaveFormat.Xlsx);
+            catch (ArgumentException ex)
+            {
+                // Handle image loading errors (e.g., unsupported format).
+                Console.WriteLine($"Failed to load image '{file}': {ex.Message}");
+                reportRows.Add((Path.GetFileName(file), "LoadError", ""));
+            }
         }
 
-        Console.WriteLine($"Batch decoding completed. Report saved to: {reportPath}");
+        // --------------------------------------------------------------------
+        // 6. Create an Excel workbook and populate it with the report data.
+        // --------------------------------------------------------------------
+        string reportPath = Path.Combine(tempFolder, "SwissPostBatchReport.xlsx");
+        var workbook = new Workbook();
+        var sheet = workbook.Worksheets[0];
+        sheet.Name = "Report";
+
+        // Write header row.
+        sheet.Cells[0, 0].PutValue("File Name");
+        sheet.Cells[0, 1].PutValue("Barcode Type");
+        sheet.Cells[0, 2].PutValue("Barcode Data");
+
+        // Write each data row.
+        for (int i = 0; i < reportRows.Count; i++)
+        {
+            var row = reportRows[i];
+            sheet.Cells[i + 1, 0].PutValue(row.FileName);
+            sheet.Cells[i + 1, 1].PutValue(row.BarcodeType);
+            sheet.Cells[i + 1, 2].PutValue(row.BarcodeData);
+        }
+
+        // Save the workbook as an XLSX file.
+        workbook.Save(reportPath, SaveFormat.Xlsx);
+        Console.WriteLine($"Excel report generated at: {reportPath}");
     }
 }

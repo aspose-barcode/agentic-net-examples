@@ -1,8 +1,8 @@
-// Title: Batch decode Postnet barcodes from image streams and save results to JSON
-// Description: Demonstrates generating multiple Postnet barcode images, decoding them in a batch, and persisting the results as JSON (simulating a database).
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating Postnet barcodes, BarCodeReader for batch decoding, and common result handling patterns. Developers working with postal barcode automation, bulk scanning, or data extraction will find these APIs useful for integrating barcode workflows into .NET applications.
+// Title: Batch decode of Postnet barcodes and store results in JSON (as DB placeholder)
+// Description: Demonstrates generating multiple Postnet barcode images, decoding them in a batch, and persisting the decoded data. Useful for processing large sets of postal barcodes in automated workflows.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator for creating Postnet symbols, BarCodeReader for batch decoding, and common result handling patterns. Developers working with postal automation, logistics, or bulk barcode processing often need to generate test data, decode many images efficiently, and store outcomes in databases or files.
 // Prompt: Perform batch decoding of Postnet barcodes from a list of image streams and store results in a database.
-// Tags: postnet, barcode, batch decoding, json, aspose.barcode, barcodegeneration, barcoderecognition, .net
+// Tags: postnet, barcode, batch decoding, json, aspose.barcode, generation, recognition, database placeholder
 
 using System;
 using System.IO;
@@ -13,112 +13,121 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
-/// <summary>
-/// Demonstrates batch generation and decoding of Postnet barcodes, storing results in a JSON file.
-/// </summary>
-class Program
+namespace BatchPostnetDecode
 {
     /// <summary>
-    /// Entry point. Generates sample Postnet barcodes, decodes them, and writes results to a JSON file.
+    /// Demonstrates batch generation and decoding of Postnet barcodes, storing results in a JSON file.
     /// </summary>
-    static void Main()
+    class Program
     {
-        // Create a unique temporary folder for the sample files
-        string tempFolder = Path.Combine(Path.GetTempPath(), "BatchPostnet_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempFolder);
-
-        // Sample Postnet code texts (5‑digit ZIP codes)
-        var codeTexts = new List<string> { "12345", "67890", "01234", "56789", "24680" };
-        var imagePaths = new List<string>();
-
-        // -----------------------------------------------------------------
-        // Generate barcode images for each sample text
-        // -----------------------------------------------------------------
-        foreach (var text in codeTexts)
+        /// <summary>
+        /// Entry point. Generates sample barcodes, decodes them, and writes results to a JSON file.
+        /// </summary>
+        static void Main()
         {
-            string filePath = Path.Combine(tempFolder, $"Postnet_{text}.png");
-            using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, text))
-            {
-                // Optional: adjust barcode dimensions
-                generator.Parameters.Barcode.XDimension.Pixels = 3f;
-                generator.Parameters.Barcode.BarHeight.Pixels = 50f;
-                generator.Save(filePath, BarCodeImageFormat.Png);
-            }
-            imagePaths.Add(filePath);
+            // Create a dedicated temporary folder for the sample
+            string tempFolder = Path.Combine(Path.GetTempPath(), "BatchPostnet_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempFolder);
+
+            // Generate sample Postnet barcode images and collect their file paths
+            List<string> barcodeFiles = new List<string>();
+            GenerateSampleBarcodes(tempFolder, barcodeFiles);
+
+            // Decode the generated barcodes in a batch operation
+            List<DecodeResult> results = DecodeBarcodes(barcodeFiles);
+
+            // Store results in a JSON file (as a stand‑in for a database)
+            string jsonPath = Path.Combine(tempFolder, "decode_results.json");
+            string json = JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(jsonPath, json);
+
+            Console.WriteLine($"Decoded {results.Count} barcodes. Results saved to: {jsonPath}");
         }
 
-        // Prepare a list to hold decoding results
-        var results = new List<DecodeRecord>();
-
-        // -----------------------------------------------------------------
-        // Decode each generated image using the Postnet decoder
-        // -----------------------------------------------------------------
-        BaseDecodeType decodeType = DecodeType.Postnet;
-        foreach (var path in imagePaths)
+        /// <summary>
+        /// Generates Postnet barcode images for a set of sample codes and records their file paths.
+        /// </summary>
+        /// <param name="folder">Folder where images will be saved.</param>
+        /// <param name="fileList">List that will receive the generated file paths.</param>
+        static void GenerateSampleBarcodes(string folder, List<string> fileList)
         {
-            if (!File.Exists(path))
-            {
-                Console.WriteLine($"File not found: {path}");
-                continue;
-            }
+            // Sample Postnet code texts (5, 9, or 11 digits are typical)
+            string[] sampleCodes = new[] { "12345", "123456789", "12345678901", "98765", "54321" };
 
-            try
+            foreach (string code in sampleCodes)
             {
-                using (var reader = new BarCodeReader(path, decodeType))
+                string filePath = Path.Combine(folder, $"Postnet_{code}.png");
+                using (var generator = new BarcodeGenerator(EncodeTypes.Postnet, code))
                 {
-                    BarCodeResult[] barCodes = reader.ReadBarCodes();
+                    // Optional visual settings
+                    generator.Parameters.Barcode.XDimension.Pixels = 3f;
+                    generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
-                    // Process each detected barcode
-                    foreach (var result in barCodes)
-                    {
-                        var record = new DecodeRecord
-                        {
-                            FileName = Path.GetFileName(path),
-                            CodeText = result.CodeText,
-                            CodeTypeName = result.CodeTypeName
-                        };
-                        results.Add(record);
-                        Console.WriteLine($"Decoded {record.FileName}: {record.CodeTypeName} -> {record.CodeText}");
-                    }
+                    // Save the barcode image to PNG format
+                    generator.Save(filePath, BarCodeImageFormat.Png);
+                }
+                fileList.Add(filePath);
+            }
+        }
 
-                    // Record an empty result if no barcode was found
-                    if (barCodes.Length == 0)
+        /// <summary>
+        /// Decodes a collection of barcode image files using Postnet settings.
+        /// </summary>
+        /// <param name="files">List of image file paths to decode.</param>
+        /// <returns>List of decoding results.</returns>
+        static List<DecodeResult> DecodeBarcodes(List<string> files)
+        {
+            List<DecodeResult> results = new List<DecodeResult>();
+            BaseDecodeType decodeType = DecodeType.Postnet;
+
+            foreach (string file in files)
+            {
+                if (!File.Exists(file))
+                {
+                    Console.WriteLine($"File not found: {file}");
+                    continue;
+                }
+
+                try
+                {
+                    // Initialize the reader for Postnet decoding
+                    using (var reader = new BarCodeReader(file, decodeType))
                     {
-                        var record = new DecodeRecord
+                        // Optional: improve performance by limiting to Postnet only
+                        // reader.BarcodeSettings.ChecksumValidation = ChecksumValidation.On;
+
+                        // Read all barcodes found in the image
+                        BarCodeResult[] barResults = reader.ReadBarCodes();
+                        foreach (BarCodeResult result in barResults)
                         {
-                            FileName = Path.GetFileName(path),
-                            CodeText = string.Empty,
-                            CodeTypeName = "None"
-                        };
-                        results.Add(record);
-                        Console.WriteLine($"No barcode detected in {record.FileName}");
+                            // Capture relevant information for each decoded barcode
+                            results.Add(new DecodeResult
+                            {
+                                FileName = Path.GetFileName(file),
+                                CodeText = result.CodeText,
+                                CodeTypeName = result.CodeTypeName,
+                                ReadingQuality = result.ReadingQuality
+                            });
+                        }
                     }
                 }
+                catch (ArgumentException ex)
+                {
+                    // Image loading failed or unsupported format – skip this file
+                    Console.WriteLine($"Skipping file due to error: {file}. Message: {ex.Message}");
+                }
             }
-            catch (ArgumentException ex)
-            {
-                // Image loading failed or format unsupported
-                Console.WriteLine($"Skipping file due to error: {path}. Message: {ex.Message}");
-            }
+
+            return results;
         }
 
-        // -----------------------------------------------------------------
-        // Serialize results to JSON (simulating a database write)
-        // -----------------------------------------------------------------
-        string jsonPath = Path.Combine(tempFolder, "PostnetDecodeResults.json");
-        string json = JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(jsonPath, json);
-        Console.WriteLine($"Decoding results saved to: {jsonPath}");
-
-        // Cleanup: (optional) keep files for inspection; comment out if not needed
-        // Directory.Delete(tempFolder, true);
-    }
-
-    // Simple DTO for storing decode information
-    class DecodeRecord
-    {
-        public string FileName { get; set; }
-        public string CodeText { get; set; }
-        public string CodeTypeName { get; set; }
+        // Simple class to hold decoding information for each barcode
+        class DecodeResult
+        {
+            public string FileName { get; set; }
+            public string CodeText { get; set; }
+            public string CodeTypeName { get; set; }
+            public double ReadingQuality { get; set; }
+        }
     }
 }

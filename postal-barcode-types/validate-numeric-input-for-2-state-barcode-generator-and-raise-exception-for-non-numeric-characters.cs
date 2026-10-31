@@ -1,74 +1,60 @@
-// Title: Numeric Validation for 2‑State Planet Barcode Generation
-// Description: Demonstrates how to validate that the code text contains only numeric characters before generating a 2‑state Planet barcode, throwing an exception for invalid input.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on input validation for 2‑state symbologies such as Planet. It showcases the use of BarcodeGenerator, EncodeTypes, and the ThrowExceptionWhenCodeTextIncorrect parameter to enforce correct code text. Developers often need to ensure data integrity before creating barcodes for inventory, tracking, or packaging applications.
+// Title: Validate numeric input for a 2‑state barcode generator
+// Description: Demonstrates how to generate a Planet 2‑state barcode and enforce numeric-only code text, throwing an exception for invalid characters.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, illustrating the use of BarcodeGenerator, EncodeTypes, and generator parameters such as ThrowExceptionWhenCodeTextIncorrect. Typical use cases include validating input before creating barcodes for inventory, shipping, or tracking systems where only numeric data is allowed. Developers often need to ensure code text correctness to avoid runtime errors and maintain data integrity.
 // Prompt: Validate numeric input for a 2‑state barcode generator and raise an exception for non‑numeric characters.
-// Tags: barcode, planet, numeric validation, exception handling, c#, aspose.barcode, generation, 2-state
+// Tags: barcode, planet, numeric validation, exception handling, generation, aspose.barcode, csharp
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.Drawing;
-using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program that validates numeric input for a 2‑state Planet barcode
+/// Example program that validates numeric input for a 2‑state (Planet) barcode
 /// and generates the barcode image when the input is valid.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Iterates over sample code texts,
-    /// validates each, and attempts to generate a barcode image.
+    /// Entry point of the application. Iterates over sample inputs,
+    /// attempts to generate a Planet barcode, and reports success or failure.
     /// </summary>
     static void Main()
     {
-        // Sample code texts: one valid numeric string and one containing a non‑numeric character.
-        string[] samples = { "123456", "12A34" };
+        // Sample inputs: one valid numeric string and one containing a non‑numeric character.
+        string[] inputs = { "123456", "12A34" };
 
-        // Process each sample text.
-        foreach (var text in samples)
+        // Process each input sequentially.
+        for (int i = 0; i < inputs.Length; i++)
         {
-            Console.WriteLine($"Processing code text: {text}");
+            string codeText = inputs[i];
             try
             {
-                // Validate the text and generate the barcode if valid.
-                ValidateAndGenerate(text);
-                Console.WriteLine("Barcode generated successfully.");
+                // Initialize the barcode generator with Planet symbology and the current code text.
+                using (var generator = new BarcodeGenerator(EncodeTypes.Planet, codeText))
+                {
+                    // Enable strict validation: an exception is thrown if the code text is not numeric.
+                    generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
+
+                    // Generate the barcode image.
+                    using (Bitmap bitmap = generator.GenerateBarCodeImage())
+                    {
+                        // Build a temporary file path for the output PNG.
+                        string outPath = Path.Combine(Path.GetTempPath(), $"Planet_{i}.png");
+
+                        // Save the image to disk.
+                        bitmap.Save(outPath, Aspose.Drawing.Imaging.ImageFormat.Png);
+
+                        // Inform the user of successful generation.
+                        Console.WriteLine($"Valid input \"{codeText}\" - barcode saved to {outPath}");
+                    }
+                }
             }
             catch (Exception ex)
             {
-                // Output any validation or generation errors.
-                Console.WriteLine($"Exception: {ex.Message}");
-            }
-        }
-    }
-
-    /// <summary>
-    /// Validates that the provided code text contains only numeric characters
-    /// and generates a Planet barcode image. An exception is thrown automatically
-    /// if the validation fails, thanks to the ThrowExceptionWhenCodeTextIncorrect setting.
-    /// </summary>
-    /// <param name="codeText">The code text to validate and encode.</param>
-    static void ValidateAndGenerate(string codeText)
-    {
-        // Initialize the barcode generator for the Planet symbology with the given text.
-        using (var generator = new BarcodeGenerator(EncodeTypes.Planet, codeText))
-        {
-            // Enable automatic exception throwing for invalid code text.
-            generator.Parameters.Barcode.ThrowExceptionWhenCodeTextIncorrect = true;
-
-            // Generate the barcode image.
-            using (var bitmap = generator.GenerateBarCodeImage())
-            {
-                // Build a unique temporary file path for the PNG image.
-                string tempPath = Path.Combine(Path.GetTempPath(), $"Planet_{codeText}_{Guid.NewGuid():N}.png");
-
-                // Save the generated image to the temporary file.
-                using (var fileStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write))
-                {
-                    bitmap.Save(fileStream, ImageFormat.Png);
-                }
+                // Report invalid input and the associated exception message.
+                Console.WriteLine($"Invalid input \"{codeText}\" - exception: {ex.Message}");
             }
         }
     }

@@ -1,8 +1,8 @@
-// Title: Generate Mailmark 4‑State barcodes and encode them as Base64 strings
-// Description: Demonstrates creating Mailmark 4‑State barcodes for a list of order numbers using Aspose.BarCode and converting each PNG image to a Base64 string for easy transport or embedding.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation category, focusing on complex barcode symbologies such as Mailmark. It showcases the use of ComplexBarcodeGenerator, MailmarkCodetext, and barcode parameter customization. Developers often need to generate Mailmark barcodes for postal services and then serialize the images for web APIs or storage, making this pattern a common requirement.
+// Title: Generate Mailmark barcodes and output Base64 strings
+// Description: Demonstrates creating Mailmark 4‑state barcodes for a list of order numbers and converting each PNG image to a Base64 string.
+// Category-Description: This example belongs to the Aspose.BarCode complex barcode generation category. It shows how to use MailmarkCodetext and ComplexBarcodeGenerator to produce Mailmark symbols, adjust rendering parameters, and export the result as an image. Developers working with postal or logistics solutions often need to generate Mailmark barcodes programmatically and embed them in data streams or web services, making Base64 encoding a common step.
 // Prompt: Generate Mailmark barcodes for a set of order numbers and convert each image to a Base64 string.
-// Tags: mailmark, barcode, generation, base64, png, aspose.barcode, complexbarcodegenerator
+// Tags: mailmark, barcode, generation, base64, png, aspose.barcode, complexbarcode, csharp
 
 using System;
 using System.Collections.Generic;
@@ -12,53 +12,49 @@ using Aspose.BarCode.ComplexBarcode;
 using Aspose.BarCode.Generation;
 
 /// <summary>
-/// Example program that creates Mailmark 4‑State barcodes for a collection of order numbers
-/// and outputs each barcode image as a Base64‑encoded PNG string.
+/// Example program that generates Mailmark barcodes for a collection of order numbers
+/// and writes each barcode image as a Base64‑encoded PNG string to the console.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the application.
-    /// Generates a Mailmark barcode for each order number, saves it to a memory stream,
-    /// converts the image to Base64, and writes the result to the console.
+    /// Entry point. Iterates through sample order numbers, builds a MailmarkCodetext,
+    /// generates a PNG barcode, encodes it to Base64 and prints the result.
     /// </summary>
     static void Main()
     {
-        // Define a sample list of order numbers to encode.
-        List<int> orderNumbers = new List<int> { 1001, 1002, 1003 };
+        // Sample order numbers to encode
+        List<int> orderNumbers = new List<int> { 1001, 1002, 1003, 1004, 1005 };
 
-        // Iterate over each order number and generate its corresponding barcode.
-        foreach (int orderNumber in orderNumbers)
+        // Process each order number individually
+        foreach (int order in orderNumbers)
         {
-            // Build the Mailmark codetext with required fields.
-            MailmarkCodetext mailmark = new MailmarkCodetext
-            {
-                Format = 4,
-                VersionID = 1,
-                Class = "0",
-                SupplychainID = 384224,
-                ItemID = orderNumber,
-                DestinationPostCodePlusDPS = "EF61AH8T "
-            };
+            // Build the Mailmark 4‑state codetext with required fields
+            MailmarkCodetext mailmark = new MailmarkCodetext();
+            mailmark.Format = 4;
+            mailmark.VersionID = 1;
+            mailmark.Class = "0";
+            mailmark.SupplychainID = 384224;
+            mailmark.ItemID = order;
+            mailmark.DestinationPostCodePlusDPS = "EF61AH8T ";
 
-            // Use a memory stream to hold the generated PNG image.
-            using (MemoryStream ms = new MemoryStream())
+            // Create a generator for the complex Mailmark barcode
+            using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
             {
-                // Create the complex barcode generator with the Mailmark codetext.
-                using (ComplexBarcodeGenerator generator = new ComplexBarcodeGenerator(mailmark))
+                // Set the X‑dimension (module size) to 4 pixels for better readability
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+
+                // Save the barcode to a memory stream in PNG format
+                using (MemoryStream ms = new MemoryStream())
                 {
-                    // Set the X‑dimension (module width) to 4 pixels for better readability.
-                    generator.Parameters.Barcode.XDimension.Pixels = 4;
-
-                    // Save the barcode image to the memory stream in PNG format.
                     generator.Save(ms, BarCodeImageFormat.Png);
+
+                    // Convert the PNG byte array to a Base64 string
+                    string base64 = Convert.ToBase64String(ms.ToArray());
+
+                    // Output the order identifier and its Base64 representation
+                    Console.WriteLine($"Order {order}: {base64}");
                 }
-
-                // Convert the image bytes from the memory stream to a Base64 string.
-                string base64 = Convert.ToBase64String(ms.ToArray());
-
-                // Output the order number and its corresponding Base64‑encoded barcode.
-                Console.WriteLine($"Order {orderNumber}: {base64}");
             }
         }
     }

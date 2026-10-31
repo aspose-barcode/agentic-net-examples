@@ -1,12 +1,13 @@
 // Title: Decode Swiss Post Parcel Additional Service Barcode from SVG
-// Description: Demonstrates how to read a Swiss Post Parcel additional service code barcode stored in an SVG file and map the decoded value to a human‑readable service description.
-// Category-Description: This example belongs to the Aspose.BarCode recognition category, showcasing the use of BarCodeReader with DecodeType.SwissPostParcel to extract service codes from vector graphics. Developers working with postal logistics, parcel tracking, or document automation often need to decode Swiss Post barcodes and translate them into meaningful service information. The key API classes include BarCodeReader, BarCodeResult, and DecodeType, which together enable fast, reliable barcode extraction from SVG, PDF, or image files.
+// Description: Demonstrates how to read a Swiss Post Parcel additional service barcode stored in an SVG file and map the decoded value to a human‑readable service description.
+// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showcasing the use of BarCodeReader with DecodeType.SwissPostParcel. It illustrates typical scenarios where developers need to extract service codes from Swiss Post parcel labels, translate them into meaningful descriptions, and integrate barcode data processing into .NET applications.
 // Prompt: Decode a Swiss Post Parcel additional service code barcode from a SVG file and extract service description.
-// Tags: swisspost, barcode, decode, svg, service-code, aspose.barcode, barcoderecognition
+// Tags: swisspost, parcel, barcode, decode, svg, aspose.barcode, barcoderecognition
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Collections.Generic;
+using Aspose.BarCode;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
@@ -16,11 +17,11 @@ using Aspose.BarCode.BarCodeRecognition;
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Reads the SVG, decodes the barcode, and outputs the service description.
+    /// Entry point. Loads the SVG, decodes the barcode, and looks up the service description.
     /// </summary>
     static void Main()
     {
-        // Path to the SVG file containing the Swiss Post Parcel Additional Service barcode
+        // Path to the SVG file containing the Swiss Post Parcel additional service barcode
         string svgPath = "SwissPostAdditionalService.svg";
 
         // Verify that the SVG file exists before attempting to read it
@@ -30,28 +31,25 @@ class Program
             return;
         }
 
-        // Mapping of service codes to their human‑readable descriptions (case‑insensitive)
+        // Mapping of additional service codes to their human‑readable descriptions
         var serviceDescriptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            { "0203", "Business reply label" },
-            { "0322", "Personal delivery" },
-            { "0327", "Return receipt" },
-            { "0328", "Electronic return receipt" },
+            { "0203", "Business reply label (GAS)" },
+            { "0322", "Personal delivery (RMP)" },
+            { "0327", "Return receipt (AR)" },
+            { "0328", "Electronic return receipt (eAR)" },
             { "0340", "Cash on delivery (obsolete)" },
-            { "0341", "Electronic cash on delivery" },
-            { "0470", "ID Check" },
-            { "0610", "Items for the blind" },
-            { "1007", "Military mail" },
+            { "0341", "Electronic cash on delivery (BLN)" },
+            { "0470", "ID Check (ID+RMP)" },
+            { "0610", "Items for the blind (CEC)" },
+            { "1007", "Military mail (MIL)" },
             { "2512", "Second attempted delivery on the following Saturday" }
         };
 
-        // Specify the decode type for Swiss Post Parcel barcodes
-        BaseDecodeType decodeType = DecodeType.SwissPostParcel;
-
-        // Create a BarCodeReader for the SVG file using the specified decode type
-        using (var reader = new BarCodeReader(svgPath, decodeType))
+        // Create a barcode reader configured for Swiss Post Parcel barcodes
+        using (var reader = new BarCodeReader(svgPath, DecodeType.SwissPostParcel))
         {
-            // Read all barcodes found in the file
+            // Read all barcodes present in the SVG file
             BarCodeResult[] results = reader.ReadBarCodes();
 
             // If no barcodes were detected, inform the user and exit
@@ -62,20 +60,20 @@ class Program
             }
 
             // Process each detected barcode
-            foreach (BarCodeResult result in results)
+            foreach (var result in results)
             {
-                // Extract and trim the decoded text
-                string code = result.CodeText?.Trim();
-                Console.WriteLine($"Decoded Service Code: {code}");
+                // Retrieve and trim the decoded text
+                string code = result.CodeText?.Trim() ?? string.Empty;
+                Console.WriteLine($"Detected code: {code}");
 
-                // Look up the service description using the decoded code
-                if (!string.IsNullOrEmpty(code) && serviceDescriptions.TryGetValue(code, out string description))
+                // Look up the service description based on the decoded code
+                if (serviceDescriptions.TryGetValue(code, out string description))
                 {
-                    Console.WriteLine($"Service Description: {description}");
+                    Console.WriteLine($"Service description: {description}");
                 }
                 else
                 {
-                    Console.WriteLine("Service description not found for the decoded code.");
+                    Console.WriteLine("Service description: Unknown or not defined.");
                 }
             }
         }

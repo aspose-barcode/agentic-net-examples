@@ -1,8 +1,8 @@
 // Title: Batch decode Swiss Post Parcel additional service barcodes from PDF
-// Description: Demonstrates generating Swiss Post Parcel barcodes, embedding them into a PDF, and batch decoding them to retrieve the human‑readable service codes.
-// Category-Description: This example belongs to the Aspose.BarCode PDF integration category, showcasing how to use BarcodeGenerator, BarCodeReader, and Aspose.Pdf to create, embed, and recognize barcodes in documents. Typical use cases include automated processing of shipping labels, batch verification of barcode data, and extracting encoded information from multi‑page PDFs. Developers often need to generate barcode images, insert them into PDFs, and later decode them efficiently.
+// Description: Generates Swiss Post Parcel barcodes, embeds them into a PDF, then batch decodes them to extract the human‑readable service codes.
+// Category-Description: This example demonstrates how to use Aspose.BarCode for barcode generation (BarcodeGenerator) and recognition (BarCodeReader) together with Aspose.Pdf to create a PDF document containing barcode images and then perform batch decoding. Typical scenarios include automated processing of shipping labels, bulk verification of parcel service codes, and integration of barcode data extraction into document workflows. Developers working with barcode symbologies, PDF generation, and bulk scanning will find these APIs essential.
 // Prompt: Perform batch decoding of Swiss Post Parcel additional service code barcodes from a PDF and extract human‑readable text.
-// Tags: swisspostparcel, barcode, batch decoding, pdf, aspose.barcode, aspose.pdf, generation, recognition
+// Tags: swisspost, barcode, batch decoding, pdf, aspose.barcode, aspose.pdf, generation, recognition
 
 using System;
 using System.IO;
@@ -11,114 +11,152 @@ using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Pdf;
-using Aspose.Pdf.Facades;
 
 /// <summary>
-/// Example program that generates Swiss Post Parcel barcodes, embeds them into a PDF,
-/// and then decodes each barcode from the PDF pages, outputting the results to the console.
+/// Demonstrates generating Swiss Post Parcel barcodes, embedding them into a PDF,
+/// and batch decoding the barcodes to retrieve their textual content.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Executes the full workflow: create temporary files, generate barcodes,
-    /// build a PDF, decode the barcodes, and clean up resources.
+    /// Entry point of the example. Creates barcode images, builds a PDF, reads the barcodes,
+    /// and cleans up temporary resources.
     /// </summary>
     static void Main()
     {
         // --------------------------------------------------------------------
-        // 1. Prepare a temporary working folder
+        // Create a temporary folder for the PDF and define the output path.
         // --------------------------------------------------------------------
         string tempFolder = Path.Combine(Path.GetTempPath(), "SwissPostBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-
-        // Path for the PDF that will contain the generated barcodes
-        string pdfPath = Path.Combine(tempFolder, "Barcodes.pdf");
-
-        // Sample Swiss Post Parcel additional service codes to encode
-        List<string> serviceCodes = new List<string> { "0327", "0341", "0610" };
-
-        // Keep barcode image streams alive until the PDF is saved
-        List<MemoryStream> barcodeStreams = new List<MemoryStream>();
+        string pdfPath = Path.Combine(tempFolder, "SwissPostBarcodes.pdf");
 
         // --------------------------------------------------------------------
-        // 2. Generate barcode images for each service code
+        // Sample additional service codes (max 4 for evaluation mode).
+        // --------------------------------------------------------------------
+        string[] serviceCodes = new string[] { "0327", "0341", "0203", "0610" };
+
+        // --------------------------------------------------------------------
+        // List to hold image streams for PDF pages.
+        // --------------------------------------------------------------------
+        List<MemoryStream> imageStreams = new List<MemoryStream>();
+
+        // --------------------------------------------------------------------
+        // Generate barcode images and store them in memory streams.
         // --------------------------------------------------------------------
         foreach (string code in serviceCodes)
         {
-            MemoryStream ms = new MemoryStream();
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, code))
+            try
             {
-                // Configure visual appearance
-                generator.Parameters.Barcode.XDimension.Pixels = 2f;
-                generator.Parameters.Barcode.BarHeight.Pixels = 40f;
-
-                // Save barcode as PNG into the memory stream
-                generator.Save(ms, BarCodeImageFormat.Png);
-            }
-            ms.Position = 0;               // Reset stream position for later reading
-            barcodeStreams.Add(ms);
-        }
-
-        // --------------------------------------------------------------------
-        // 3. Build a PDF document with one barcode per page (evaluation limit: 4 pages)
-        // --------------------------------------------------------------------
-        using (Document pdfDoc = new Document())
-        {
-            int pageCount = Math.Min(barcodeStreams.Count, 4);
-            for (int i = 0; i < pageCount; i++)
-            {
-                MemoryStream imgStream = barcodeStreams[i];
-                imgStream.Position = 0;   // Ensure stream is at the beginning
-
-                // Add a new page and place the barcode image on it
-                Page page = pdfDoc.Pages.Add();
-                page.Paragraphs.Add(new Aspose.Pdf.Image { ImageStream = imgStream });
-            }
-            pdfDoc.Save(pdfPath);
-        }
-
-        // --------------------------------------------------------------------
-        // 4. Decode barcodes from each page of the PDF
-        // --------------------------------------------------------------------
-        using (Document pdfDoc = new Document(pdfPath))
-        {
-            PdfConverter pdfConverter = new PdfConverter(pdfDoc);
-            pdfConverter.RenderingOptions.BarcodeOptimization = true; // Enable barcode‑specific rendering
-
-            int totalPages = pdfDoc.Pages.Count;
-            for (int pageNumber = 1; pageNumber <= totalPages; pageNumber++)
-            {
-                // Convert a single page to an image for barcode reading
-                pdfConverter.StartPage = pageNumber;
-                pdfConverter.EndPage = pageNumber;
-                pdfConverter.DoConvert();
-
-                using (MemoryStream pageImage = new MemoryStream())
+                using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.SwissPostParcel, code))
                 {
-                    pdfConverter.GetNextImage(pageImage);
-                    pageImage.Position = 0;
+                    // Configure barcode appearance.
+                    generator.Parameters.Barcode.XDimension.Pixels = 2f;
+                    generator.Parameters.Barcode.BarHeight.Pixels = 40f;
 
-                    // Read barcodes from the page image
-                    using (BarCodeReader reader = new BarCodeReader(pageImage, DecodeType.SwissPostParcel))
+                    using (Aspose.Drawing.Bitmap bitmap = generator.GenerateBarCodeImage())
                     {
-                        BarCodeResult[] results = reader.ReadBarCodes();
-                        foreach (BarCodeResult result in results)
-                        {
-                            Console.WriteLine($"Page {pageNumber}: Type={result.CodeTypeName}, Text={result.CodeText}");
-                        }
+                        MemoryStream ms = new MemoryStream();
+                        bitmap.Save(ms, Aspose.Drawing.Imaging.ImageFormat.Png);
+                        ms.Position = 0; // Reset stream position for later reading.
+                        imageStreams.Add(ms);
+                    }
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Failed to generate barcode for code '{code}': {ex.Message}");
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Build a PDF document with the generated barcode images.
+        // --------------------------------------------------------------------
+        try
+        {
+            using (Document pdfDoc = new Document())
+            {
+                foreach (MemoryStream imgStream in imageStreams)
+                {
+                    Page page = pdfDoc.Pages.Add();
+                    Aspose.Pdf.Image pdfImage = new Aspose.Pdf.Image { ImageStream = imgStream };
+                    page.Paragraphs.Add(pdfImage);
+                }
+
+                pdfDoc.Save(pdfPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating PDF: {ex.Message}");
+            Cleanup(tempFolder, imageStreams);
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Verify that the PDF was created before attempting to decode.
+        // --------------------------------------------------------------------
+        if (!File.Exists(pdfPath))
+        {
+            Console.WriteLine("PDF file not found.");
+            Cleanup(tempFolder, imageStreams);
+            return;
+        }
+
+        // --------------------------------------------------------------------
+        // Batch decode barcodes from the PDF using the Swiss Post Parcel symbology.
+        // --------------------------------------------------------------------
+        try
+        {
+            using (BarCodeReader reader = new BarCodeReader(pdfPath, DecodeType.SwissPostParcel))
+            {
+                BarCodeResult[] results = reader.ReadBarCodes();
+                if (results.Length == 0)
+                {
+                    Console.WriteLine("No barcodes detected.");
+                }
+                else
+                {
+                    foreach (BarCodeResult result in results)
+                    {
+                        Console.WriteLine($"Detected Type: {result.CodeTypeName}, Text: {result.CodeText}");
                     }
                 }
             }
         }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"Error reading barcodes: {ex.Message}");
+        }
 
         // --------------------------------------------------------------------
-        // 5. Clean up temporary files and streams
+        // Clean up temporary files and streams.
         // --------------------------------------------------------------------
-        foreach (MemoryStream ms in barcodeStreams)
+        Cleanup(tempFolder, imageStreams);
+    }
+
+    /// <summary>
+    /// Disposes all memory streams and deletes the temporary folder used for the PDF.
+    /// </summary>
+    /// <param name="folderPath">Path to the temporary folder.</param>
+    /// <param name="streams">List of memory streams to dispose.</param>
+    static void Cleanup(string folderPath, List<MemoryStream> streams)
+    {
+        foreach (MemoryStream ms in streams)
         {
             ms.Dispose();
         }
-        try { File.Delete(pdfPath); } catch { }
-        try { Directory.Delete(tempFolder, true); } catch { }
+
+        try
+        {
+            if (Directory.Exists(folderPath))
+            {
+                Directory.Delete(folderPath, true);
+            }
+        }
+        catch
+        {
+            // Ignore cleanup errors.
+        }
     }
 }

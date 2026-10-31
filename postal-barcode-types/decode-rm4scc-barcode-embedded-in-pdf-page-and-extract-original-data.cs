@@ -1,29 +1,27 @@
-// Title: Decode RM4SCC barcode from PDF pages
-// Description: Demonstrates how to extract and decode an RM4SCC barcode embedded in a PDF document using Aspose.BarCode and Aspose.Pdf.
-// Category-Description: This example belongs to the Aspose.BarCode barcode recognition category, showing how to convert PDF pages to images and read barcodes with BarCodeReader. It highlights key classes such as Document, PdfConverter, BarCodeReader, and DecodeType, useful for developers who need to process scanned documents, invoices, or shipping labels containing barcodes.
+// Title: Decode RM4SCC barcode from PDF using Aspose.BarCode
+// Description: Demonstrates how to render a PDF page to an image and decode an RM4SCC barcode embedded in it, extracting the original data.
+// Category-Description: This example belongs to the Aspose.BarCode and Aspose.Pdf integration category, showcasing how to combine PDF rendering (Aspose.Pdf) with barcode recognition (Aspose.BarCode). Typical use cases include extracting data from shipping labels, invoices, or any documents that embed RM4SCC barcodes. Developers often need to convert PDF pages to high‑resolution images before feeding them to the BarCodeReader for reliable detection.
 // Prompt: Decode an RM4SCC barcode embedded in a PDF page and extract the original data.
-// Tags: rm4scc, barcode, decoding, pdf, aspose.barcode, aspose.pdf, image conversion, barcoderecognition
+// Tags: rm4scc, barcode, decode, pdf, aspose.barcode, aspose.pdf, image, recognition
 
 using System;
 using System.IO;
-using Aspose.BarCode;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Pdf;
-using Aspose.Pdf.Facades;
 using Aspose.Pdf.Devices;
+using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates decoding RM4SCC barcodes from a PDF document.
+/// Example program that decodes RM4SCC barcodes embedded in PDF pages.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Loads a PDF, converts each page to an image, and reads any barcodes found.
+    /// Entry point. Loads a PDF, renders each page to PNG, and reads RM4SCC barcodes.
     /// </summary>
     static void Main()
     {
-        // Path to the source PDF file
-        string pdfPath = "sample.pdf";
+        // Path to the PDF file containing the RM4SCC barcode
+        string pdfPath = Path.Combine(Directory.GetCurrentDirectory(), "SampleRM4SCC.pdf");
 
         // Verify that the PDF file exists before proceeding
         if (!File.Exists(pdfPath))
@@ -32,50 +30,39 @@ class Program
             return;
         }
 
-        // Load the PDF document using Aspose.Pdf
+        // Specify the decode type for RM4SCC barcodes
+        BaseDecodeType decodeType = DecodeType.RM4SCC;
+
+        // Open the PDF document for processing
         using (Document pdfDoc = new Document(pdfPath))
         {
-            // Initialize a PdfConverter to render PDF pages as images
-            using (PdfConverter pdfConverter = new PdfConverter(pdfDoc))
+            // Iterate through all pages (example processes each page)
+            for (int pageIndex = 1; pageIndex <= pdfDoc.Pages.Count; pageIndex++)
             {
-                // Enable barcode optimization for better recognition results
-                pdfConverter.RenderingOptions.BarcodeOptimization = true;
-                // Set the resolution of the rendered images (300 DPI)
-                pdfConverter.Resolution = new Resolution(300);
-
-                // Iterate through each page in the PDF
-                int pageCount = pdfDoc.Pages.Count;
-                for (int pageNumber = 1; pageNumber <= pageCount; pageNumber++)
+                // Render the current page to a PNG image held in memory
+                using (MemoryStream imageStream = new MemoryStream())
                 {
-                    // Configure the converter to process a single page
-                    pdfConverter.StartPage = pageNumber;
-                    pdfConverter.EndPage = pageNumber;
-                    // Perform the conversion for the current page
-                    pdfConverter.DoConvert();
+                    // 300 DPI provides sufficient detail for reliable barcode recognition
+                    PngDevice pngDevice = new PngDevice(new Resolution(300));
+                    pngDevice.Process(pdfDoc.Pages[pageIndex], imageStream);
+                    imageStream.Position = 0; // Reset stream position for reading
 
-                    // Store the rendered image in a memory stream
-                    using (MemoryStream imageStream = new MemoryStream())
+                    // Initialize the barcode reader with the rendered image and the desired decode type
+                    using (BarCodeReader reader = new BarCodeReader(imageStream, decodeType))
                     {
-                        pdfConverter.GetNextImage(imageStream);
-                        imageStream.Position = 0; // Reset stream position for reading
+                        bool found = false;
 
-                        // Initialize BarCodeReader to detect all supported barcode types
-                        using (BarCodeReader reader = new BarCodeReader(imageStream, DecodeType.AllSupportedTypes))
+                        // Enumerate all detected barcodes on the page
+                        foreach (BarCodeResult result in reader.ReadBarCodes())
                         {
-                            // Read all barcodes found in the image
-                            BarCodeResult[] results = reader.ReadBarCodes();
-                            if (results.Length == 0)
-                            {
-                                Console.WriteLine($"Page {pageNumber}: No barcode detected.");
-                            }
-                            else
-                            {
-                                // Output each detected barcode's type and data
-                                foreach (BarCodeResult result in results)
-                                {
-                                    Console.WriteLine($"Page {pageNumber}: Type={result.CodeTypeName}, Data={result.CodeText}");
-                                }
-                            }
+                            Console.WriteLine($"Page {pageIndex}: Detected barcode type: {result.CodeTypeName}, Data: {result.CodeText}");
+                            found = true;
+                        }
+
+                        // Inform the user if no RM4SCC barcode was found on the page
+                        if (!found)
+                        {
+                            Console.WriteLine($"Page {pageIndex}: No RM4SCC barcode detected.");
                         }
                     }
                 }
