@@ -1,86 +1,82 @@
-// Title: Checksum Control Helper for Aspose.BarCode
-// Description: Demonstrates enabling, disabling, and querying the checksum of a Code39 barcode using Aspose.BarCode.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, showcasing how to manipulate checksum settings via the BarcodeGenerator.Parameters.Barcode.IsChecksumEnabled property. It highlights the use of EnableChecksum enum, BarcodeGenerator, and image saving APIs—common tasks for developers creating barcodes that require optional checksum validation.
+// Title: Checksum Control Example for Aspose.BarCode
+// Description: Demonstrates enabling and disabling checksum calculation for a Code39 barcode and saving the resulting images.
+// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating how to manipulate checksum settings via the BarcodeGenerator.Parameters.Barcode.IsChecksumEnabled property. It showcases the EnableChecksum enum, typical use cases such as data validation and error detection, and helps developers quickly learn how to control checksum behavior when creating barcodes.
 // Prompt: Create a helper class abstracting checksum control logic, exposing methods to enable, disable, and query status.
-// Tags: barcode, checksum, code39, generation, aspose.barcode, c#
+// Tags: barcode, checksum, generation, aspose.barcode, code39, png
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
-namespace ChecksumControlDemo
+/// <summary>
+/// Helper class that abstracts checksum control logic for a <see cref="BarcodeGenerator"/>.
+/// Provides methods to enable, disable, and query the checksum status.
+/// </summary>
+class ChecksumHelper
 {
     /// <summary>
-    /// Provides methods to enable, disable, and query the checksum status of a <see cref="BarcodeGenerator"/>.
+    /// Enables checksum calculation for the specified barcode generator.
     /// </summary>
-    public static class ChecksumHelper
+    /// <param name="generator">The <see cref="BarcodeGenerator"/> to modify.</param>
+    public static void SetChecksumOn(BarcodeGenerator generator)
     {
-        /// <summary>
-        /// Enables checksum calculation for the specified barcode generator.
-        /// </summary>
-        /// <param name="generator">The <see cref="BarcodeGenerator"/> whose checksum should be enabled.</param>
-        public static void SetChecksumOn(BarcodeGenerator generator)
-        {
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
-        }
-
-        /// <summary>
-        /// Disables checksum calculation for the specified barcode generator.
-        /// </summary>
-        /// <param name="generator">The <see cref="BarcodeGenerator"/> whose checksum should be disabled.</param>
-        public static void SetChecksumOff(BarcodeGenerator generator)
-        {
-            generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
-        }
-
-        /// <summary>
-        /// Retrieves the current checksum status of the specified barcode generator.
-        /// </summary>
-        /// <param name="generator">The <see cref="BarcodeGenerator"/> to query.</param>
-        /// <returns>The <see cref="EnableChecksum"/> value indicating whether checksum is enabled.</returns>
-        public static EnableChecksum GetChecksumStatus(BarcodeGenerator generator)
-        {
-            return generator.Parameters.Barcode.IsChecksumEnabled;
-        }
+        generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.Yes;
     }
 
-    class Program
+    /// <summary>
+    /// Disables checksum calculation for the specified barcode generator.
+    /// </summary>
+    /// <param name="generator">The <see cref="BarcodeGenerator"/> to modify.</param>
+    public static void SetChecksumOff(BarcodeGenerator generator)
     {
-        /// <summary>
-        /// Generates a Code39 barcode with and without checksum, saves the images to a temporary folder,
-        /// and writes status information to the console.
-        /// </summary>
-        static void Main()
+        generator.Parameters.Barcode.IsChecksumEnabled = EnableChecksum.No;
+    }
+
+    /// <summary>
+    /// Retrieves the current checksum status of the specified barcode generator.
+    /// </summary>
+    /// <param name="generator">The <see cref="BarcodeGenerator"/> to query.</param>
+    /// <returns>The <see cref="EnableChecksum"/> value indicating whether checksum is enabled.</returns>
+    public static EnableChecksum GetChecksumStatus(BarcodeGenerator generator)
+    {
+        return generator.Parameters.Barcode.IsChecksumEnabled;
+    }
+}
+
+class Program
+{
+    /// <summary>
+    /// Generates two Code39 barcodes—one with checksum enabled and one without—saving them as PNG files.
+    /// </summary>
+    static void Main()
+    {
+        // Create a temporary output directory with a unique name.
+        string outputDir = Path.Combine(Path.GetTempPath(), "ChecksumDemo_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outputDir);
+
+        // Define file paths for the enabled and disabled checksum images.
+        string pathEnabled = Path.Combine(outputDir, "Code39_WithChecksum.png");
+        string pathDisabled = Path.Combine(outputDir, "Code39_WithoutChecksum.png");
+
+        // Generate barcode with checksum enabled.
+        using (BarcodeGenerator genEnabled = new BarcodeGenerator(EncodeTypes.Code39, "12345"))
         {
-            // Create a unique temporary directory for the demo output
-            string tempDir = Path.Combine(Path.GetTempPath(), "ChecksumDemo_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempDir);
-
-            // Define file paths for the two barcode images
-            string pathNoChecksum = Path.Combine(tempDir, "Code39_NoChecksum.png");
-            string pathWithChecksum = Path.Combine(tempDir, "Code39_WithChecksum.png");
-
-            // Initialize a barcode generator for Code39 (checksum optional)
-            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code39, "12345"))
-            {
-                // Disable checksum, save the image, and display status
-                ChecksumHelper.SetChecksumOff(generator);
-                generator.Save(pathNoChecksum, BarCodeImageFormat.Png);
-                Console.WriteLine($"Saved barcode without checksum to: {pathNoChecksum}");
-                Console.WriteLine($"Checksum status: {ChecksumHelper.GetChecksumStatus(generator)}");
-
-                // Enable checksum, save the image, and display status
-                ChecksumHelper.SetChecksumOn(generator);
-                generator.Save(pathWithChecksum, BarCodeImageFormat.Png);
-                Console.WriteLine($"Saved barcode with checksum to: {pathWithChecksum}");
-                Console.WriteLine($"Checksum status: {ChecksumHelper.GetChecksumStatus(generator)}");
-            }
-
-            // Optional: clean up the temporary directory
-            // Directory.Delete(tempDir, true);
+            ChecksumHelper.SetChecksumOn(genEnabled);
+            genEnabled.Save(pathEnabled, BarCodeImageFormat.Png);
+            Console.WriteLine($"Enabled checksum status: {ChecksumHelper.GetChecksumStatus(genEnabled)}");
         }
+
+        // Generate barcode with checksum disabled.
+        using (BarcodeGenerator genDisabled = new BarcodeGenerator(EncodeTypes.Code39, "12345"))
+        {
+            ChecksumHelper.SetChecksumOff(genDisabled);
+            genDisabled.Save(pathDisabled, BarCodeImageFormat.Png);
+            Console.WriteLine($"Disabled checksum status: {ChecksumHelper.GetChecksumStatus(genDisabled)}");
+        }
+
+        // Inform the user where the barcode images have been saved.
+        Console.WriteLine($"Barcodes saved to: {outputDir}");
     }
 }

@@ -1,76 +1,77 @@
-// Title: Demonstrate default checksum behavior for optional and obligatory barcode symbologies
-// Description: Shows how Aspose.BarCode handles checksum defaults for Code39 (optional) and Code128 (obligatory) when generating barcodes.
-// Category-Description: This example belongs to the Aspose.BarCode generation category, illustrating the default checksum settings for different symbology types. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes to create PNG images. Developers often need to understand when checksums are automatically applied versus when they must be enabled manually, especially when working with optional and obligatory checksum symbologies.
+// Title: Demonstrate default checksum settings for optional and obligatory barcode symbologies
+// Description: This example generates barcodes for Code39 (optional checksum) and Code128 (obligatory checksum) and shows the default IsChecksumEnabled values.
+// Category-Description: Shows how Aspose.BarCode handles checksum defaults across different symbologies. It uses BarcodeGenerator, EncodeTypes, and BarCodeImageFormat classes. Developers working with barcode generation often need to know when checksums are applied automatically versus when they must be enabled manually. This snippet belongs to the barcode generation and configuration category.
 // Prompt: Write documentation comments explaining default checksum behavior for obligatory and optional symbologies.
-// Tags: barcode symbology, checksum, generation, png, aspose.barcode, code39, code128
+// Tags: barcode symbology, checksum, code39, code128, generation, aspose.barcode
 
 using System;
 using System.IO;
+using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing;
 
-/// <summary>
-/// Entry point for the checksum demonstration example.
-/// </summary>
-class Program
+namespace ChecksumDocumentationDemo
 {
     /// <summary>
-    /// Generates barcode images for optional and obligatory checksum symbologies and displays default checksum information.
+    /// Provides helper methods that demonstrate the default checksum behavior
+    /// for barcode symbologies with optional and obligatory checksum requirements.
     /// </summary>
-    static void Main()
+    public static class ChecksumHelper
     {
-        // Create a temporary folder to store generated barcode images.
-        string tempPath = Path.Combine(Path.GetTempPath(), "ChecksumDemo");
-        Directory.CreateDirectory(tempPath);
-
-        // ------------------------------
-        // Optional checksum symbology (Code39)
-        // ------------------------------
-        using (var genOptional = new BarcodeGenerator(EncodeTypes.Code39, "12345"))
+        /// <summary>
+        /// Generates sample barcodes for an optional-checksum symbology (Code39) and an
+        /// obligatory-checksum symbology (Code128) and prints the default
+        /// <c>IsChecksumEnabled</c> setting for each.
+        /// <para>
+        /// According to Aspose.BarCode documentation, the <c>IsChecksumEnabled</c>
+        /// property defaults to <c>EnableChecksum.No</c> for symbologies where the
+        /// checksum is optional, and to <c>EnableChecksum.Yes</c> for symbologies
+        /// where the checksum is obligatory.
+        /// </para>
+        /// </summary>
+        /// <param name="outputFolder">Folder where generated barcode images will be saved.</param>
+        public static void ShowDefaultChecksumSettings(string outputFolder)
         {
-            // By default, optional checksum is disabled (IsChecksumEnabled = EnableChecksum.No).
-            genOptional.Save(Path.Combine(tempPath, "Code39_Optional.png"), BarCodeImageFormat.Png);
+            // Ensure the output directory exists.
+            if (!Directory.Exists(outputFolder))
+            {
+                Directory.CreateDirectory(outputFolder);
+            }
+
+            // Optional checksum symbology: Code39
+            using (var genOptional = new BarcodeGenerator(EncodeTypes.Code39, "12345"))
+            {
+                string optionalPath = Path.Combine(outputFolder, "Code39_Optional.png");
+                genOptional.Save(optionalPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated optional-checksum barcode: {optionalPath}");
+                Console.WriteLine($"Default IsChecksumEnabled for Code39: {genOptional.Parameters.Barcode.IsChecksumEnabled}");
+            }
+
+            // Obligatory checksum symbology: Code128
+            using (var genObligatory = new BarcodeGenerator(EncodeTypes.Code128, "12345"))
+            {
+                string obligatoryPath = Path.Combine(outputFolder, "Code128_Obligatory.png");
+                genObligatory.Save(obligatoryPath, BarCodeImageFormat.Png);
+                Console.WriteLine($"Generated obligatory-checksum barcode: {obligatoryPath}");
+                Console.WriteLine($"Default IsChecksumEnabled for Code128: {genObligatory.Parameters.Barcode.IsChecksumEnabled}");
+            }
         }
-
-        // ------------------------------
-        // Obligatory checksum symbology (Code128)
-        // ------------------------------
-        using (var genObligatory = new BarcodeGenerator(EncodeTypes.Code128, "123456"))
-        {
-            // By default, obligatory checksum is enabled (IsChecksumEnabled = EnableChecksum.Yes).
-            genObligatory.Save(Path.Combine(tempPath, "Code128_Obligatory.png"), BarCodeImageFormat.Png);
-        }
-
-        // Output the location of generated images and default checksum behaviors.
-        Console.WriteLine("Generated barcode images in: " + tempPath);
-        Console.WriteLine("Optional checksum default: " + ChecksumInfo.GetDefaultChecksumBehaviorOptional());
-        Console.WriteLine("Obligatory checksum default: " + ChecksumInfo.GetDefaultChecksumBehaviorObligatory());
-    }
-}
-
-/// <summary>
-/// Provides information about default checksum behavior for barcode symbologies.
-/// </summary>
-static class ChecksumInfo
-{
-    /// <summary>
-    /// Returns a description of the default checksum behavior for symbologies with optional checksum.
-    /// For optional checksum symbologies (e.g., Code39, Codabar, MSI, etc.), the <see cref="BarcodeParameters.IsChecksumEnabled"/>
-    /// property defaults to <see cref="EnableChecksum.No"/>, meaning the checksum is not calculated unless explicitly enabled.
-    /// </summary>
-    public static string GetDefaultChecksumBehaviorOptional()
-    {
-        return "Optional checksum symbologies default to checksum disabled (EnableChecksum.No).";
     }
 
     /// <summary>
-    /// Returns a description of the default checksum behavior for symbologies with obligatory checksum.
-    /// For obligatory checksum symbologies (e.g., Code128, EAN13, UPC-A, Code93, etc.), the <see cref="BarcodeParameters.IsChecksumEnabled"/>
-    /// property defaults to <see cref="EnableChecksum.Yes"/>, meaning the checksum is always calculated.
+    /// Entry point for the checksum demonstration application.
     /// </summary>
-    public static string GetDefaultChecksumBehaviorObligatory()
+    class Program
     {
-        return "Obligatory checksum symbologies default to checksum enabled (EnableChecksum.Yes).";
+        /// <summary>
+        /// Creates a temporary folder, runs the checksum demo, and writes completion status to the console.
+        /// </summary>
+        static void Main()
+        {
+            // Use a temporary folder for demonstration purposes.
+            string tempFolder = Path.Combine(Path.GetTempPath(), "ChecksumDemo_" + Guid.NewGuid().ToString("N"));
+            ChecksumHelper.ShowDefaultChecksumSettings(tempFolder);
+            Console.WriteLine("Demo completed.");
+        }
     }
 }
