@@ -1,151 +1,109 @@
-// Title: Custom CustomerInformationDecoder verification for Australia Post barcode
-// Description: Demonstrates how to attach a custom CustomerInformationDecoder to an Australia Post barcode reader and verify it receives the raw customer information string and bytes.
-// Category-Description: This example belongs to the Aspose.BarCode barcode decoding category, focusing on custom decoding of Australia Post barcodes. It showcases the use of BarcodeGenerator, BarCodeReader, and the AustraliaPostCustomerInformationDecoder class to customize interpretation of customer information fields. Developers often need to plug in their own logic for parsing encoded data, and this snippet illustrates typical setup, generation, reading, and validation steps.
+// Title: Verify custom CustomerInformationDecoder receives raw barcode data
+// Description: Demonstrates generating an Australia Post barcode, applying a custom decoder, and confirming the decoder receives the original field string.
+// Category-Description: This example belongs to Aspose.BarCode barcode generation and recognition. It shows how to use BarcodeGenerator, BarCodeReader, and the AustraliaPostCustomerInformationDecoder to customize interpretation of customer information fields. Developers often need to plug in custom logic for decoding barcode data, especially for postal services, and this snippet illustrates that pattern.
 // Prompt: Write a unit test verifying custom CustomerInformationDecoder receives raw barcode bytes before interpretation.
-// Tags: australia post, barcode decoding, custom decoder, customer information, aspose.barcode, unit test
+// Tags: australia post, barcode generation, barcode recognition, custom decoder, customer information, unit test
 
 using System;
 using System.IO;
-using System.Text;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Custom decoder that records the last decoded customer information field.
-/// Inherits from <see cref="AustraliaPostCustomerInformationDecoder"/> to integrate with Aspose.BarCode.
+/// Custom decoder that captures the raw customer information field passed during decoding.
 /// </summary>
 class MyDecoder : AustraliaPostCustomerInformationDecoder
 {
     /// <summary>
-    /// Gets the most recent customer information field passed to <see cref="Decode(string)"/>.
+    /// Gets the last input string received by the decoder.
     /// </summary>
-    public string LastDecodedField { get; private set; }
+    public static string LastInput { get; private set; }
 
     /// <summary>
-    /// Stores the incoming field and returns it unchanged.
+    /// Stores the provided customer information field and returns it unchanged.
     /// </summary>
-    /// <param name="customerInformationField">Raw customer information string extracted from the barcode.</param>
-    /// <returns>The same string that was received.</returns>
+    /// <param name="customerInformationField">The raw field string from the barcode.</param>
+    /// <returns>The same field string.</returns>
     public string Decode(string customerInformationField)
     {
-        LastDecodedField = customerInformationField;
+        LastInput = customerInformationField;
+        // Return the field unchanged for this test
         return customerInformationField;
     }
 }
 
 /// <summary>
 /// Example program that generates an Australia Post barcode, reads it with a custom decoder,
-/// and validates that the decoder receives the correct raw data.
+/// and verifies that the decoder receives the original data.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point of the example. Generates a barcode, reads it using a custom decoder,
-    /// and prints verification results to the console.
+    /// Entry point of the example. Performs barcode generation, reading, and verification.
     /// </summary>
     static void Main()
     {
-        // --------------------------------------------------------------------
-        // Prepare a temporary working directory for the barcode image.
-        // --------------------------------------------------------------------
-        string tempDir = Path.Combine(Path.GetTempPath(), "AusPostTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string barcodePath = Path.Combine(tempDir, "auspost.png");
+        // Create a unique temporary folder for test files
+        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
 
-        // Sample Australia Post code:
-        // FCC=59, DPID=01234567, customer info "12345" (NTable digits)
-        string codeText = "590123456712345";
+        // Define the path for the generated barcode image
+        string barcodePath = Path.Combine(tempFolder, "AustraliaPost.png");
 
-        // --------------------------------------------------------------------
-        // Generate the barcode image using Aspose.BarCode.
-        // --------------------------------------------------------------------
-        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        // Original data to encode in the barcode
+        string originalCodeText = "620123456701234";
+
+        // Generate an Australia Post barcode with specific parameters
+        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, originalCodeText))
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
+            generator.Parameters.Barcode.XDimension.Pixels = 4;
+            generator.Parameters.Barcode.BarHeight.Pixels = 50;
             generator.Parameters.Barcode.AustralianPost.EncodingTable = CustomerInformationInterpretingType.NTable;
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the image file was created.
-        if (!File.Exists(barcodePath))
+        // Read the barcode using a custom decoder
+        using (var reader = new BarCodeReader(barcodePath, DecodeType.AustraliaPost))
         {
-            Console.WriteLine("FAILED: Barcode image was not created.");
-            return;
-        }
+            // Assign the custom decoder to capture raw field data
+            reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder = new MyDecoder();
 
-        // --------------------------------------------------------------------
-        // Set up the custom decoder instance.
-        // --------------------------------------------------------------------
-        MyDecoder decoder = new MyDecoder();
-
-        // --------------------------------------------------------------------
-        // Read the barcode and attach the custom decoder.
-        // --------------------------------------------------------------------
-        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.AustraliaPost))
-        {
+            // Ensure the interpreting type matches the generation settings
             reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = CustomerInformationInterpretingType.NTable;
-            reader.BarcodeSettings.AustraliaPost.CustomerInformationDecoder = decoder;
 
-            BarCodeResult result = null;
-
-            // Expect only a single barcode in the image.
-            foreach (BarCodeResult r in reader.ReadBarCodes())
+            // Iterate through detected barcodes (expecting one)
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                result = r;
-                break;
-            }
-
-            if (result == null)
-            {
-                Console.WriteLine("FAILED: No barcode detected.");
-                return;
-            }
-
-            // --------------------------------------------------------------------
-            // Extract the customer information part (characters after the first 10).
-            // --------------------------------------------------------------------
-            string expectedCustomerInfo = result.CodeText.Length > 10 ? result.CodeText.Substring(10) : string.Empty;
-
-            // Verify that the custom decoder received the exact string.
-            if (decoder.LastDecodedField == expectedCustomerInfo)
-            {
-                Console.WriteLine("PASS: Decoder received correct raw customer information.");
-            }
-            else
-            {
-                Console.WriteLine("FAILED: Decoder input mismatch.");
-                Console.WriteLine($"Expected: '{expectedCustomerInfo}'");
-                Console.WriteLine($"Actual:   '{decoder.LastDecodedField}'");
-            }
-
-            // --------------------------------------------------------------------
-            // Optional: verify that the raw bytes match the full code text.
-            // --------------------------------------------------------------------
-            byte[] codeBytes = result.CodeBytes;
-            string bytesAsString = Encoding.ASCII.GetString(codeBytes);
-            if (bytesAsString == result.CodeText)
-            {
-                Console.WriteLine("PASS: CodeBytes match CodeText.");
-            }
-            else
-            {
-                Console.WriteLine("FAILED: CodeBytes do not match CodeText.");
+                Console.WriteLine($"Result CodeText: {result.CodeText}");
             }
         }
 
-        // --------------------------------------------------------------------
-        // Clean up temporary files and directory.
-        // --------------------------------------------------------------------
+        // Verify that the custom decoder was invoked and received the expected data
+        if (MyDecoder.LastInput == null)
+        {
+            Console.WriteLine("FAILED: Custom decoder was not invoked.");
+        }
+        else if (MyDecoder.LastInput == originalCodeText)
+        {
+            Console.WriteLine("PASSED: Decoder received raw barcode bytes (as string) correctly.");
+        }
+        else
+        {
+            Console.WriteLine($"FAILED: Decoder received unexpected data. Expected '{originalCodeText}', got '{MyDecoder.LastInput}'.");
+        }
+
+        // Clean up temporary files and folder
         try
         {
-            File.Delete(barcodePath);
-            Directory.Delete(tempDir, true);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            if (Directory.Exists(tempFolder))
+                Directory.Delete(tempFolder, true);
         }
         catch
         {
-            // Suppress any cleanup exceptions.
+            // Ignored - cleanup failure should not affect test result
         }
     }
 }

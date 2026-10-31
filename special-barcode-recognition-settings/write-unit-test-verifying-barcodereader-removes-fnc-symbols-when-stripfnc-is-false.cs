@@ -1,104 +1,86 @@
-// Title: Verify StripFNC behavior of BarCodeReader with FNC symbols
-// Description: Demonstrates generating a Code128 barcode containing FNC characters, reading it with StripFNC set to false and true, and confirming the FNC symbols are retained or removed accordingly.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator to embed FNC symbols, BarCodeReader to decode barcodes, and the BarcodeSettings.StripFNC property to control whether FNC characters are stripped. Developers working with barcode symbology often need to validate FNC handling for compliance with standards or custom processing pipelines.
+// Title: BarCodeReader StripFNC behavior demonstration
+// Description: Shows how to generate a Code128 barcode containing FNC symbols and verifies that BarCodeReader respects the StripFNC setting.
+// Category-Description: This example belongs to the Aspose.BarCode barcode reading and generation category, illustrating the use of BarcodeGenerator, BarCodeReader, and BarcodeSettings.StripFNC. Developers often need to control whether function characters (FNC) are retained or stripped during decoding, especially for symbologies like Code128 where FNC symbols carry special meaning. The snippet demonstrates typical setup, encoding, decoding, and validation steps useful for unit testing and integration scenarios.
 // Prompt: Write a unit test verifying BarCodeReader removes FNC symbols when StripFNC is false.
-// Tags: barcode, fnc, stripfnc, code128, aspose.barcode, generation, recognition, unit-test
+// Tags: code128, fnc, stripfnc, barcode, reading, generation, aspose.barcode, unit-test
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
-using Aspose.Drawing.Imaging;
+using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates verification of the StripFNC setting in BarCodeReader by generating a Code128 barcode
-/// with FNC symbols and reading it with different StripFNC configurations.
+/// Demonstrates generating a Code128 barcode with FNC symbols and validates the StripFNC setting of BarCodeReader.
 /// </summary>
 class Program
 {
-    // Approximate FNC character codes used by Aspose.BarCode
-    private const char FNC1 = (char)200;
-    private const char FNC2 = (char)201;
-    private const char FNC3 = (char)202;
-
     /// <summary>
-    /// Executes the demonstration and validation logic.
+    /// Entry point that creates a barcode, reads it with different StripFNC settings, and reports the outcome.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary directory for the barcode image
-        string tempDir = Path.Combine(Path.GetTempPath(), "BarCodeFncTest_" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(tempDir);
-        string imagePath = Path.Combine(tempDir, "Code128FNC.png");
+        // Prepare a temporary folder for the barcode image
+        string tempFolder = Path.Combine(Path.GetTempPath(), "FncTest_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempFolder);
+        string barcodePath = Path.Combine(tempFolder, "Code128FNC.png");
 
-        // Generate a Code128 barcode that includes FNC symbols
-        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Code128, "Aspose" + FNC1 + FNC2 + FNC3))
+        // Create barcode text that includes FNC1, FNC2, and FNC3 characters
+        string fnc1 = ((char)0xF1).ToString();
+        string fnc2 = ((char)0xF2).ToString();
+        string fnc3 = ((char)0xF3).ToString();
+        string codeText = "Aspose" + fnc1 + fnc2 + fnc3;
+
+        // Generate the barcode image
+        using (BarcodeGenerator gen = new BarcodeGenerator(EncodeTypes.Code128, codeText))
         {
             gen.Parameters.Barcode.XDimension.Pixels = 2f;
-            gen.Save(imagePath, BarCodeImageFormat.Png);
+            gen.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
-        // Verify that the barcode image was successfully created
-        if (!File.Exists(imagePath))
-        {
-            Console.WriteLine("FAILED: Barcode image was not created.");
-            return;
-        }
-
-        // Read the barcode with StripFNC = false (FNC symbols should be present in the result)
-        string codeTextStripFalse;
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // Read the barcode with StripFNC = false (FNC symbols should be present)
+        bool fncPresentWhenFalse = false;
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
             reader.BarcodeSettings.StripFNC = false;
-            BarCodeResult[] results = reader.ReadBarCodes();
-            if (results.Length == 0)
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine("FAILED: No barcode detected with StripFNC = false.");
-                return;
+                fncPresentWhenFalse = result.CodeText.Contains("<FNC");
+                Console.WriteLine($"StripFNC=false => CodeText: {result.CodeText}");
             }
-            codeTextStripFalse = results[0].CodeText;
         }
 
-        // Read the same barcode with StripFNC = true (FNC symbols should be removed)
-        string codeTextStripTrue;
-        using (BarCodeReader reader = new BarCodeReader(imagePath, DecodeType.Code128))
+        // Read the barcode with StripFNC = true (FNC symbols should be removed)
+        bool fncAbsentWhenTrue = true;
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
             reader.BarcodeSettings.StripFNC = true;
-            BarCodeResult[] results = reader.ReadBarCodes();
-            if (results.Length == 0)
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                Console.WriteLine("FAILED: No barcode detected with StripFNC = true.");
-                return;
+                fncAbsentWhenTrue = !result.CodeText.Contains("<FNC");
+                Console.WriteLine($"StripFNC=true => CodeText: {result.CodeText}");
             }
-            codeTextStripTrue = results[0].CodeText;
         }
 
-        // Determine whether the false setting retained any FNC placeholders
-        bool containsFnc = codeTextStripFalse.Contains("<FNC1>") ||
-                           codeTextStripFalse.Contains("<FNC2>") ||
-                           codeTextStripFalse.Contains("<FNC3>");
-
-        // Determine whether the true setting stripped all FNC placeholders
-        bool stripped = !codeTextStripTrue.Contains("<FNC");
-
-        // Output the verification result
-        if (containsFnc && stripped)
+        // Report the test results
+        if (fncPresentWhenFalse && fncAbsentWhenTrue)
         {
-            Console.WriteLine("PASSED: StripFNC behavior verified.");
+            Console.WriteLine("TEST PASSED: StripFNC behavior is as expected.");
         }
         else
         {
-            Console.WriteLine("FAILED: StripFNC behavior not as expected.");
-            Console.WriteLine($"StripFNC false result: {codeTextStripFalse}");
-            Console.WriteLine($"StripFNC true result: {codeTextStripTrue}");
+            Console.WriteLine("TEST FAILED:");
+            Console.WriteLine($"  Expected FNC symbols present when StripFNC=false: {fncPresentWhenFalse}");
+            Console.WriteLine($"  Expected FNC symbols absent when StripFNC=true: {fncAbsentWhenTrue}");
         }
 
-        // Cleanup temporary files and directory
+        // Clean up temporary files and folder
         try
         {
-            File.Delete(imagePath);
-            Directory.Delete(tempDir, true);
+            if (File.Exists(barcodePath))
+                File.Delete(barcodePath);
+            Directory.Delete(tempFolder, true);
         }
         catch
         {

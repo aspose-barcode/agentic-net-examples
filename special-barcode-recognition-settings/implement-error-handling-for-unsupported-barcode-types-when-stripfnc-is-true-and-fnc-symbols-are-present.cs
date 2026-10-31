@@ -1,97 +1,98 @@
-// Title: Demonstrate StripFNC handling with supported and unsupported barcode types
-// Description: Shows how to generate a Code128 barcode, read it with StripFNC enabled, and handle errors when the decode type does not support StripFNC.
-// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It illustrates the use of BarcodeGenerator for creating barcodes and BarCodeReader with BarcodeSettings to customize reading options such as StripFNC. Typical scenarios include processing linear barcodes while ignoring Function (FNC) symbols and gracefully handling cases where the selected DecodeType cannot process StripFNC. Developers often need to combine these APIs to build robust scanning solutions that adapt to varying symbology support.
+// Title: StripFNC handling with unsupported barcode types
+// Description: Demonstrates generating a Code128 barcode that contains FNC symbols, reading it with StripFNC enabled, and handling errors when the barcode type is unsupported.
+// Category-Description: This example belongs to the Aspose.BarCode generation and recognition category. It showcases the use of BarcodeGenerator for creating barcodes, BarCodeReader for decoding, and the StripFNC setting to remove function characters during recognition. Developers often need to strip FNC symbols when processing linear barcodes and must gracefully handle cases where the chosen symbology does not support this operation.
 // Prompt: Implement error handling for unsupported barcode types when StripFNC is true and FNC symbols are present.
-// Tags: barcode symbology, stripfnc, error handling, generation, recognition, aspose.barcode, code128, qr, csharp
+// Tags: barcode symbology, stripfnc, error handling, code128, qr, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
 using Aspose.BarCode;
 using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
+using Aspose.Drawing;
+using Aspose.Drawing.Imaging;
 
 /// <summary>
-/// Example program demonstrating barcode generation and reading with StripFNC enabled,
-/// including error handling for unsupported decode types.
+/// Demonstrates barcode generation with FNC symbols, reading with StripFNC enabled,
+/// and error handling for unsupported symbologies.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates a Code128 barcode, reads it with StripFNC set,
-    /// and gracefully handles errors for unsupported barcode types.
+    /// Entry point of the example. Generates a barcode, reads it with StripFNC,
+    /// and shows error handling when an unsupported decode type is used.
     /// </summary>
     static void Main()
     {
-        // Prepare a temporary folder and file path for the generated barcode image
-        string tempFolder = Path.Combine(Path.GetTempPath(), "AsposeBarcodeDemo_" + Guid.NewGuid().ToString("N"));
+        // --------------------------------------------------------------------
+        // Prepare a temporary folder to store the generated barcode image.
+        // --------------------------------------------------------------------
+        string tempFolder = Path.Combine(Path.GetTempPath(), "FncDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
-        string barcodePath = Path.Combine(tempFolder, "code128.png");
+        string barcodePath = Path.Combine(tempFolder, "Code128FNC.png");
 
-        // Generate a Code128 barcode (contains no FNC symbols for simplicity)
-        using (var generator = new BarcodeGenerator(EncodeTypes.Code128, "Sample123"))
+        // --------------------------------------------------------------------
+        // Define FNC characters (ASCII 241‑243 correspond to FNC1‑3).
+        // --------------------------------------------------------------------
+        string fnc1 = ((char)241).ToString();
+        string fnc2 = ((char)242).ToString();
+        string fnc3 = ((char)243).ToString();
+
+        // --------------------------------------------------------------------
+        // Generate a Code128 barcode that includes the FNC symbols.
+        // --------------------------------------------------------------------
+        using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.Code128, "Aspose" + fnc1 + fnc2 + fnc3))
         {
-            // Set barcode module size (X-dimension) to 2 pixels
             generator.Parameters.Barcode.XDimension.Pixels = 2;
-            // Save the barcode image as PNG
             generator.Save(barcodePath, BarCodeImageFormat.Png);
         }
 
         Console.WriteLine("Barcode generated at: " + barcodePath);
         Console.WriteLine();
 
-        // ------------------------------------------------------------
-        // Read the barcode using a supported decode type (Code128) with StripFNC enabled
-        // ------------------------------------------------------------
-        Console.WriteLine("Reading with supported DecodeType (Code128) and StripFNC = true:");
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.Code128))
+        // --------------------------------------------------------------------
+        // Read the barcode using the correct symbology (Code128) with StripFNC enabled.
+        // This should succeed and return the text without the FNC characters.
+        // --------------------------------------------------------------------
+        Console.WriteLine("Reading with correct symbology (Code128) and StripFNC = true:");
+        using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.Code128))
         {
-            // Enable stripping of FNC symbols during recognition
             reader.BarcodeSettings.StripFNC = true;
-            try
+            foreach (BarCodeResult result in reader.ReadBarCodes())
             {
-                // Iterate through all detected barcodes
-                foreach (BarCodeResult result in reader.ReadBarCodes())
-                {
-                    Console.WriteLine($"CodeType: {result.CodeTypeName}");
-                    Console.WriteLine($"CodeText: {result.CodeText}");
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log any unexpected errors during reading
-                Console.WriteLine("Error during reading: " + ex.Message);
+                Console.WriteLine($"CodeType: {result.CodeTypeName}");
+                Console.WriteLine($"CodeText: {result.CodeText}");
             }
         }
-
         Console.WriteLine();
 
-        // ------------------------------------------------------------
-        // Attempt to read the same image with an unsupported decode type (QR) while StripFNC is true
-        // ------------------------------------------------------------
-        Console.WriteLine("Reading with unsupported DecodeType (QR) and StripFNC = true:");
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.QR))
+        // --------------------------------------------------------------------
+        // Attempt to read the same image with an unsupported symbology (QR) while
+        // StripFNC is true. The operation is wrapped in a try/catch to demonstrate
+        // error handling for this scenario.
+        // --------------------------------------------------------------------
+        Console.WriteLine("Attempting to read with unsupported symbology (QR) and StripFNC = true:");
+        try
         {
-            // Enable stripping of FNC symbols (not supported for QR)
-            reader.BarcodeSettings.StripFNC = true;
-            try
+            using (BarCodeReader reader = new BarCodeReader(barcodePath, DecodeType.QR))
             {
-                // Attempt to read; expect an exception due to unsupported configuration
+                reader.BarcodeSettings.StripFNC = true;
                 foreach (BarCodeResult result in reader.ReadBarCodes())
                 {
                     Console.WriteLine($"CodeType: {result.CodeTypeName}");
                     Console.WriteLine($"CodeText: {result.CodeText}");
                 }
             }
-            catch (Exception ex)
-            {
-                // Handle the expected error gracefully
-                Console.WriteLine("Handled error: " + ex.Message);
-            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error while reading barcode with unsupported type and StripFNC = true:");
+            Console.WriteLine(ex.Message);
         }
 
-        // ------------------------------------------------------------
-        // Cleanup temporary files and directories
-        // ------------------------------------------------------------
+        // --------------------------------------------------------------------
+        // Cleanup temporary files and directories.
+        // --------------------------------------------------------------------
         try
         {
             if (File.Exists(barcodePath))

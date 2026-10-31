@@ -1,60 +1,48 @@
-// Title: Multithreaded Barcode Scanner Using Aspose.BarCode
-// Description: Demonstrates generating several barcode images and scanning them concurrently with Parallel.ForEach and the default ProcessorSettings.
-// Category-Description: This example belongs to the Aspose.BarCode image processing and recognition category. It showcases the use of BarcodeGenerator for creating barcodes and BarCodeReader for decoding them, highlighting typical scenarios such as batch processing, high‑throughput scanning, and parallel execution. Developers often need to process large sets of images efficiently, and this pattern illustrates how to leverage .NET parallelism with Aspose.BarCode APIs.
+// Title: Multithreaded barcode scanning of image files using Aspose.BarCode
+// Description: Demonstrates generating sample barcode images and scanning them concurrently with default ProcessorSettings.
+// Category-Description: This example belongs to the Aspose.BarCode processing category, showcasing parallel barcode recognition using BarCodeReader and BarcodeGenerator. It illustrates typical use cases such as batch processing of scanned documents, where developers need to read multiple images efficiently. The example highlights key API classes like BarcodeGenerator, BarCodeReader, DecodeType, and ProcessorSettings for high‑throughput scenarios.
 // Prompt: Create a multithreaded barcode scanner that processes image files in parallel using default ProcessorSettings.
-// Tags: barcode, scanning, multithreading, parallel, aspose.barcode, processorsettings, image
+// Tags: barcode, multithreading, parallel, processing, generation, recognition, code128, png, aspose.barcode
 
 using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Aspose.BarCode;
-using Aspose.BarCode.BarCodeRecognition;
 using Aspose.BarCode.Generation;
+using Aspose.BarCode.BarCodeRecognition;
 using Aspose.Drawing;
 
 /// <summary>
-/// Demonstrates generating barcode images and scanning them concurrently using Aspose.BarCode.
+/// Demonstrates parallel generation and scanning of barcode images using Aspose.BarCode.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Generates sample barcodes, scans them in parallel, and cleans up temporary files.
+    /// Entry point. Generates sample barcodes, scans them concurrently, and cleans up temporary files.
     /// </summary>
     static void Main()
     {
-        // Create a unique temporary folder to store generated barcode images
-        string tempFolder = Path.Combine(Path.GetTempPath(), "Batch_" + Guid.NewGuid().ToString("N"));
+        // Create a unique temporary folder for sample barcodes
+        string tempFolder = Path.Combine(Path.GetTempPath(), "BarcodeBatch_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempFolder);
 
-        // List to hold the full paths of generated image files
-        List<string> imageFiles = new List<string>();
-
-        // Define sample barcode data (symbology and corresponding text)
-        var samples = new (BaseEncodeType encodeType, string text)[]
+        // Generate sample barcode images and collect their file paths
+        List<string> barcodeFiles = new List<string>();
+        for (int i = 0; i < 5; i++)
         {
-            (EncodeTypes.Code128, "CODE128-123"),
-            (EncodeTypes.QR, "https://example.com"),
-            (EncodeTypes.Pdf417, "PDF417 Sample Text"),
-            (EncodeTypes.DataMatrix, "DM12345"),
-            (EncodeTypes.Aztec, "AztecDemo")
-        };
-
-        // Generate barcode images and store their file paths
-        foreach (var (encodeType, text) in samples)
-        {
-            string filePath = Path.Combine(tempFolder, $"{encodeType}_{Guid.NewGuid().ToString("N")}.png");
-            using (var generator = new BarcodeGenerator(encodeType, text))
+            string codeText = $"Sample{i + 1}";
+            string filePath = Path.Combine(tempFolder, $"barcode{i + 1}.png");
+            using (var generator = new BarcodeGenerator(EncodeTypes.Code128, codeText))
             {
                 generator.Save(filePath, BarCodeImageFormat.Png);
             }
-            imageFiles.Add(filePath);
+            barcodeFiles.Add(filePath);
         }
 
-        // Process the generated images in parallel using the default ProcessorSettings
-        Parallel.ForEach(imageFiles, filePath =>
+        // Process the images in parallel using default ProcessorSettings
+        Parallel.ForEach(barcodeFiles, filePath =>
         {
-            // Verify that the file exists before attempting to read it
+            // Verify the file exists before attempting to read
             if (!File.Exists(filePath))
             {
                 Console.WriteLine($"File not found: {filePath}");
@@ -63,36 +51,44 @@ class Program
 
             try
             {
-                // Initialize the barcode reader for all supported symbologies
+                // Initialize the reader for all supported barcode types
                 using (var reader = new BarCodeReader(filePath, DecodeType.AllSupportedTypes))
                 {
-                    // Read all barcodes present in the image
                     BarCodeResult[] results = reader.ReadBarCodes();
-                    foreach (var result in results)
+
+                    // Output detection results
+                    if (results.Length > 0)
                     {
-                        Console.WriteLine($"{Path.GetFileName(filePath)}: {result.CodeTypeName} - {result.CodeText}");
+                        foreach (var result in results)
+                        {
+                            Console.WriteLine($"{Path.GetFileName(filePath)}: {result.CodeTypeName} - {result.CodeText}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{Path.GetFileName(filePath)}: No barcode detected.");
                     }
                 }
             }
-            // Handle cases where the image cannot be loaded (e.g., corrupted file)
-            catch (ArgumentException ex) when (ex.Message.Contains("Image loading failed"))
+            catch (ArgumentException ex)
             {
-                Console.WriteLine($"Skipping unreadable file: {filePath}");
-            }
-            // Catch any other unexpected exceptions during processing
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error processing {filePath}: {ex.Message}");
+                // Handle cases where the file cannot be processed as a barcode image
+                Console.WriteLine($"Error reading {Path.GetFileName(filePath)}: {ex.Message}");
             }
         });
 
-        // Cleanup: delete all generated image files
-        foreach (var file in imageFiles)
+        // Clean up temporary files and directory
+        try
         {
-            try { File.Delete(file); } catch { }
+            foreach (var file in barcodeFiles)
+            {
+                File.Delete(file);
+            }
+            Directory.Delete(tempFolder);
         }
-
-        // Remove the temporary folder
-        try { Directory.Delete(tempFolder, true); } catch { }
+        catch
+        {
+            // Ignore cleanup errors (e.g., file in use)
+        }
     }
 }

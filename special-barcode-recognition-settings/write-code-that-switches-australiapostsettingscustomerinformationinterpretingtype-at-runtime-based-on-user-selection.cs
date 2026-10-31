@@ -1,8 +1,8 @@
-// Title: Dynamic Australia Post barcode generation with runtime interpreting type selection
-// Description: Demonstrates how to generate and read an Australia Post barcode while switching the CustomerInformationInterpretingType at runtime based on a command‑line argument.
-// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category. It showcases the use of BarcodeGenerator, BarCodeReader, and AustraliaPost settings such as CustomerInformationInterpretingType. Developers often need to adapt barcode encoding tables dynamically for different postal services or customer data formats, making this pattern useful for flexible barcode processing pipelines.
+// Title: Dynamic Switching of AustraliaPost CustomerInformationInterpretingType
+// Description: Demonstrates how to generate and read Australia Post barcodes while changing the CustomerInformationInterpretingType at runtime.
+// Category-Description: This example belongs to the Aspose.BarCode barcode generation and recognition category, focusing on Australia Post symbology. It showcases the use of BarcodeGenerator, BarCodeReader, and the AustraliaPost settings to handle different interpreting tables (C‑Table, N‑Table, Other). Developers often need to switch interpreting types based on user input or business rules, and this snippet provides a clear pattern for doing so.
 // Prompt: Write code that switches AustraliaPostSettings.CustomerInformationInterpretingType at runtime based on user selection.
-// Tags: barcode, australia post, interpreting type, runtime, generation, recognition, aspose.barcode
+// Tags: barcode, australia post, customer information, interpreting type, generation, recognition, aspose.barcode
 
 using System;
 using System.IO;
@@ -11,65 +11,66 @@ using Aspose.BarCode.Generation;
 using Aspose.BarCode.BarCodeRecognition;
 
 /// <summary>
-/// Demonstrates dynamic selection of Australia Post barcode interpreting type for generation and recognition.
+/// Demonstrates dynamic switching of AustraliaPost <c>CustomerInformationInterpretingType</c> during barcode generation and recognition.
 /// </summary>
 class Program
 {
     /// <summary>
-    /// Entry point. Parses a command‑line argument to choose the interpreting type, generates a barcode, reads it back, and cleans up temporary files.
+    /// Entry point that generates barcodes for each <c>CustomerInformationInterpretingType</c>, saves them, and reads them back using the matching interpreting setting.
     /// </summary>
-    /// <param name="args">Command‑line arguments where the first argument specifies the interpreting type (e.g., CTable, DTable).</param>
-    static void Main(string[] args)
+    static void Main()
     {
-        // Determine interpreting type from command‑line argument or default to CTable
-        string arg = args.Length > 0 ? args[0] : "CTable";
-        if (!Enum.TryParse<CustomerInformationInterpretingType>(arg, true, out var interpretingType))
-        {
-            Console.WriteLine($"Invalid interpreting type '{arg}'. Falling back to CTable.");
-            interpretingType = CustomerInformationInterpretingType.CTable;
-        }
-
-        // Prepare a temporary output folder and file path for the generated barcode image
+        // Prepare a temporary output directory for generated barcode images
         string outputDir = Path.Combine(Path.GetTempPath(), "AustraliaPostDemo_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(outputDir);
-        string barcodePath = Path.Combine(outputDir, "AustraliaPost.png");
 
-        // Australia Post code text (FCC 59 + 8‑digit DPID, no customer info)
-        string codeText = "5901234567";
+        // Sample code text without customer information (valid for all interpreting types)
+        string codeText = "6201234567";
 
-        // Generate barcode using the selected interpreting type
-        using (var generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
+        // Define the interpreting types to demonstrate
+        CustomerInformationInterpretingType[] types = new CustomerInformationInterpretingType[]
         {
-            generator.Parameters.Barcode.XDimension.Pixels = 4f;
-            generator.Parameters.Barcode.BarHeight.Pixels = 50f;
-            generator.Parameters.Barcode.AustralianPost.EncodingTable = interpretingType;
-            generator.Save(barcodePath, BarCodeImageFormat.Png);
-        }
+            CustomerInformationInterpretingType.CTable,
+            CustomerInformationInterpretingType.NTable,
+            CustomerInformationInterpretingType.Other
+        };
 
-        Console.WriteLine($"Barcode saved to: {barcodePath}");
-        Console.WriteLine($"Interpreting type used for generation: {interpretingType}");
-
-        // Read the barcode using the same interpreting type
-        using (var reader = new BarCodeReader(barcodePath, DecodeType.AustraliaPost))
+        // Iterate over each interpreting type, generate and read the barcode
+        foreach (CustomerInformationInterpretingType type in types)
         {
-            reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = interpretingType;
-            foreach (BarCodeResult result in reader.ReadBarCodes())
+            // Build the file path for the current barcode image
+            string filePath = Path.Combine(outputDir, $"{type}.png");
+
+            // Generate barcode with the specific encoding table
+            using (BarcodeGenerator generator = new BarcodeGenerator(EncodeTypes.AustraliaPost, codeText))
             {
-                Console.WriteLine($"Read Code Type: {result.CodeTypeName}");
-                Console.WriteLine($"Read Code Text: {result.CodeText}");
+                generator.Parameters.Barcode.XDimension.Pixels = 4;
+                generator.Parameters.Barcode.BarHeight.Pixels = 50;
+                generator.Parameters.Barcode.AustralianPost.EncodingTable = type;
+                generator.Save(filePath, BarCodeImageFormat.Png);
+            }
+
+            // Verify that the image file was created before attempting to read it
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"Failed to create barcode image for {type}");
+                continue;
+            }
+
+            // Read the barcode using a matching interpreting type
+            using (BarCodeReader reader = new BarCodeReader(filePath, DecodeType.AustraliaPost))
+            {
+                reader.BarcodeSettings.AustraliaPost.CustomerInformationInterpretingType = type;
+                foreach (BarCodeResult result in reader.ReadBarCodes())
+                {
+                    Console.WriteLine($"Interpreting Type: {type}");
+                    Console.WriteLine($"  Code Type : {result.CodeTypeName}");
+                    Console.WriteLine($"  Code Text : {result.CodeText}");
+                }
             }
         }
 
-        // Clean up temporary files (optional)
-        try
-        {
-            if (File.Exists(barcodePath))
-                File.Delete(barcodePath);
-            Directory.Delete(outputDir, true);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        // Output the location of generated barcode images
+        Console.WriteLine($"Barcodes generated in: {outputDir}");
     }
 }
