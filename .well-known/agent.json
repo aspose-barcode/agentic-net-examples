@@ -3,7 +3,7 @@
   "name": "Aspose.BarCode for .NET Examples Agent",
   "description": "Provides 1124 build-validated, standalone C# code examples for barcode generation and recognition using Aspose.BarCode for .NET. Covers 1D, 2D, postal, and special barcode types across 21 categories.",
   "capabilities": [
-    "Generate C# examples for 1D barcodes (Code128, Code39, EAN, UPC, ITF, Codabar, and 50+ symbologies)",
+    "Generate C# examples for 1D barcodes (Code128, Code39, EAN, UPC, ITF, Codabar, GS1-128, and 50+ symbologies)",
     "Generate C# examples for 2D barcodes (QR Code, DataMatrix, PDF417, Aztec, MaxiCode, GS1 DataBar)",
     "Generate C# examples for postal barcodes (Mailmark 4-state and 2D, USPS, Australia Post)",
     "Generate C# examples for special barcodes (HIBC LIC, Swiss QR Code, PatchCode)",
@@ -129,7 +129,7 @@
     }
   ],
   "total_examples": 1124,
-  "package_version": "26.9.0",
+  "package_version": "26.10.0",
   "documentation_url": "https://docs.aspose.com/barcode/net/",
   "api_reference": "https://reference.aspose.com/barcode/net/",
   "nuget": "https://www.nuget.org/packages/Aspose.BarCode/"
