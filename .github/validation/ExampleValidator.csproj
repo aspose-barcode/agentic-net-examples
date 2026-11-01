@@ -8,9 +8,5 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Aspose.BarCode" Version="26.10.0" />
-    <PackageReference Include="Aspose.Cells" Version="26.10.0" />
-    <PackageReference Include="Aspose.PDF.Drawing" Version="26.10.0" />
-    <PackageReference Include="Aspose.Slides.NET6.CrossPlatform" Version="26.10.0" />
-    <PackageReference Include="Aspose.Words" Version="26.10.0" />
   </ItemGroup>
 </Project>
